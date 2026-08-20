@@ -80,10 +80,10 @@ Latest pre-handoff result:
 ```text
 pytest: 164 passed, 1 dependency warning
 coverage: 4086 statements, 462 missed, 88.69%
-ruff lint and format: clean; 126 files formatted
+ruff lint and format: clean; 127 files formatted
 mypy: 66 source files clean
 vulture: 0 findings at >=80% confidence
-detect-secrets: 0 application candidates (separate non-TTY rerun after a TTY-only scanner stall)
+detect-secrets: 0 application candidates after repairing Windows separator exclusion
 Slice 2 Code Craft: 9 files clean
 Slice 2 Test Craft: 3 files clean
 ```

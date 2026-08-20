@@ -1,6 +1,6 @@
 # Slice 02 Evidence — Immutable Evidence and Recovery
 
-STATUS: CANDIDATE — Red Team PASS; independent clean-clone verification pending  
+STATUS: CANDIDATE — Red Team PASS; verifier attempt 1 blocked and remediated; recheck pending
 DATE: 2026-08-20
 
 ## Outcome
@@ -37,12 +37,12 @@ preparing the exact records for immutable publication.
 | Focused Slice 2 suite | PASS | 58 tests across three evidence test files |
 | Repository suite | PASS | 164 tests |
 | Repository coverage | PASS | 88.69%, required minimum 80% |
-| Ruff lint and format | PASS | 126 files formatted |
+| Ruff lint and format | PASS | 127 files formatted |
 | Strict Mypy | PASS | 66 source files |
 | Code Craft | PASS | 9 Slice 2 source files, zero findings |
 | Test Craft | PASS | 3 Slice 2 test files, zero findings |
 | Vulture | PASS | zero findings at 80% confidence |
-| Detect-secrets | PASS | zero application candidates; run separately after a TTY-only scanner stall |
+| Detect-secrets | PASS | zero application candidates after repairing the Windows path-separator exclusion |
 | Mutation proof | PASS | both marker binding and active-target binding mutations killed |
 | Red Team | PASS | one Major found, repaired, and independently rechecked |
 
@@ -64,4 +64,8 @@ cases pass after repair. The raw report is `.launch/reports/RED-TEAM-SLICE-02.md
 
 ## Independent verifier
 
-Pending a committed clean-clone run with frozen dependencies.
+Attempt 1 at `c2596ea` proved every test/static/recovery claim but correctly returned `BLOCKED`
+because the committed secret-scan exclusion matched `/` only and scanned the generated Windows
+environment. The cross-platform separator regex is repaired and its exact gate passes locally.
+A fresh verification of the remediation revision is pending. Raw attempt evidence is stored in
+`.launch/reports/VERIFIER-SLICE-02-ATTEMPT-01.md`.

@@ -41,7 +41,7 @@ try {
     }
 
     Write-Host "[gate] Application secret scan"
-    $excludedSecretFiles = '(^|[\/])(\.venv|build|dist|tmp|logs|\.git|\.agents|\.mypy_cache|\.pytest_cache|\.ruff_cache|__pycache__)([\/]|$)|(^|[\/])uv\.lock$|(^|[\/])\.coverage$'
+    $excludedSecretFiles = '(^|[\\/])(\.venv|build|dist|tmp|logs|\.git|\.agents|\.mypy_cache|\.pytest_cache|\.ruff_cache|__pycache__)([\\/]|$)|(^|[\\/])uv\.lock$|(^|[\\/])\.coverage$'
     $secretJson = & $detectSecrets scan --all-files --no-verify `
         --exclude-files $excludedSecretFiles .
     if ($LASTEXITCODE -ne 0) {

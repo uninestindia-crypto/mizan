@@ -47,6 +47,8 @@ Nothing for the active build sequence. Slice 1 passed Red Team and independent c
 - Killed both publication-marker and active-pointer integrity mutations; both targeted tests failed red and passed after restoration.
 - Red Team reproduced one Major Windows restart defect: exited workers could remain queryable and be misclassified as live. Requiring `STILL_ACTIVE` repaired all six real process-kill phases.
 - Passed 164 repository tests at 88.69% coverage, strict Mypy across 66 source files, Ruff, Code Craft, Test Craft, vulture, and an application secret scan before clean-clone handoff.
+- Verifier attempt 1 at `c2596ea` proved tests, coverage, typing, craft, recovery, and reports but blocked the slice because the committed secret-scan regex did not exclude Windows backslash paths; 227 generated-environment candidates made the gate exit 1.
+- Repaired the path separator exclusion, reran the exact local gate to zero application candidates, and retained the failed attempt as immutable verification evidence.
 
 ## Founder overrides
 
