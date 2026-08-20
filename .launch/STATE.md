@@ -54,6 +54,7 @@ Nothing for the active build sequence. Slices 1 and 2 passed Red Team and indepe
 - Killed and restored leakage, zero-label, and shortened-embargo mutations; the exact candidate gate passes 194 tests at 88.59% coverage, 30 focused cases, strict Mypy, Ruff, vulture, secret scanning, and both craft checkers.
 - Slice 3 Red Team blocked candidate `5c461e2` on missing internal sessions, cross-instrument relabeling, timezone embargo bypass, float money, empty authority identity, ignored quotes, and silent universe deduplication. All seven now have failing-first regressions and local repairs.
 - The post-repair exact gate passes 205 repository tests at 88.53% coverage, 41 focused tests, strict Mypy across 75 files, Ruff, vulture, zero secret candidates, and both craft checkers.
+- Independent Red Team recheck passed exact repair revision `be9da7f`: all seven original findings and six additional malformed corporate-authority variants fail closed, with no unresolved Blocker or Major.
 
 ## Founder overrides
 
@@ -61,4 +62,4 @@ None.
 
 ## Next action
 
-Freeze the Slice 3 repair revision, obtain an independent Red Team recheck, then run clean-state verification.
+Run independent clean-state verification for Slice 3 and close the slice only if it passes.

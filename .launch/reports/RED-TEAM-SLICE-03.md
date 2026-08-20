@@ -1,8 +1,9 @@
 # Red Team Report - Slice 3
 
-STATUS: REMEDIATED LOCALLY - independent recheck pending  
+STATUS: PASS  
 DATE: 2026-08-20  
 ATTACKED REVISION: `5c461e2a6818ff7adfe8bf04503f7cb43563d591`
+RECHECKED REVISION: `be9da7f482b5d6fbb03037460b180169c7ee03bf`
 
 ## Initial verdict
 
@@ -61,4 +62,32 @@ Test Craft: 5 files clean
 - Physical memory exhaustion from adversarial million-digit Decimals.
 - Corporate-action adjustment correctness; no content-bearing adjustment authority exists yet.
 
-The final PASS/BLOCKED disposition remains reserved for the independent post-repair recheck.
+## Independent post-repair recheck
+
+PASS - no unresolved Blocker or Major. The recheck used an isolated clean clone and left the shared
+root untouched and the clone clean.
+
+```text
+focused repair selection: 13 passed
+repository tests: 205 passed
+coverage: 88.53%
+focused Slice 3 tests: 41 passed
+strict mypy: 75 source files
+ruff lint and format: pass
+vulture and application secret scans: zero findings
+Code Craft and Test Craft: pass
+exact gate result: Slice 3 gates passed
+```
+
+Observed repair outcomes:
+
+- Missing internal session: `CALENDAR_SESSION_MISSING`, with the exact missing session key.
+- Rehashed instrument/quote swap: `DATASET_INTEGRITY_INVALID`, with the tampered row key.
+- Timezone-equivalent embargo attack: both representations retained train 6, embargoed 1,
+  purged 1.
+- Float money: `TypeError` requiring Decimal or string.
+- Empty calendar and universe identities: explicit `ValueError` outcomes.
+- Unused quote: `COST_QUOTE_MISMATCH`.
+- Duplicate universe member: explicit uniqueness `ValueError`.
+- Empty, HTTP, credential-bearing, and inverted-range corporate authorities:
+  `CORPORATE_ACTION_AUTHORITY_INVALID`.

@@ -1,6 +1,6 @@
 # Slice 03 Evidence — Executable Point-in-Time Labels
 
-STATUS: CANDIDATE - Red Team repairs pass locally; independent recheck and verification pending
+STATUS: CANDIDATE - Red Team PASS; independent clean-state verification pending
 DATE: 2026-08-20
 
 ## Outcome
@@ -73,7 +73,7 @@ historical market values.
 | Ruff format | PASS — 163 files |
 | Dead-code scan | PASS — zero findings at >=80% confidence |
 | Application secret scan | PASS — zero candidates |
-| Red Team | INITIAL BLOCKED - all seven findings repaired; recheck pending |
+| Red Team | PASS - exact repair revision `be9da7f`; no unresolved Blocker or Major |
 | Independent clean-state Verifier | PENDING |
 
 Raw mutation evidence is in `.launch/reports/MUTATION-SLICE-03.md`.
