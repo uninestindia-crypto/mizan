@@ -87,3 +87,26 @@ detect-secrets: 0 application candidates after repairing Windows separator exclu
 Slice 2 Code Craft: 9 files clean
 Slice 2 Test Craft: 3 files clean
 ```
+
+## Current Slice 3 gate
+
+Run from the repository root against either the normal or a frozen verification environment:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run-slice3-gates.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run-slice3-gates.ps1 -PythonEnvironment tmp/verify-slice3
+```
+
+Latest pre-handoff result:
+
+```text
+pytest: 194 passed, 1 dependency warning
+coverage: 4785 statements, 546 missed, 88.59%
+focused Slice 3 suite: 30 passed
+ruff lint and format: clean; 163 files formatted
+mypy: 75 source files clean
+vulture: 0 findings at >=80% confidence
+detect-secrets: 0 application candidates
+Slice 3 Code Craft: 10 files clean
+Slice 3 Test Craft: 5 files clean
+```

@@ -50,6 +50,8 @@ Nothing for the active build sequence. Slices 1 and 2 passed Red Team and indepe
 - Verifier attempt 1 at `c2596ea` proved tests, coverage, typing, craft, recovery, and reports but blocked the slice because the committed secret-scan regex did not exclude Windows backslash paths; 227 generated-environment candidates made the gate exit 1.
 - Repaired the path separator exclusion, reran the exact local gate to zero application candidates, and retained the failed attempt as immutable verification evidence.
 - Independent Verifier passed Slice 2 from fresh revision `9c2e7fe`; 164 tests, 88.69% coverage, zero application secret candidates, 58 focused cases, and all six real process-kill recoveries reproduced.
+- Built the Slice 3 candidate: content-bound point-in-time authorities, exact six-feature Decimal rows, next-open-to-following-open net-cost labels, immutable derived datasets, and purged/embargoed fold evidence.
+- Killed and restored leakage, zero-label, and shortened-embargo mutations; the exact candidate gate passes 194 tests at 88.59% coverage, 30 focused cases, strict Mypy, Ruff, vulture, secret scanning, and both craft checkers.
 
 ## Founder overrides
 
@@ -57,4 +59,4 @@ None.
 
 ## Next action
 
-Begin Slice 3: executable point-in-time features, next-open labels, deterministic derived evidence, and overlap purge/embargo.
+Commit the stable Slice 3 candidate and obtain independent Red Team review.

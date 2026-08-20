@@ -29,10 +29,10 @@ def raw_sha256(payload: bytes) -> str:
 def decimal_text(value: Decimal) -> str:
     if not value.is_finite():
         raise ValueError("canonical decimals must be finite")
-    normalized = value.normalize()
-    if normalized == normalized.to_integral():
-        return str(normalized.quantize(Decimal("1")))
-    return format(normalized, "f")
+    fixed = format(value, "f")
+    if "." in fixed:
+        fixed = fixed.rstrip("0").rstrip(".")
+    return "0" if fixed in {"-0", ""} else fixed
 
 
 def utc_text(value: datetime) -> str:

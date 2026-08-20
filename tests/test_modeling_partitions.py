@@ -1,0 +1,149 @@
+"""Purged and embargoed chronological partition tests."""
+
+from __future__ import annotations
+
+from dataclasses import replace
+from decimal import Decimal
+
+import pytest
+
+from quant_system.modeling import (
+    ModelingError,
+    ModelingFailureCode,
+    build_feature_dataset,
+    build_label_dataset,
+    build_purged_fold,
+)
+from tests.modeling_fixtures import (
+    governed_acquisition,
+    governed_calendar,
+    governed_universe,
+    round_trip_cost_quotes,
+)
+
+
+def test_walk_forward_fold_purges_overlap_and_embargoes_two_sessions() -> None:
+    calendar = governed_calendar(35)
+    universe = governed_universe()
+    acquisition = governed_acquisition(count=35, calendar=calendar, universe=universe)
+    features = build_feature_dataset(acquisition, "cand_ridge_v1", calendar, universe)
+    labels = build_label_dataset(
+        features,
+        acquisition,
+        calendar,
+        round_trip_cost_quotes(acquisition, calendar, cost=Decimal("0.1")),
+    )
+    validation_start = calendar.sessions[28].close_at
+    validation_end = calendar.sessions[29].close_at
+
+    first = build_purged_fold(
+        labels.rows,
+        fold_id="fold_001",
+        ordinal=1,
+        validation_start=validation_start,
+        validation_end=validation_end,
+        calendar=calendar,
+        embargo_sessions=2,
+    )
+    second = build_purged_fold(
+        labels.rows,
+        fold_id="fold_001",
+        ordinal=1,
+        validation_start=validation_start,
+        validation_end=validation_end,
+        calendar=calendar,
+        embargo_sessions=2,
+    )
+
+    assert first == second
+    assert len(first.train_rows) == 6
+    assert len(first.validation_rows) == 2
+    assert len(first.purged_record_keys) == 1
+    assert len(first.embargoed_record_keys) == 1
+    assert all(row.exit_at < validation_start for row in first.train_rows)
+    assert first.spec.train_row_count == 6
+    assert first.spec.validation_row_count == 2
+    assert first.spec.embargo_sessions == 2
+    assert first.spec.label_horizon_sessions == 2
+    assert first.spec.train_hash != first.spec.validation_hash
+
+
+def test_embargo_shorter_than_label_horizon_is_rejected() -> None:
+    calendar = governed_calendar(35)
+    universe = governed_universe()
+    acquisition = governed_acquisition(count=35, calendar=calendar, universe=universe)
+    features = build_feature_dataset(acquisition, "cand_ridge_v1", calendar, universe)
+    labels = build_label_dataset(
+        features,
+        acquisition,
+        calendar,
+        round_trip_cost_quotes(acquisition, calendar, cost=Decimal("0.1")),
+    )
+
+    with pytest.raises(ModelingError) as captured:
+        build_purged_fold(
+            labels.rows,
+            fold_id="fold_001",
+            ordinal=1,
+            validation_start=calendar.sessions[28].close_at,
+            validation_end=calendar.sessions[29].close_at,
+            calendar=calendar,
+            embargo_sessions=1,
+        )
+
+    assert captured.value.code == ModelingFailureCode.EMBARGO_TOO_SHORT
+
+
+def test_partition_rejects_non_chronological_input() -> None:
+    calendar = governed_calendar(35)
+    universe = governed_universe()
+    acquisition = governed_acquisition(count=35, calendar=calendar, universe=universe)
+    features = build_feature_dataset(acquisition, "cand_ridge_v1", calendar, universe)
+    labels = build_label_dataset(
+        features,
+        acquisition,
+        calendar,
+        round_trip_cost_quotes(acquisition, calendar, cost=Decimal("0.1")),
+    )
+    unordered = (labels.rows[1], labels.rows[0], *labels.rows[2:])
+
+    with pytest.raises(ModelingError) as captured:
+        build_purged_fold(
+            unordered,
+            fold_id="fold_001",
+            ordinal=1,
+            validation_start=calendar.sessions[28].close_at,
+            validation_end=calendar.sessions[29].close_at,
+            calendar=calendar,
+            embargo_sessions=2,
+        )
+
+    assert captured.value.code == ModelingFailureCode.RECORD_ORDER_INVALID
+
+
+def test_partition_revalidates_label_session_chronology() -> None:
+    calendar = governed_calendar(35)
+    universe = governed_universe()
+    acquisition = governed_acquisition(count=35, calendar=calendar, universe=universe)
+    features = build_feature_dataset(acquisition, "cand_ridge_v1", calendar, universe)
+    labels = build_label_dataset(
+        features,
+        acquisition,
+        calendar,
+        round_trip_cost_quotes(acquisition, calendar, cost=Decimal("0.1")),
+    )
+    changed_first = replace(labels.rows[0], exit_at=calendar.sessions[23].open_at)
+    changed_rows = (changed_first, *labels.rows[1:])
+
+    with pytest.raises(ModelingError) as captured:
+        build_purged_fold(
+            changed_rows,
+            fold_id="fold_001",
+            ordinal=1,
+            validation_start=calendar.sessions[28].close_at,
+            validation_end=calendar.sessions[29].close_at,
+            calendar=calendar,
+            embargo_sessions=2,
+        )
+
+    assert captured.value.code == ModelingFailureCode.PARTITION_INVALID

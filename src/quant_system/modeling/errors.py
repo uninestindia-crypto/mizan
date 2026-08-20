@@ -1,0 +1,45 @@
+"""Typed fail-closed outcomes for governed modeling inputs."""
+
+from __future__ import annotations
+
+from enum import StrEnum
+
+
+class ModelingFailureCode(StrEnum):
+    DATASET_INTEGRITY_INVALID = "DATASET_INTEGRITY_INVALID"
+    DATASET_NOT_GOVERNED = "DATASET_NOT_GOVERNED"
+    CALENDAR_AUTHORITY_MISSING = "CALENDAR_AUTHORITY_MISSING"
+    CALENDAR_AUTHORITY_MISMATCH = "CALENDAR_AUTHORITY_MISMATCH"
+    CORPORATE_ACTION_AUTHORITY_MISSING = "CORPORATE_ACTION_AUTHORITY_MISSING"
+    CORPORATE_ACTION_AUTHORITY_NOT_EFFECTIVE = "CORPORATE_ACTION_AUTHORITY_NOT_EFFECTIVE"
+    UNIVERSE_AUTHORITY_MISSING = "UNIVERSE_AUTHORITY_MISSING"
+    UNIVERSE_AUTHORITY_MISMATCH = "UNIVERSE_AUTHORITY_MISMATCH"
+    UNIVERSE_AUTHORITY_NOT_EFFECTIVE = "UNIVERSE_AUTHORITY_NOT_EFFECTIVE"
+    UNIVERSE_MEMBER_INELIGIBLE = "UNIVERSE_MEMBER_INELIGIBLE"
+    RECORD_ORDER_INVALID = "RECORD_ORDER_INVALID"
+    POINT_IN_TIME_VIOLATION = "POINT_IN_TIME_VIOLATION"
+    INSUFFICIENT_HISTORY = "INSUFFICIENT_HISTORY"
+    ELIGIBLE_OPEN_MISSING = "ELIGIBLE_OPEN_MISSING"
+    COST_QUOTE_MISSING = "COST_QUOTE_MISSING"
+    COST_QUOTE_MISMATCH = "COST_QUOTE_MISMATCH"
+    NON_FINITE_VALUE = "NON_FINITE_VALUE"
+    EMBARGO_TOO_SHORT = "EMBARGO_TOO_SHORT"
+    PARTITION_INVALID = "PARTITION_INVALID"
+
+
+class ModelingError(RuntimeError):
+    """A stable modeling failure with an optional exact offending record."""
+
+    def __init__(
+        self,
+        code: ModelingFailureCode,
+        message: str,
+        *,
+        offending_record_key: str | None = None,
+    ) -> None:
+        self.code = code
+        self.offending_record_key = offending_record_key
+        detail = f"{code.value}: {message}"
+        if offending_record_key is not None:
+            detail = f"{detail}; offending_record={offending_record_key}"
+        super().__init__(detail)
