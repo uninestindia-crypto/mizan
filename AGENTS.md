@@ -7,8 +7,8 @@ Cursor, and Antigravity.
 
 Before planning or editing:
 
-1. Read `agent_context/README.md`, `agent_context/CURRENT.md`, and
-   `agent_context/PROTOCOL.md`.
+1. Read `agent_context/README.md`, `agent_context/CURRENT.md`, `agent_context/PROTOCOL.md`, and
+   `agent_context/DISK-LAYOUT.md`.
 2. Read `.launch/STATE.md` and `.launch/SLICES.md` for the authoritative release state.
 3. Run `git status --short --branch` and inspect every existing change as someone else's work.
 4. Read every record in `agent_context/work/active/`.
@@ -24,6 +24,24 @@ Before planning or editing:
   agent is active unless all affected paths are jointly owned.
 - Treat untracked files as owned work, not disposable files.
 - Keep one work record per task. Do not append to one global work log.
+
+## Disk layout law
+
+QuantOS runs from the drive it is installed on, but never spread across the root of that drive.
+Exactly two QuantOS entries may exist at the drive root: the install root `quant_system` and
+`quant_system_workspaces`. Everything derived goes in a bucket under the second one.
+
+- Develop only in the install root. Never move, rename, or duplicate it.
+- Create verification clones, Red Team clones, mutation environments, and agent worktrees with
+  `scripts/new-workspace-clone.ps1`. Never clone or `worktree add` to an ad-hoc path.
+- Never relocate a registered Git worktree with a file move. Use `git worktree move`, and only when
+  no agent is working in it.
+- Record every workspace you create in your active work record, and retire it when the run is
+  certified.
+- Run `scripts/audit-disk-layout.ps1` before any handoff or completion. It exits 1 on violations.
+  `scripts/organize-disk-layout.ps1` fixes them; it moves and never deletes.
+
+The full contract is `agent_context/DISK-LAYOUT.md`.
 
 ## Required work record
 
