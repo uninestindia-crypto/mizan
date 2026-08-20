@@ -1,6 +1,6 @@
 # Slice 03 Evidence — Executable Point-in-Time Labels
 
-STATUS: CANDIDATE - Red Team PASS; independent clean-state verification pending
+STATUS: PASS - Red Team and independent clean-state Verifier passed
 DATE: 2026-08-20
 
 ## Outcome
@@ -70,11 +70,11 @@ historical market values.
 | Test Craft | PASS — 5 Slice 3 test/support files |
 | Mutation checks | PASS — three dangerous mutations killed and restored |
 | Repository gate | PASS - 208 tests, 88.58% coverage (4,862 statements / 555 missed) |
-| Ruff format | EXPECTED 176 files after pre-creating the final verifier artifact; exact recheck pending |
+| Ruff format | PASS — 176 files in the independent clean clone |
 | Dead-code scan | PASS — zero findings at >=80% confidence |
 | Application secret scan | PASS — zero candidates |
 | Red Team | PASS - exact repair revision `be9da7f`; no unresolved Blocker or Major |
-| Independent clean-state Verifier | RECHECK PENDING - every substantive claim proven; final stable-file-count check pending |
+| Independent clean-state Verifier | PASS - exact clean revision `0acbca2`; all 15 claims proven |
 
 Raw failing and restored mutation outputs are in `.launch/reports/MUTATION-SLICE-03.md`.
 The complete initial adversarial report and repair dispositions are in

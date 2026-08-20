@@ -81,9 +81,9 @@ exact gate result: Slice 3 gates passed
 
 The counts above are revision-scoped to the repair recheck. Subsequent daily-pipeline and drive
 isolation commits changed the repository-wide baseline. The later certification baseline is 208
-tests at 88.58% coverage (4,862 statements / 555 missed). The pre-created final evidence set is
-expected to enumerate 176 Ruff-formatted inputs; the repaired Slice 3 contracts and 41 focused
-tests are unchanged.
+tests at 88.58% coverage (4,862 statements / 555 missed). The final verified evidence set
+enumerated 176 Ruff-formatted inputs; the repaired Slice 3 contracts and 41 focused tests are
+unchanged.
 
 Observed repair outcomes:
 

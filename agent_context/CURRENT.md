@@ -1,15 +1,16 @@
 # Current QuantOS snapshot
 
-UPDATED_UTC: 2026-08-20T11:30:00Z  
-SNAPSHOT_OWNER: Antigravity Coordinator  
+UPDATED_UTC: 2026-08-20T12:09:31Z  
+SNAPSHOT_OWNER: Codex / Antigravity coordination  
 BRANCH: `main`  
-HEAD_AT_SNAPSHOT: `be9da7f`
+HEAD_AT_SNAPSHOT: `0acbca2` (independently verified evidence revision)
 
 ## Formal release state
 
 - Tier T2, phase P4, gate G4 in progress.
 - Slices 1 and 2 passed Red Team and independent clean-state verification.
-- Slice 3 Candidate implemented, all 7 Red Team findings remediated, 205 repository tests passing with zero failures and 88.53% coverage.
+- Slice 3 passed Red Team and independent clean-state verification; 208 repository tests pass at
+  88.58% coverage and 41 focused Slice 3 cases pass.
 - Next active slice: Slice 4 (One Governed Ridge Fold & Preprocessing).
 - Live-money routing remains explicitly out of scope.
 - Authoritative details: `.launch/STATE.md`, `.launch/SLICES.md`, and `.launch/SLICE-03-EVIDENCE.md`.
