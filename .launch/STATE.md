@@ -10,7 +10,7 @@ G0 passed 2026-08-20 · G1 passed 2026-08-20 · G2 passed 2026-08-20 · G3 passe
 
 ## Blocked on
 
-Nothing. P4 Slice 1 implementation is in progress. Missing live credentials or provider availability does not block the required typed-failure path.
+Nothing for the active build sequence. Slice 1 passed Red Team and independent clean-clone verification. Missing live credentials do not block the approved typed-failure boundary.
 
 ## Open Blockers/Majors
 
@@ -42,6 +42,7 @@ Nothing. P4 Slice 1 implementation is in progress. Missing live credentials or p
 - Added reproducible detect-secrets and vulture gates; both pass with zero application findings.
 - Proved a fresh `uv sync --frozen --extra dev` environment and 106 tests at 88.97% coverage.
 - Initialized local `main`, excluded generated/sensitive state, and created baseline revision `d10886b`.
+- Independent Verifier passed Slice 1 from a fresh clone of clean revision `37ccf12`; 106 tests, 88.97% coverage, and every committed Slice 1 gate reproduced.
 
 ## Founder overrides
 
@@ -49,4 +50,4 @@ None.
 
 ## Next action
 
-Run the independent Verifier against the clean revision and record the final Slice 1 disposition.
+Begin Slice 2: immutable content-addressed evidence publication, crash recovery, corruption rejection, and replay.

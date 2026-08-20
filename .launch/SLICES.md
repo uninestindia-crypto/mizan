@@ -3,6 +3,13 @@
 STATUS: G3 accepted 2026-08-20  
 RULE: Each slice is independently demoable and scoped to one focused engineering session. Every slice ends with red-team and clean-state verification appropriate to T2.
 
+## Progress
+
+| Slice | Status | Evidence |
+|---:|---|---|
+| 1 | PASS | Red Team PASS; Verifier PASS from clean clone `37ccf12`; `.launch/SLICE-01-EVIDENCE.md` |
+| 2 | NEXT | Immutable evidence and recovery |
+
 ## Risk order
 
 | # | Vertical slice and largest question answered | Demo boundary | Required test rings | Primary ACs |

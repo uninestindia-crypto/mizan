@@ -1,6 +1,6 @@
 # Slice 01 Evidence - Governed Upstox V3 Acquisition
 
-STATUS: Red Team passed; Verifier remediation complete; final recheck pending  
+STATUS: PASS  
 DATE: 2026-08-20  
 SCOPE: Read-only NSE cash-equity daily history. No broker order authority.
 
@@ -78,9 +78,19 @@ returned `PASS` with no unresolved Blocker or Major.
 - missing calendar, corporate-action, or historical-universe authority;
 - non-NSE instruments and requests beyond the provider ten-year retrieval limit.
 
-## Remaining evidence before Slice 1 closes
+## Independent Verifier
 
-- Independent clean-state Verifier verdict.
+Verifier returned `PASS` from a fresh local clone of clean revision `37ccf12`. A frozen install
+created a new environment with 47 packages, the committed gate runner exited zero, all numerical
+claims were reproduced, and source/clone diffs were empty. Raw adjudication is stored in
+`.launch/reports/VERIFIER-SLICE-01.md`.
+
+## Deferred evidence
+
+- Credentialed live Upstox acceptance remains untested until a token is supplied. The approved
+  Slice 1 demo boundary allowed the proven typed unavailability result.
+- Content-addressed immutable application evidence begins in Slice 2.
+- CI, vulnerability audit, SBOM, packaging, and deployment are later-slice launch requirements.
 - Credentialed five-year request is deferred until a token is supplied; the typed failure path
   satisfies the slice demo boundary but does not prove live provider acceptance.
 
