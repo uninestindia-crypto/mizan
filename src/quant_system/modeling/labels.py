@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from datetime import date, datetime
 from decimal import ROUND_HALF_EVEN, Decimal, localcontext
 
@@ -55,6 +56,12 @@ def build_label_dataset(
         raise ModelingError(
             ModelingFailureCode.INSUFFICIENT_HISTORY,
             "no feature row has a matured two-session label horizon",
+        )
+    supplied_quote_hashes = Counter(quote.quote_hash for quote in cost_quotes)
+    if Counter(used_quote_hashes) != supplied_quote_hashes:
+        raise ModelingError(
+            ModelingFailureCode.COST_QUOTE_MISMATCH,
+            "cost quote set contains an unused or unmatched quote",
         )
     immutable_rows = tuple(rows)
     quote_hashes = tuple(used_quote_hashes)
@@ -111,6 +118,29 @@ def _validate_sources(
             ModelingFailureCode.CALENDAR_AUTHORITY_MISMATCH,
             "label calendar does not match feature and acquisition evidence",
         )
+    corporate_authority = manifest.corporate_action_authority
+    universe_authority = manifest.historical_universe_authority
+    if (
+        corporate_authority is None
+        or feature_dataset.corporate_action_authority_hash != corporate_authority.content_hash
+        or universe_authority is None
+        or feature_dataset.universe_authority_hash != universe_authority.content_hash
+    ):
+        raise ModelingError(
+            ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+            "feature authorities do not bind the supplied acquisition",
+        )
+    for row in feature_dataset.rows:
+        if (
+            row.provider_instrument_id != manifest.provider_instrument_id
+            or row.symbol != manifest.symbol
+            or row.universe_authority_hash != universe_authority.content_hash
+        ):
+            raise ModelingError(
+                ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+                "feature row instrument or authority does not bind the acquisition",
+                offending_record_key=row.record_key,
+            )
 
 
 def _index_quotes(

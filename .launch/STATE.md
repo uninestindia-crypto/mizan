@@ -52,6 +52,8 @@ Nothing for the active build sequence. Slices 1 and 2 passed Red Team and indepe
 - Independent Verifier passed Slice 2 from fresh revision `9c2e7fe`; 164 tests, 88.69% coverage, zero application secret candidates, 58 focused cases, and all six real process-kill recoveries reproduced.
 - Built the Slice 3 candidate: content-bound point-in-time authorities, exact six-feature Decimal rows, next-open-to-following-open net-cost labels, immutable derived datasets, and purged/embargoed fold evidence.
 - Killed and restored leakage, zero-label, and shortened-embargo mutations; the exact candidate gate passes 194 tests at 88.59% coverage, 30 focused cases, strict Mypy, Ruff, vulture, secret scanning, and both craft checkers.
+- Slice 3 Red Team blocked candidate `5c461e2` on missing internal sessions, cross-instrument relabeling, timezone embargo bypass, float money, empty authority identity, ignored quotes, and silent universe deduplication. All seven now have failing-first regressions and local repairs.
+- The post-repair exact gate passes 205 repository tests at 88.53% coverage, 41 focused tests, strict Mypy across 75 files, Ruff, vulture, zero secret candidates, and both craft checkers.
 
 ## Founder overrides
 
@@ -59,4 +61,4 @@ None.
 
 ## Next action
 
-Commit the stable Slice 3 candidate and obtain independent Red Team review.
+Freeze the Slice 3 repair revision, obtain an independent Red Team recheck, then run clean-state verification.

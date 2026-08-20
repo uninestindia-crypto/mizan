@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
+from urllib.parse import urlsplit
 
 from quant_system.data.market_data import AuthorityReference, CalendarReference
 from quant_system.data.market_data_evidence import canonical_sha256, utc_text
@@ -39,9 +40,14 @@ class SessionCalendarV1:
     def __post_init__(self) -> None:
         if not self.sessions:
             raise ValueError("session calendar cannot be empty")
+        _require_identifier(self.reference.calendar_id, "calendar_id")
+        _require_identifier(self.reference.version, "calendar version")
         dates = tuple(session.exchange_date for session in self.sessions)
         if tuple(sorted(set(dates))) != dates:
             raise ValueError("session calendar dates must be unique and strictly ascending")
+        for previous, current in zip(self.sessions[:-1], self.sessions[1:], strict=True):
+            if previous.close_at >= current.open_at:
+                raise ValueError("session calendar instants must be unique and strictly ascending")
         expected_hash = canonical_sha256(_calendar_payload(self.reference, self.sessions))
         if self.reference.content_hash != expected_hash:
             raise ValueError("session calendar content hash does not match its sessions")
@@ -80,8 +86,11 @@ class HistoricalUniverseSnapshotV1:
     provider_instrument_ids: tuple[str, ...]
 
     def __post_init__(self) -> None:
+        validate_authority_reference(self.authority, field_name="universe authority")
         if not self.provider_instrument_ids:
             raise ValueError("historical universe cannot be empty")
+        if any(not member or len(member) > 256 for member in self.provider_instrument_ids):
+            raise ValueError("historical universe members must be non-empty bounded strings")
         if tuple(sorted(set(self.provider_instrument_ids))) != self.provider_instrument_ids:
             raise ValueError("historical universe members must be unique and sorted")
         if self.authority.content_hash != canonical_sha256(self._unsigned_payload()):
@@ -99,7 +108,9 @@ class HistoricalUniverseSnapshotV1:
         version: str,
         provider_instrument_ids: tuple[str, ...],
     ) -> HistoricalUniverseSnapshotV1:
-        members = tuple(sorted(set(provider_instrument_ids)))
+        if len(set(provider_instrument_ids)) != len(provider_instrument_ids):
+            raise ValueError("historical universe members must be unique")
+        members = tuple(sorted(provider_instrument_ids))
         unsigned_authority = AuthorityReference(
             authority_id=authority_id,
             source_url=source_url,
@@ -150,6 +161,28 @@ def authority_is_effective(authority: AuthorityReference, exchange_date: date) -
     return _authority_is_effective(authority, exchange_date)
 
 
+def validate_authority_reference(
+    authority: AuthorityReference,
+    *,
+    field_name: str = "authority",
+) -> None:
+    """Reject authority references that cannot be independently reconstructed."""
+    _require_identifier(authority.authority_id, f"{field_name} id")
+    _require_identifier(authority.version, f"{field_name} version")
+    parsed = urlsplit(authority.source_url)
+    if (
+        parsed.scheme != "https"
+        or not parsed.hostname
+        or parsed.username is not None
+        or parsed.password is not None
+    ):
+        raise ValueError(f"{field_name} source_url must be a reconstructable HTTPS location")
+    if len(authority.source_url) > 2048:
+        raise ValueError(f"{field_name} source_url is too long")
+    if authority.effective_to is not None and authority.effective_to < authority.effective_from:
+        raise ValueError(f"{field_name} effective range is invalid")
+
+
 def _authority_is_effective(authority: AuthorityReference, exchange_date: date) -> bool:
     if authority.publication_date >= exchange_date or authority.effective_from > exchange_date:
         return False
@@ -172,3 +205,8 @@ def _calendar_payload(
 def _require_aware(value: datetime, field_name: str) -> None:
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError(f"{field_name} must be timezone-aware")
+
+
+def _require_identifier(value: str, field_name: str) -> None:
+    if not value or value != value.strip() or len(value) > 128:
+        raise ValueError(f"{field_name} must be a non-empty bounded identifier")

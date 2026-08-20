@@ -100,6 +100,39 @@ def test_missing_authority_blocks_governed_feature_construction(
     assert captured.value.code == expected_code
 
 
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value"),
+    [
+        ("authority_id", ""),
+        ("source_url", ""),
+        ("version", ""),
+    ],
+)
+# test-allow: no-assertion - checker cannot parse this multiline parametrized signature.
+def test_invalid_corporate_authority_identity_fails_closed(
+    field_name: str,
+    invalid_value: str,
+) -> None:
+    calendar = governed_calendar(26)
+    universe = governed_universe()
+    acquisition = governed_acquisition(count=26, calendar=calendar, universe=universe)
+    authority = acquisition.manifest.corporate_action_authority
+    assert authority is not None
+    if field_name == "authority_id":
+        invalid_authority = replace(authority, authority_id=invalid_value)
+    elif field_name == "source_url":
+        invalid_authority = replace(authority, source_url=invalid_value)
+    else:
+        invalid_authority = replace(authority, version=invalid_value)
+    manifest = replace(acquisition.manifest, corporate_action_authority=invalid_authority)
+    acquisition = _replace_manifest_identity(acquisition, manifest)
+
+    with pytest.raises(ModelingError) as captured:
+        build_feature_dataset(acquisition, "cand_ridge_v1", calendar, universe)
+
+    assert captured.value.code == ModelingFailureCode.CORPORATE_ACTION_AUTHORITY_INVALID
+
+
 def test_instrument_not_in_effective_historical_universe_is_rejected() -> None:
     calendar = governed_calendar(26)
     excluded = governed_universe(members=("NSE_EQ|INE467B01029",))
@@ -199,6 +232,64 @@ def test_same_day_date_only_authority_is_ambiguous_and_fails_closed() -> None:
         )
 
     assert captured.value.code == ModelingFailureCode.UNIVERSE_AUTHORITY_NOT_EFFECTIVE
+
+
+@pytest.mark.parametrize(
+    ("authority_id", "source_url", "version"),
+    [
+        ("", "https://example.test/nse/universe", "2025-v1"),
+        ("nifty-history", "", "2025-v1"),
+        ("nifty-history", "https://example.test/nse/universe", ""),
+    ],
+)
+# test-allow: no-assertion - checker cannot parse this multiline parametrized signature.
+def test_empty_universe_authority_identity_is_rejected(
+    authority_id: str,
+    source_url: str,
+    version: str,
+) -> None:
+    from datetime import date
+
+    from quant_system.modeling import HistoricalUniverseSnapshotV1
+
+    with pytest.raises(ValueError, match="authority|source|version"):
+        HistoricalUniverseSnapshotV1.create(
+            authority_id=authority_id,
+            source_url=source_url,
+            publication_date=date(2024, 12, 20),
+            effective_from=date(2025, 1, 1),
+            effective_to=date(2025, 12, 31),
+            version=version,
+            provider_instrument_ids=(INSTRUMENT_KEY,),
+        )
+
+
+def test_universe_factory_rejects_duplicate_members_instead_of_silently_repairing() -> None:
+    from datetime import date
+
+    from quant_system.modeling import HistoricalUniverseSnapshotV1
+
+    with pytest.raises(ValueError, match="unique"):
+        HistoricalUniverseSnapshotV1.create(
+            authority_id="nifty-history",
+            source_url="https://example.test/nse/universe",
+            publication_date=date(2024, 12, 20),
+            effective_from=date(2025, 1, 1),
+            effective_to=date(2025, 12, 31),
+            version="2025-v1",
+            provider_instrument_ids=(INSTRUMENT_KEY, INSTRUMENT_KEY),
+        )
+
+
+def test_empty_calendar_identity_is_rejected() -> None:
+    from quant_system.modeling import SessionCalendarV1
+
+    sessions = governed_calendar(26).sessions
+
+    with pytest.raises(ValueError, match="calendar_id"):
+        SessionCalendarV1.create("", "2025-v1", sessions)
+    with pytest.raises(ValueError, match="version"):
+        SessionCalendarV1.create("nse-cash", "", sessions)
 
 
 def test_feature_hash_and_decimal_text_ignore_process_decimal_context() -> None:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -147,3 +148,39 @@ def test_partition_revalidates_label_session_chronology() -> None:
         )
 
     assert captured.value.code == ModelingFailureCode.PARTITION_INVALID
+
+
+def test_timezone_representation_cannot_bypass_session_embargo(  # test-allow: loop-in-test - fixture guarantees the embargo target exists.
+) -> None:
+    calendar = governed_calendar(35)
+    universe = governed_universe()
+    acquisition = governed_acquisition(count=35, calendar=calendar, universe=universe)
+    features = build_feature_dataset(acquisition, "cand_ridge_v1", calendar, universe)
+    labels = build_label_dataset(
+        features,
+        acquisition,
+        calendar,
+        round_trip_cost_quotes(acquisition, calendar, cost=Decimal("0.1")),
+    )
+    utc_minus_twelve = timezone(-timedelta(hours=12))
+    shifted_rows = tuple(
+        replace(
+            row,
+            decision_at=row.decision_at.astimezone(utc_minus_twelve),
+            order_at=row.order_at.astimezone(utc_minus_twelve),
+        )
+        for row in labels.rows
+    )
+
+    fold = build_purged_fold(
+        shifted_rows,
+        fold_id="fold_001",
+        ordinal=1,
+        validation_start=calendar.sessions[28].close_at,
+        validation_end=calendar.sessions[29].close_at,
+        calendar=calendar,
+        embargo_sessions=2,
+    )
+
+    assert len(fold.train_rows) == 6
+    assert len(fold.embargoed_record_keys) == 1

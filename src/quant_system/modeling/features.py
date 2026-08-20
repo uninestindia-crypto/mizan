@@ -17,6 +17,7 @@ from quant_system.modeling.authorities import (
     HistoricalUniverseSnapshotV1,
     SessionCalendarV1,
     authority_is_effective,
+    validate_authority_reference,
 )
 from quant_system.modeling.errors import ModelingError, ModelingFailureCode
 from quant_system.modeling.rows import (
@@ -111,6 +112,16 @@ def _validate_governed_inputs(
             ModelingFailureCode.CORPORATE_ACTION_AUTHORITY_MISSING,
             "dataset has no corporate-action authority",
         )
+    try:
+        validate_authority_reference(
+            manifest.corporate_action_authority,
+            field_name="corporate-action authority",
+        )
+    except ValueError as error:
+        raise ModelingError(
+            ModelingFailureCode.CORPORATE_ACTION_AUTHORITY_INVALID,
+            str(error),
+        ) from error
     if manifest.historical_universe_authority is None:
         raise ModelingError(
             ModelingFailureCode.UNIVERSE_AUTHORITY_MISSING,
@@ -127,6 +138,7 @@ def _validate_governed_inputs(
             f"instrument is absent from historical universe: {manifest.provider_instrument_id}",
         )
     _validate_record_order(acquisition.records)
+    _validate_complete_calendar_coverage(acquisition, calendar)
     _validate_session_and_authority_coverage(acquisition, calendar, universe)
 
 
@@ -147,6 +159,35 @@ def _first_nonascending_record(records: tuple[PointInTimeBar, ...]) -> PointInTi
         if current.exchange_date <= previous.exchange_date:
             return current
     raise AssertionError("nonascending record must exist")
+
+
+def _validate_complete_calendar_coverage(
+    acquisition: HistoricalAcquisition,
+    calendar: SessionCalendarV1,
+) -> None:
+    manifest = acquisition.manifest
+    expected_dates = tuple(
+        session.exchange_date
+        for session in calendar.sessions
+        if manifest.requested_start <= session.exchange_date <= manifest.requested_end
+    )
+    observed_dates = tuple(record.exchange_date for record in acquisition.records)
+    missing_dates = tuple(sorted(set(expected_dates) - set(observed_dates)))
+    if missing_dates:
+        missing = missing_dates[0]
+        raise ModelingError(
+            ModelingFailureCode.CALENDAR_SESSION_MISSING,
+            f"complete acquisition is missing calendar session {missing.isoformat()}",
+            offending_record_key=f"missing_session={missing.isoformat()}",
+        )
+    unexpected_dates = tuple(sorted(set(observed_dates) - set(expected_dates)))
+    if unexpected_dates:
+        unexpected = unexpected_dates[0]
+        raise ModelingError(
+            ModelingFailureCode.CALENDAR_AUTHORITY_MISMATCH,
+            f"complete acquisition contains unexpected session {unexpected.isoformat()}",
+            offending_record_key=f"unexpected_session={unexpected.isoformat()}",
+        )
 
 
 def _validate_session_and_authority_coverage(

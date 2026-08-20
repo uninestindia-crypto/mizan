@@ -38,8 +38,8 @@ def build_purged_fold(
             ModelingFailureCode.CALENDAR_AUTHORITY_MISMATCH,
             "validation start must be an exchange-session close",
         )
-    embargo_dates = {
-        session.exchange_date
+    embargo_closes = {
+        session.close_at
         for session in calendar.sessions[
             max(0, validation_ordinal - embargo_sessions) : validation_ordinal
         ]
@@ -51,7 +51,7 @@ def build_purged_fold(
     purged = tuple(row for row in candidates if row.exit_at >= validation_start)
     purge_keys = {row.record_key for row in purged}
     after_purge = tuple(row for row in candidates if row.record_key not in purge_keys)
-    embargoed = tuple(row for row in after_purge if row.decision_at.date() in embargo_dates)
+    embargoed = tuple(row for row in after_purge if row.decision_at in embargo_closes)
     embargo_keys = {row.record_key for row in embargoed}
     train_rows = tuple(row for row in after_purge if row.record_key not in embargo_keys)
     if not train_rows or not validation_rows:

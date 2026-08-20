@@ -1,5 +1,7 @@
 """Closed canonical row and derived-dataset contracts for governed modeling."""
 
+# craft-allow: god-file - row schemas and their canonical identity checks are one contract.
+
 from __future__ import annotations
 
 import re
@@ -292,13 +294,22 @@ class LabelDatasetV1:
         }
 
 
-def require_feature_dataset_identity(dataset: FeatureDatasetV1) -> None:
+def require_feature_dataset_identity(  # craft-allow: deep-nesting - each row must bind authority.
+    dataset: FeatureDatasetV1,
+) -> None:
     _require_derived_rows(
         dataset.rows,
         candidate_id=dataset.candidate_id,
         source_dataset_id=dataset.source_dataset_id,
         source_dataset_hash=dataset.source_dataset_hash,
     )
+    for row in dataset.rows:
+        if row.universe_authority_hash != dataset.universe_authority_hash:
+            raise ModelingError(
+                ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+                "feature row universe authority does not match its dataset",
+                offending_record_key=row.record_key,
+            )
     unsigned_metadata = dataset.metadata_dict()
     unsigned_metadata.pop("dataset_id")
     unsigned_metadata.pop("dataset_hash")
@@ -402,6 +413,8 @@ def _canonical_decimal(
     *,
     nonnegative: bool = False,
 ) -> str:
+    if not isinstance(value, (Decimal, str)):
+        raise TypeError(f"{field_name} must be Decimal or string")
     try:
         parsed = value if isinstance(value, Decimal) else Decimal(value)
     except InvalidOperation as error:
@@ -427,6 +440,8 @@ def _closed_money_map(value: Mapping[str, MoneyV1]) -> Mapping[str, MoneyV1]:
 
 
 def _positive_decimal(value: Decimal, field_name: str) -> None:
+    if not isinstance(value, Decimal):
+        raise TypeError(f"{field_name} must be Decimal")
     if not value.is_finite() or value <= 0:
         raise ValueError(f"{field_name} must be finite and positive")
 

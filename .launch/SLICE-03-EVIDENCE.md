@@ -1,6 +1,6 @@
 # Slice 03 Evidence — Executable Point-in-Time Labels
 
-STATUS: CANDIDATE — local gate PASS; Red Team and clean-state verification pending
+STATUS: CANDIDATE - Red Team repairs pass locally; independent recheck and verification pending
 DATE: 2026-08-20
 
 ## Outcome
@@ -18,6 +18,8 @@ of financial truth.
 ## Contracts proved
 
 - Content-bound `SessionCalendarV1` and `HistoricalUniverseSnapshotV1` dependencies.
+- Non-empty calendar/authority identities, reconstructable HTTPS provenance, strict effective
+  ranges, and duplicate-free universe membership.
 - Governed input requires complete accepted acquisition, matching calendar, corporate-action
   authority, effective historical-universe authority, and eligible instrument membership.
 - Date-only authority published on the decision date fails closed because intraday availability is
@@ -29,6 +31,8 @@ of financial truth.
   close-time decision.
 - Entry is the first eligible next-session open; exit is the following eligible open. Missing
   internal opens and missing/duplicate/mismatched cost quotes fail closed.
+- A `COMPLETE` acquisition must contain every content-bound calendar session in its requested
+  range, and every supplied cost quote must be consumed exactly once.
 - Gross and net returns are stored as canonical decimal strings. `UP` is permitted only for stored
   `net_return > 0`; zero and negative are `DOWN`.
 - Cost amounts, rule IDs, rule-set hash, fill chronology, prices, quantity, and execution-contract
@@ -37,6 +41,8 @@ of financial truth.
   order, and consumed cost-quote hashes.
 - Fold evidence records exact train/validation hashes, class balance, purge/embargo periods, counts,
   and every removed record key.
+- Instrument identity is rebound to the source acquisition before labeling; embargo membership is
+  invariant to timezone representation; float money is rejected.
 
 ## Demo evidence
 
@@ -56,21 +62,23 @@ historical market values.
 
 | Gate | Current evidence |
 |---|---|
-| Focused Slice 3 suite | PASS — 30 tests |
+| Focused Slice 3 suite | PASS - 41 tests |
 | Slice 3 package coverage | PASS — 87% |
 | Strict Mypy | PASS — 75 source files |
 | Ruff lint | PASS |
 | Code Craft | PASS — 10 Slice 3 source files |
 | Test Craft | PASS — 5 Slice 3 test/support files |
 | Mutation checks | PASS — three dangerous mutations killed and restored |
-| Repository gate | PASS — 194 tests, 88.59% coverage |
+| Repository gate | PASS - 205 tests, 88.53% coverage |
 | Ruff format | PASS — 163 files |
 | Dead-code scan | PASS — zero findings at >=80% confidence |
 | Application secret scan | PASS — zero candidates |
-| Red Team | PENDING |
+| Red Team | INITIAL BLOCKED - all seven findings repaired; recheck pending |
 | Independent clean-state Verifier | PENDING |
 
 Raw mutation evidence is in `.launch/reports/MUTATION-SLICE-03.md`.
+The complete initial adversarial report and repair dispositions are in
+`.launch/reports/RED-TEAM-SLICE-03.md`.
 
 The first gate attempt exposed and then repaired a forward-slash-only secret-scan exclusion in the
 new script. The second attempt proved all substantive gates but found one Test Craft parser

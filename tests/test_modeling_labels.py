@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -23,6 +24,7 @@ from quant_system.modeling import (
     draft_from_feature_dataset,
     draft_from_label_dataset,
 )
+from quant_system.modeling.rows import FEATURE_ROW_SCHEMA, derived_dataset_hash
 from tests.modeling_fixtures import (
     governed_acquisition,
     governed_calendar,
@@ -150,6 +152,29 @@ def test_missing_and_duplicate_cost_quotes_fail_closed() -> None:
     assert duplicate.value.code == ModelingFailureCode.COST_QUOTE_MISMATCH
 
 
+def test_unused_mismatched_cost_quote_is_rejected() -> None:
+    calendar, _, acquisition, features = _feature_inputs(26)
+    quotes = round_trip_cost_quotes(acquisition, calendar, cost=Decimal("0.1"))
+    unrelated = RoundTripCostQuoteV1(
+        provider_instrument_id="NSE_EQ|INE467B01029",
+        symbol="TCS",
+        entry_at=calendar.sessions[0].open_at,
+        exit_at=calendar.sessions[1].open_at,
+        entry_price=Decimal("100"),
+        exit_price=Decimal("101"),
+        quantity=1,
+        component_costs={"all_in": MoneyV1(Decimal("0.1"), "INR")},
+        cost_rule_ids=("nse-test-v1",),
+        cost_rule_set_hash="f" * 64,
+        execution_contract_version="next-open-v1",
+    )
+
+    with pytest.raises(ModelingError) as captured:
+        build_label_dataset(features, acquisition, calendar, (*quotes, unrelated))
+
+    assert captured.value.code == ModelingFailureCode.COST_QUOTE_MISMATCH
+
+
 def test_cost_rule_set_hash_changes_derived_identity_even_when_amounts_match() -> None:
     calendar, _, acquisition, features = _feature_inputs(26)
     original_quotes = round_trip_cost_quotes(acquisition, calendar, cost=Decimal("0.1"))
@@ -168,6 +193,41 @@ def test_nonfinite_or_negative_cost_money_is_rejected() -> None:
         MoneyV1(Decimal("NaN"), "INR")
     with pytest.raises(ValueError, match="negative"):
         MoneyV1(Decimal("-0.01"), "INR")
+    with pytest.raises(TypeError, match="Decimal|string"):
+        MoneyV1(0.1, "INR")  # type: ignore[arg-type]
+
+
+def test_rehashed_feature_instrument_swap_cannot_relabel_another_asset(  # test-allow: loop-in-test - fixture always creates governed feature rows.
+) -> None:
+    calendar, _, acquisition, features = _feature_inputs(26)
+    swapped_rows = tuple(
+        replace(
+            row,
+            provider_instrument_id="NSE_EQ|INE467B01029",
+            symbol="TCS",
+        )
+        for row in features.rows
+    )
+    unsigned_metadata = features.metadata_dict()
+    unsigned_metadata.pop("dataset_id")
+    unsigned_metadata.pop("dataset_hash")
+    swapped_hash = derived_dataset_hash(FEATURE_ROW_SCHEMA, unsigned_metadata, swapped_rows)
+    swapped = replace(
+        features,
+        dataset_id=f"dset_{swapped_hash[:24]}",
+        dataset_hash=swapped_hash,
+        rows=swapped_rows,
+    )
+
+    with pytest.raises(ModelingError) as captured:
+        build_label_dataset(
+            swapped,
+            acquisition,
+            calendar,
+            round_trip_cost_quotes(acquisition, calendar, cost=Decimal("0.1")),
+        )
+
+    assert captured.value.code == ModelingFailureCode.DATASET_INTEGRITY_INVALID
 
 
 def test_missing_internal_session_open_fails_closed() -> None:
@@ -179,12 +239,10 @@ def test_missing_internal_session_open_fails_closed() -> None:
         universe=universe,
         omitted_source_indexes=frozenset({21}),
     )
-    features = build_feature_dataset(acquisition, "cand_ridge_v1", calendar, universe)
-
     with pytest.raises(ModelingError) as captured:
-        build_label_dataset(features, acquisition, calendar, ())
+        build_feature_dataset(acquisition, "cand_ridge_v1", calendar, universe)
 
-    assert captured.value.code == ModelingFailureCode.ELIGIBLE_OPEN_MISSING
+    assert captured.value.code == ModelingFailureCode.CALENDAR_SESSION_MISSING
     assert calendar.sessions[21].exchange_date.isoformat() in str(captured.value)
 
 
