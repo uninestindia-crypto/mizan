@@ -70,7 +70,7 @@ historical market values.
 | Test Craft | PASS — 5 Slice 3 test/support files |
 | Mutation checks | PASS — three dangerous mutations killed and restored |
 | Repository gate | PASS - 205 tests, 88.53% coverage |
-| Ruff format | PASS — 163 files |
+| Ruff format | PASS — 164 files |
 | Dead-code scan | PASS — zero findings at >=80% confidence |
 | Application secret scan | PASS — zero candidates |
 | Red Team | INITIAL BLOCKED - all seven findings repaired; recheck pending |

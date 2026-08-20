@@ -1,0 +1,14 @@
+interface:
+  display_name: Deep Product QA
+  short_description: Exhaustive consumer and functional product QA
+  default_prompt: Use $deep-product-qa to audit this completed codebase, report verified
+    coverage, then fix and retest after approval.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

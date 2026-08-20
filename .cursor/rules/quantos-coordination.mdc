@@ -1,0 +1,10 @@
+---
+description: Required QuantOS cross-agent coordination, ownership, and handoff protocol
+alwaysApply: true
+---
+
+Read and follow @AGENTS.md, @agent_context/README.md, @agent_context/CURRENT.md, and
+@agent_context/PROTOCOL.md before planning or editing. Inspect all active work records and Git
+status, create a unique path claim, preserve other agents' changes, and leave a completed record or
+handoff when stopping.
+
