@@ -10,7 +10,7 @@ G0 passed 2026-08-20 · G1 passed 2026-08-20 · G2 passed 2026-08-20 · G3 passe
 
 ## Blocked on
 
-Nothing for the active build sequence. Slice 1 passed Red Team and independent clean-clone verification. Missing live credentials do not block the approved typed-failure boundary.
+Nothing for the active build sequence. Slice 1 passed Red Team and independent clean-clone verification. Slice 2 passed Red Team and awaits clean-clone verification. Missing live credentials do not block the approved typed-failure boundary.
 
 ## Open Blockers/Majors
 
@@ -43,6 +43,10 @@ Nothing for the active build sequence. Slice 1 passed Red Team and independent c
 - Proved a fresh `uv sync --frozen --extra dev` environment and 106 tests at 88.97% coverage.
 - Initialized local `main`, excluded generated/sensitive state, and created baseline revision `d10886b`.
 - Independent Verifier passed Slice 1 from a fresh clone of clean revision `37ccf12`; 106 tests, 88.97% coverage, and every committed Slice 1 gate reproduced.
+- Implemented Slice 2 canonical content-addressed evidence, verified published-byte readback, atomic active references, deterministic index rebuild, bounded recovery, and the governed Slice 1 dataset adapter.
+- Killed both publication-marker and active-pointer integrity mutations; both targeted tests failed red and passed after restoration.
+- Red Team reproduced one Major Windows restart defect: exited workers could remain queryable and be misclassified as live. Requiring `STILL_ACTIVE` repaired all six real process-kill phases.
+- Passed 164 repository tests at 88.69% coverage, strict Mypy across 66 source files, Ruff, Code Craft, Test Craft, vulture, and an application secret scan before clean-clone handoff.
 
 ## Founder overrides
 
@@ -50,4 +54,4 @@ None.
 
 ## Next action
 
-Begin Slice 2: immutable content-addressed evidence publication, crash recovery, corruption rejection, and replay.
+Commit the Slice 2 candidate and obtain independent clean-clone verification.

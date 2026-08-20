@@ -65,3 +65,25 @@ vulture: 0 findings at >=80% confidence
 Slice 1 Code Craft: 6 files clean
 Slice 1 Test Craft: 2 files clean
 ```
+
+## Current Slice 2 gate
+
+Run from the repository root against either the normal or a frozen verification environment:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run-slice2-gates.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run-slice2-gates.ps1 -PythonEnvironment tmp/verify-slice2
+```
+
+Latest pre-handoff result:
+
+```text
+pytest: 164 passed, 1 dependency warning
+coverage: 4086 statements, 462 missed, 88.69%
+ruff lint and format: clean; 126 files formatted
+mypy: 66 source files clean
+vulture: 0 findings at >=80% confidence
+detect-secrets: 0 application candidates (separate non-TTY rerun after a TTY-only scanner stall)
+Slice 2 Code Craft: 9 files clean
+Slice 2 Test Craft: 3 files clean
+```

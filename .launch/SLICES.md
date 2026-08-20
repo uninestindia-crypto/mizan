@@ -8,7 +8,7 @@ RULE: Each slice is independently demoable and scoped to one focused engineering
 | Slice | Status | Evidence |
 |---:|---|---|
 | 1 | PASS | Red Team PASS; Verifier PASS from clean clone `37ccf12`; `.launch/SLICE-01-EVIDENCE.md` |
-| 2 | NEXT | Immutable evidence and recovery |
+| 2 | CANDIDATE | Red Team PASS; independent clean-clone verification pending |
 
 ## Risk order
 
