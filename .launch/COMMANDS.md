@@ -103,7 +103,7 @@ Latest pre-handoff result:
 pytest: 208 passed, 1 dependency warning
 coverage: 4862 statements, 555 missed, 88.58%
 focused Slice 3 suite: 41 passed
-ruff lint and format: clean; 174 files formatted in the independent clean clone
+ruff lint and format: expected 176 files after pre-creating the final verifier artifact; recheck pending
 mypy: 75 source files clean
 vulture: 0 findings at >=80% confidence
 detect-secrets: 0 application candidates

@@ -32,3 +32,24 @@ from the counts written in the launch documents. The following revision corrects
 makes no claim that the whole earlier revision range was documentation-only.
 
 VERDICT: BLOCKED pending one exact clean-state recheck of the corrected evidence revision.
+
+## Attempt 4 addendum - revision `a67a392`
+
+All substantive gates remained green and `d29e4aa..a67a392` was proven to contain only five
+launch-evidence files. The exact clone reported one newly traversed input because this third
+verifier artifact itself had been added:
+
+```text
+Ruff format: 175 files already formatted
+repository tests: 208 passed
+coverage: 4,862 statements / 555 missed / 88.58%
+focused Slice 3 tests: 41 passed
+13 repaired adversarial cases: passed
+four mutation guards: passed
+provider replay hashes: exact and repeatable
+final clone: exact and clean
+```
+
+Attempt 4 remained BLOCKED only because the launch table still named 174 formatted inputs. The
+final verifier artifact is pre-created before the next gate so no new file will be added after the
+stable enumeration is measured.

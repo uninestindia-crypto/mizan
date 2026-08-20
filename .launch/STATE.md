@@ -53,7 +53,7 @@ Nothing for the active build sequence. Slices 1 and 2 passed Red Team and indepe
 - Built the Slice 3 candidate: content-bound point-in-time authorities, exact six-feature Decimal rows, next-open-to-following-open net-cost labels, immutable derived datasets, and purged/embargoed fold evidence.
 - Killed and restored leakage, zero-label, and shortened-embargo mutations; the exact candidate gate passes 194 tests at 88.59% coverage, 30 focused cases, strict Mypy, Ruff, vulture, secret scanning, and both craft checkers.
 - Slice 3 Red Team blocked candidate `5c461e2` on missing internal sessions, cross-instrument relabeling, timezone embargo bypass, float money, empty authority identity, ignored quotes, and silent universe deduplication. All seven now have failing-first regressions and local repairs.
-- The current exact certification gate passes 208 repository tests at 88.58% coverage, 41 focused tests, strict Mypy across 75 files, 174 Ruff-formatted files, vulture, zero secret candidates, and both craft checkers.
+- The current exact certification gate passes 208 repository tests at 88.58% coverage, 41 focused tests, strict Mypy across 75 files, vulture, zero secret candidates, and both craft checkers. The stable final artifact set is expected to enumerate 176 Ruff-formatted inputs; exact recheck is pending.
 - Independent Red Team recheck passed exact repair revision `be9da7f`: all seven original findings and six additional malformed corporate-authority variants fail closed, with no unresolved Blocker or Major.
 
 ## Founder overrides
