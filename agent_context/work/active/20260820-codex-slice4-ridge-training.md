@@ -17,6 +17,7 @@ metrics, multiplicity accounting, and reproducible hashes.
 ## Owned paths
 
 - `src/quant_system/modeling/trials.py`
+- `src/quant_system/modeling/persisted_trials.py`
 - `src/quant_system/modeling/preprocessing.py`
 - `src/quant_system/modeling/ridge.py`
 - `src/quant_system/modeling/validation.py`
@@ -24,6 +25,7 @@ metrics, multiplicity accounting, and reproducible hashes.
 - `src/quant_system/modeling/training_evidence.py`
 - `src/quant_system/modeling/errors.py`
 - `src/quant_system/modeling/__init__.py`
+- `src/quant_system/evidence/store.py`
 - `tests/modeling_training_fixtures.py`
 - `tests/test_modeling_preprocessing.py`
 - `tests/test_modeling_ridge.py`

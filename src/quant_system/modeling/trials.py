@@ -288,26 +288,6 @@ def _validate_registry_starts(starts: tuple[RidgeTrialStartV1, ...]) -> None:
             ModelingFailureCode.MULTIPLICITY_INVALID,
             "trial starts must use contiguous multiplicity order starting at one",
         )
-    if len({_search_identity(start) for start in starts}) != 1:
-        raise ModelingError(
-            ModelingFailureCode.MULTIPLICITY_INVALID,
-            "one trial registry cannot mix governed search identities",
-        )
-
-
-def _search_identity(start: RidgeTrialStartV1) -> tuple[Any, ...]:
-    return (
-        start.candidate_id,
-        start.dataset_id,
-        start.dataset_hash,
-        start.universe_policy_hash,
-        start.fold_spec_hashes,
-        start.model_family,
-        start.model_contract_version,
-        start.feature_schema_id,
-        start.feature_schema_version,
-        start.label_contract_version,
-    )
 
 
 def _validate_registered_outcome(

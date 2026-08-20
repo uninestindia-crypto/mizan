@@ -14,11 +14,14 @@ from quant_system.evidence import (
 )
 from quant_system.modeling.errors import ModelingError, ModelingFailureCode
 from quant_system.modeling.folds import PartitionedFoldV1
+from quant_system.modeling.persisted_trials import (
+    load_persisted_trial_registry,
+    require_next_persisted_trial,
+)
 from quant_system.modeling.rows import FeatureDatasetV1, LabelDatasetV1
 from quant_system.modeling.trials import (
     RidgeTrialStartV1,
     TrialOutcomeV1,
-    TrialRegistryV1,
     TrialState,
     succeeded_outcome,
     unsuccessful_outcome,
@@ -129,7 +132,6 @@ def run_persisted_ridge_trial(
     *,
     operation_id: str,
     start: RidgeTrialStartV1,
-    registry: TrialRegistryV1,
     feature_dataset: FeatureDatasetV1,
     label_dataset: LabelDatasetV1,
     fold: PartitionedFoldV1,
@@ -146,6 +148,7 @@ def run_persisted_ridge_trial(
     start_commit = store.commit(
         draft_from_trial_start(start),
         operation_id=f"{operation_id}-start",
+        precondition=lambda: require_next_persisted_trial(store, start),
     )
     if start_commit.deduplicated:
         raise ModelingError(
@@ -153,6 +156,7 @@ def run_persisted_ridge_trial(
             "trial start already exists; a new attempt requires a new trial ID and ordinal",
         )
     try:
+        registry = load_persisted_trial_registry(store)
         evaluation = evaluate_governed_ridge_fold(
             start,
             registry,

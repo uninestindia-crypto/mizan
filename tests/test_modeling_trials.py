@@ -8,7 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from quant_system.evidence import EvidenceResourceType, EvidenceStore, EvidenceStoreConfig
+from quant_system.evidence import (
+    EvidenceNotFound,
+    EvidenceResourceType,
+    EvidenceStore,
+    EvidenceStoreConfig,
+)
 from quant_system.modeling import (
     ModelingError,
     ModelingFailureCode,
@@ -137,7 +142,7 @@ def test_trial_parameters_reject_zero_noncanonical_and_nonfixed_seed() -> None:
     assert nonfixed_seed.value.code == ModelingFailureCode.TRIAL_INVALID
 
 
-def test_registry_rejects_mixed_governed_search_identity() -> None:
+def test_registry_counts_prior_trials_across_governed_search_identities() -> None:
     first = governed_training_journey().start
     mismatched = replace(
         first,
@@ -146,10 +151,9 @@ def test_registry_rejects_mixed_governed_search_identity() -> None:
         multiplicity_ordinal=2,
     )
 
-    with pytest.raises(ModelingError) as captured:
-        TrialRegistryV1(starts=(first, mismatched), outcomes=())
+    registry = TrialRegistryV1(starts=(first, mismatched), outcomes=())
 
-    assert captured.value.code == ModelingFailureCode.MULTIPLICITY_INVALID
+    assert registry.multiplicity_count == 2
 
 
 def test_persisted_success_commits_start_model_and_outcome(tmp_path: Path) -> None:
@@ -160,7 +164,6 @@ def test_persisted_success_commits_start_model_and_outcome(tmp_path: Path) -> No
         store,
         operation_id="op-slice4-success",
         start=journey.start,
-        registry=journey.registry,
         feature_dataset=journey.features,
         label_dataset=journey.labels,
         fold=journey.fold,
@@ -182,7 +185,6 @@ def test_persisted_success_commits_start_model_and_outcome(tmp_path: Path) -> No
 def test_failure_still_persists_start_and_typed_terminal_outcome(tmp_path: Path) -> None:
     journey = governed_training_journey()
     invalid = replace(journey.start, dataset_hash="f" * 64)
-    registry = TrialRegistryV1(starts=(invalid,), outcomes=())
     store = EvidenceStore(EvidenceStoreConfig(root=tmp_path / "evidence", min_free_bytes=0))
 
     with pytest.raises(ModelingError) as captured:
@@ -190,7 +192,6 @@ def test_failure_still_persists_start_and_typed_terminal_outcome(tmp_path: Path)
             store,
             operation_id="op-slice4-failure",
             start=invalid,
-            registry=registry,
             feature_dataset=journey.features,
             label_dataset=journey.labels,
             fold=journey.fold,
@@ -215,7 +216,6 @@ def test_duplicate_trial_start_never_refits_or_creates_second_outcome(tmp_path: 
         store,
         operation_id="op-slice4-duplicate",
         start=journey.start,
-        registry=journey.registry,
         feature_dataset=journey.features,
         label_dataset=journey.labels,
         fold=journey.fold,
@@ -227,7 +227,6 @@ def test_duplicate_trial_start_never_refits_or_creates_second_outcome(tmp_path: 
             store,
             operation_id="op-slice4-duplicate",
             start=journey.start,
-            registry=journey.registry,
             feature_dataset=journey.features,
             label_dataset=journey.labels,
             fold=journey.fold,
@@ -247,7 +246,6 @@ def test_persistence_rejects_terminal_time_before_trial_start(tmp_path: Path) ->
             store,
             operation_id="op-slice4-time",
             start=journey.start,
-            registry=journey.registry,
             feature_dataset=journey.features,
             label_dataset=journey.labels,
             fold=journey.fold,
@@ -255,3 +253,48 @@ def test_persistence_rejects_terminal_time_before_trial_start(tmp_path: Path) ->
         )
 
     assert captured.value.code == ModelingFailureCode.TRIAL_OUTCOME_INVALID
+
+
+def test_persisted_history_prevents_second_trial_from_resetting_multiplicity(
+    tmp_path: Path,
+) -> None:
+    first = governed_training_journey()
+    reset = governed_training_journey(trial_id="trial_ridge_002")
+    store = EvidenceStore(EvidenceStoreConfig(root=tmp_path / "evidence", min_free_bytes=0))
+    run_persisted_ridge_trial(
+        store,
+        operation_id="op-slice4-first",
+        start=first.start,
+        feature_dataset=first.features,
+        label_dataset=first.labels,
+        fold=first.fold,
+        ended_at=ENDED_AT,
+    )
+
+    with pytest.raises(ModelingError) as captured:
+        run_persisted_ridge_trial(
+            store,
+            operation_id="op-slice4-reset",
+            start=reset.start,
+            feature_dataset=reset.features,
+            label_dataset=reset.labels,
+            fold=reset.fold,
+            ended_at=ENDED_AT,
+        )
+
+    assert captured.value.code == ModelingFailureCode.MULTIPLICITY_INVALID
+    with pytest.raises(EvidenceNotFound):
+        store.open_verified(EvidenceResourceType.TRIAL, reset.start.trial_id)
+
+    legitimate = replace(reset.start, multiplicity_ordinal=2)
+    second = run_persisted_ridge_trial(
+        store,
+        operation_id="op-slice4-second",
+        start=legitimate,
+        feature_dataset=reset.features,
+        label_dataset=reset.labels,
+        fold=reset.fold,
+        ended_at=ENDED_AT,
+    )
+
+    assert second.evaluation.multiplicity_count == 2

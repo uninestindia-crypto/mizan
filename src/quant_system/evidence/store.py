@@ -50,6 +50,7 @@ from quant_system.evidence.models import (
 from quant_system.evidence.preparation import PreparedBlob, PreparedDraft, prepare_draft
 
 PhaseHook = Callable[[CommitPhase], None]
+CommitPrecondition = Callable[[], None]
 
 
 class EvidenceStore:
@@ -67,6 +68,7 @@ class EvidenceStore:
         *,
         operation_id: str,
         phase_hook: PhaseHook | None = None,
+        precondition: CommitPrecondition | None = None,
     ) -> CommitResult:
         prepared = prepare_draft(draft, self.config)
         now = aware_utc(self.config.clock())
@@ -76,6 +78,8 @@ class EvidenceStore:
             existing = self._existing_result(draft, prepared)
             if existing is not None:
                 return existing
+            if precondition is not None:
+                precondition()
             self._preflight_space(prepared)
 
             def notify(phase: CommitPhase) -> None:
@@ -120,6 +124,20 @@ class EvidenceStore:
             raise EvidenceIntegrityError("manifest identity does not match its immutable path")
         records = self._verify_blobs(manifest)
         return VerifiedEvidence(manifest=manifest, records=records)
+
+    def list_verified(self, resource_type: EvidenceResourceType) -> tuple[VerifiedEvidence, ...]:
+        """Return every immutable resource of one type or fail on any invalid catalog entry."""
+        resource_root = self.root / resource_type.value
+        reject_symlink(resource_root)
+        verified: list[VerifiedEvidence] = []
+        for resource_directory in sorted(resource_root.iterdir(), key=lambda path: path.name):
+            reject_symlink(resource_directory)
+            if not resource_directory.is_dir():
+                raise EvidenceIntegrityError(
+                    f"evidence catalog contains a non-directory entry: {resource_directory.name}"
+                )
+            verified.append(self.open_verified(resource_type, resource_directory.name))
+        return tuple(verified)
 
     def recover(self) -> RecoveryReport:
         lease_count = recover_stale_lease(
