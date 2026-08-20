@@ -10,7 +10,7 @@ G0 passed 2026-08-20 · G1 passed 2026-08-20 · G2 passed 2026-08-20 · G3 passe
 
 ## Blocked on
 
-Nothing for the active build sequence. Slice 1 passed Red Team and independent clean-clone verification. Slice 2 passed Red Team and awaits clean-clone verification. Missing live credentials do not block the approved typed-failure boundary.
+Nothing for the active build sequence. Slices 1 and 2 passed Red Team and independent clean-clone verification. Missing live credentials do not block the approved typed-failure boundary.
 
 ## Open Blockers/Majors
 
@@ -49,6 +49,7 @@ Nothing for the active build sequence. Slice 1 passed Red Team and independent c
 - Passed 164 repository tests at 88.69% coverage, strict Mypy across 66 source files, Ruff, Code Craft, Test Craft, vulture, and an application secret scan before clean-clone handoff.
 - Verifier attempt 1 at `c2596ea` proved tests, coverage, typing, craft, recovery, and reports but blocked the slice because the committed secret-scan regex did not exclude Windows backslash paths; 227 generated-environment candidates made the gate exit 1.
 - Repaired the path separator exclusion, reran the exact local gate to zero application candidates, and retained the failed attempt as immutable verification evidence.
+- Independent Verifier passed Slice 2 from fresh revision `9c2e7fe`; 164 tests, 88.69% coverage, zero application secret candidates, 58 focused cases, and all six real process-kill recoveries reproduced.
 
 ## Founder overrides
 
@@ -56,4 +57,4 @@ None.
 
 ## Next action
 
-Commit the Slice 2 candidate and obtain independent clean-clone verification.
+Begin Slice 3: executable point-in-time features, next-open labels, deterministic derived evidence, and overlap purge/embargo.

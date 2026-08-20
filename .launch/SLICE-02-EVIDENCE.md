@@ -1,6 +1,6 @@
 # Slice 02 Evidence — Immutable Evidence and Recovery
 
-STATUS: CANDIDATE — Red Team PASS; verifier attempt 1 blocked and remediated; recheck pending
+STATUS: PASS
 DATE: 2026-08-20
 
 ## Outcome
@@ -37,7 +37,7 @@ preparing the exact records for immutable publication.
 | Focused Slice 2 suite | PASS | 58 tests across three evidence test files |
 | Repository suite | PASS | 164 tests |
 | Repository coverage | PASS | 88.69%, required minimum 80% |
-| Ruff lint and format | PASS | 127 files formatted |
+| Ruff lint and format | PASS | 128 files formatted in final clean clone |
 | Strict Mypy | PASS | 66 source files |
 | Code Craft | PASS | 9 Slice 2 source files, zero findings |
 | Test Craft | PASS | 3 Slice 2 test files, zero findings |
@@ -67,5 +67,8 @@ cases pass after repair. The raw report is `.launch/reports/RED-TEAM-SLICE-02.md
 Attempt 1 at `c2596ea` proved every test/static/recovery claim but correctly returned `BLOCKED`
 because the committed secret-scan exclusion matched `/` only and scanned the generated Windows
 environment. The cross-platform separator regex is repaired and its exact gate passes locally.
-A fresh verification of the remediation revision is pending. Raw attempt evidence is stored in
-`.launch/reports/VERIFIER-SLICE-02-ATTEMPT-01.md`.
+
+The final Verifier returned `PASS` from a fresh clone of clean revision `9c2e7fe`. It installed 47
+frozen packages, ran the exact gate to exit 0, independently replayed all 58 focused cases and the
+six process-kill cases, and confirmed source/clone equality. Raw reports are stored in
+`.launch/reports/VERIFIER-SLICE-02-ATTEMPT-01.md` and `.launch/reports/VERIFIER-SLICE-02.md`.
