@@ -34,7 +34,30 @@ pip install -e ".[dev]"
 
 ---
 
-## 2. Verify Repository Health (Instant Smoke Test)
+## 2. Automated Daily Scheduled Execution
+
+QuantOS is configured for **fully automated, hands-off daily execution** across data sync, feature generation, model training, paper backtests, risk governance checks, and tearsheet generation.
+
+### Option A: Automated via GitHub Actions (Cloud — Always On)
+- **Schedule**: Triggers automatically every day at `00:00 UTC` and at `10:30 UTC` (16:00 IST, right after NSE market close).
+- **Manual Trigger**: Can be run on-demand anytime from the **Actions** tab on GitHub (`Daily QuantOS Pipeline & Training` workflow).
+- **Artifacts**: Daily tearsheets, markdown reports, and JSON summaries are automatically uploaded to GitHub Actions artifacts on every run.
+
+### Option B: Local Windows Task Scheduler (Local Host Automation)
+To schedule QuantOS to run daily at 5:00 PM on your local Windows PC:
+```powershell
+# Open PowerShell as Administrator and run:
+powershell -ExecutionPolicy Bypass -File scripts/setup_windows_scheduler.ps1 -DailyTime "17:00"
+```
+
+### Option C: Manual Daily Execution
+```bash
+uv run python scripts/daily_pipeline.py --days 252 --universe INFY TCS RELIANCE HDFCBANK ICICIBANK
+```
+
+---
+
+## 3. Verify Repository Health (Instant Smoke Test)
 
 Run the full automated test suite to ensure your environment is 100% sound:
 
@@ -42,7 +65,7 @@ Run the full automated test suite to ensure your environment is 100% sound:
 # Run pytest across the entire repository
 uv run pytest
 ```
-*Expected result: 205 passed tests with zero failures.*
+*Expected result: 208 passed tests with zero failures.*
 
 To run the exact Slice 3 quality gate (unit tests, coverage, strict Mypy, Ruff, dead-code, and secret scan):
 ```powershell
@@ -51,7 +74,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run-slice3-gates.ps1
 
 ---
 
-## 3. Current Project State & Release Slices
+## 4. Current Project State & Release Slices
 
 QuantOS is built using rigorous, risk-ordered vertical slices under `.launch/`:
 
@@ -59,7 +82,7 @@ QuantOS is built using rigorous, risk-ordered vertical slices under `.launch/`:
 |:---:|---|:---:|---|
 | **Slice 1** | Real Point-in-Time Acquisition (Upstox V3) | ✅ **PASS** | `.launch/SLICE-01-EVIDENCE.md` |
 | **Slice 2** | Canonical Content-Addressed Evidence Store | ✅ **PASS** | `.launch/SLICE-02-EVIDENCE.md` |
-| **Slice 3** | Executable Point-in-Time Features & Labels | 🟡 **CANDIDATE** (205 tests passing, Red Team remediations committed) | `.launch/SLICE-03-EVIDENCE.md` |
+| **Slice 3** | Executable Point-in-Time Features & Labels | 🟡 **CANDIDATE** (208 tests passing, Red Team remediations committed) | `.launch/SLICE-03-EVIDENCE.md` |
 | **Slice 4** | One Governed Ridge Fold & Preprocessing | ⏳ **NEXT UP** | `.launch/SLICES.md` |
 | **Slice 5–12** | Holdout/Promotion, API/UI, Financial Research, Shadow Replay, Paper Pilot, Desktop | 📋 Planned | `.launch/SLICES.md` |
 
@@ -67,7 +90,7 @@ QuantOS is built using rigorous, risk-ordered vertical slices under `.launch/`:
 
 ---
 
-## 4. Multi-Agent & Cross-Tool Protocol
+## 5. Multi-Agent & Cross-Tool Protocol
 
 This repository is designed for concurrent multi-agent collaboration (Codex, Claude Code, Cursor, Antigravity, Human).
 
@@ -79,7 +102,7 @@ This repository is designed for concurrent multi-agent collaboration (Codex, Cla
 
 ---
 
-## 5. Where to Pick Up Next
+## 6. Where to Pick Up Next
 
 1. **Review Context**: Read [`agent_context/CURRENT.md`](agent_context/CURRENT.md) and [`agent_context/handoffs/20260820-next-agent.md`](agent_context/handoffs/20260820-next-agent.md).
 2. **Slice 3 Verification**: Independent Red Team recheck on candidate commit or proceed to **Slice 4** (One Governed Ridge Fold).
@@ -87,13 +110,17 @@ This repository is designed for concurrent multi-agent collaboration (Codex, Cla
 
 ---
 
-## 6. Directory Map
+## 7. Directory Map
 
 - `src/quant_system/`: Core application modules
   - `modeling/`: Governed point-in-time features, labels, folds, and rows (Slice 3)
   - `evidence/`: Canonical content-addressed evidence store (Slice 2)
   - `data/`: Market data acquisition and parsing (Slice 1)
   - `alpha/`, `analytics/`, `backtest/`, `portfolio/`, `risk/`, `strategies/`, `server/`: System components
+- `scripts/`:
+  - `daily_pipeline.py`: Automated daily pipeline runner
+  - `setup_windows_scheduler.ps1`: Windows Task Scheduler daily setup
+  - `run-slice3-gates.ps1`: Exact Slice 3 quality gate
 - `tests/`: Pytest suite with deterministic fixtures and adversarial regression tests
 - `agent_context/`: Coordination system, active work logs, handoffs, and architectural decisions
 - `.launch/`: Release state, formal slice specifications, and immutable verification evidence
