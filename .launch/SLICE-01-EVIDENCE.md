@@ -1,6 +1,6 @@
 # Slice 01 Evidence - Governed Upstox V3 Acquisition
 
-STATUS: Red Team passed; independent verification in progress  
+STATUS: Red Team passed; Verifier remediation complete; final recheck pending  
 DATE: 2026-08-20  
 SCOPE: Read-only NSE cash-equity daily history. No broker order authority.
 
@@ -37,18 +37,23 @@ remains required before claiming provider-live readiness.
 
 | Gate | Result | Evidence |
 |---|---|---|
-| Focused behavior suite | PASS | 34 tests across the two Upstox files |
-| Repository suite | PASS | 105 tests |
-| Repository coverage | PASS | 88.94%, required minimum 80% |
+| Focused behavior suite | PASS | 35 tests across the two Upstox files |
+| Repository suite | PASS | 106 tests from a frozen fresh environment |
+| Repository coverage | PASS | 88.97%, required minimum 80% |
 | Ruff | PASS | All files |
+| Ruff format | PASS | 111 files formatted; generated directories excluded |
 | Mypy strict | PASS | 57 source files |
 | Code Craft, slice files | PASS | 6 source files, zero findings |
 | Test Craft, slice files | PASS | 2 test files, zero findings |
+| Secret scan | PASS | detect-secrets 1.5.0, zero application candidates |
+| Dead-code scan | PASS | vulture 2.16 at 80% confidence, zero findings |
+| Fresh lock install | PASS | 47 packages installed with `uv sync --frozen --extra dev` |
+| Revision baseline | PASS | Local `main` root commit `d10886b` |
 | Mutation proof | PASS | Weakening NSE-only validation to admit BSE caused the boundary test to fail; strict rule restored and test passed |
 | Live credentialed provider pull | NOT TESTED | `UPSTOX_ACCESS_TOKEN` is not configured |
 | Broker-write authority | PASS | Narrow GET-only transport; no place, modify, or cancel order methods |
 
-The focused total is five compatibility tests plus twenty-nine V3 acquisition test cases.
+The focused total is five compatibility tests plus thirty V3 acquisition test cases.
 
 ## Red Team
 
@@ -83,4 +88,4 @@ returned `PASS` with no unresolved Blocker or Major.
 
 - Code Craft: 53 pre-existing findings across 18 files.
 - Test Craft: 10 pre-existing loop-in-test findings across 5 files.
-- No Git repository or CI evidence exists yet.
+- No CI evidence exists yet; a local Git baseline now exists.

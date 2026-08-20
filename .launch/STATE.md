@@ -16,7 +16,7 @@ Nothing. P4 Slice 1 implementation is in progress. Missing live credentials or p
 
 | # | Severity | Description | Owner | Since |
 |---|---|---|---|---|
-| 1 | Major | No version control or CI baseline | Engineering | 2026-08-20 |
+| 1 | Major | No CI or protected remote; local `main` baseline exists at `d10886b` | Engineering | 2026-08-20 |
 | 2 | Major | Legacy craft baseline fails: 53 code findings and 10 test findings; Ruff and strict Mypy are green | Engineering | 2026-08-20 |
 | 3 | Major | No clean-build or artifact-to-source provenance proof | Release | 2026-08-20 |
 | 4 | Major | Product capability claims exceed implemented live-execution behavior | Product | 2026-08-20 |
@@ -38,6 +38,10 @@ Nothing. P4 Slice 1 implementation is in progress. Missing live credentials or p
 - Recorded a five-year real-environment request returning the exact non-retryable unauthorized outcome because no Upstox token is configured.
 - Closed four Red Team Major findings covering range containment, information availability, daily exchange-date uniqueness, and explicit calendar-session completeness; bounded recheck passed.
 - Re-verified 105 repository tests at 88.94% coverage after Red Team fixes.
+- Added the missing provider connection-failure regression; focused suite is now 35 tests.
+- Added reproducible detect-secrets and vulture gates; both pass with zero application findings.
+- Proved a fresh `uv sync --frozen --extra dev` environment and 106 tests at 88.97% coverage.
+- Initialized local `main`, excluded generated/sensitive state, and created baseline revision `d10886b`.
 
 ## Founder overrides
 
@@ -45,4 +49,4 @@ None.
 
 ## Next action
 
-Complete Slice 1 independent verification and record the final gate disposition.
+Run the independent Verifier against the clean revision and record the final Slice 1 disposition.
