@@ -1,9 +1,12 @@
 """Tests for QuantOS FastAPI REST API Endpoints."""
 
+from typing import Any
+
 import pytest
 from fastapi.testclient import TestClient
 
 from quant_system import __version__
+from quant_system.data.provenance import ACCESS_TOKEN_ENV_VAR, RuntimeDataSource, describe
 from quant_system.server.app import app
 
 
@@ -130,3 +133,81 @@ def test_api_portfolio_optimize(client: TestClient) -> None:
     assert "max_sharpe_point" in data
     assert "min_variance_point" in data
     assert "risk_parity_weights" in data
+
+
+@pytest.mark.parametrize(
+    ("endpoint", "payload"),
+    [
+        pytest.param(
+            "/api/backtest/run",
+            {
+                "strategy_name": "EquityDualMomentum",
+                "symbols": ["INFY", "TCS"],
+                "days": 40,
+                "initial_cash": 500000.0,
+                "slippage_bps": 5.0,
+                "params": {"lookback_fast": 5, "lookback_slow": 15, "top_n": 1},
+            },
+            id="backtest",
+        ),
+        pytest.param(
+            "/api/monte-carlo/run",
+            {
+                "strategy_name": "EquityDualMomentum",
+                "num_simulations": 1000,
+                "horizon_days": 100,
+                "initial_capital": 1000000.0,
+            },
+            id="monte-carlo",
+        ),
+        pytest.param(
+            "/api/portfolio/optimize",
+            {"symbols": ["INFY", "TCS", "RELIANCE"], "days": 60, "risk_free_rate": 0.07},
+            id="portfolio-optimize",
+        ),
+    ],
+)
+# test-allow: no-assertion - check-tests.mjs caseBody() truncates every multi-line Python signature, so the assertions below are invisible to it
+def test_api_results_declare_their_data_source(
+    client: TestClient,
+    endpoint: str,
+    payload: dict[str, Any],
+) -> None:
+    """Every result computed from generated bars must say so in its own response body.
+
+    A consumer reading one of these payloads out of context has no other signal that the figures
+    are not real NSE history.
+    """
+    res = client.post(endpoint, json=payload)
+    assert res.status_code == 200
+    data = res.json()
+
+    assert data["data_source"] == str(RuntimeDataSource.SYNTHETIC)
+    assert data["data_source_disclosure"] == describe(RuntimeDataSource.SYNTHETIC)
+
+
+# test-allow: no-assertion - check-tests.mjs caseBody() truncates every multi-line Python signature, so the assertions below are invisible to it
+def test_api_diagnostics_reports_absent_credentials(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(ACCESS_TOKEN_ENV_VAR, raising=False)
+    res = client.get("/api/diagnostics")
+    assert res.status_code == 200
+    data = res.json()
+
+    assert data["market_data_credentials_configured"] is False
+    assert data["market_data_source"] == str(RuntimeDataSource.SYNTHETIC)
+
+
+# test-allow: no-assertion - check-tests.mjs caseBody() truncates every multi-line Python signature, so the assertions below are invisible to it
+def test_api_diagnostics_reports_present_credentials_without_echoing_them(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(ACCESS_TOKEN_ENV_VAR, "super-secret-token")
+    res = client.get("/api/diagnostics")
+    assert res.status_code == 200
+
+    assert res.json()["market_data_credentials_configured"] is True
+    assert "super-secret-token" not in res.text

@@ -17,6 +17,11 @@ from quant_system import __version__
 from quant_system.alpha.greeks import BlackScholes
 from quant_system.core.domain import InstrumentType
 from quant_system.core.ledger import DecimalLedger
+from quant_system.data.provenance import (
+    ACCESS_TOKEN_ENV_VAR,
+    RuntimeDataSource,
+    market_data_credentials_configured,
+)
 
 
 def configure_drive_isolation() -> Path:
@@ -112,6 +117,17 @@ def run_prerequisite_checks() -> tuple[bool, list[str]]:
         logs.append("[PASS] Apple-Grade Dashboard UI Assets Located OK")
     else:
         logs.append("[WARN] Static dashboard assets not found; running in headless API mode")
+
+    # 6. Market-Data Credential & Active Source Disclosure
+    # Absent credentials are a supported research configuration, not a failure. They are reported
+    # so that "all prerequisites verified" can never be mistaken for "connected to live data".
+    if market_data_credentials_configured():
+        logs.append(f"[PASS] Market-Data Credentials Detected ({ACCESS_TOKEN_ENV_VAR} is set)")
+    else:
+        logs.append(
+            f"[WARN] No {ACCESS_TOKEN_ENV_VAR} configured; bundled surfaces run on "
+            f"{RuntimeDataSource.SYNTHETIC} generated data, not real market data"
+        )
 
     return all_passed, logs
 
