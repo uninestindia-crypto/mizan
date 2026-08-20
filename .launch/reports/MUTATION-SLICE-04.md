@@ -1,7 +1,7 @@
 # Mutation Report - Slice 4
 
 DATE: 2026-08-20  
-STATUS: PASS - five dangerous mutations killed; exact implementation restored
+STATUS: PASS - eleven dangerous mutations killed; exact implementation restored
 BASE REVISION: `e6002d2bd73759beb8e4cb5a8354b2eb0e77f8f6`
 
 ## Method
@@ -9,6 +9,9 @@ BASE REVISION: `e6002d2bd73759beb8e4cb5a8354b2eb0e77f8f6`
 Each mutation was applied alone with `apply_patch`, its smallest guarding test was run to a real
 red exit, the production line was restored with `apply_patch`, and the same test was rerun green.
 No expected-failure marker, mock pass, or edited assertion was used.
+
+Runs 1-5 were executed against the first Slice 4 candidate. Runs 6-11 were executed after the
+independent Red Team found additional release blockers at repair candidate `8d09ec4`.
 
 ## Raw run 1 - score equality boundary
 
@@ -155,9 +158,113 @@ tests\test_modeling_trials.py .                                          [100%]
 EXIT_CODE=0
 ```
 
+## Raw run 6 - Python boolean accepted as an integer
+
+Mutation replaced all three exact `type(value) is int` checks with `isinstance(value, int)`, which
+admits Python booleans.
+
+```text
+> pytest tests/test_modeling_trials.py::test_trial_integer_fields_reject_booleans -q
+collected 3 items
+tests\test_modeling_trials.py FFF                                        [100%]
+E Failed: DID NOT RAISE ModelingError
+FAILED ...[numpy_seed-False]
+FAILED ...[multiplicity_ordinal-True]
+FAILED ...[feature_schema_version-True]
+============================== 3 failed in 0.40s ==============================
+EXIT_CODE=1
+```
+
+Restored output: `3 passed in 0.31s`, `EXIT_CODE=0`.
+
+## Raw run 7 - interrupted start/model cannot resume
+
+Mutation restored the former blanket rejection of every deduplicated trial start.
+
+```text
+> pytest tests/test_modeling_trials.py::test_start_only_interruption_can_resume_same_attempt tests/test_modeling_trials.py::test_outcome_commit_failure_can_resume_same_attempt -q
+collected 2 items
+tests\test_modeling_trials.py FF                                         [100%]
+E ModelingError: TRIAL_ALREADY_RECORDED: duplicate start cannot resume
+FAILED ...::test_start_only_interruption_can_resume_same_attempt
+FAILED ...::test_outcome_commit_failure_can_resume_same_attempt
+============================== 2 failed in 0.48s ==============================
+EXIT_CODE=1
+```
+
+Restored output: `2 passed in 0.43s`, `EXIT_CODE=0`.
+
+## Raw run 8 - one-trial DSR becomes a sign shortcut
+
+Mutation returned `1.0` for a positive single-trial Sharpe and `0.0` otherwise.
+
+```text
+> pytest tests/test_multiplicity.py::test_single_trial_dsr_retains_sampling_uncertainty -q
+collected 1 item
+tests\test_multiplicity.py F                                             [100%]
+E AssertionError: assert 1.0 < 1.0
+FAILED tests/test_multiplicity.py::test_single_trial_dsr_retains_sampling_uncertainty
+============================== 1 failed in 0.19s ==============================
+EXIT_CODE=1
+```
+
+Restored output: `1 passed in 0.12s`, `EXIT_CODE=0`.
+
+## Raw run 9 - symbol-major dataset order returns
+
+Mutation changed the canonical derived-row key from candidate/time/instrument back to
+candidate/instrument/time.
+
+```text
+> pytest tests/test_modeling_partitions.py::test_multi_symbol_dataset_and_fold_share_chronological_order -q
+collected 1 item
+tests\test_modeling_partitions.py F                                      [100%]
+E ModelingError: RECORD_ORDER_INVALID: derived dataset rows must use candidate, decision-time, and instrument order
+FAILED ...::test_multi_symbol_dataset_and_fold_share_chronological_order
+============================== 1 failed in 0.24s ==============================
+EXIT_CODE=1
+```
+
+Restored output: `1 passed in 0.17s`, `EXIT_CODE=0`.
+
+## Raw run 10 - simultaneous instruments compound sequentially
+
+Mutation returned one full-capital period per instrument row instead of one equal-weight return per
+decision time.
+
+```text
+> pytest tests/test_modeling_metrics.py::test_simultaneous_symbols_use_equal_weight_portfolio_period -q
+collected 1 item
+tests\test_modeling_metrics.py F                                         [100%]
+E AssertionError: assert '-0.0001' == '0'
+FAILED ...::test_simultaneous_symbols_use_equal_weight_portfolio_period
+============================== 1 failed in 0.21s ==============================
+EXIT_CODE=1
+```
+
+Restored output: `1 passed in 0.15s`, `EXIT_CODE=0`.
+
+## Raw run 11 - successful outcome no longer resolves model evidence
+
+Mutation removed the verified model-evidence binding from persisted registry loading.
+
+```text
+> pytest tests/test_modeling_trials.py::test_success_without_verified_model_is_rejected -q
+collected 1 item
+tests\test_modeling_trials.py F                                          [100%]
+E Failed: DID NOT RAISE ModelingError
+FAILED ...::test_success_without_verified_model_is_rejected
+============================== 1 failed in 0.31s ==============================
+EXIT_CODE=1
+```
+
+Restored output: `1 passed in 0.27s`, `EXIT_CODE=0`.
+
 ## Restoration proof
 
-After all five restorations, the exact Slice 4 gate passed: Ruff lint and format across 194 inputs,
-strict Mypy across 82 source files, 236 repository tests at 88.62% coverage, 69 focused tests,
-vulture, zero application secret candidates, Code Craft, and Test Craft. This report records raw
-red and restored-green markers for every mutation.
+After runs 1-5, the first repaired gate passed 236 repository tests at 88.62% coverage and 69
+focused tests. After runs 6-11, the restored local tree passed 254 repository tests with 5,806
+statements / 661 missed / 88.62% coverage, 80 focused tests, strict Mypy across 82 source files,
+Ruff across 196 formatted inputs, vulture, zero application secret candidates, Code Craft, and Test
+Craft. The exact committed repair candidate must reproduce these claims during independent
+verification.

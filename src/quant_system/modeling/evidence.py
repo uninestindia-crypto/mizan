@@ -12,8 +12,8 @@ from quant_system.modeling.rows import (
     require_label_dataset_identity,
 )
 
-FEATURE_TOTAL_ORDER = ("candidate_id", "provider_instrument_id", "decision_at")
-LABEL_TOTAL_ORDER = ("candidate_id", "symbol", "decision_at")
+FEATURE_TOTAL_ORDER = ("candidate_id", "decision_at", "provider_instrument_id")
+LABEL_TOTAL_ORDER = ("candidate_id", "decision_at", "symbol")
 
 
 def draft_from_feature_dataset(dataset: FeatureDatasetV1) -> EvidenceDraft:

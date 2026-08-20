@@ -15,6 +15,11 @@ from quant_system.modeling import (
     build_label_dataset,
     build_purged_fold,
 )
+from quant_system.modeling.rows import (
+    LABEL_ROW_SCHEMA,
+    derived_dataset_hash,
+    require_label_dataset_identity,
+)
 from tests.modeling_fixtures import (
     governed_acquisition,
     governed_calendar,
@@ -184,3 +189,48 @@ def test_timezone_representation_cannot_bypass_session_embargo(  # test-allow: l
 
     assert len(fold.train_rows) == 6
     assert len(fold.embargoed_record_keys) == 1
+
+
+def test_multi_symbol_dataset_and_fold_share_chronological_order() -> None:
+    calendar = governed_calendar(35)
+    universe = governed_universe()
+    acquisition = governed_acquisition(count=35, calendar=calendar, universe=universe)
+    features = build_feature_dataset(acquisition, "cand_ridge_v1", calendar, universe)
+    base = build_label_dataset(
+        features,
+        acquisition,
+        calendar,
+        round_trip_cost_quotes(acquisition, calendar, cost=Decimal("0.1")),
+    )
+    rows = tuple(
+        sorted(
+            (replace(row, symbol=symbol) for row in base.rows for symbol in ("AAA", "BBB")),
+            key=lambda row: (row.decision_at, row.symbol),
+        )
+    )
+    provisional = replace(base, dataset_id="dset_provisional", dataset_hash="0" * 64, rows=rows)
+    metadata = provisional.metadata_dict()
+    metadata.pop("dataset_id")
+    metadata.pop("dataset_hash")
+    dataset_hash = derived_dataset_hash(LABEL_ROW_SCHEMA, metadata, rows)
+    labels = replace(
+        provisional,
+        dataset_id=f"dset_{dataset_hash[:24]}",
+        dataset_hash=dataset_hash,
+    )
+
+    require_label_dataset_identity(labels)
+    fold = build_purged_fold(
+        labels.rows,
+        fold_id="fold_multi_001",
+        ordinal=1,
+        validation_start=calendar.sessions[28].close_at,
+        validation_end=calendar.sessions[29].close_at,
+        calendar=calendar,
+        embargo_sessions=2,
+    )
+
+    assert len(fold.validation_rows) == 4
+    assert tuple((row.decision_at, row.symbol) for row in fold.validation_rows) == tuple(
+        sorted((row.decision_at, row.symbol) for row in fold.validation_rows)
+    )

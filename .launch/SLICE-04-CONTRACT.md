@@ -9,6 +9,7 @@ DATE: 2026-08-20
 - The accepted closed six-feature schema and next-open-to-following-open net-cost label contract.
 - A valid ridge request with positive exact-decimal L2 penalty, exact score threshold, immutable
   source/lock/architecture identities, fixed seed policy, and a unique multiplicity ordinal.
+  Integer fields require exact Python integers; booleans and integer-like substitutes are invalid.
 
 Feature, label, fold, candidate, source dataset, calendar, universe, instrument, and decision-time
 identities must agree. Non-finite values, missing feature/label pairs, invalid parameters,
@@ -36,8 +37,17 @@ insufficient training rows, and constant targets fail closed with typed codes.
 - A later start is admitted only while the evidence-store lease is held, at the next global ordinal,
   and after every preceding start has exactly one valid terminal outcome. This applies across all
   candidate, feature, parameter, threshold, universe, and source identities.
-- Duplicate trial IDs or ordinals, missing outcomes, outcome/start mismatches, stale caller state,
-  and uncounted starts fail closed.
+- A byte-identical latest open start may resume after interruption. Its already-committed model is
+  content-deduplicated before the terminal outcome is retried. A terminal start, non-latest start,
+  or different start behind an existing ID cannot resume.
+- A caught evaluation or model-publication failure receives a typed immutable `FAILED` outcome so
+  the next ordinal remains usable. If terminal-outcome publication itself is interrupted, replay of
+  that exact open start is the supported recovery transition.
+- Canonical trial manifest IDs, total orders, versions, and closed metadata must bind their record.
+  Every `SUCCEEDED` outcome must resolve to exactly one content-verified model evaluation with the
+  same trial, result hash, candidate, fold, multiplicity, model ID, and `RESEARCH_ONLY` verdict.
+- Duplicate trial IDs or ordinals, missing outcomes, outcome/start/model mismatches, alias manifest
+  identities, stale caller state, and uncounted starts fail closed.
 
 ## Fold evaluation
 
@@ -51,7 +61,21 @@ bound net costs:
 
 Each report binds prediction and metric hashes and records accuracy, return, volatility, Sharpe,
 Sortino, drawdown magnitude/duration, turnover, exposure, concentration, attributable count, hit
-rate, and profit factor. Deflated Sharpe uses the complete immutable trial multiplicity.
+rate, and profit factor.
+
+Rows use one canonical `(candidate_id, decision_at, instrument)` order throughout dataset identity,
+fold construction, fitting, and evaluation. When several instruments share a decision time, the
+frozen allocation contract is equal weight across active longs for that time. Return, volatility,
+Sharpe, Sortino, and drawdown operate on those portfolio-period returns; exposure and turnover use
+portfolio periods; concentration is the largest active equal weight. Instrument rows are not
+silently compounded as separate full-capital periods.
+
+Deflated Sharpe uses the complete immutable attempt count and the Bailey/López de Prado selection
+benchmark. Annualized Sharpe is converted to the 252-period scale used by the report. Sampling
+uncertainty uses the actual number of portfolio periods plus observed skewness and Pearson
+kurtosis. One trial reduces to sampling-aware PSR. When empirical cross-trial dispersion is not
+available, the declared null sampling dispersion `1 / sqrt(T - 1)` is used; callers may supply
+annualized cross-trial dispersion when governed evidence supports it.
 
 ## Explicit limits
 

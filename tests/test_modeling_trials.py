@@ -11,6 +11,7 @@ import pytest
 from quant_system.evidence import (
     EvidenceNotFound,
     EvidenceResourceType,
+    EvidenceStorageError,
     EvidenceStore,
     EvidenceStoreConfig,
 )
@@ -19,11 +20,14 @@ from quant_system.modeling import (
     ModelingFailureCode,
     TrialRegistryV1,
     TrialState,
+    draft_from_trial_outcome,
+    draft_from_trial_start,
     evaluate_governed_ridge_fold,
     run_persisted_ridge_trial,
     succeeded_outcome,
     unsuccessful_outcome,
 )
+from quant_system.modeling.persisted_trials import load_persisted_trial_registry
 from tests.modeling_training_fixtures import governed_training_journey
 
 ENDED_AT = datetime(2026, 8, 20, 12, 5, tzinfo=UTC)
@@ -140,6 +144,17 @@ def test_trial_parameters_reject_zero_noncanonical_and_nonfixed_seed() -> None:
     assert noncanonical_l2.value.code == ModelingFailureCode.INVALID_PARAMETER
     assert nonfinite_threshold.value.code == ModelingFailureCode.INVALID_PARAMETER
     assert nonfixed_seed.value.code == ModelingFailureCode.TRIAL_INVALID
+
+
+@pytest.mark.parametrize(
+    ("field_name", "value"),
+    (("numpy_seed", False), ("multiplicity_ordinal", True), ("feature_schema_version", True)),
+)
+def test_trial_integer_fields_reject_booleans(field_name: str, value: bool) -> None:
+    with pytest.raises(ModelingError) as captured:
+        replace(governed_training_journey().start, **{field_name: value})
+
+    assert captured.value.code == ModelingFailureCode.TRIAL_INVALID
 
 
 def test_registry_counts_prior_trials_across_governed_search_identities() -> None:
@@ -303,3 +318,132 @@ def test_persisted_history_blocks_multiplicity_reset(tmp_path: Path) -> None:
     )
 
     assert second.evaluation.multiplicity_count == 2
+
+
+def test_success_without_verified_model_is_rejected(tmp_path: Path) -> None:
+    journey = governed_training_journey()
+    store = EvidenceStore(EvidenceStoreConfig(root=tmp_path / "evidence", min_free_bytes=0))
+    store.commit(draft_from_trial_start(journey.start), operation_id="op-forged-start")
+    forged = succeeded_outcome(journey.start, ended_at=ENDED_AT, result_hash="f" * 64)
+    store.commit(draft_from_trial_outcome(forged), operation_id="op-forged-outcome")
+
+    with pytest.raises(ModelingError) as captured:
+        load_persisted_trial_registry(store)
+
+    assert captured.value.code == ModelingFailureCode.MULTIPLICITY_INVALID
+
+
+def test_alias_manifest_identity_is_rejected(tmp_path: Path) -> None:
+    journey = governed_training_journey()
+    store = EvidenceStore(EvidenceStoreConfig(root=tmp_path / "evidence", min_free_bytes=0))
+    alias = replace(draft_from_trial_start(journey.start), resource_id="trial_alias_001")
+    store.commit(alias, operation_id="op-alias-start")
+
+    with pytest.raises(ModelingError) as captured:
+        load_persisted_trial_registry(store)
+
+    assert captured.value.code == ModelingFailureCode.MULTIPLICITY_INVALID
+
+
+def test_model_commit_failure_terminalizes_attempt(tmp_path: Path, monkeypatch) -> None:
+    journey = governed_training_journey()
+    store = EvidenceStore(EvidenceStoreConfig(root=tmp_path / "evidence", min_free_bytes=0))
+    original_commit = store.commit
+
+    def fail_model(draft, **kwargs):
+        if draft.resource_type == EvidenceResourceType.MODEL:
+            raise EvidenceStorageError("injected model publication failure")
+        return original_commit(draft, **kwargs)
+
+    monkeypatch.setattr(store, "commit", fail_model)
+    with pytest.raises(EvidenceStorageError):
+        run_persisted_ridge_trial(
+            store,
+            operation_id="op-model-store-failure",
+            start=journey.start,
+            feature_dataset=journey.features,
+            label_dataset=journey.labels,
+            fold=journey.fold,
+            ended_at=ENDED_AT,
+        )
+    monkeypatch.setattr(store, "commit", original_commit)
+
+    outcome = store.open_verified(EvidenceResourceType.TRIAL, journey.start.outcome_resource_id)
+    assert outcome.records[0]["state"] == "FAILED"
+    assert outcome.records[0]["failure_codes"] == ["TRIAL_EXECUTION_FAILED"]
+
+    next_start = replace(
+        journey.start,
+        trial_id="trial_ridge_002",
+        multiplicity_ordinal=2,
+        l2_penalty="2",
+    )
+    next_run = run_persisted_ridge_trial(
+        store,
+        operation_id="op-after-model-store-failure",
+        start=next_start,
+        feature_dataset=journey.features,
+        label_dataset=journey.labels,
+        fold=journey.fold,
+        ended_at=ENDED_AT,
+    )
+    assert next_run.evaluation.multiplicity_count == 2
+
+
+def test_outcome_commit_failure_can_resume_same_attempt(tmp_path: Path, monkeypatch) -> None:
+    journey = governed_training_journey()
+    store = EvidenceStore(EvidenceStoreConfig(root=tmp_path / "evidence", min_free_bytes=0))
+    original_commit = store.commit
+
+    def fail_outcome(draft, **kwargs):
+        if draft.schema_id == "quantos.trial_outcome":
+            raise EvidenceStorageError("injected outcome publication failure")
+        return original_commit(draft, **kwargs)
+
+    monkeypatch.setattr(store, "commit", fail_outcome)
+    with pytest.raises(EvidenceStorageError):
+        run_persisted_ridge_trial(
+            store,
+            operation_id="op-outcome-store-failure",
+            start=journey.start,
+            feature_dataset=journey.features,
+            label_dataset=journey.labels,
+            fold=journey.fold,
+            ended_at=ENDED_AT,
+        )
+    monkeypatch.setattr(store, "commit", original_commit)
+
+    with pytest.raises(EvidenceNotFound):
+        store.open_verified(EvidenceResourceType.TRIAL, journey.start.outcome_resource_id)
+    resumed = run_persisted_ridge_trial(
+        store,
+        operation_id="op-outcome-store-resume",
+        start=journey.start,
+        feature_dataset=journey.features,
+        label_dataset=journey.labels,
+        fold=journey.fold,
+        ended_at=ENDED_AT,
+    )
+    assert resumed.start_commit.deduplicated is True
+    assert resumed.evaluation_commit.deduplicated is True
+    assert resumed.outcome.state == TrialState.SUCCEEDED
+
+
+def test_start_only_interruption_can_resume_same_attempt(tmp_path: Path) -> None:
+    journey = governed_training_journey()
+    store = EvidenceStore(EvidenceStoreConfig(root=tmp_path / "evidence", min_free_bytes=0))
+    store.commit(draft_from_trial_start(journey.start), operation_id="op-start-before-kill")
+
+    resumed = run_persisted_ridge_trial(
+        store,
+        operation_id="op-start-after-restart",
+        start=journey.start,
+        feature_dataset=journey.features,
+        label_dataset=journey.labels,
+        fold=journey.fold,
+        ended_at=ENDED_AT,
+    )
+
+    assert resumed.start_commit.deduplicated is True
+    assert resumed.evaluation_commit.deduplicated is False
+    assert resumed.outcome.state == TrialState.SUCCEEDED

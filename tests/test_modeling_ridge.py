@@ -38,7 +38,7 @@ def test_governed_ridge_fold_is_exactly_repeatable_with_pinned_hashes() -> None:
     assert first == second
     assert (
         first.evaluation_hash
-        == "a2500c0ad75d0d6e63c1e6d9d915b575c108056fee9452d631c42fa431797872"  # pragma: allowlist secret - deterministic public test hash.
+        == "69eff821d3edd726d709b522e25e02b7b17f90d29411c15adb34867dda4cc01c"  # pragma: allowlist secret - deterministic public test hash.
     )
     assert (
         first.fitted_state.fitted_state_hash
@@ -55,7 +55,7 @@ def test_governed_ridge_fold_is_exactly_repeatable_with_pinned_hashes() -> None:
     assert (
         first.ridge_report.metrics_hash
         == (
-            "e91c043d5f5f848768eba22503c69e04cbe4d92a75260bf2a380deca7908e390"  # pragma: allowlist secret - deterministic public test hash.
+            "320375e5c2dcdaedf8d5bc26d2d7ca7224557bc37da4f01adfb738e073af8a91"  # pragma: allowlist secret - deterministic public test hash.
         )
     )
 

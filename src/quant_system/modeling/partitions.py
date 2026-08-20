@@ -59,7 +59,7 @@ def build_purged_fold(
             ModelingFailureCode.PARTITION_INVALID,
             "partition must retain non-empty training and validation rows",
         )
-    removed = tuple(sorted((*purged, *embargoed), key=lambda row: row.decision_at))
+    removed = tuple(sorted((*purged, *embargoed), key=lambda row: (row.decision_at, row.symbol)))
     purge_start = removed[0].decision_at if removed else validation_start
     spec = FoldSpecV1(
         fold_id=fold_id,

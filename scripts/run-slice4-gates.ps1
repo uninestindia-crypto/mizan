@@ -42,6 +42,7 @@ try {
             tests/test_modeling_provider_replay.py `
             tests/test_modeling_preprocessing.py `
             tests/test_modeling_ridge.py `
+            tests/test_modeling_metrics.py `
             tests/test_modeling_trials.py `
             tests/test_modeling_validation.py `
             tests/test_modeling_training_replay.py `
@@ -85,6 +86,7 @@ try {
             tests/test_modeling_provider_replay.py `
             tests/test_modeling_preprocessing.py `
             tests/test_modeling_ridge.py `
+            tests/test_modeling_metrics.py `
             tests/test_modeling_trials.py `
             tests/test_modeling_validation.py `
             tests/test_modeling_training_replay.py

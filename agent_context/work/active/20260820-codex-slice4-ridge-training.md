@@ -20,11 +20,15 @@ metrics, multiplicity accounting, and reproducible hashes.
 - `src/quant_system/modeling/persisted_trials.py`
 - `src/quant_system/modeling/preprocessing.py`
 - `src/quant_system/modeling/ridge.py`
+- `src/quant_system/modeling/rows.py`
+- `src/quant_system/modeling/partitions.py`
+- `src/quant_system/modeling/evidence.py`
 - `src/quant_system/modeling/validation.py`
 - `src/quant_system/modeling/metrics.py`
 - `src/quant_system/modeling/training_evidence.py`
 - `src/quant_system/modeling/errors.py`
 - `src/quant_system/modeling/__init__.py`
+- `src/quant_system/analytics/multiplicity.py`
 - `src/quant_system/evidence/store.py`
 - `tests/modeling_training_fixtures.py`
 - `tests/test_modeling_preprocessing.py`
@@ -32,6 +36,9 @@ metrics, multiplicity accounting, and reproducible hashes.
 - `tests/test_modeling_trials.py`
 - `tests/test_modeling_validation.py`
 - `tests/test_modeling_training_replay.py`
+- `tests/test_modeling_partitions.py`
+- `tests/test_modeling_metrics.py`
+- `tests/test_multiplicity.py`
 - `scripts/run-slice4-gates.ps1`
 - `.launch/SLICE-04-CONTRACT.md`
 - `.launch/SLICE-04-EVIDENCE.md`
@@ -62,10 +69,9 @@ metrics, multiplicity accounting, and reproducible hashes.
 
 ## Current step
 
-The original Red Team candidate was blocked because an in-memory registry could reset persisted
-multiplicity. The repair makes the verified immutable trial catalog authoritative under the global
-evidence lease. Its failing-first regression, fifth mutation kill, and exact local gate are
-complete. Commit the repair evidence and request independent rechecks.
+The exact `8d09ec4` recheck found six Blockers. Failing-first regressions and local repairs now cover
+all six. The local full suite and focused suite pass; update evidence, commit an exact candidate,
+then request fresh Red Team and independent clean-state verification.
 
 ## Evidence so far
 
@@ -84,6 +90,12 @@ complete. Commit the repair evidence and request independent rechecks.
   start/outcome evidence and validates the next ordinal atomically during evidence commit.
 - No holdout was opened and every model evidence record remains `RESEARCH_ONLY` with
   `UNCALIBRATED_SCORE` outputs.
+- Failing-first adversarial regressions now prove exact-int rejection, resumable start/model
+  publication, model-bound success evidence, canonical chronological multi-symbol ordering,
+  equal-weight simultaneous portfolio aggregation, and sampling-aware DSR.
+- Current restored gate: Ruff format 196 inputs; strict Mypy 82 source files; 254 repository tests;
+  5,806 statements / 661 missed / 88.62%; 80 focused modeling tests; vulture, zero application
+  secret candidates, Code Craft, and Test Craft clean.
 
 ## Files changed
 
@@ -93,4 +105,15 @@ complete. Commit the repair evidence and request independent rechecks.
 
 ## Blockers and conflicts
 
-No current blocker. Existing unowned files and automated pipeline artifacts will be preserved.
+- Repaired pending independent adjudication: Python booleans entered exact-int trial fields and
+  poisoned persisted replay.
+- Repaired pending independent adjudication: interrupted model/outcome publication had no
+  supported recovery transition.
+- Repaired pending independent adjudication: DSR ignored sampling uncertainty and moments.
+- Repaired pending independent adjudication: dataset and fold orders contradicted for multiple
+  instruments.
+- Repaired pending independent adjudication: simultaneous instruments were compounded as separate
+  full-capital periods and concentration was hardcoded.
+- Repaired pending independent adjudication: successful outcomes did not resolve verified model
+  evidence and manifest aliases were accepted.
+- Existing unowned files and automated pipeline artifacts will be preserved.

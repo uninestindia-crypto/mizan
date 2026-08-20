@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import ROUND_HALF_EVEN, Decimal, localcontext
+from itertools import groupby
 from typing import Any
 
 from quant_system.data.market_data_evidence import canonical_sha256, decimal_text, utc_text
@@ -19,6 +20,7 @@ STRATEGY_ORDER_V1 = (
     "EQUITY_DUAL_MOMENTUM",
 )
 _METRIC_QUANTUM = Decimal("0.000000000001")
+ALLOCATION_CONTRACT_V1 = "EQUAL_WEIGHT_ACTIVE_LONGS_PER_DECISION_TIME"
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,6 +150,7 @@ class StrategyFoldReportV1:
 
     def to_canonical_dict(self) -> dict[str, Any]:
         return {
+            "allocation_contract": ALLOCATION_CONTRACT_V1,
             "decisions": [decision.to_canonical_dict() for decision in self.decisions],
             "metrics": self.metrics.to_canonical_dict(),
             "metrics_hash": self.metrics_hash,
@@ -195,6 +198,7 @@ def _prediction_hash(decisions: tuple[FoldDecisionV1, ...]) -> str:
 def _metrics_hash(strategy_id: str, metrics: StrategyMetricsV1) -> str:
     return canonical_sha256(
         {
+            "allocation_contract": ALLOCATION_CONTRACT_V1,
             "metrics": metrics.to_canonical_dict(),
             "schema_id": "quantos.fold_strategy_metrics",
             "schema_version": 1,
@@ -209,29 +213,39 @@ def calculate_strategy_metrics(decisions: tuple[FoldDecisionV1, ...]) -> Strateg
         context.rounding = ROUND_HALF_EVEN
         count = Decimal(len(decisions))
         correct = sum(decision.predicted_target == decision.actual_target for decision in decisions)
-        returns = tuple(Decimal(decision.realized_net_return) for decision in decisions)
-        mean = sum(returns) / count
-        volatility = _sample_deviation(returns, mean)
+        portfolio_returns, active_counts = _portfolio_period_returns(decisions)
+        mean = sum(portfolio_returns) / Decimal(len(portfolio_returns))
+        volatility = _sample_deviation(portfolio_returns, mean)
         trades = tuple(
-            value
-            for decision, value in zip(decisions, returns, strict=True)
-            if decision.predicted_target == "UP"
+            Decimal(decision.realized_net_return) if decision.predicted_target == "UP" else None
+            for decision in decisions
         )
-        return _assemble_metrics(decisions, returns, trades, Decimal(correct) / count, volatility)
+        active_trades = tuple(value for value in trades if value is not None)
+        return _assemble_metrics(
+            decisions,
+            portfolio_returns,
+            active_trades,
+            active_counts,
+            Decimal(correct) / count,
+            volatility,
+        )
 
 
 def _assemble_metrics(
     decisions: tuple[FoldDecisionV1, ...],
     returns: tuple[Decimal, ...],
     trades: tuple[Decimal, ...],
+    active_counts: tuple[int, ...],
     accuracy: Decimal,
     volatility: Decimal,
 ) -> StrategyMetricsV1:
-    count = Decimal(len(decisions))
-    mean = sum(returns) / count
+    period_count = Decimal(len(returns))
+    mean = sum(returns) / period_count
     annualized = volatility * Decimal(252).sqrt()
     sharpe = mean / volatility * Decimal(252).sqrt() if volatility > 0 else Decimal(0)
-    downside_deviation = (sum(min(Decimal(0), value) ** 2 for value in returns) / count).sqrt()
+    downside_deviation = (
+        sum(min(Decimal(0), value) ** 2 for value in returns) / period_count
+    ).sqrt()
     sortino = (
         mean / downside_deviation * Decimal(252).sqrt() if downside_deviation > 0 else Decimal(0)
     )
@@ -240,6 +254,11 @@ def _assemble_metrics(
     gross_loss = -sum((value for value in trades if value < 0), start=Decimal(0))
     profit_factor = gross_profit / gross_loss if gross_loss > 0 else None
     trade_count = len(trades)
+    active_periods = sum(count > 0 for count in active_counts)
+    concentration = max(
+        (Decimal(1) / Decimal(count) for count in active_counts if count > 0),
+        default=Decimal(0),
+    )
     return StrategyMetricsV1(
         accuracy=metric_decimal(accuracy),
         balanced_accuracy=_optional_metric(_balanced_accuracy(decisions)),
@@ -249,9 +268,9 @@ def _assemble_metrics(
         sortino_ratio=metric_decimal(sortino),
         max_drawdown=metric_decimal(drawdown),
         max_drawdown_duration_rows=duration,
-        turnover=metric_decimal(Decimal(2 * trade_count) / count),
-        exposure=metric_decimal(Decimal(trade_count) / count),
-        concentration="1" if trade_count else "0",
+        turnover=metric_decimal(Decimal(2 * active_periods) / period_count),
+        exposure=metric_decimal(Decimal(active_periods) / period_count),
+        concentration=metric_decimal(concentration),
         attributable_count=len(decisions),
         trade_count=trade_count,
         hit_rate=metric_decimal(Decimal(sum(value > 0 for value in trades)) / Decimal(trade_count))
@@ -259,6 +278,24 @@ def _assemble_metrics(
         else "0",
         profit_factor=_optional_metric(profit_factor),
     )
+
+
+def _portfolio_period_returns(
+    decisions: tuple[FoldDecisionV1, ...],
+) -> tuple[tuple[Decimal, ...], tuple[int, ...]]:
+    returns: list[Decimal] = []
+    active_counts: list[int] = []
+    for _, grouped in groupby(decisions, key=lambda decision: decision.decision_at):
+        active = tuple(
+            Decimal(decision.realized_net_return)
+            for decision in grouped
+            if decision.predicted_target == "UP"
+        )
+        active_counts.append(len(active))
+        returns.append(
+            sum(active, start=Decimal(0)) / Decimal(len(active)) if active else Decimal(0)
+        )
+    return tuple(returns), tuple(active_counts)
 
 
 def _balanced_accuracy(decisions: tuple[FoldDecisionV1, ...]) -> Decimal | None:

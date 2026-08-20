@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
 
+from quant_system.data.market_data_evidence import canonical_sha256
 from quant_system.evidence import EvidenceResourceType, EvidenceStore, VerifiedEvidence
 from quant_system.modeling.errors import ModelingError, ModelingFailureCode
 from quant_system.modeling.trials import (
@@ -17,6 +18,28 @@ from quant_system.modeling.trials import (
 
 _START_SCHEMA = "quantos.ridge_trial_start"
 _OUTCOME_SCHEMA = "quantos.trial_outcome"
+_MODEL_SCHEMA = "quantos.fold_strategy_decision"
+_START_METADATA_KEYS = {
+    "candidate_id",
+    "dataset_hash",
+    "dataset_id",
+    "parameter_hash",
+    "start_hash",
+}
+_OUTCOME_METADATA_KEYS = {"outcome_hash", "start_hash", "trial_id"}
+_MODEL_METADATA_KEYS = {
+    "candidate_id",
+    "deflated_sharpe_ratio",
+    "evaluation_hash",
+    "fitted_state",
+    "fold_spec_hash",
+    "model_id",
+    "multiplicity_count",
+    "preprocessing",
+    "strategy_reports",
+    "trial_id",
+    "verdict",
+}
 
 
 def load_persisted_trial_registry(store: EvidenceStore) -> TrialRegistryV1:
@@ -56,6 +79,24 @@ def require_next_persisted_trial(store: EvidenceStore, start: RidgeTrialStartV1)
         )
 
 
+def require_resumable_persisted_trial(store: EvidenceStore, start: RidgeTrialStartV1) -> None:
+    """Atomic duplicate precondition: only the latest exact open start may resume."""
+    starts, outcomes = _load_trial_records(store)
+    ordered = tuple(sorted(starts, key=lambda item: item.multiplicity_ordinal))
+    matching = tuple(item for item in ordered if item.start_hash == start.start_hash)
+    if len(matching) != 1 or not ordered or ordered[-1].start_hash != start.start_hash:
+        raise ModelingError(
+            ModelingFailureCode.TRIAL_ALREADY_RECORDED,
+            "duplicate trial start is not the latest exact resumable attempt",
+        )
+    if any(outcome.trial_id == start.trial_id for outcome in outcomes):
+        raise ModelingError(
+            ModelingFailureCode.TRIAL_ALREADY_RECORDED,
+            "terminal trial cannot be resumed",
+        )
+    TrialRegistryV1(starts=ordered, outcomes=tuple(outcomes)).require_ready_for_evaluation(start)
+
+
 def _load_trial_records(
     store: EvidenceStore,
 ) -> tuple[list[RidgeTrialStartV1], list[TrialOutcomeV1]]:
@@ -72,6 +113,7 @@ def _load_trial_records(
             ModelingFailureCode.MULTIPLICITY_INVALID,
             f"unsupported persisted trial schema: {evidence.manifest.schema_id}",
         )
+    _require_success_model_evidence(store, starts, outcomes)
     return starts, outcomes
 
 
@@ -110,7 +152,29 @@ def _parse_start(evidence: VerifiedEvidence) -> RidgeTrialStartV1:
             ModelingFailureCode.MULTIPLICITY_INVALID,
             "persisted trial start does not match its derived identity",
         )
+    _require_start_manifest(evidence, start)
     return start
+
+
+def _require_start_manifest(evidence: VerifiedEvidence, start: RidgeTrialStartV1) -> None:
+    expected_metadata = {
+        "candidate_id": start.candidate_id,
+        "dataset_hash": start.dataset_hash,
+        "dataset_id": start.dataset_id,
+        "parameter_hash": start.parameter_hash,
+        "start_hash": start.start_hash,
+    }
+    if (
+        evidence.manifest.resource_id != start.trial_id
+        or evidence.manifest.schema_version != 1
+        or evidence.manifest.total_order != ("multiplicity_ordinal", "trial_id")
+        or set(evidence.manifest.metadata) != _START_METADATA_KEYS
+        or evidence.manifest.metadata != expected_metadata
+    ):
+        raise ModelingError(
+            ModelingFailureCode.MULTIPLICITY_INVALID,
+            "persisted trial start manifest does not bind its canonical record",
+        )
 
 
 def _parse_outcome(evidence: VerifiedEvidence) -> TrialOutcomeV1:
@@ -135,7 +199,133 @@ def _parse_outcome(evidence: VerifiedEvidence) -> TrialOutcomeV1:
             ModelingFailureCode.MULTIPLICITY_INVALID,
             "persisted trial outcome does not match its derived identity",
         )
+    expected_metadata = {
+        "outcome_hash": outcome.outcome_hash,
+        "start_hash": outcome.start_hash,
+        "trial_id": outcome.trial_id,
+    }
+    if (
+        evidence.manifest.resource_id != outcome.resource_id
+        or evidence.manifest.schema_version != 1
+        or evidence.manifest.total_order != ("trial_id", "state")
+        or set(evidence.manifest.metadata) != _OUTCOME_METADATA_KEYS
+        or evidence.manifest.metadata != expected_metadata
+    ):
+        raise ModelingError(
+            ModelingFailureCode.MULTIPLICITY_INVALID,
+            "persisted trial outcome manifest does not bind its canonical record",
+        )
     return outcome
+
+
+def _require_success_model_evidence(
+    store: EvidenceStore,
+    starts: list[RidgeTrialStartV1],
+    outcomes: list[TrialOutcomeV1],
+) -> None:
+    successful = tuple(outcome for outcome in outcomes if outcome.state == TrialState.SUCCEEDED)
+    if not successful:
+        return
+    starts_by_id = {start.trial_id: start for start in starts}
+    links = tuple(
+        _parse_model_link(evidence, starts_by_id)
+        for evidence in store.list_verified(EvidenceResourceType.MODEL)
+    )
+    for outcome in successful:
+        expected = (outcome.trial_id, outcome.result_hash)
+        if sum(link == expected for link in links) != 1:
+            raise ModelingError(
+                ModelingFailureCode.MULTIPLICITY_INVALID,
+                "successful trial outcome must resolve to exactly one verified model evaluation",
+            )
+
+
+def _parse_model_link(
+    evidence: VerifiedEvidence,
+    starts_by_id: dict[str, RidgeTrialStartV1],
+) -> tuple[str, str]:
+    manifest = evidence.manifest
+    metadata = manifest.metadata
+    try:
+        if (
+            manifest.schema_id != _MODEL_SCHEMA
+            or manifest.schema_version != 1
+            or manifest.total_order != ("strategy_id", "decision_at", "symbol")
+            or set(metadata) != _MODEL_METADATA_KEYS
+        ):
+            raise ValueError("model manifest contract mismatch")
+        trial_id = _text(metadata, "trial_id")
+        evaluation_hash = _text(metadata, "evaluation_hash")
+        model_id = _text(metadata, "model_id")
+        start = starts_by_id[trial_id]
+        if (
+            manifest.resource_id != model_id
+            or model_id != f"model_{evaluation_hash[:24]}"
+            or _text(metadata, "candidate_id") != start.candidate_id
+            or _text(metadata, "fold_spec_hash") not in start.fold_spec_hashes
+            or _integer(metadata, "multiplicity_count") != start.multiplicity_ordinal
+            or _text(metadata, "verdict") != "RESEARCH_ONLY"
+        ):
+            raise ValueError("model identity does not bind its trial")
+        reports = _rebuild_strategy_reports(evidence, metadata)
+        unsigned_evaluation = {
+            "candidate_id": start.candidate_id,
+            "deflated_sharpe_ratio": _text(metadata, "deflated_sharpe_ratio"),
+            "fitted_state": dict(_mapping(metadata, "fitted_state")),
+            "fold_spec_hash": _text(metadata, "fold_spec_hash"),
+            "multiplicity_count": _integer(metadata, "multiplicity_count"),
+            "preprocessing": dict(_mapping(metadata, "preprocessing")),
+            "schema_id": "quantos.ridge_fold_evaluation",
+            "schema_version": 1,
+            "strategy_reports": reports,
+            "trial_id": trial_id,
+            "verdict": "RESEARCH_ONLY",
+        }
+        if canonical_sha256(unsigned_evaluation) != evaluation_hash:
+            raise ValueError("evaluation content hash mismatch")
+    except (KeyError, TypeError, ValueError) as error:
+        raise ModelingError(
+            ModelingFailureCode.MULTIPLICITY_INVALID,
+            "persisted model evidence does not bind one canonical trial evaluation",
+        ) from error
+    return trial_id, evaluation_hash
+
+
+def _rebuild_strategy_reports(
+    evidence: VerifiedEvidence,
+    metadata: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    summaries = metadata["strategy_reports"]
+    if not isinstance(summaries, list):
+        raise TypeError("strategy_reports must be a list")
+    reports: list[dict[str, Any]] = []
+    assigned = 0
+    for summary in summaries:
+        if not isinstance(summary, dict) or set(summary) != {
+            "metrics",
+            "metrics_hash",
+            "prediction_hash",
+            "strategy_id",
+        }:
+            raise TypeError("strategy report summary is invalid")
+        strategy_id = _text(summary, "strategy_id")
+        decisions = [
+            record for record in evidence.records if record.get("strategy_id") == strategy_id
+        ]
+        assigned += len(decisions)
+        reports.append(
+            {
+                "allocation_contract": "EQUAL_WEIGHT_ACTIVE_LONGS_PER_DECISION_TIME",
+                "decisions": decisions,
+                "metrics": dict(_mapping(summary, "metrics")),
+                "metrics_hash": _text(summary, "metrics_hash"),
+                "prediction_hash": _text(summary, "prediction_hash"),
+                "strategy_id": strategy_id,
+            }
+        )
+    if assigned != len(evidence.records):
+        raise ValueError("model decisions do not match strategy summaries")
+    return reports
 
 
 def _single_record(evidence: VerifiedEvidence) -> dict[str, Any]:

@@ -335,6 +335,15 @@ def _validate_trial_start(start: RidgeTrialStartV1) -> None:
             ModelingFailureCode.TRIAL_INVALID,
             "dataset and architecture identities are required",
         )
+    if (
+        type(start.numpy_seed) is not int
+        or type(start.multiplicity_ordinal) is not int
+        or type(start.feature_schema_version) is not int
+    ):
+        raise ModelingError(
+            ModelingFailureCode.TRIAL_INVALID,
+            "ridge integer fields cannot use booleans or non-integer values",
+        )
     if start.numpy_seed != 0 or start.multiplicity_ordinal < 1:
         raise ModelingError(
             ModelingFailureCode.TRIAL_INVALID,

@@ -383,12 +383,12 @@ def _require_derived_rows(
             ModelingFailureCode.DATASET_INTEGRITY_INVALID,
             "derived dataset cannot be empty",
         )
-    keys = tuple(row.record_key for row in rows)
-    expected_keys = tuple(sorted(keys))
-    if len(set(keys)) != len(keys) or keys != expected_keys:
+    record_keys = tuple(row.record_key for row in rows)
+    order_keys = tuple(_derived_row_order_key(row) for row in rows)
+    if len(set(record_keys)) != len(record_keys) or order_keys != tuple(sorted(order_keys)):
         raise ModelingError(
             ModelingFailureCode.RECORD_ORDER_INVALID,
-            "derived dataset rows must follow their strict total order",
+            "derived dataset rows must use candidate, decision-time, and instrument order",
         )
     for row in rows:
         if row.candidate_id != candidate_id:
@@ -427,6 +427,13 @@ def _canonical_decimal(
     if isinstance(value, str) and value != canonical:
         raise ValueError(f"{field_name} must use canonical decimal text")
     return canonical
+
+
+def _derived_row_order_key(
+    row: FeatureRowV1 | LabelRowV1,
+) -> tuple[str, datetime, str]:
+    instrument = row.provider_instrument_id if isinstance(row, FeatureRowV1) else row.symbol
+    return row.candidate_id, row.decision_at, instrument
 
 
 def _closed_money_map(value: Mapping[str, MoneyV1]) -> Mapping[str, MoneyV1]:

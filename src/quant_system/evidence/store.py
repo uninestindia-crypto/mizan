@@ -69,6 +69,7 @@ class EvidenceStore:
         operation_id: str,
         phase_hook: PhaseHook | None = None,
         precondition: CommitPrecondition | None = None,
+        duplicate_precondition: CommitPrecondition | None = None,
     ) -> CommitResult:
         prepared = prepare_draft(draft, self.config)
         now = aware_utc(self.config.clock())
@@ -77,6 +78,8 @@ class EvidenceStore:
         with lease:
             existing = self._existing_result(draft, prepared)
             if existing is not None:
+                if duplicate_precondition is not None:
+                    duplicate_precondition()
                 return existing
             if precondition is not None:
                 precondition()

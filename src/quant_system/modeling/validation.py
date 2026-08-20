@@ -134,10 +134,14 @@ def evaluate_governed_ridge_fold(
         for strategy_id in STRATEGY_ORDER_V1
     )
     ridge_sharpe = Decimal(reports[0].metrics.sharpe_ratio)
+    ridge_period_returns = _portfolio_period_returns(reports[0])
+    skewness, kurtosis = _return_moments(ridge_period_returns)
     dsr = OverfittingDiagnostics.deflated_sharpe_ratio(
         estimated_sharpe=float(ridge_sharpe),
         num_trials=registry.multiplicity_count,
-        sample_length_bars=len(fold.validation_rows),
+        sample_length_bars=len(ridge_period_returns),
+        skewness=skewness,
+        kurtosis=kurtosis,
     )
     return RidgeFoldEvaluationV1(
         trial_id=start.trial_id,
@@ -290,7 +294,9 @@ def _validate_removed_rows(
             ModelingFailureCode.PARTITION_INVALID,
             "embargo rows must be the post-training, non-overlapping boundary rows",
         )
-    removed = tuple(sorted((*purged_rows, *embargoed_rows), key=lambda row: row.decision_at))
+    removed = tuple(
+        sorted((*purged_rows, *embargoed_rows), key=lambda row: (row.decision_at, row.symbol))
+    )
     expected_purge_start = removed[0].decision_at if removed else fold.spec.validation_start
     if fold.spec.purge_start != expected_purge_start:
         raise ModelingError(
@@ -343,3 +349,23 @@ def _label_rows_hash(rows: tuple[LabelRowV1, ...]) -> str:
             "schema_version": 1,
         }
     )
+
+
+def _portfolio_period_returns(report: StrategyFoldReportV1) -> tuple[float, ...]:
+    grouped: dict[datetime, list[float]] = {}
+    for decision in report.decisions:
+        grouped.setdefault(decision.decision_at, [])
+        if decision.predicted_target == "UP":
+            grouped[decision.decision_at].append(float(Decimal(decision.realized_net_return)))
+    return tuple(sum(values) / len(values) if values else 0.0 for values in grouped.values())
+
+
+def _return_moments(values: tuple[float, ...]) -> tuple[float, float]:
+    mean = sum(values) / len(values)
+    deviations = tuple(value - mean for value in values)
+    second = sum(value**2 for value in deviations) / len(values)
+    if second == 0.0:
+        return 0.0, 3.0
+    skewness = (sum(value**3 for value in deviations) / len(values)) / second**1.5
+    kurtosis = (sum(value**4 for value in deviations) / len(values)) / second**2
+    return skewness, kurtosis

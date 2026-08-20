@@ -17,6 +17,7 @@ from quant_system.modeling.folds import PartitionedFoldV1
 from quant_system.modeling.persisted_trials import (
     load_persisted_trial_registry,
     require_next_persisted_trial,
+    require_resumable_persisted_trial,
 )
 from quant_system.modeling.rows import FeatureDatasetV1, LabelDatasetV1
 from quant_system.modeling.trials import (
@@ -149,12 +150,8 @@ def run_persisted_ridge_trial(
         draft_from_trial_start(start),
         operation_id=f"{operation_id}-start",
         precondition=lambda: require_next_persisted_trial(store, start),
+        duplicate_precondition=lambda: require_resumable_persisted_trial(store, start),
     )
-    if start_commit.deduplicated:
-        raise ModelingError(
-            ModelingFailureCode.TRIAL_ALREADY_RECORDED,
-            "trial start already exists; a new attempt requires a new trial ID and ordinal",
-        )
     try:
         registry = load_persisted_trial_registry(store)
         evaluation = evaluate_governed_ridge_fold(
@@ -164,22 +161,27 @@ def run_persisted_ridge_trial(
             label_dataset,
             fold,
         )
-    except ModelingError as error:
+        evaluation_commit = store.commit(
+            draft_from_ridge_evaluation(evaluation),
+            operation_id=f"{operation_id}-model",
+        )
+    except Exception as error:
+        failure_code = (
+            error.code.value
+            if isinstance(error, ModelingError)
+            else ModelingFailureCode.TRIAL_EXECUTION_FAILED.value
+        )
         failed = unsuccessful_outcome(
             start,
             state=TrialState.FAILED,
             ended_at=ended_at,
-            failure_codes=(error.code.value,),
+            failure_codes=(failure_code,),
         )
         store.commit(
             draft_from_trial_outcome(failed),
             operation_id=f"{operation_id}-failed",
         )
         raise
-    evaluation_commit = store.commit(
-        draft_from_ridge_evaluation(evaluation),
-        operation_id=f"{operation_id}-model",
-    )
     outcome = succeeded_outcome(
         start,
         ended_at=ended_at,
