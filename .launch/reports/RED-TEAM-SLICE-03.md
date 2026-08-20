@@ -26,14 +26,14 @@ exact clean candidate. Its clean-clone gate itself passed: 194 repository tests,
 Each production repair began with a regression that failed on the attacked revision. The focused
 suite now has 41 tests and includes the original adversarial cases.
 
-## Post-repair local evidence
+## Repair revision evidence (`be9da7f`)
 
 ```text
 repository tests: 205 passed
 coverage: 88.53%
 focused Slice 3 tests: 41 passed
 strict mypy: 75 source files
-ruff lint/format: pass; clean-clone Verifier later enumerated 167 files
+ruff lint/format: pass
 vulture: zero findings at >=80% confidence
 application secret scan: zero candidates
 Code Craft: 10 files clean
@@ -78,6 +78,10 @@ vulture and application secret scans: zero findings
 Code Craft and Test Craft: pass
 exact gate result: Slice 3 gates passed
 ```
+
+The counts above are revision-scoped to the repair recheck. Subsequent daily-pipeline commits added
+three repository tests. The later certification baseline is 208 tests at 88.55% coverage and 171
+Ruff-formatted files; the repaired Slice 3 contracts and 41 focused tests are unchanged.
 
 Observed repair outcomes:
 

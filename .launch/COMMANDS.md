@@ -100,10 +100,10 @@ powershell -ExecutionPolicy Bypass -File scripts/run-slice3-gates.ps1 -PythonEnv
 Latest pre-handoff result:
 
 ```text
-pytest: 205 passed, 1 dependency warning
-coverage: 4846 statements, 556 missed, 88.53%
+pytest: 208 passed, 1 dependency warning
+coverage: 4846 statements, 555 missed, 88.55%
 focused Slice 3 suite: 41 passed
-ruff lint and format: clean; 167 files formatted in the independent clean clone
+ruff lint and format: clean; 171 files formatted in the independent clean clone
 mypy: 75 source files clean
 vulture: 0 findings at >=80% confidence
 detect-secrets: 0 application candidates
