@@ -69,12 +69,12 @@ historical market values.
 | Code Craft | PASS — 10 Slice 3 source files |
 | Test Craft | PASS — 5 Slice 3 test/support files |
 | Mutation checks | PASS — three dangerous mutations killed and restored |
-| Repository gate | PASS - 208 tests, 88.55% coverage (4,846 statements / 555 missed) |
-| Ruff format | PASS — 171 files in the independent clean clone |
+| Repository gate | PASS - 208 tests, 88.58% coverage (4,862 statements / 555 missed) |
+| Ruff format | PASS — 174 files in the independent clean clone |
 | Dead-code scan | PASS — zero findings at >=80% confidence |
 | Application secret scan | PASS — zero candidates |
 | Red Team | PASS - exact repair revision `be9da7f`; no unresolved Blocker or Major |
-| Independent clean-state Verifier | RECHECK PENDING - substantive gates and mutations proven; exact counts corrected after attempt 2 |
+| Independent clean-state Verifier | RECHECK PENDING - substantive gates and mutations proven; exact counts corrected after attempt 3 |
 
 Raw failing and restored mutation outputs are in `.launch/reports/MUTATION-SLICE-03.md`.
 The complete initial adversarial report and repair dispositions are in

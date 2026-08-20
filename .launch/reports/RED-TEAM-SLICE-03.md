@@ -79,9 +79,10 @@ Code Craft and Test Craft: pass
 exact gate result: Slice 3 gates passed
 ```
 
-The counts above are revision-scoped to the repair recheck. Subsequent daily-pipeline commits added
-three repository tests. The later certification baseline is 208 tests at 88.55% coverage and 171
-Ruff-formatted files; the repaired Slice 3 contracts and 41 focused tests are unchanged.
+The counts above are revision-scoped to the repair recheck. Subsequent daily-pipeline and drive
+isolation commits changed the repository-wide baseline. The later certification baseline is 208
+tests at 88.58% coverage (4,862 statements / 555 missed) and 174 Ruff-formatted files; the repaired
+Slice 3 contracts and 41 focused tests are unchanged.
 
 Observed repair outcomes:
 
