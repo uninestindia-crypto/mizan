@@ -1,0 +1,4 @@
+interface:
+  display_name: "Founder Mode"
+  short_description: "Ship software through evidence-based gates"
+  default_prompt: "Use $founder-mode to assess this work, choose the right tier, and identify the evidence required before it can ship."

@@ -1,0 +1,27 @@
+# Upstox API v2 & AI Multi-Agent Advisory Configuration
+upstox:
+  api_key: "${UPSTOX_API_KEY}"
+  access_token: "${UPSTOX_ACCESS_TOKEN}"
+  redirect_uri: "https://127.0.0.1:5000"
+  instruments:
+    INFY: "NSE_EQ|INE009A01021"
+    TCS: "NSE_EQ|INE467B01029"
+    RELIANCE: "NSE_EQ|INE002A01018"
+    HDFCBANK: "NSE_EQ|INE040A01034"
+    ICICIBANK: "NSE_EQ|INE090A01021"
+
+ai_advisors:
+  enabled: true
+  require_consensus: true
+  claude:
+    enabled: true
+    cli_command: "claude"
+    role: "Macro & Qualitative Risk"
+  codex:
+    enabled: true
+    cli_command: "codex"
+    role: "Strategy & Parameter Invariants"
+  antigravity:
+    enabled: true
+    cli_command: "agy"
+    role: "Multi-Agent Consensus & Position Sizing"

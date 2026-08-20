@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuantOS Desktop — Institutional Quant & Risk Engine v1.0.0</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+          <polyline points="16 7 22 7 22 13"></polyline>
+        </svg>
+        QuantOS
+      </div>
+      <span class="brand-badge">v1.0.0</span>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="tab-backtest">📊 Backtest Lab</button>
+      <button class="tab-btn" data-tab="tab-straddle">⚡ Options Lab</button>
+      <button class="tab-btn" data-tab="tab-montecarlo">🎲 Monte Carlo & Optimization</button>
+      <button class="tab-btn" data-tab="tab-risk">🛡️ Risk Governor</button>
+      <button class="tab-btn" data-tab="tab-diagnostics">🩺 Diagnostics</button>
+    </nav>
+
+
+    <div class="nav-controls">
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        <span id="engine-status">ONLINE</span>
+      </div>
+      <button class="icon-btn" id="theme-toggle" title="Toggle Theme" aria-label="Toggle Dark/Light Mode">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="container">
+
+    <!-- ==================== TAB 1: BACKTEST LAB ==================== -->
+    <section id="tab-backtest" class="tab-panel active">
+      <div class="grid-2col">
+        
+        <!-- Left Column: Strategy Config Form -->
+        <div class="sidebar">
+          <div class="card">
+            <h2 class="card-title">Strategy Configuration</h2>
+            
+            <div class="form-group">
+              <label class="form-label" for="strategy-select">Trading Strategy</label>
+              <select id="strategy-select" class="form-select">
+                <option value="EquityDualMomentum">Equity Dual Momentum & Trend</option>
+                <option value="DirectionalVerticalSpreads">Directional Vertical Spreads</option>
+                <option value="IntradayATMStraddle">09:20 Intraday Straddle</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="initial-cash">Initial Capital (INR ₹)</label>
+              <input type="number" id="initial-cash" class="form-input" value="1000000" step="50000" min="10000">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="sim-days">Historical Horizon (Days)</label>
+              <input type="number" id="sim-days" class="form-input" value="120" min="30" max="500">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="slippage-bps">Simulated Slippage (BPS)</label>
+              <input type="number" id="slippage-bps" class="form-input" value="5.0" step="0.5" min="0">
+            </div>
+
+            <button id="btn-run-backtest" class="btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Run Event-Driven Backtest
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Column: Results & Interactive Charts -->
+        <div class="main-panel">
+          
+          <!-- Key Metrics Grid -->
+          <div class="metrics-grid">
+            <div class="stat-box">
+              <div class="stat-label">Total Return</div>
+              <div class="stat-value" id="stat-total-return">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Sharpe Ratio</div>
+              <div class="stat-value" id="stat-sharpe">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Max Drawdown</div>
+              <div class="stat-value" id="stat-max-dd">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Win Rate</div>
+              <div class="stat-value" id="stat-win-rate">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total Trades</div>
+              <div class="stat-value" id="stat-total-trades">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Friction Paid</div>
+              <div class="stat-value" id="stat-friction">--</div>
+            </div>
+          </div>
+
+          <!-- Equity Curve Chart -->
+          <div class="card">
+            <div class="card-title">
+              <span>Mark-to-Market Equity Curve (₹)</span>
+              <button id="btn-export-tearsheet" class="btn-secondary" style="display:none;">Download Tearsheet</button>
+            </div>
+            <div class="chart-card">
+              <canvas id="equityChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Executed Orders / Fills Table -->
+          <div class="card">
+            <h3 class="card-title">Executed Trade Log (Zero Lookahead Fills)</h3>
+            <div class="table-wrapper">
+              <table class="data-table" id="fills-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Symbol</th>
+                    <th>Side</th>
+                    <th>Quantity</th>
+                    <th>Price (₹)</th>
+                    <th>Friction (₹)</th>
+                  </tr>
+                </thead>
+                <tbody id="fills-tbody">
+                  <tr>
+                    <td colspan="6" style="text-align:center; color:var(--color-text-secondary);">No backtest executed yet. Click "Run Event-Driven Backtest" to begin.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: OPTIONS LAB ==================== -->
+    <section id="tab-straddle" class="tab-panel">
+      <div class="grid-2col">
+        <div class="sidebar">
+          <div class="card">
+            <h2 class="card-title">09:20 Straddle Setup</h2>
+            
+            <div class="form-group">
+              <label class="form-label" for="opt-spot">NIFTY Spot Price (₹)</label>
+              <input type="number" id="opt-spot" class="form-input" value="24500.0" step="10">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="opt-vol">Implied Volatility (%)</label>
+              <input type="number" id="opt-vol" class="form-input" value="18.0" step="0.5">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="opt-dte">Days to Expiry (DTE)</label>
+              <input type="number" id="opt-dte" class="form-input" value="7" min="1" max="60">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="opt-qty">Contracts / Quantity</label>
+              <input type="number" id="opt-qty" class="form-input" value="25" step="25" min="25">
+            </div>
+
+            <button id="btn-calc-straddle" class="btn-primary">
+              Compute Analytical Greeks
+            </button>
+          </div>
+        </div>
+
+        <div class="main-panel">
+          <div class="metrics-grid">
+            <div class="stat-box">
+              <div class="stat-label">ATM Strike Selected</div>
+              <div class="stat-value" id="opt-atm-strike">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Net Delta (Δ)</div>
+              <div class="stat-value" id="opt-net-delta">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Daily Theta Decay (₹)</div>
+              <div class="stat-value positive" id="opt-theta-decay">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total Premium (₹)</div>
+              <div class="stat-value" id="opt-total-premium">--</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Options Greeks Breakdown (Black-Scholes Engine)</h3>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Leg</th>
+                    <th>Strike</th>
+                    <th>Premium (₹)</th>
+                    <th>Delta (Δ)</th>
+                    <th>Gamma (Γ)</th>
+                    <th>Theta (Θ/day)</th>
+                    <th>Vega (ν)</th>
+                  </tr>
+                </thead>
+                <tbody id="greeks-tbody">
+                  <tr><td colspan="7" style="text-align:center; color:var(--color-text-secondary);">Click "Compute Analytical Greeks" to inspect.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: MONTE CARLO & PORTFOLIO OPTIMIZER ==================== -->
+    <section id="tab-montecarlo" class="tab-panel">
+      <div class="grid-2col">
+        <div class="sidebar">
+          <div class="card">
+            <h2 class="card-title">Monte Carlo Stress Setup</h2>
+            <div class="form-group">
+              <label class="form-label" for="mc-sims">Simulated Paths in RAM</label>
+              <select id="mc-sims" class="form-select">
+                <option value="1000">1,000 Paths (Fast)</option>
+                <option value="5000" selected>5,000 Paths (Standard)</option>
+                <option value="10000">10,000 Paths (Deep)</option>
+                <option value="25000">25,000 Paths (Heavyweight)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="mc-horizon">Horizon (Trading Days)</label>
+              <input type="number" id="mc-horizon" class="form-input" value="252" min="30" max="756">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="mc-capital">Initial Capital (₹)</label>
+              <input type="number" id="mc-capital" class="form-input" value="1000000" step="50000">
+            </div>
+            <button id="btn-run-mc" class="btn-primary">
+              Run Monte Carlo Stress Test
+            </button>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Markowitz Optimizer</h2>
+            <p style="font-size:12px; color:var(--color-text-secondary); margin-bottom:12px;">Solves quadratic covariance matrix for Maximum Sharpe Portfolio & Risk Parity.</p>
+            <button id="btn-run-opt" class="btn-primary" style="background-color: var(--color-success);">
+              Solve Optimal Weights
+            </button>
+          </div>
+        </div>
+
+        <div class="main-panel">
+          <!-- Monte Carlo Stress Metrics -->
+          <div class="metrics-grid">
+            <div class="stat-box">
+              <div class="stat-label">Value at Risk (VaR 95%)</div>
+              <div class="stat-value negative" id="mc-var-95">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Conditional VaR (CVaR)</div>
+              <div class="stat-value negative" id="mc-cvar-95">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Prob. of Profit</div>
+              <div class="stat-value positive" id="mc-prob-profit">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Median Final Equity</div>
+              <div class="stat-value" id="mc-median-equity">--</div>
+            </div>
+          </div>
+
+          <!-- Monte Carlo Confidence Cones Chart -->
+          <div class="card">
+            <div class="card-title">
+              <span>Monte Carlo Equity Confidence Cones (5th to 95th Percentile)</span>
+            </div>
+            <div class="chart-card">
+              <canvas id="mcChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Efficient Frontier & Allocation Weights -->
+          <div class="card" id="opt-results-card" style="display:none;">
+            <h3 class="card-title">Markowitz Maximum Sharpe & Risk Parity Allocations</h3>
+            <div class="table-wrapper">
+              <table class="data-table" id="opt-table">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th>Max Sharpe Allocation</th>
+                    <th>Risk Parity (Equal Risk)</th>
+                    <th>Minimum Variance</th>
+                  </tr>
+                </thead>
+                <tbody id="opt-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: RISK GOVERNOR ==================== -->
+    <section id="tab-risk" class="tab-panel">
+
+      <div class="card" style="max-width: 800px; margin: 0 auto;">
+        <h2 class="card-title">Pre-Trade Risk Governance & Safety Thresholds</h2>
+        
+        <form id="risk-form">
+          <div class="form-group">
+            <label class="form-label" for="risk-max-pos">Max Single-Stock Position Weight (% of Equity)</label>
+            <input type="number" id="risk-max-pos" class="form-input" step="1" min="5" max="100">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="risk-daily-dd">Max Daily Drawdown Circuit Breaker (%)</label>
+            <input type="number" id="risk-daily-dd" class="form-input" step="0.5" min="1" max="20">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="risk-total-dd">Max Trailing Drawdown Limit (%)</label>
+            <input type="number" id="risk-total-dd" class="form-input" step="1" min="2" max="50">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="risk-spread">Max Bid-Ask Spread Liquidity Gate (%)</label>
+            <input type="number" id="risk-spread" class="form-input" step="0.1" min="0.1" max="5">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="risk-cash-buffer">Minimum Cash Buffer (%)</label>
+            <input type="number" id="risk-cash-buffer" class="form-input" step="1" min="0" max="30">
+          </div>
+
+          <button type="submit" class="btn-primary" style="margin-top: 20px;">
+            Save Active Risk Limits
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: DIAGNOSTICS ==================== -->
+    <section id="tab-diagnostics" class="tab-panel">
+      <div class="card" style="max-width: 800px; margin: 0 auto;">
+        <div class="card-title">
+          <span>Engine Self-Diagnostics & System Health</span>
+          <button id="btn-refresh-diag" class="btn-secondary">Re-run Diagnostics</button>
+        </div>
+
+        <div id="diag-container" style="padding: 10px 0;">
+          <p style="color:var(--color-text-secondary);">Loading system diagnostics...</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toast"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

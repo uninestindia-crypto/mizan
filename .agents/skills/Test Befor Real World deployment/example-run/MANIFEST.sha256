@@ -1,0 +1,25 @@
+# Launch Readiness evidence manifest -- generated 2026-08-15T03:38:02+05:30
+# Verify with: python lrk.py verify
+02f36d45fd2b73a08726dee76782cbe406329e2ed5059c44915816fac2dc3b26  attachments/G0.09/money-paths.md
+148746730d1329e113fa5463401a4d5e2ffe54fce42b0309eb004a3d3355a7ee  evidence/G0.03/01-command-map-build.log
+2e978dd2ce606d2919cf5a0a0a543a5b656283f6efe0c6ccc94fb28a8b78c972  evidence/G2.06/04-sabotage-3-applydiscount-is-a-no-op.log
+33fa27e38ca926c81884bbb76ba9d64025dd13a3030fb4e3a661023a0b705ee5  evidence/G1.17/01-secrets-committed-to-the-repo.log
+3889ac869ea97f249f304b70caa0f892371a880b03974a6d7415d34103f060f7  evidence/G2.04/01-suite-passes-twice-in-a-row.log
+3976e2af374fd57775deadb235158634e58f652452326834a4c218045a4e2f62  evidence/G0.03/02-command-map-test.log
+39c95743d1f315bf136f1464f6bfecf42862327b86ee51a7923498d2f3f204f6  evidence/G1.01/01-npm-run-build.log
+40c1203878e443da6454f94b58a8e40565700c096ff7201bf517df873aecbf7a  evidence/G1.11/01-localhost-sandbox-on-prod-path.log
+45f1907c1c29694e053df601b1aa77654e5b8a7d299ec6cad345a6cd988c879c  evidence/G2.01/01-suite-exists-and-runs.log
+61ce05c440f5e8e167f940c2366ed3967196203b048a4b63ceb671a704f22d0c  state.json
+6afc0b82f82a5e172d5a626eb15a8852a8d341e8245f38ba303efd6832913817  attachments/G2.06/sabotage-analysis.md
+70b5b163b2150ebea66cf1cb5019258b6628fc86362f69e7ad3101816420acbb  evidence/G1.10/01-secret-scan-full-git-history.log
+72ba448a9a25f5de01d30b2acce6b6a833c2a1901999e69c5aed33ee983d211c  evidence/G1.07/01-debug-artifacts-in-src.log
+7850b143647b7d6d0a136a52eaa2e15f506536a820502ad584cd26513253c258  evidence/G0.07/01-lockfile-committed.log
+7a1b73a2ffe1ba6518cd2572e345afb3f387f0281ac9d938d9e0e6caad2e7860  evidence/G3.10/01-idempotency-guard-on-mutating-paths.log
+7a76b9f58812ce9c9ccf3901cfad448b18b33c4579931b5f753c3b31dc054b29  evidence/G3.07/01-floating-point-money-scan.log
+7cb988193490b4efaf302e4555fc8931485045e7f3262597ecdc20d038158fab  evidence/G4.03/01-tenant-filter-present-on-every-order-read.log
+7da5f423182215581d83d464ce53e7ca41b96dd9de4baffa4f8ac6aca4956bdc  evidence/G2.06/05-code-restored-tree-clean.log
+80d34a5258b71309726659c75e0caee6d9340e1f15e22373b2425cf7a8c6476f  evidence/G2.06/03-sabotage-2-withtax-rounding-becomes-floor.log
+8ca9e92bd86b02ed9a239b0de2dad2646e27fd311109d1ddda5d39012e6483b4  evidence/G2.06/02-sabotage-1-linetotal-multiply-becomes-add.log
+8eacf36f5de6bd7d985547a04fe775c7a415438884ce4d0c796dc7f454569722  evidence/G2.05/01-no-skipped-or-only-tests.log
+afa3d1e7f9a21709ad87aa37ae74d69a5c4a34ca23c0348932099daf2d549699  evidence/G2.06/01-baseline-suite-is-green-before-any-sabotage.log
+ec90055ad807fbd27a83ce5d39acfa5b9af7debf65374509e43d87ec05468dc8  evidence/G4.09/01-sql-built-by-string-concatenation.log

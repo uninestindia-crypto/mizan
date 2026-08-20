@@ -1,0 +1,22 @@
+# Strategy Configurations & Parameters
+equity_momentum:
+  enabled: true
+  universe: ["INFY", "TCS", "RELIANCE", "HDFCBANK", "ICICIBANK"]
+  lookback_short_days: 20
+  lookback_long_days: 50
+  volatility_lookback_days: 20
+  target_annual_volatility: 0.15
+  rebalance_frequency: "daily"
+  stop_loss_pct: 0.05
+  trailing_stop_pct: 0.08
+
+options_straddle:
+  enabled: true
+  underlying: "NIFTY"
+  entry_time: "09:20:00"
+  exit_time: "15:15:00"
+  stop_loss_multiplier: 1.25          # Exit leg if premium rises 25% above entry
+  target_profit_pct: 0.50             # Exit if 50% combined decay achieved
+  strike_selection: "ATM"             # Closest round strike to underlying spot
+  lot_size: 25                        # NSE NIFTY standard lot size
+  max_lots: 4

@@ -1,0 +1,132 @@
+# PROJECT ZERO — CI ON DAY ZERO (Law 6)
+#
+# Copy to .github/workflows/ci.yml and adjust the three marked lines.
+#
+# WHY THIS EXISTS ON DAY ZERO
+# Adding CI to a repo with four files takes ten minutes. Adding it to a repo
+# with four hundred takes a week, because it immediately goes red on problems
+# nobody has time to fix, and a red pipeline that everyone ignores is worse than
+# no pipeline. Set it up while it passes trivially — then it can never become
+# too expensive to add.
+#
+# THE RULE: RED MAIN IS AN EMERGENCY.
+# Not "someone will look at it". The next person to push inherits a broken
+# signal and stops trusting it, and an untrusted pipeline is decoration.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push to the same branch cancels the previous run. Without this, a busy
+# branch queues runs behind each other and the feedback loop stretches to
+# useless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege by default. Grant more only to the job that needs it, and
+# never at the workflow level.
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15 # a hung job must fail, not burn an hour
+
+    # ---- CHANGE ME (1/3): drop this whole block if the project has no database.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- CHANGE ME (2/3): match the project's runtime and package manager.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc # pin the runtime in a file, not inline (Law 1)
+          cache: npm
+
+      # `ci` not `install`: it installs exactly the lockfile and fails if
+      # package.json and the lockfile disagree. That disagreement is a real bug
+      # and CI is where it should surface.
+      - run: npm ci
+
+      # Each check runs even if an earlier one failed, so one push surfaces every
+      # problem instead of one problem per push.
+      - name: Typecheck
+        if: '!cancelled()'
+        run: npm run typecheck
+
+      - name: Lint
+        if: '!cancelled()'
+        run: npm run lint
+
+      - name: Format check
+        if: '!cancelled()'
+        run: npm run format:check
+
+      - name: Test
+        if: '!cancelled()'
+        run: npm test
+        env:
+          # ---- CHANGE ME (3/3): the config contract's variables (Law 3).
+          # The app refuses to boot without these, so CI must supply them.
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/app_test
+          NODE_ENV: test
+
+      - name: Build
+        if: '!cancelled()'
+        run: npm run build
+
+      # Migrations are the one thing that cannot be rolled back by redeploying,
+      # so the rollback path is exercised on every push rather than trusted.
+      # Law 7: a rollback you have not run is a plan to improvise.
+      - name: Migration up and down
+        if: '!cancelled()'
+        run: |
+          npm run migrate:up
+          npm run migrate:down
+          npm run migrate:up
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/app_test
+
+  # Dependency and secret scanning. Separate job so it cannot slow the main
+  # feedback loop, and so its permissions stay narrow.
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history: a secret scan needs to see the past
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      # Fails the build on a known-exploitable dependency. Tune the level once
+      # you have seen the real noise floor — but never to `none`.
+      - run: npm audit --audit-level=high
+
+      # A secret committed once is compromised forever, even after a later
+      # deletion, because it lives in the history. Catch it at the first push.
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

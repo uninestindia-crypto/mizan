@@ -1,0 +1,616 @@
+/* ============================================================================
+   APPLE-GRADE UI — THE TOKEN LAYER
+   ============================================================================
+
+   Copy this file into a new project verbatim. It is framework-neutral: plain
+   CSS custom properties, usable from Tailwind, CSS modules, styled-components,
+   vanilla CSS, or anything else.
+
+   HOW TO ADOPT IT
+   1. Copy this file to your project (e.g. src/styles/tokens.css) and import it
+      first, before any other stylesheet.
+   2. Open the BRAND block below and change the six --brand-* values. That is
+      the only block you edit. Everything else derives from Apple's system
+      structure and should not be touched.
+   3. If you use Tailwind, also copy assets/tailwind.preset.js, which maps every
+      token below to the exact class names the skill's references use
+      (text-body, bg-surface, shadow-e1, rounded-xl, duration-base, …).
+   4. Run `node scripts/check-ui.mjs --tokens <path-to-this-file>` to print a
+      contrast report and confirm your brand color passes.
+
+   THE RULES THIS FILE ENFORCES
+   - Every token has a light AND a dark value. A token with only a light value
+     is a bug.
+   - Text colors are alpha over the background, never fixed grays, so they
+     composite correctly on white, on a tinted card, and on a material.
+   - Dark mode is not an inversion: surfaces get LIGHTER as they come forward.
+   ==========================================================================*/
+
+/* ============================================================================
+   1. BRAND — the only block you edit
+   ==========================================================================*/
+
+:root {
+  /* Your brand accent, used as a FILL — the background of a filled button.
+     It must carry white text at 4.5:1. Verify with:
+        node scripts/check-ui.mjs --tokens tokens.css
+     Defaults: 5.36:1 with white in light, 4.63:1 in dark. */
+  --brand-accent:            #0A5AFF;
+  --brand-accent-dark:       #1F6FEB;
+
+  /* The same brand identity used as TEXT on a surface — links, accent labels.
+     It must reach 4.5:1 against --surface, which in dark mode means a lighter
+     value than the fill. See the note under §3 for why these cannot be one
+     token: no single color can both carry white text and read as text on a
+     dark surface at AA. Apple splits them too. */
+  --brand-accent-text:       #0A5AFF;
+  --brand-accent-text-dark:  #0A84FF;
+
+  /* Pressed / hovered accent. One step darker in light, one step lighter in dark. */
+  --brand-accent-strong:      #0344CC;
+  --brand-accent-strong-dark: #4DA2FF;
+
+  /* Optional deep surface for a single hero card per screen. Set to the same
+     value as --surface if your product has no hero treatment. */
+  --brand-deep:              #0A1B3D;
+  --brand-deep-dark:         #0F2247;
+}
+
+/* ============================================================================
+   2. TYPE — eleven steps, no twelfth
+   Each step carries its own size, line-height, weight and tracking. Never layer
+   line-height or letter-spacing on top of one of these.
+   Sizes are rem against a 16px root so OS text-size and browser zoom scale them.
+   ==========================================================================*/
+
+:root {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Inter var", Inter, "Segoe UI Variable", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  /* size | line-height | weight | tracking */
+  --text-display-size:     2.125rem;  /* 34 */
+  --text-display-lh:       2.5rem;    /* 40 */
+  --text-display-weight:   700;
+  --text-display-tracking: -0.025em;
+
+  --text-title-1-size:     1.75rem;   /* 28 */
+  --text-title-1-lh:       2.125rem;  /* 34 */
+  --text-title-1-weight:   700;
+  --text-title-1-tracking: -0.02em;
+
+  --text-title-2-size:     1.375rem;  /* 22 */
+  --text-title-2-lh:       1.75rem;   /* 28 */
+  --text-title-2-weight:   700;
+  --text-title-2-tracking: -0.018em;
+
+  --text-title-3-size:     1.25rem;   /* 20 */
+  --text-title-3-lh:       1.5625rem; /* 25 */
+  --text-title-3-weight:   600;
+  --text-title-3-tracking: -0.015em;
+
+  --text-headline-size:     1.0625rem; /* 17 */
+  --text-headline-lh:       1.375rem;  /* 22 */
+  --text-headline-weight:   600;
+  --text-headline-tracking: -0.012em;
+
+  --text-body-size:     1.0625rem; /* 17 */
+  --text-body-lh:       1.5rem;    /* 24 */
+  --text-body-weight:   400;
+  --text-body-tracking: -0.012em;
+
+  --text-callout-size:     1rem;      /* 16 */
+  --text-callout-lh:       1.3125rem; /* 21 */
+  --text-callout-weight:   400;
+  --text-callout-tracking: -0.0125em;
+
+  --text-subhead-size:     0.9375rem; /* 15 */
+  --text-subhead-lh:       1.25rem;   /* 20 */
+  --text-subhead-weight:   400;
+  --text-subhead-tracking: -0.0067em;
+
+  --text-footnote-size:     0.8125rem; /* 13 */
+  --text-footnote-lh:       1.125rem;  /* 18 */
+  --text-footnote-weight:   400;
+  --text-footnote-tracking: 0em;
+
+  --text-caption-1-size:     0.75rem;  /* 12 */
+  --text-caption-1-lh:       1rem;     /* 16 */
+  --text-caption-1-weight:   500;
+  --text-caption-1-tracking: 0.0083em;
+
+  --text-caption-2-size:     0.6875rem; /* 11 */
+  --text-caption-2-lh:       0.875rem;  /* 14 */
+  --text-caption-2-weight:   600;
+  --text-caption-2-tracking: 0.036em;
+}
+
+/* ============================================================================
+   3. COLOR — light mode is the base definition
+   ==========================================================================*/
+
+:root {
+  color-scheme: light;
+
+  /* --- Apple system palette, reproduced for reference. Prefer the semantic
+         tokens below; reach for these only when defining a new semantic. --- */
+  --sys-blue:    #007AFF;
+  --sys-green:   #34C759;
+  --sys-indigo:  #5856D6;
+  --sys-orange:  #FF9500;
+  --sys-pink:    #FF2D55;
+  --sys-purple:  #AF52DE;
+  --sys-red:     #FF3B30;
+  --sys-teal:    #5AC8FA;
+  --sys-yellow:  #FFCC00;
+  --sys-gray:    #8E8E93;
+  --sys-gray-2:  #AEAEB2;
+  --sys-gray-3:  #C7C7CC;
+  --sys-gray-4:  #D1D1D6;
+  --sys-gray-5:  #E5E5EA;
+  --sys-gray-6:  #F2F2F7;
+
+  /* --- Label tiers. Alpha over the background, never a fixed gray. ---
+     NOTE ON --label-secondary: Apple's own secondaryLabel is 60% alpha, which
+     measures 3.44:1 on white and therefore FAILS WCAG AA for body text. This
+     file ships 75% instead — measurably 5.16:1 — because Law 5 says contrast
+     floors are hard floors and a documented Apple value does not outrank a
+     user who cannot read the text. It still reads as clearly secondary. */
+  --label:            #000000;
+  --label-secondary:  rgba(60, 60, 67, 0.75);
+  --label-tertiary:   rgba(60, 60, 67, 0.30);
+  --label-quaternary: rgba(60, 60, 67, 0.18);
+  --label-on-accent:  #FFFFFF;
+
+  /* --- Surfaces. Grouped style: cards float on a tinted canvas. --- */
+  --canvas:            #F2F4F8;
+  --surface:           #FFFFFF;
+  --surface-secondary: #F2F4F8;
+  --surface-elevated:  #FFFFFF;
+
+  /* --- Fills. Translucent by design so one token works on every surface. --- */
+  --fill:            rgba(120, 120, 128, 0.20);
+  --fill-secondary:  rgba(120, 120, 128, 0.16);
+  --fill-tertiary:   rgba(118, 118, 128, 0.12);
+  --fill-quaternary: rgba(116, 116, 128, 0.08);
+
+  /* Row dividers are deliberately faint and are decorative — rows are also
+     separated by spacing, so the separator is not the only cue and the 3:1
+     boundary floor does not apply to it. */
+  --separator:        rgba(60, 60, 67, 0.29);
+  --separator-opaque: #C6C6C8;
+
+  /* The boundary of an actual control — input border, checkbox outline,
+     unselected segmented-control edge. This one DOES carry meaning and must
+     hold 3:1, so it is a separate, stronger token. Never use --separator here. */
+  --border-control: rgba(60, 60, 67, 0.60);
+
+  /* --- Brand + semantic tones. ---
+     --accent is the FILL (bg-accent, paired with --label-on-accent).
+     --accent-text is the same identity used as words on a surface.
+     They diverge in dark mode by necessity, not by preference: a color light
+     enough to read as text on #1C1C1E is too light to carry white text. */
+  --accent:        var(--brand-accent);
+  --accent-text:   var(--brand-accent-text);
+  --accent-strong: var(--brand-accent-strong);
+  --accent-tint:   color-mix(in srgb, var(--brand-accent) 10%, transparent);
+  --deep:          var(--brand-deep);
+
+  --success: #12A150;
+  --warning: #F08C00;
+  --danger:  #E5342A;
+  --info:    #0A5AFF;
+  --ai:      #5856D6;
+
+  /* Text-safe variants. Orange and yellow almost never pass 4.5:1 as small
+     text on a light surface, so warning gets a darker text token. Use the
+     base token for fills and glyphs, the -text token for words. */
+  --success-text: #0E7C3E;
+  --warning-text: #A85F00;
+  --danger-text:  #C42A21;
+  --info-text:    #0344CC;
+  --ai-text:      #4442B8;
+
+  --success-tint: color-mix(in srgb, var(--success) 10%, transparent);
+  --warning-tint: color-mix(in srgb, var(--warning) 10%, transparent);
+  --danger-tint:  color-mix(in srgb, var(--danger)  10%, transparent);
+  --info-tint:    color-mix(in srgb, var(--info)    10%, transparent);
+  --ai-tint:      color-mix(in srgb, var(--ai)      10%, transparent);
+
+  /* --- Elevation. Two layers each: contact edge + ambient falloff.
+         The shadow color is a desaturated navy, never black — pure black goes
+         muddy over a tinted canvas. --- */
+  --shadow-e0: none;
+  --shadow-e1: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06);
+  --shadow-e2: 0 2px 4px rgba(16, 24, 40, 0.04), 0 8px 24px rgba(16, 24, 40, 0.08);
+  --shadow-e3: 0 4px 8px rgba(16, 24, 40, 0.05), 0 16px 40px rgba(16, 24, 40, 0.12);
+  --shadow-e4: 0 8px 16px rgba(16, 24, 40, 0.06), 0 32px 64px rgba(16, 24, 40, 0.16);
+
+  /* --- Materials. Translucent chrome only; never put content on a material. */
+  --material-thin:    rgba(255, 255, 255, 0.72);
+  --material-regular: rgba(255, 255, 255, 0.82);
+  --material-thick:   rgba(255, 255, 255, 0.92);
+  --material-chrome:  rgba(246, 246, 248, 0.86);
+  --material-blur-thin:    20px;
+  --material-blur-regular: 30px;
+  --material-blur-thick:   40px;
+
+  /* Specular rim that reads as refractive glass on the navigation layer. */
+  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.55),
+               inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* --- Dark mode. Defined twice on purpose: once for the system preference and
+       once for an explicit toggle, so both win in the right direction.
+       Surfaces get LIGHTER as they come forward — the opposite of light mode's
+       shadow-based depth. Saturated colors are desaturated and brightened so
+       they do not vibrate against black. --- */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --sys-blue:   #0A84FF;
+    --sys-green:  #30D158;
+    --sys-indigo: #5E5CE6;
+    --sys-orange: #FF9F0A;
+    --sys-pink:   #FF375F;
+    --sys-purple: #BF5AF2;
+    --sys-red:    #FF453A;
+    --sys-teal:   #64D2FF;
+    --sys-yellow: #FFD60A;
+    --sys-gray-2: #636366;
+    --sys-gray-3: #48484A;
+    --sys-gray-4: #3A3A3C;
+    --sys-gray-5: #2C2C2E;
+    --sys-gray-6: #1C1C1E;
+
+    --label:            #FFFFFF;
+    --label-secondary:  rgba(235, 235, 245, 0.60);
+    --label-tertiary:   rgba(235, 235, 245, 0.30);
+    --label-quaternary: rgba(235, 235, 245, 0.16);
+
+    --canvas:            #000000;
+    --surface:           #1C1C1E;
+    --surface-secondary: #2C2C2E;
+    --surface-elevated:  #2C2C2E;
+
+    --fill:            rgba(120, 120, 128, 0.36);
+    --fill-secondary:  rgba(120, 120, 128, 0.32);
+    --fill-tertiary:   rgba(118, 118, 128, 0.24);
+    --fill-quaternary: rgba(118, 118, 128, 0.18);
+
+    --separator:        rgba(84, 84, 88, 0.60);
+    --separator-opaque: #38383A;
+    --border-control:   rgba(235, 235, 245, 0.45);
+
+    --accent:        var(--brand-accent-dark);
+    --accent-text:   var(--brand-accent-text-dark);
+    --accent-strong: var(--brand-accent-strong-dark);
+    --accent-tint:   color-mix(in srgb, var(--brand-accent-text-dark) 18%, transparent);
+    --deep:          var(--brand-deep-dark);
+
+    --success: #30D158;
+    --warning: #FF9F0A;
+    --danger:  #FF453A;
+    --info:    #3D8BFF;
+    --ai:      #5E5CE6;
+
+    /* On dark surfaces the saturated tone already passes as text. */
+    --success-text: #30D158;
+    --warning-text: #FF9F0A;
+    --danger-text:  #FF453A;
+    --info-text:    #3D8BFF;
+    --ai-text:      #8482F5;
+
+    --success-tint: color-mix(in srgb, var(--success) 18%, transparent);
+    --warning-tint: color-mix(in srgb, var(--warning) 18%, transparent);
+    --danger-tint:  color-mix(in srgb, var(--danger)  18%, transparent);
+    --info-tint:    color-mix(in srgb, var(--info)    18%, transparent);
+    --ai-tint:      color-mix(in srgb, var(--ai)      18%, transparent);
+
+    /* Shadows barely read on black. Depth comes from surface lightness plus a
+       1px top inner highlight. Keep a much-reduced contact edge only. */
+    --shadow-e1: 0 1px 2px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    --shadow-e2: 0 2px 6px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --shadow-e3: 0 6px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --shadow-e4: 0 12px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+
+    --material-thin:    rgba(30, 30, 32, 0.72);
+    --material-regular: rgba(30, 30, 32, 0.82);
+    --material-thick:   rgba(30, 30, 32, 0.92);
+    --material-chrome:  rgba(20, 20, 22, 0.86);
+
+    --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.14),
+                 inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  }
+}
+
+:root[data-theme="dark"],
+.dark {
+  color-scheme: dark;
+
+  --sys-blue:   #0A84FF;
+  --sys-green:  #30D158;
+  --sys-indigo: #5E5CE6;
+  --sys-orange: #FF9F0A;
+  --sys-pink:   #FF375F;
+  --sys-purple: #BF5AF2;
+  --sys-red:    #FF453A;
+  --sys-teal:   #64D2FF;
+  --sys-yellow: #FFD60A;
+  --sys-gray-2: #636366;
+  --sys-gray-3: #48484A;
+  --sys-gray-4: #3A3A3C;
+  --sys-gray-5: #2C2C2E;
+  --sys-gray-6: #1C1C1E;
+
+  --label:            #FFFFFF;
+  --label-secondary:  rgba(235, 235, 245, 0.60);
+  --label-tertiary:   rgba(235, 235, 245, 0.30);
+  --label-quaternary: rgba(235, 235, 245, 0.16);
+
+  --canvas:            #000000;
+  --surface:           #1C1C1E;
+  --surface-secondary: #2C2C2E;
+  --surface-elevated:  #2C2C2E;
+
+  --fill:            rgba(120, 120, 128, 0.36);
+  --fill-secondary:  rgba(120, 120, 128, 0.32);
+  --fill-tertiary:   rgba(118, 118, 128, 0.24);
+  --fill-quaternary: rgba(118, 118, 128, 0.18);
+
+  --separator:        rgba(84, 84, 88, 0.60);
+  --separator-opaque: #38383A;
+  --border-control:   rgba(235, 235, 245, 0.45);
+
+  --accent:        var(--brand-accent-dark);
+  --accent-text:   var(--brand-accent-text-dark);
+  --accent-strong: var(--brand-accent-strong-dark);
+  --accent-tint:   color-mix(in srgb, var(--brand-accent-text-dark) 18%, transparent);
+  --deep:          var(--brand-deep-dark);
+
+  --success: #30D158;
+  --warning: #FF9F0A;
+  --danger:  #FF453A;
+  --info:    #3D8BFF;
+  --ai:      #5E5CE6;
+
+  --success-text: #30D158;
+  --warning-text: #FF9F0A;
+  --danger-text:  #FF453A;
+  --info-text:    #3D8BFF;
+  --ai-text:      #8482F5;
+
+  --success-tint: color-mix(in srgb, var(--success) 18%, transparent);
+  --warning-tint: color-mix(in srgb, var(--warning) 18%, transparent);
+  --danger-tint:  color-mix(in srgb, var(--danger)  18%, transparent);
+  --info-tint:    color-mix(in srgb, var(--info)    18%, transparent);
+  --ai-tint:      color-mix(in srgb, var(--ai)      18%, transparent);
+
+  --shadow-e1: 0 1px 2px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --shadow-e2: 0 2px 6px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-e3: 0 6px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-e4: 0 12px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+
+  --material-thin:    rgba(30, 30, 32, 0.72);
+  --material-regular: rgba(30, 30, 32, 0.82);
+  --material-thick:   rgba(30, 30, 32, 0.92);
+  --material-chrome:  rgba(20, 20, 22, 0.86);
+
+  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.14),
+               inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* ============================================================================
+   4. SHAPE, SPACE, MOTION — mode-independent
+   ==========================================================================*/
+
+:root {
+  /* Radius. Nested shapes are concentric: inner = outer − padding. */
+  --radius-xs:   6px;
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;   /* the standard card */
+  --radius-2xl:  24px;
+  --radius-3xl:  32px;
+  --radius-full: 9999px;
+  --radius-icon: 22.37%; /* Apple's app-icon shape ratio, for icon-like marks */
+
+  /* Space — 4pt grid. */
+  --space-0-5: 2px;
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-16:  64px;
+
+  /* Layout */
+  --measure-prose: 68ch;   /* 60–75 characters */
+  --measure-field: 520px;
+  --container-max: 1120px;
+  --tap-min:       44px;
+
+  /* Motion — ceiling is 400ms for anything blocking interaction. */
+  --duration-instant:    100ms;
+  --duration-fast:       200ms;
+  --duration-base:       300ms;
+  --duration-slow:       400ms;
+  --duration-deliberate: 600ms;
+
+  --ease-standard:   cubic-bezier(0.4, 0.0, 0.2, 1);
+  --ease-decelerate: cubic-bezier(0.0, 0.0, 0.2, 1);  /* entering */
+  --ease-accelerate: cubic-bezier(0.4, 0.0, 1.0, 1);  /* exiting  */
+  --ease-spring:     cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-emphasis:   cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Z layers — content never competes with chrome. */
+  --z-content:  0;
+  --z-sticky:   10;
+  --z-chrome:   50;
+  --z-overlay:  100;
+  --z-modal:    200;
+  --z-toast:    300;
+}
+
+/* ============================================================================
+   5. BASE + UTILITIES
+   ==========================================================================*/
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--label);
+  font-family: var(--font-sans);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-lh);
+  letter-spacing: var(--text-body-tracking);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Numerals that sit in a column or update in place must not jitter. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* A true hairline on retina, a 1px line elsewhere. */
+.hairline {
+  border-bottom: 1px solid var(--separator);
+}
+@media (min-resolution: 2dppx) {
+  .hairline { border-bottom-width: 0.5px; }
+}
+
+/* Expand a small glyph to the 44px minimum hit area without changing layout. */
+.tap-expand { position: relative; }
+.tap-expand::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+
+/* App-icon-shaped mark. The radius is 22.37% of the SIDE LENGTH, not a fixed
+   px value — that ratio is what makes a square read as an app icon at any size.
+   Apply to a square element (a logo tile on a splash or install screen).
+
+   Note on true squircles: Apple's icon corner is a continuous superellipse,
+   not a circular arc. CSS has no primitive for one. The percentage radius
+   below is the closest honest approximation and is correct at every size;
+   anything mask-based distorts on non-square elements. If a project genuinely
+   needs the exact curve, render it as an SVG asset rather than emulating it
+   in CSS. */
+.icon-shape {
+  border-radius: 22.37%;
+  overflow: hidden;
+}
+
+/* Focus: visible for keyboards, invisible for mice. Never remove without this. */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* Chrome that floats over content. One layer of translucency per stacking
+   context — material never stacks on material. */
+.material-thin,
+.material-regular,
+.material-thick,
+.material-chrome {
+  backdrop-filter: saturate(180%) blur(var(--material-blur-regular));
+  -webkit-backdrop-filter: saturate(180%) blur(var(--material-blur-regular));
+}
+.material-thin    { background: var(--material-thin);    backdrop-filter: saturate(180%) blur(var(--material-blur-thin)); }
+.material-regular { background: var(--material-regular); }
+.material-thick   { background: var(--material-thick);   backdrop-filter: saturate(180%) blur(var(--material-blur-thick)); }
+.material-chrome  { background: var(--material-chrome); }
+
+/* The refractive rim that reads as glass on the navigation layer. */
+.glass-edge { box-shadow: var(--glass-rim); }
+
+/* Opaque fallback where backdrop-filter is unavailable. */
+@supports not (backdrop-filter: blur(1px)) {
+  .material-thin,
+  .material-regular,
+  .material-thick,
+  .material-chrome { background: var(--surface); }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================================================
+   6. USER PREFERENCES — all three are real settings with real reasons
+   ==========================================================================*/
+
+/* Reduced means reduced, not removed: stripping all animation makes state
+   changes confusing, because things teleport. Collapse to opacity-only. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .motion-safe-fade {
+    transition-duration: 150ms !important;
+    transition-property: opacity !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .material-thin,
+  .material-regular,
+  .material-thick,
+  .material-chrome {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --separator:       rgba(60, 60, 67, 0.55);
+    --label-secondary: rgba(60, 60, 67, 0.85);
+  }
+  :root[data-theme="dark"], .dark {
+    --separator:       rgba(120, 120, 128, 0.85);
+    --label-secondary: rgba(235, 235, 245, 0.90);
+  }
+}
+
+/* ============================================================================
+   7. FALLBACK for browsers without color-mix()
+   Tints are the only tokens that use it. If your support matrix includes
+   browsers older than Chrome 111 / Safari 16.2 / Firefox 113, replace the
+   color-mix() lines above with the literal rgba() values below.
+   ============================================================================
+   light: --accent-tint: rgba(10, 90, 255, 0.10);
+   dark:  --accent-tint: rgba(10, 132, 255, 0.18);
+   ...and the same 10% / 18% pattern for success, warning, danger, info, ai.
+   ==========================================================================*/

@@ -1,0 +1,45 @@
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Packaging and generated binaries
+build/
+dist/
+*.egg-info/
+*.whl
+*.exe
+
+# Runtime state and evidence (never source-controlled)
+logs/
+tmp/
+data/evidence/
+data/work/
+*.log
+
+# Credentials and machine-local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+configs/*local*.yaml
+configs/*local*.yml
+configs/*secret*.yaml
+configs/*secret*.yml
+
+# Editor and operating-system state
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini

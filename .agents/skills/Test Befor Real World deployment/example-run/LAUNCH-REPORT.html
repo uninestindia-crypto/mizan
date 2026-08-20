@@ -1,0 +1,1251 @@
+<title>demo-shop &mdash; Launch Readiness Report</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1a1a18;--muted:#6b6b66;--line:#e3e3de;
+--pass:#1a7f4b;--fail:#c0332e;--warn:#a8690a;--na:#8a8a84;--accent:#2b5fd9;
+--passbg:#e9f5ee;--failbg:#fbeceb;--warnbg:#fdf3e3;--code:#f1f1ee;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+--bg:#151513;--panel:#1e1e1c;--ink:#eceae4;--muted:#9a9a93;--line:#33332f;
+--pass:#5fcf92;--fail:#f0736c;--warn:#e0a63f;--na:#7d7d76;--accent:#7aa2f7;
+--passbg:#17281f;--failbg:#2c1817;--warnbg:#2a2113;--code:#141412;}}
+:root[data-theme="dark"]{--bg:#151513;--panel:#1e1e1c;--ink:#eceae4;--muted:#9a9a93;
+--line:#33332f;--pass:#5fcf92;--fail:#f0736c;--warn:#e0a63f;--na:#7d7d76;--accent:#7aa2f7;
+--passbg:#17281f;--failbg:#2c1817;--warnbg:#2a2113;--code:#141412;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:1080px;margin:0 auto;padding:32px 20px 96px}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-.02em}
+h2{font-size:19px;margin:38px 0 12px;letter-spacing:-.01em}
+h3{font-size:15px;margin:0}
+.sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+.verdict{border-radius:12px;padding:22px 24px;margin:20px 0 28px;border:2px solid;}
+.verdict .v{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.verdict .d{margin-top:8px;font-size:14px;opacity:.85}
+.v-GO{background:var(--passbg);border-color:var(--pass);color:var(--pass)}
+.v-COND{background:var(--warnbg);border-color:var(--warn);color:var(--warn)}
+.v-NOGO{background:var(--failbg);border-color:var(--fail);color:var(--fail)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card .n{font-size:24px;font-weight:700;letter-spacing:-.02em}
+.card .l{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--panel);
+border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+background:var(--code);font-weight:600}
+tr:last-child td{border-bottom:none}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;font-weight:700;
+letter-spacing:.04em;white-space:nowrap}
+.p-pass{background:var(--passbg);color:var(--pass)}
+.p-fail{background:var(--failbg);color:var(--fail)}
+.p-todo{background:var(--warnbg);color:var(--warn)}
+.p-na{background:var(--code);color:var(--na)}
+.p-waived{background:var(--warnbg);color:var(--warn)}
+.sev{font-weight:700;font-size:11px}
+.s-S0{color:var(--fail)} .s-S1{color:var(--warn)} .s-S2{color:var(--muted)} .s-S3{color:var(--na)}
+.proof{font-size:11px;font-weight:600;letter-spacing:.03em}
+.pr-executed{color:var(--pass)} .pr-attached{color:var(--accent)}
+.pr-asserted{color:var(--warn)} .pr-none{color:var(--na)}
+details{margin:8px 0 0}
+summary{cursor:pointer;font-size:12px;color:var(--accent);user-select:none}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:12px;
+overflow-x:auto;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+white-space:pre;margin:8px 0}
+code{font:12.5px ui-monospace,SFMono-Regular,Consolas,monospace;background:var(--code);
+padding:1px 5px;border-radius:4px}
+.bar{height:7px;background:var(--code);border-radius:99px;overflow:hidden;min-width:110px}
+.bar i{display:block;height:100%;background:var(--pass)}
+.bar.has-fail i{background:var(--fail)}
+img.shot{max-width:100%;border:1px solid var(--line);border-radius:8px;margin:8px 0;display:block}
+.meta{font-size:11.5px;color:var(--muted);font-family:ui-monospace,Consolas,monospace;
+word-break:break-all}
+.gatehead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:34px 0 8px}
+.gatehead h2{margin:0}
+.note{background:var(--panel);border-left:3px solid var(--accent);padding:10px 14px;
+border-radius:0 8px 8px 0;margin:8px 0;font-size:13.5px}
+.foot{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);
+color:var(--muted);font-size:12.5px}
+</style>
+<div class="wrap">
+<h1>demo-shop v1.0.0 &mdash; Launch Readiness Report</h1>
+<div class="sub">Generated 2026-08-15T03:38:02+05:30 &middot; commit <code>08f4a684fc74</code> on master &middot; <strong style="color:var(--fail)">WORKING TREE DIRTY</strong> &middot; host Zeaul_Rahman &middot; profile: web, api, db, auth, payments, pii, multitenant, cloud</div>
+<div class="verdict v-NOGO"><div class="v">NO-GO</div><div class="d">At least one blocker check is failing, untested, or claimed without proof. Shipping now means shipping a known unknown.</div></div>
+<div class="grid">
+<div class="card"><div class="n">199</div><div class="l">Applicable</div></div>
+<div class="card"><div class="n">8</div><div class="l">Passed</div></div>
+<div class="card"><div class="n">11</div><div class="l">Failed</div></div>
+<div class="card"><div class="n">179</div><div class="l">Not tested</div></div>
+<div class="card"><div class="n">1</div><div class="l">Waived</div></div>
+<div class="card"><div class="n">122</div><div class="l">Blockers open</div></div>
+</div>
+<h2>Strength of proof</h2>
+<div class="note">This is the number that matters. <strong>Executed</strong> means a command really ran and its raw output is stored below. <strong>Asserted</strong> means somebody typed that it was fine. A report full of assertions is a report of opinions.</div>
+<div class="scroll"><table><tr><th>Level</th><th>Count</th><th>What it means</th></tr>
+<tr><td><span class='proof pr-executed'>EXECUTED</span></td><td>15</td><td>A recorded command ran; stdout, stderr, exit code and a SHA-256 hash are stored.</td></tr>
+<tr><td><span class='proof pr-attached'>ATTACHED</span></td><td>1</td><td>A file was attached as proof: screenshot, report, export, document.</td></tr>
+<tr><td><span class='proof pr-asserted'>ASSERTED</span></td><td>3</td><td>Written claim only. Acceptable for S2/S3; never sufficient for an S0.</td></tr>
+<tr><td><span class='proof pr-none'>NONE</span></td><td>180</td><td>Nothing recorded at all.</td></tr>
+</table></div>
+<h2>Blockers &mdash; launch is forbidden while these are open</h2>
+<div class="scroll"><table><tr><th>ID</th><th>Reason</th><th>Check</th></tr>
+<tr><td><code>G0.01</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Version control clean: on a release branch/tag, no uncommitted changes, no untracked source</td></tr>
+<tr><td><code>G0.02</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Stack detected and written down: languages, frameworks, package managers, runtimes</td></tr>
+<tr><td><code>G0.04</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Clean-clone install from zero succeeds in an empty directory with no caches</td></tr>
+<tr><td><code>G0.06</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>.env.example lists every variable; app fails LOUDLY at startup when one is missing</td></tr>
+<tr><td><code>G0.07</code></td><td><span class='pill p-fail'>FAILING</span></td><td>Dependency lockfile exists, is committed, and install is reproducible from it</td></tr>
+<tr><td><code>G0.10</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>External dependency inventory: every third-party API, DB, queue, storage, mail, payment provider</td></tr>
+<tr><td><code>G0.11</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Target environments enumerated: production URL(s), staging, regions, tenants</td></tr>
+<tr><td><code>G1.03</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Type check passes with ZERO errors</td></tr>
+<tr><td><code>G1.10</code></td><td><span class='pill p-fail'>FAILING</span></td><td>Secret scan over the FULL git history (not just HEAD) finds zero live credentials</td></tr>
+<tr><td><code>G1.11</code></td><td><span class='pill p-fail'>FAILING</span></td><td>No localhost / 127.0.0.1 / staging hostnames / test API keys reachable on a production code path</td></tr>
+<tr><td><code>G1.12</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Dependency vulnerability audit: zero CRITICAL, zero HIGH, or each one waived with reasoning</td></tr>
+<tr><td><code>G1.17</code></td><td><span class='pill p-fail'>FAILING</span></td><td>No .env file, private key, database dump, or real customer data committed to the repository</td></tr>
+<tr><td><code>G2.02</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Full suite passes from a CLEAN state: fresh dependencies, fresh database, migrations from zero</td></tr>
+<tr><td><code>G2.12</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Unit tests cover every branch of domain logic per the part-type matrix</td></tr>
+<tr><td><code>G2.13</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Contract tests pin every boundary: API request/response, DB schema, event payloads, error taxonomy</td></tr>
+<tr><td><code>G2.14</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Integration tests run against a REAL database with real migrations, not mocks</td></tr>
+<tr><td><code>G2.15</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>End-to-end test covers every critical path from a genuinely empty starting state</td></tr>
+<tr><td><code>G2.18</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>CI runs the same commands as local, and CI is GREEN on the exact release commit</td></tr>
+<tr><td><code>G3.01</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Every acceptance criterion demonstrated one by one, with proof per criterion</td></tr>
+<tr><td><code>G3.03</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>First-run experience walked from a genuinely empty account -- no seed data, no pre-existing state</td></tr>
+<tr><td><code>G3.04</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Every form: client validation, server validation, inline field errors, and double-submit protection</td></tr>
+<tr><td><code>G3.05</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Every destructive action has confirmation and either undo or a documented recovery path</td></tr>
+<tr><td><code>G3.07</code></td><td><span class='pill p-fail'>FAILING</span></td><td>Money correctness: rounding both directions, zero, negative, maximum, precision, currency mixing, and NO floating point</td></tr>
+<tr><td><code>G3.08</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Date/time correctness: DST both directions, offsets east and west, half-hour offsets, leap year, server tz != user tz != db tz</td></tr>
+<tr><td><code>G3.10</code></td><td><span class='pill p-fail'>FAILING</span></td><td>Every mutating endpoint is idempotent, or documented as unsafe to retry with a client-side guard</td></tr>
+<tr><td><code>G3.11</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Concurrency: two actors mutate the same resource at the same instant -- outcome is correct and deterministic</td></tr>
+<tr><td><code>G4.01</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Every protected route enumerated and tested unauthenticated -- all deny</td></tr>
+<tr><td><code>G4.02</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Authorization matrix: every role x every resource x every action, implemented as a table-driven test</td></tr>
+<tr><td><code>G4.03</code></td><td><span class='pill p-fail'>FAILING</span></td><td>Cross-tenant READ is blocked and proven by a test</td></tr>
+<tr><td><code>G4.04</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Cross-tenant WRITE is blocked and proven by a SEPARATE test</td></tr>
+<tr><td><code>G4.05</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>IDOR: requesting another account&#x27;s object by its raw ID is denied on every resource type</td></tr>
+<tr><td><code>G4.06</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Privilege escalation blocked: cannot self-grant a role, change own tenant, or mass-assign role/isAdmin fields</td></tr>
+<tr><td><code>G4.07</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Sessions: expire, revoke on logout, rotate on privilege change; cookies are Secure + HttpOnly + SameSite</td></tr>
+<tr><td><code>G4.08</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Credentials stored with a modern KDF (argon2id / bcrypt / scrypt / PBKDF2 at current cost), never reversible, never plaintext</td></tr>
+<tr><td><code>G4.09</code></td><td><span class='pill p-fail'>FAILING</span></td><td>Injection: every query parameterised -- SQL, NoSQL, shell, LDAP, template. No string-built queries on user input</td></tr>
+<tr><td><code>G4.10</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>XSS: stored, reflected, and DOM-based tested; output encoded; Content-Security-Policy present and not &#x27;unsafe-inline&#x27;</td></tr>
+<tr><td><code>G4.11</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>CSRF protection active on every state-changing request</td></tr>
+<tr><td><code>G4.12</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>SSRF: any user-supplied URL fetched server-side is validated against an allowlist and blocks internal/metadata addresses</td></tr>
+<tr><td><code>G4.13</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Path traversal impossible in any filesystem path built from user input</td></tr>
+<tr><td><code>G4.14</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Unsafe deserialization, prototype pollution, and mass assignment tested and blocked</td></tr>
+<tr><td><code>G4.15</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Rate limiting and brute-force protection on login, password reset, OTP, and every expensive endpoint</td></tr>
+<tr><td><code>G4.17</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>TLS valid: certificate chain good, TLS 1.2+, HTTP redirects to HTTPS, no mixed content, expiry date recorded</td></tr>
+<tr><td><code>G4.18</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>CORS is not a wildcard when credentials are allowed; allowed origins are an explicit list</td></tr>
+<tr><td><code>G4.19</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Runtime secrets come from a secret store or environment, never the repo; rotation procedure documented</td></tr>
+<tr><td><code>G4.20</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Error responses leak nothing: no stack traces, SQL fragments, internal paths, or framework versions in production mode</td></tr>
+<tr><td><code>G4.23</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Admin surfaces are authenticated, not publicly discoverable, and every default credential is removed</td></tr>
+<tr><td><code>G4.25</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>An automated security scan was run (SAST and/or DAST and/or dependency scan) and its raw output is attached</td></tr>
+<tr><td><code>G4.26</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>A line-by-line security review of the release diff was performed by a reviewer who did not write it</td></tr>
+<tr><td><code>G4.27</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Inbound webhooks verify signatures and reject replays (timestamp window + seen-ID cache)</td></tr>
+<tr><td><code>G5.01</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Migrations run forward successfully from a completely empty database</td></tr>
+<tr><td><code>G5.02</code></td><td><span class='pill p-fail'>FAILING</span></td><td>ROLLBACK EXECUTED -- not merely written -- and the elapsed time recorded in seconds</td></tr>
+<tr><td><code>G5.03</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Migration rehearsed on a production-scale data copy; total time and lock duration measured</td></tr>
+<tr><td><code>G5.04</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Backward compatibility proven: the OLD code runs correctly against the NEW schema (the rolling-deploy window)</td></tr>
+<tr><td><code>G5.05</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>BACKUP RESTORE DRILL performed end to end into a scratch environment, and the data verified</td></tr>
+<tr><td><code>G5.06</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>RPO and RTO stated as numbers and proven by the drill&#x27;s measured timings</td></tr>
+<tr><td><code>G5.08</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>No destructive migration ships without a backup taken immediately before it, verified restorable</td></tr>
+<tr><td><code>G5.09</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>PII inventory written: what personal data is stored, where, why, and for how long</td></tr>
+<tr><td><code>G5.10</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Sensitive data encrypted at rest and in transit; key management documented</td></tr>
+<tr><td><code>G5.11</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>User data export and deletion actually work end to end and are timed</td></tr>
+<tr><td><code>G5.12</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>No seed, demo, or test data is reachable in production; no test accounts with weak passwords</td></tr>
+<tr><td><code>G6.01</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>A written performance budget exists and was written BEFORE the measurements were taken</td></tr>
+<tr><td><code>G6.02</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>p50 / p95 / p99 latency measured for every critical endpoint at realistic data volume</td></tr>
+<tr><td><code>G6.06</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Load test at expected peak concurrency; throughput, latency, and error rate recorded</td></tr>
+<tr><td><code>G6.07</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Load test at 3-10x expected peak: the breaking point is FOUND and its number written down</td></tr>
+<tr><td><code>G6.08</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Soak test of at least one hour: memory, file handles, and connections are flat, not climbing</td></tr>
+<tr><td><code>G6.09</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>At capacity the system degrades gracefully -- queues, sheds load, or returns 429 -- it does not crash or corrupt</td></tr>
+<tr><td><code>G6.15</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Timeouts set at every layer and ordered correctly: client &lt; gateway &lt; service &lt; database</td></tr>
+<tr><td><code>G7.01</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Every external dependency killed one at a time; the observed behaviour is acceptable and documented per dependency</td></tr>
+<tr><td><code>G7.02</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Latency injected into each dependency; no cascading failure, no thread-pool exhaustion</td></tr>
+<tr><td><code>G7.04</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Database down and database read-only both simulated; the app degrades safely and says so</td></tr>
+<tr><td><code>G7.05</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Network interrupted mid-operation; no partial writes, no lost user work, clear recovery</td></tr>
+<tr><td><code>G7.06</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Process SIGKILLed mid-write; on restart there is no half-committed state</td></tr>
+<tr><td><code>G7.11</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Graceful shutdown: readiness flips first, in-flight requests drain, then the process exits</td></tr>
+<tr><td><code>G7.12</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Health, readiness, and liveness endpoints exist and tell the truth -- they are not hardcoded 200s</td></tr>
+<tr><td><code>G7.13</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Every single point of failure enumerated, each with a mitigation or an explicitly accepted risk</td></tr>
+<tr><td><code>G7.15</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Full-outage recovery test: everything down, then restarted -- state is correct and the recovery is timed</td></tr>
+<tr><td><code>G8.01</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Keyboard only: every critical path completed with no mouse, no focus trap, focus always visible</td></tr>
+<tr><td><code>G8.02</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Screen reader: one complete critical path traversed; every control announces a name, role, and state</td></tr>
+<tr><td><code>G8.03</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Automated accessibility scan run on every major screen: zero critical, zero serious violations</td></tr>
+<tr><td><code>G8.06</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Device and browser support matrix declared, and every entry actually tested</td></tr>
+<tr><td><code>G9.01</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Privacy policy and Terms exist, are reachable from the product, and accurately describe what the code actually does</td></tr>
+<tr><td><code>G9.02</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Consent for non-essential cookies/tracking implemented where required; non-essential defaults to OFF</td></tr>
+<tr><td><code>G9.03</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Data processing record: what is collected, the lawful basis, where it is stored, and data residency</td></tr>
+<tr><td><code>G9.04</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Every third party receiving user data is disclosed, and a processing agreement is in place</td></tr>
+<tr><td><code>G9.05</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>User rights work end to end: access, export, correction, deletion -- each performed once and timed</td></tr>
+<tr><td><code>G9.07</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Age gating / children&#x27;s data handling addressed if the product is reachable by minors</td></tr>
+<tr><td><code>G9.12</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Payment compliance scope stated; raw card data never touches your servers unless you are PCI-certified</td></tr>
+<tr><td><code>G9.13</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Regulated-domain requirements identified (health, finance, education, employment) and addressed</td></tr>
+<tr><td><code>G9.15</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Breach notification procedure written: who decides, who is told, within what deadline</td></tr>
+<tr><td><code>G9.16</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Telemetry audited: no PII in logs or analytics; every collected field justified and disclosed</td></tr>
+<tr><td><code>G10.01</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Structured logs with a request/correlation ID on every entry; zero secrets or PII in log output</td></tr>
+<tr><td><code>G10.03</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Metrics exist for rate, errors, and duration on every service, with a dashboard that a human can open</td></tr>
+<tr><td><code>G10.04</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>SLOs defined as numbers, with a stated error budget</td></tr>
+<tr><td><code>G10.05</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>An alert exists for every SLO breach and for every failure mode discovered in G7</td></tr>
+<tr><td><code>G10.06</code></td><td><span class='pill p-fail'>FAILING</span></td><td>EVERY ALERT FIRED ON PURPOSE and confirmed to reach a named human -- proof per alert</td></tr>
+<tr><td><code>G10.08</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>On-call rota exists with named humans, contact method, and an escalation path</td></tr>
+<tr><td><code>G10.09</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>A runbook exists per alert: symptom -&gt; diagnosis -&gt; action, executable by someone who did not build this</td></tr>
+<tr><td><code>G10.11</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Error tracking wired up and PROVEN by deliberately throwing a test error and seeing it arrive</td></tr>
+<tr><td><code>G10.12</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Feature flag or kill switch exists for every risky feature, and was tested ON and OFF in production configuration</td></tr>
+<tr><td><code>G10.14</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Production access is least-privilege and audited: who can deploy, who can read customer data</td></tr>
+<tr><td><code>G10.17</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Pre-launch baseline captured: current error rate, latency, and the key business metric, with numbers</td></tr>
+<tr><td><code>G11.01</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Version assigned, artifact immutably tagged, and the build reproducible from that tag alone</td></tr>
+<tr><td><code>G11.03</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Feature freeze in effect; every post-freeze change restarts verification of the affected gates</td></tr>
+<tr><td><code>G11.04</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Deploy runbook: numbered steps, the expected output of each, and an explicit abort condition</td></tr>
+<tr><td><code>G11.05</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>The runbook was executed or cold-read by someone who did not write it, and every gap fixed</td></tr>
+<tr><td><code>G11.06</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Deployed to a production-LIKE environment and every critical path exercised there, not locally</td></tr>
+<tr><td><code>G11.07</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>ROLLBACK REHEARSED on the production-like environment and TIMED -- the number of seconds is recorded</td></tr>
+<tr><td><code>G11.08</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Data rollback is possible, or explicitly declared impossible with the compensating control named</td></tr>
+<tr><td><code>G11.09</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Staged rollout plan with NUMERIC promotion thresholds and numeric automatic-rollback triggers</td></tr>
+<tr><td><code>G11.10</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Kill switch tested: the feature was turned off in a production-like environment and the system stayed healthy</td></tr>
+<tr><td><code>G11.11</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Environment contract verified IN THE TARGET: every env var, secret, permission, quota, DNS record, and certificate</td></tr>
+<tr><td><code>G11.12</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>A production smoke suite exists, runs in under five minutes, and has been rehearsed</td></tr>
+<tr><td><code>G11.13</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Go/No-Go decision held; named humans said GO; the decision and its date recorded</td></tr>
+<tr><td><code>G11.16</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Migration guide published for existing users or integrators if anything is breaking</td></tr>
+<tr><td><code>G12.01</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Baseline metrics captured in the minutes immediately before the first stage</td></tr>
+<tr><td><code>G12.02</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Canary stage deployed to a small share of traffic; production smoke passed; held for the planned duration</td></tr>
+<tr><td><code>G12.03</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Metrics compared against baseline at every stage, with the actual numbers recorded</td></tr>
+<tr><td><code>G12.04</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Every promotion decision recorded together with the numbers that justified it</td></tr>
+<tr><td><code>G12.05</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Rollback confirmed still available and still valid at each stage</td></tr>
+<tr><td><code>G12.06</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Full production smoke suite passed at 100% rollout</td></tr>
+<tr><td><code>G12.07</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Structured watch checks logged at T+1h, T+6h, T+24h, T+48h, and T+72h</td></tr>
+<tr><td><code>G12.08</code></td><td><span class='pill p-fail'>NOT TESTED</span></td><td>Every incident triaged with severity, owner, timestamps, and resolution</td></tr>
+</table></div>
+<h2>Warnings &mdash; fix, or waive in writing</h2>
+<div class="scroll"><table><tr><th>ID</th><th>Reason</th><th>Check</th></tr>
+<tr><td><code>G0.05</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>A stranger can get it running from the README alone -- no tribal knowledge</td></tr>
+<tr><td><code>G0.08</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Runtime versions pinned (.nvmrc / .python-version / engines / toolchain file)</td></tr>
+<tr><td><code>G0.12</code></td><td><span class='pill p-todo'>WEAK EVIDENCE</span></td><td>Cut line written: what is in v1.0 and what is explicitly NOT, agreed before verification starts</td></tr>
+<tr><td><code>G1.04</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Lint passes with zero errors and zero warnings, or a recorded baseline with zero new</td></tr>
+<tr><td><code>G1.06</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>No TODO / FIXME / HACK / XXX / &#x27;temporary&#x27; markers on any critical path file</td></tr>
+<tr><td><code>G1.07</code></td><td><span class='pill p-todo'>FAILING</span></td><td>No debug artifacts shipped: console.log, print, debugger, pdb, binding.pry, alert()</td></tr>
+<tr><td><code>G1.13</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>License compliance: LICENSE present; no copyleft licence incompatible with how this ships</td></tr>
+<tr><td><code>G1.14</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>No abandoned or known-malicious dependency on a critical path; every dep justified</td></tr>
+<tr><td><code>G1.15</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Source maps / debug symbols policy decided and enforced -- production source is not published by accident</td></tr>
+<tr><td><code>G1.18</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Strict mode on: strict types, no blanket &#x27;any&#x27;/&#x27;unsafe&#x27; escapes on critical paths, warnings-as-errors where supported</td></tr>
+<tr><td><code>G2.03</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Suite passes with tests in randomised order</td></tr>
+<tr><td><code>G2.07</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Coverage measured; coverage on critical-path files meets a written bar</td></tr>
+<tr><td><code>G2.08</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>No assertion-free tests -- every test asserts on a value, not merely &#x27;did not throw&#x27;</td></tr>
+<tr><td><code>G2.10</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Tests are deterministic: frozen clock, fixed seed, fixed IDs, no live network</td></tr>
+<tr><td><code>G2.11</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Flake count is zero: suite run three times, identical results each time</td></tr>
+<tr><td><code>G2.16</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Every bug ever found has a regression test that fails without its fix</td></tr>
+<tr><td><code>G3.06</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>List boundaries: zero results, one result, exact page boundary, past the last page, item inserted between page 1 and 2</td></tr>
+<tr><td><code>G3.09</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Unicode, emoji, right-to-left text, and 10,000-character strings accepted, stored, and rendered without corruption</td></tr>
+<tr><td><code>G3.12</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Browser back, forward, and refresh mid-flow behave correctly; every screen is deep-linkable</td></tr>
+<tr><td><code>G3.14</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Outbound email / push / SMS actually sends and renders correctly in a real client -- screenshot from a real inbox</td></tr>
+<tr><td><code>G3.15</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Search: empty query, no results, special and regex characters, very long query, permission-filtered counts match visible rows</td></tr>
+<tr><td><code>G3.16</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Every documented error code is reachable by a test and produces a message a user can act on</td></tr>
+<tr><td><code>G4.16</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Security headers present: HSTS, CSP, X-Content-Type-Options, frame-ancestors, Referrer-Policy, Permissions-Policy</td></tr>
+<tr><td><code>G4.22</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Supply chain: lockfile integrity verified, no unexpected postinstall scripts, SBOM generated and stored</td></tr>
+<tr><td><code>G4.24</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Audit log records security-relevant events: login, failed login, permission change, data export, deletion</td></tr>
+<tr><td><code>G4.28</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>API keys and tokens are scoped, expiring, and revocable; revocation tested</td></tr>
+<tr><td><code>G5.07</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Integrity constraints present where they matter: foreign keys, unique, check, not-null</td></tr>
+<tr><td><code>G5.13</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>N+1 queries checked on every list and detail endpoint; query counts recorded</td></tr>
+<tr><td><code>G5.14</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Every critical-path query has a supporting index, proven with EXPLAIN output</td></tr>
+<tr><td><code>G5.15</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Connection pool sized deliberately; behaviour under pool exhaustion tested</td></tr>
+<tr><td><code>G5.16</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Replica lag / eventual consistency behaviour understood and handled on read-after-write paths</td></tr>
+<tr><td><code>G6.03</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Frontend field metrics measured on a throttled device profile: LCP, CLS, INP, TTFB</td></tr>
+<tr><td><code>G6.04</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Bundle / binary size measured against the budget; the largest contributors listed</td></tr>
+<tr><td><code>G6.05</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Cold start and first meaningful interaction timed</td></tr>
+<tr><td><code>G6.10</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Database performance under load measured; slow query log reviewed and the worst queries fixed</td></tr>
+<tr><td><code>G6.11</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Cache hit rate measured; cache stampede / thundering herd on expiry tested</td></tr>
+<tr><td><code>G6.14</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Autoscaling tested in BOTH directions -- scale out under load, and scale back in afterwards</td></tr>
+<tr><td><code>G7.07</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Disk full and out-of-memory behaviour observed; failure is loud, safe, and recoverable</td></tr>
+<tr><td><code>G7.09</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Circuit breaker or bulkhead engages under sustained failure AND recovers when the dependency returns</td></tr>
+<tr><td><code>G7.14</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Clock skew, DNS failure, and expired certificate scenarios simulated</td></tr>
+<tr><td><code>G8.05</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Layout works at 320px width and at an ultra-wide viewport; nothing clips, overlaps, or scrolls horizontally</td></tr>
+<tr><td><code>G8.09</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Zoom to 200% and 400% without loss of content or function</td></tr>
+<tr><td><code>G8.12</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Slow-network (throttled 3G) and fully-offline behaviour observed on every critical path</td></tr>
+<tr><td><code>G9.06</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Retention policy implemented in code -- data actually gets deleted, proven by a test or a job run</td></tr>
+<tr><td><code>G9.09</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Open-source licence obligations satisfied: attribution file generated and shipped with the product</td></tr>
+<tr><td><code>G9.14</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Security contact and vulnerability disclosure policy published (security.txt or equivalent)</td></tr>
+<tr><td><code>G10.02</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Log levels are correct, every ERROR is actionable, and log volume and cost are estimated</td></tr>
+<tr><td><code>G10.07</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Alert quality checked: expected pages per week is a number a human can sustain; no known false positives</td></tr>
+<tr><td><code>G10.13</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Config can be changed and reverted without a deploy; the procedure is written and rehearsed</td></tr>
+<tr><td><code>G10.15</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Support readiness: the top five predicted user questions are answerable from shipped documentation alone</td></tr>
+<tr><td><code>G10.16</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Status page or user communication channel exists and someone knows how to post to it</td></tr>
+<tr><td><code>G10.18</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Cost and billing alarms configured with thresholds</td></tr>
+<tr><td><code>G11.02</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Release notes / CHANGELOG written in the user&#x27;s language, describing outcomes not commits</td></tr>
+<tr><td><code>G11.14</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Launch window chosen deliberately: not Friday evening, not during a dependency&#x27;s maintenance window, humans available</td></tr>
+<tr><td><code>G11.15</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Communications ready and scheduled: users, support, stakeholders, status page</td></tr>
+<tr><td><code>G12.09</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Support themes reviewed at T+24h and T+72h -- what are real users actually confused by</td></tr>
+<tr><td><code>G12.10</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>The success metric measured against the target set before launch</td></tr>
+<tr><td><code>G12.11</code></td><td><span class='pill p-todo'>NOT TESTED</span></td><td>Postmortem written: predicted correctly / surprised us / which gate caught it / which gate missed it</td></tr>
+</table></div>
+<h2>Gate summary</h2>
+<div class="scroll"><table><tr><th>Gate</th><th>Name</th><th>Progress</th><th>Done</th><th>Failing</th><th>Veto holder</th></tr>
+<tr><td><code>G0</code></td><td>Inventory &amp; Command Map</td><td><div class='bar has-fail'><i style='width:25%'></i></div></td><td>3/12</td><td><span class='pill p-fail'>1</span></td><td>Executor</td></tr>
+<tr><td><code>G1</code></td><td>Build &amp; Static Integrity</td><td><div class='bar has-fail'><i style='width:5%'></i></div></td><td>1/18</td><td><span class='pill p-fail'>4</span></td><td>Executor</td></tr>
+<tr><td><code>G2</code></td><td>Test Truth</td><td><div class='bar'><i style='width:22%'></i></div></td><td>4/18</td><td>0</td><td>Verifier</td></tr>
+<tr><td><code>G3</code></td><td>Functional Correctness &amp; States</td><td><div class='bar has-fail'><i style='width:0%'></i></div></td><td>0/14</td><td><span class='pill p-fail'>2</span></td><td>Verifier</td></tr>
+<tr><td><code>G4</code></td><td>Security</td><td><div class='bar has-fail'><i style='width:0%'></i></div></td><td>0/27</td><td><span class='pill p-fail'>2</span></td><td>Security reviewer</td></tr>
+<tr><td><code>G5</code></td><td>Data &amp; Migration Safety</td><td><div class='bar has-fail'><i style='width:0%'></i></div></td><td>0/16</td><td><span class='pill p-fail'>1</span></td><td>Data owner</td></tr>
+<tr><td><code>G6</code></td><td>Performance &amp; Capacity</td><td><div class='bar'><i style='width:7%'></i></div></td><td>1/14</td><td>0</td><td>Performance owner</td></tr>
+<tr><td><code>G7</code></td><td>Reliability &amp; Failure Injection</td><td><div class='bar'><i style='width:0%'></i></div></td><td>0/12</td><td>0</td><td>SRE</td></tr>
+<tr><td><code>G8</code></td><td>UX, Accessibility &amp; Devices</td><td><div class='bar'><i style='width:0%'></i></div></td><td>0/8</td><td>0</td><td>Design owner</td></tr>
+<tr><td><code>G9</code></td><td>Privacy, Legal &amp; Compliance</td><td><div class='bar'><i style='width:0%'></i></div></td><td>0/14</td><td>0</td><td>Owner / counsel</td></tr>
+<tr><td><code>G10</code></td><td>Operability</td><td><div class='bar has-fail'><i style='width:0%'></i></div></td><td>0/18</td><td><span class='pill p-fail'>1</span></td><td>SRE</td></tr>
+<tr><td><code>G11</code></td><td>Release Mechanics</td><td><div class='bar'><i style='width:0%'></i></div></td><td>0/16</td><td>0</td><td>Release manager</td></tr>
+<tr><td><code>G12</code></td><td>Launch &amp; 72-Hour Watch</td><td><div class='bar'><i style='width:0%'></i></div></td><td>0/12</td><td>0</td><td>Release manager</td></tr>
+</table></div>
+<div class="gatehead"><h2>G0 &mdash; Inventory &amp; Command Map</h2></div>
+<div class="sub">Nothing can be verified until we know what this is and which commands are real. &middot; veto holder: <strong>Executor</strong></div>
+<div class="scroll"><table><tr><th>ID</th><th>Sev</th><th>Status</th><th>Proof</th><th>Check &amp; evidence</th></tr>
+<tr><td><code>G0.01</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Version control clean: on a release branch/tag, no uncommitted changes, no untracked source</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G0.02</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Stack detected and written down: languages, frameworks, package managers, runtimes</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G0.03</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-pass'>PASS</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>Command map discovered AND each command proven to actually execute (install/build/test/lint/typecheck/start/migrate/e2e)</strong><details><summary>PASS &nbsp;<code>npm run build</code> &nbsp;exit 0 &nbsp;(1571 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:12+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected exit 0; got 0<br>sha256 148746730d1329e113fa5463401a4d5e2ffe54fce42b0309eb004a3d3355a7ee &nbsp;&middot;&nbsp; evidence/G0.03/01-command-map-build.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G0.03  command map: build
+title        : Command map discovered AND each command proven to actually execute (install/build/test/lint/typecheck/start/migrate/e2e)
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : npm run build
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:12+05:30
+duration     : 1571 ms
+pass rule    : PASS when the exit code is 0
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+
+&gt; demo-shop@1.0.0 build
+&gt; node -e &quot;require(&#x27;./src/pricing&#x27;);require(&#x27;./src/orders&#x27;);require(&#x27;./src/config&#x27;);console.log(&#x27;build ok&#x27;)&quot;
+
+build ok
+
+----- STDERR -----
+
+</pre></details>
+<details><summary>PASS &nbsp;<code>npm test</code> &nbsp;exit 0 &nbsp;(1805 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:15+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected exit 0; got 0<br>sha256 3976e2af374fd57775deadb235158634e58f652452326834a4c218045a4e2f62 &nbsp;&middot;&nbsp; evidence/G0.03/02-command-map-test.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G0.03  command map: test
+title        : Command map discovered AND each command proven to actually execute (install/build/test/lint/typecheck/start/migrate/e2e)
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : npm test
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:15+05:30
+duration     : 1805 ms
+pass rule    : PASS when the exit code is 0
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+
+&gt; demo-shop@1.0.0 test
+&gt; node --test
+
+✔ lineTotal multiplies price by quantity (3.0057ms)
+✔ applyDiscount removes the right percentage (0.5775ms)
+✔ cartTotal adds tax (0.3918ms)
+✔ cartTotal handles an empty cart (0.2137ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 218.8492
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G0.04</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Clean-clone install from zero succeeds in an empty directory with no caches</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G0.05</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>A stranger can get it running from the README alone -- no tribal knowledge</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G0.06</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>.env.example lists every variable; app fails LOUDLY at startup when one is missing</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G0.07</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-fail'>FAIL</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>Dependency lockfile exists, is committed, and install is reproducible from it</strong><details><summary>FAIL &nbsp;<code>bash -c &#x27;git ls-files | grep -qE &quot;package-lock.json|pnpm-lock.yaml|yarn.lock&quot; || echo &quot;NO LOCKFILE COMMITTED&quot;&#x27;</code> &nbsp;exit 0 &nbsp;(319 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:17+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected no findings; found 1 line(s)<br>sha256 7850b143647b7d6d0a136a52eaa2e15f506536a820502ad584cd26513253c258 &nbsp;&middot;&nbsp; evidence/G0.07/01-lockfile-committed.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G0.07  lockfile committed
+title        : Dependency lockfile exists, is committed, and install is reproducible from it
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : bash -c &#x27;git ls-files | grep -qE &quot;package-lock.json|pnpm-lock.yaml|yarn.lock&quot; || echo &quot;NO LOCKFILE COMMITTED&quot;&#x27;
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:17+05:30
+duration     : 319 ms
+pass rule    : PASS when the command finds NOTHING (empty stdout)
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+NO LOCKFILE COMMITTED
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G0.08</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Runtime versions pinned (.nvmrc / .python-version / engines / toolchain file)</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G0.09</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-pass'>PASS</span></td><td><span class='proof pr-attached'>attached</span></td><td><strong>Critical paths (&#x27;money paths&#x27;) enumerated in writing -- between 2 and 5 of them</strong><div class="note"><strong>PASS</strong> &mdash; Money paths: (1) browse -&gt; add to cart -&gt; checkout -&gt; receipt; (2) order lookup by id; (3) cancel order -&gt; refund issued. <span class="meta">(Demo Owner)</span></div>
+<details><summary>attachment: Critical paths, written out (651 B)</summary><pre># demo-shop v1.0.0 — Critical Paths (G0.09)
+
+1. **Browse -&gt; add to cart -&gt; checkout -&gt; receipt.** Money moves. Involves `pricing.cartTotal`,
+   the Stripe charge, and the order write. If this silently returns a wrong number, customers are
+   over- or under-charged and we find out at reconciliation.
+2. **Order lookup by id.** `orders.getOrderById`. Reads customer data. If authorization is wrong
+   here, one customer sees another&#x27;s order.
+3. **Cancel order -&gt; refund issued.** `orders.cancelOrder`. Money moves outward and the operation
+   is not currently idempotent.
+
+Not critical: catalogue browsing without a cart, the static marketing pages.
+</pre><div class="meta">sha256 02f36d45fd2b73a08726dee76782cbe406329e2ed5059c44915816fac2dc3b26</div></details></td></tr>
+<tr><td><code>G0.10</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>External dependency inventory: every third-party API, DB, queue, storage, mail, payment provider</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G0.11</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Target environments enumerated: production URL(s), staging, regions, tenants</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G0.12</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-pass'>PASS</span></td><td><span class='proof pr-asserted'>asserted</span></td><td><strong>Cut line written: what is in v1.0 and what is explicitly NOT, agreed before verification starts</strong><div class="note"><strong>PASS</strong> &mdash; IN v1.0: catalogue, cart, checkout, order lookup, cancellation. NOT IN v1.0: multi-currency, partial refunds, SSO, bulk export, mobile app. <span class="meta">(Demo Owner)</span></div></td></tr>
+</table></div>
+<div class="gatehead"><h2>G1 &mdash; Build &amp; Static Integrity</h2></div>
+<div class="sub">The artifact builds clean from zero and contains nothing it should not. &middot; veto holder: <strong>Executor</strong></div>
+<div class="scroll"><table><tr><th>ID</th><th>Sev</th><th>Status</th><th>Proof</th><th>Check &amp; evidence</th></tr>
+<tr><td><code>G1.01</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-pass'>PASS</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>Production build succeeds from a clean state</strong><details><summary>PASS &nbsp;<code>npm run build</code> &nbsp;exit 0 &nbsp;(1664 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:18+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected exit 0; got 0<br>sha256 39c95743d1f315bf136f1464f6bfecf42862327b86ee51a7923498d2f3f204f6 &nbsp;&middot;&nbsp; evidence/G1.01/01-npm-run-build.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G1.01  Production build succeeds from a clean state
+title        : Production build succeeds from a clean state
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : npm run build
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:18+05:30
+duration     : 1664 ms
+pass rule    : PASS when the exit code is 0
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+
+&gt; demo-shop@1.0.0 build
+&gt; node -e &quot;require(&#x27;./src/pricing&#x27;);require(&#x27;./src/orders&#x27;);require(&#x27;./src/config&#x27;);console.log(&#x27;build ok&#x27;)&quot;
+
+build ok
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G1.02</code></td><td><span class='sev s-S2'>S2</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Build run twice produces an equivalent artifact -- no nondeterministic failures</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G1.03</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Type check passes with ZERO errors</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G1.04</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Lint passes with zero errors and zero warnings, or a recorded baseline with zero new</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G1.05</code></td><td><span class='sev s-S2'>S2</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Format check passes -- the committed code is the formatted code</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G1.06</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>No TODO / FIXME / HACK / XXX / &#x27;temporary&#x27; markers on any critical path file</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G1.07</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-fail'>FAIL</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>No debug artifacts shipped: console.log, print, debugger, pdb, binding.pry, alert()</strong><details><summary>FAIL &nbsp;<code>git grep -nE &#x27;console\.(log|debug)|debugger;&#x27; -- src</code> &nbsp;exit 0 &nbsp;(170 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:20+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected no findings; found 2 line(s)<br>sha256 72ba448a9a25f5de01d30b2acce6b6a833c2a1901999e69c5aed33ee983d211c &nbsp;&middot;&nbsp; evidence/G1.07/01-debug-artifacts-in-src.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G1.07  debug artifacts in src
+title        : No debug artifacts shipped: console.log, print, debugger, pdb, binding.pry, alert()
+severity     : S1 MAJOR    - fix, or written waiver from the owner
+command      : git grep -nE &#x27;console\.(log|debug)|debugger;&#x27; -- src
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:20+05:30
+duration     : 170 ms
+pass rule    : PASS when the command finds NOTHING (empty stdout)
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+src/orders.js:5://   3. console.log of a full user object (G1.07 + G9.16)
+src/orders.js:17:  console.log(&#x27;fetching order for&#x27;, user); // logs email, role, session token
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G1.08</code></td><td><span class='sev s-S2'>S2</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>No large commented-out code blocks in shipped source</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G1.09</code></td><td><span class='sev s-S2'>S2</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Dead code, unused exports, and unused dependencies identified and removed</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G1.10</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-fail'>FAIL</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>Secret scan over the FULL git history (not just HEAD) finds zero live credentials</strong><details><summary>FAIL &nbsp;<code>bash -c &#x27;git log -p --all | grep -Ei &quot;sk_live_|AKIA[0-9A-Z]{16}|BEGIN RSA PRIVATE KEY&quot;&#x27;</code> &nbsp;exit 0 &nbsp;(315 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:21+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected no findings; found 2 line(s)<br>sha256 70b5b163b2150ebea66cf1cb5019258b6628fc86362f69e7ad3101816420acbb &nbsp;&middot;&nbsp; evidence/G1.10/01-secret-scan-full-git-history.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G1.10  secret scan, full git history
+title        : Secret scan over the FULL git history (not just HEAD) finds zero live credentials
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : bash -c &#x27;git log -p --all | grep -Ei &quot;sk_live_|AKIA[0-9A-Z]{16}|BEGIN RSA PRIVATE KEY&quot;&#x27;
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:21+05:30
+duration     : 315 ms
+pass rule    : PASS when the command finds NOTHING (empty stdout)
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
++STRIPE_SECRET_KEY=sk_live_51QxSampleDemoKeyDoNotUseAnywhere00
++const STRIPE_SECRET_KEY = &#x27;sk_live_51QxSampleDemoKeyDoNotUseAnywhere00&#x27;;
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G1.11</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-fail'>FAIL</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>No localhost / 127.0.0.1 / staging hostnames / test API keys reachable on a production code path</strong><details><summary>FAIL &nbsp;<code>git grep -nE &#x27;localhost|127\.0\.0\.1|sk_test_&#x27; -- src</code> &nbsp;exit 0 &nbsp;(177 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:22+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected no findings; found 3 line(s)<br>sha256 40c1203878e443da6454f94b58a8e40565700c096ff7201bf517df873aecbf7a &nbsp;&middot;&nbsp; evidence/G1.11/01-localhost-sandbox-on-prod-path.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G1.11  localhost / sandbox on prod path
+title        : No localhost / 127.0.0.1 / staging hostnames / test API keys reachable on a production code path
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : git grep -nE &#x27;localhost|127\.0\.0\.1|sk_test_&#x27; -- src
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:22+05:30
+duration     : 177 ms
+pass rule    : PASS when the command finds NOTHING (empty stdout)
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+src/config.js:4://   2. Silent localhost fallback reaching production paths (G1.11, S0)
+src/config.js:11:  apiBase: process.env.API_BASE || &#x27;http://localhost:3000&#x27;,
+src/config.js:12:  dbUrl: process.env.DATABASE_URL || &#x27;postgres://postgres:postgres@127.0.0.1:5432/shop&#x27;,
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G1.12</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Dependency vulnerability audit: zero CRITICAL, zero HIGH, or each one waived with reasoning</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G1.13</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>License compliance: LICENSE present; no copyleft licence incompatible with how this ships</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G1.14</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>No abandoned or known-malicious dependency on a critical path; every dep justified</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G1.15</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Source maps / debug symbols policy decided and enforced -- production source is not published by accident</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G1.16</code></td><td><span class='sev s-S2'>S2</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Build artifact size measured against a written budget</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G1.17</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-fail'>FAIL</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>No .env file, private key, database dump, or real customer data committed to the repository</strong><details><summary>FAIL &nbsp;<code>bash -c &#x27;git ls-files | grep -iE &quot;\.env($|\.)|\.pem$|\.key$|\.sql$&quot;&#x27;</code> &nbsp;exit 0 &nbsp;(311 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:23+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected no findings; found 1 line(s)<br>sha256 33fa27e38ca926c81884bbb76ba9d64025dd13a3030fb4e3a661023a0b705ee5 &nbsp;&middot;&nbsp; evidence/G1.17/01-secrets-committed-to-the-repo.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G1.17  secrets committed to the repo
+title        : No .env file, private key, database dump, or real customer data committed to the repository
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : bash -c &#x27;git ls-files | grep -iE &quot;\.env($|\.)|\.pem$|\.key$|\.sql$&quot;&#x27;
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:23+05:30
+duration     : 311 ms
+pass rule    : PASS when the command finds NOTHING (empty stdout)
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+.env
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G1.18</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Strict mode on: strict types, no blanket &#x27;any&#x27;/&#x27;unsafe&#x27; escapes on critical paths, warnings-as-errors where supported</strong><div class="meta">No evidence recorded.</div></td></tr>
+</table></div>
+<div class="gatehead"><h2>G2 &mdash; Test Truth</h2></div>
+<div class="sub">The test suite exists, is honest, and would actually catch a regression. &middot; veto holder: <strong>Verifier</strong></div>
+<div class="scroll"><table><tr><th>ID</th><th>Sev</th><th>Status</th><th>Proof</th><th>Check &amp; evidence</th></tr>
+<tr><td><code>G2.01</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-pass'>PASS</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>A test suite exists and runs with one documented command</strong><details><summary>PASS &nbsp;<code>npm test</code> &nbsp;exit 0 &nbsp;(1887 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:23+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected exit 0; got 0<br>sha256 45f1907c1c29694e053df601b1aa77654e5b8a7d299ec6cad345a6cd988c879c &nbsp;&middot;&nbsp; evidence/G2.01/01-suite-exists-and-runs.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G2.01  suite exists and runs
+title        : A test suite exists and runs with one documented command
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : npm test
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:23+05:30
+duration     : 1887 ms
+pass rule    : PASS when the exit code is 0
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+
+&gt; demo-shop@1.0.0 test
+&gt; node --test
+
+✔ lineTotal multiplies price by quantity (2.4637ms)
+✔ applyDiscount removes the right percentage (0.6694ms)
+✔ cartTotal adds tax (0.3787ms)
+✔ cartTotal handles an empty cart (0.2048ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 223.4825
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G2.02</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Full suite passes from a CLEAN state: fresh dependencies, fresh database, migrations from zero</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G2.03</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Suite passes with tests in randomised order</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G2.04</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-pass'>PASS</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>Suite passes twice in a row in the same environment -- no state bleed between runs</strong><details><summary>PASS &nbsp;<code>bash -c &#x27;npm test &amp;&amp; npm test&#x27;</code> &nbsp;exit 0 &nbsp;(4184 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:26+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected exit 0; got 0<br>sha256 3889ac869ea97f249f304b70caa0f892371a880b03974a6d7415d34103f060f7 &nbsp;&middot;&nbsp; evidence/G2.04/01-suite-passes-twice-in-a-row.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G2.04  suite passes twice in a row
+title        : Suite passes twice in a row in the same environment -- no state bleed between runs
+severity     : S1 MAJOR    - fix, or written waiver from the owner
+command      : bash -c &#x27;npm test &amp;&amp; npm test&#x27;
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:26+05:30
+duration     : 4184 ms
+pass rule    : PASS when the exit code is 0
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+
+&gt; demo-shop@1.0.0 test
+&gt; node --test
+
+✔ lineTotal multiplies price by quantity (2.7754ms)
+✔ applyDiscount removes the right percentage (0.6012ms)
+✔ cartTotal adds tax (0.4559ms)
+✔ cartTotal handles an empty cart (0.2185ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 236.898
+
+&gt; demo-shop@1.0.0 test
+&gt; node --test
+
+✔ lineTotal multiplies price by quantity (3.0474ms)
+✔ applyDiscount removes the right percentage (1.1548ms)
+✔ cartTotal adds tax (0.6014ms)
+✔ cartTotal handles an empty cart (0.2394ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 229.1085
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G2.05</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-pass'>PASS</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>Zero skipped / .only / .skip / xit / pending tests, or every one justified in writing</strong><details><summary>PASS &nbsp;<code>git grep -nE &#x27;\.(skip|only)\(|xit\(&#x27; -- test</code> &nbsp;exit 1 &nbsp;(170 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:31+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected no findings; scan ran and found none<br>sha256 8eacf36f5de6bd7d985547a04fe775c7a415438884ce4d0c796dc7f454569722 &nbsp;&middot;&nbsp; evidence/G2.05/01-no-skipped-or-only-tests.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G2.05  no skipped or .only tests
+title        : Zero skipped / .only / .skip / xit / pending tests, or every one justified in writing
+severity     : S1 MAJOR    - fix, or written waiver from the owner
+command      : git grep -nE &#x27;\.(skip|only)\(|xit\(&#x27; -- test
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:31+05:30
+duration     : 170 ms
+pass rule    : PASS when the command finds NOTHING (empty stdout)
+exit code    : 1
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G2.06</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-pass'>PASS</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>SABOTAGE PROOF: three critical functions deliberately broken, a test went RED for each, code restored</strong><details><summary>PASS &nbsp;<code>npm test</code> &nbsp;exit 0 &nbsp;(2037 ms)</summary>
+<div class="meta">ran 2026-08-15T03:35:18+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected exit 0; got 0<br>sha256 afa3d1e7f9a21709ad87aa37ae74d69a5c4a34ca23c0348932099daf2d549699 &nbsp;&middot;&nbsp; evidence/G2.06/01-baseline-suite-is-green-before-any-sabotage.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G2.06  BASELINE: suite is green before any sabotage
+title        : SABOTAGE PROOF: three critical functions deliberately broken, a test went RED for each, code restored
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : npm test
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:35:18+05:30
+duration     : 2037 ms
+pass rule    : PASS when the exit code is 0
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+
+&gt; demo-shop@1.0.0 test
+&gt; node --test
+
+✔ lineTotal multiplies price by quantity (2.5095ms)
+✔ applyDiscount removes the right percentage (0.554ms)
+✔ cartTotal adds tax (0.8893ms)
+✔ cartTotal handles an empty cart (0.2863ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 234.775
+
+----- STDERR -----
+
+</pre></details>
+<details><summary>PASS &nbsp;<code>npm test</code> &nbsp;exit 1 &nbsp;(1956 ms)</summary>
+<div class="meta">ran 2026-08-15T03:35:21+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected a NON-ZERO exit (sabotage/negative test); got 1<br>sha256 8ca9e92bd86b02ed9a239b0de2dad2646e27fd311109d1ddda5d39012e6483b4 &nbsp;&middot;&nbsp; evidence/G2.06/02-sabotage-1-linetotal-multiply-becomes-add.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G2.06  sabotage 1: lineTotal multiply becomes add
+title        : SABOTAGE PROOF: three critical functions deliberately broken, a test went RED for each, code restored
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : npm test
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:35:21+05:30
+duration     : 1956 ms
+pass rule    : PASS when the exit code is NON-ZERO (negative/sabotage test)
+exit code    : 1
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+
+&gt; demo-shop@1.0.0 test
+&gt; node --test
+
+✖ lineTotal multiplies price by quantity (4.1705ms)
+✔ applyDiscount removes the right percentage (2.0252ms)
+✖ cartTotal adds tax (2.2485ms)
+✔ cartTotal handles an empty cart (0.3552ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 2
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 227.7793
+
+✖ failing tests:
+
+test at test\pricing.test.js:8:1
+✖ lineTotal multiplies price by quantity (4.1705ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  13 !== 30
+  
+      at TestContext.&lt;anonymous&gt; (C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop\test\pricing.test.js:9:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: &#x27;ERR_ASSERTION&#x27;,
+    actual: 13,
+    expected: 30,
+    operator: &#x27;strictEqual&#x27;,
+    diff: &#x27;simple&#x27;
+  }
+
+test at test\pricing.test.js:16:1
+✖ cartTotal adds tax (2.2485ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  111.1 !== 110
+  
+      at TestContext.&lt;anonymous&gt; (C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop\test\pricing.test.js:18:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: &#x27;ERR_ASSERTION&#x27;,
+    actual: 111.1,
+    expected: 110,
+    operator: &#x27;strictEqual&#x27;,
+    diff: &#x27;simple&#x27;
+  }
+
+----- STDERR -----
+
+</pre></details>
+<details><summary>FAIL &nbsp;<code>npm test</code> &nbsp;exit 0 &nbsp;(1933 ms)</summary>
+<div class="meta">ran 2026-08-15T03:35:24+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected a NON-ZERO exit (sabotage/negative test); got 0<br>sha256 80d34a5258b71309726659c75e0caee6d9340e1f15e22373b2425cf7a8c6476f &nbsp;&middot;&nbsp; evidence/G2.06/03-sabotage-2-withtax-rounding-becomes-floor.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G2.06  sabotage 2: withTax rounding becomes floor
+title        : SABOTAGE PROOF: three critical functions deliberately broken, a test went RED for each, code restored
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : npm test
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:35:24+05:30
+duration     : 1933 ms
+pass rule    : PASS when the exit code is NON-ZERO (negative/sabotage test)
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+
+&gt; demo-shop@1.0.0 test
+&gt; node --test
+
+✔ lineTotal multiplies price by quantity (3.0016ms)
+✔ applyDiscount removes the right percentage (0.6168ms)
+✔ cartTotal adds tax (0.7109ms)
+✔ cartTotal handles an empty cart (0.2651ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 233.5964
+
+----- STDERR -----
+
+</pre></details>
+<details><summary>PASS &nbsp;<code>npm test</code> &nbsp;exit 1 &nbsp;(1920 ms)</summary>
+<div class="meta">ran 2026-08-15T03:35:27+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected a NON-ZERO exit (sabotage/negative test); got 1<br>sha256 2e978dd2ce606d2919cf5a0a0a543a5b656283f6efe0c6ccc94fb28a8b78c972 &nbsp;&middot;&nbsp; evidence/G2.06/04-sabotage-3-applydiscount-is-a-no-op.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G2.06  sabotage 3: applyDiscount is a no-op
+title        : SABOTAGE PROOF: three critical functions deliberately broken, a test went RED for each, code restored
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : npm test
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:35:27+05:30
+duration     : 1920 ms
+pass rule    : PASS when the exit code is NON-ZERO (negative/sabotage test)
+exit code    : 1
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+
+&gt; demo-shop@1.0.0 test
+&gt; node --test
+
+✔ lineTotal multiplies price by quantity (2.5917ms)
+✖ applyDiscount removes the right percentage (2.0836ms)
+✔ cartTotal adds tax (0.6591ms)
+✔ cartTotal handles an empty cart (0.2595ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 237.029
+
+✖ failing tests:
+
+test at test\pricing.test.js:12:1
+✖ applyDiscount removes the right percentage (2.0836ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  100 !== 90
+  
+      at TestContext.&lt;anonymous&gt; (C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop\test\pricing.test.js:13:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: &#x27;ERR_ASSERTION&#x27;,
+    actual: 100,
+    expected: 90,
+    operator: &#x27;strictEqual&#x27;,
+    diff: &#x27;simple&#x27;
+  }
+
+----- STDERR -----
+
+</pre></details>
+<details><summary>PASS &nbsp;<code>git status --porcelain src test</code> &nbsp;exit 0 &nbsp;(180 ms)</summary>
+<div class="meta">ran 2026-08-15T03:35:29+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected no findings; scan ran and found none<br>sha256 7da5f423182215581d83d464ce53e7ca41b96dd9de4baffa4f8ac6aca4956bdc &nbsp;&middot;&nbsp; evidence/G2.06/05-code-restored-tree-clean.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G2.06  code restored, tree clean
+title        : SABOTAGE PROOF: three critical functions deliberately broken, a test went RED for each, code restored
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : git status --porcelain src test
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:35:29+05:30
+duration     : 180 ms
+pass rule    : PASS when the command finds NOTHING (empty stdout)
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+
+----- STDERR -----
+
+</pre></details>
+<details><summary>attachment: Sabotage analysis: 1 of 3 survived (1.1 KB)</summary><pre># G2.06 Sabotage Analysis — demo-shop v1.0.0
+
+Baseline: 4 tests, all green (recorded).
+
+| # | Sabotage | Suite result | Verdict |
+|---|---|---|---|
+| 1 | `lineTotal`: `unitPrice * quantity` -&gt; `unitPrice + quantity` | RED (1 failure) | Caught |
+| 2 | `withTax`: `Math.round(...)` -&gt; `Math.floor(...)` | **GREEN** | **NOT CAUGHT** |
+| 3 | `applyDiscount`: returns `total` unchanged | RED (1 failure) | Caught |
+
+## Finding — sabotage 2 survived
+
+The tax-rounding rule has no test asserting on it. `cartTotal([{price:100,qty:1}], 0.1, 0)`
+returns exactly 110 under both `Math.round` and `Math.floor`, so the only test touching this
+function cannot distinguish correct rounding from incorrect rounding.
+
+Line coverage reports this function as 100% covered. Coverage is measuring execution, not
+assertion.
+
+**Impact:** every order whose pre-tax total produces a fractional third decimal is under-charged
+by up to one cent, silently, and the discrepancy accumulates in reconciliation.
+
+**Required fix:** add cases at the rounding boundary in both directions
+(e.g. 0.615 -&gt; 0.62, 0.614 -&gt; 0.61), then re-run sabotage 2 and confirm it goes red.
+</pre><div class="meta">sha256 6afc0b82f82a5e172d5a626eb15a8852a8d341e8245f38ba303efd6832913817</div></details></td></tr>
+<tr><td><code>G2.07</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Coverage measured; coverage on critical-path files meets a written bar</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G2.08</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>No assertion-free tests -- every test asserts on a value, not merely &#x27;did not throw&#x27;</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G2.09</code></td><td><span class='sev s-S2'>S2</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>No branching logic (if/try-catch-as-control) inside tests</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G2.10</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Tests are deterministic: frozen clock, fixed seed, fixed IDs, no live network</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G2.11</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Flake count is zero: suite run three times, identical results each time</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G2.12</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Unit tests cover every branch of domain logic per the part-type matrix</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G2.13</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Contract tests pin every boundary: API request/response, DB schema, event payloads, error taxonomy</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G2.14</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Integration tests run against a REAL database with real migrations, not mocks</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G2.15</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>End-to-end test covers every critical path from a genuinely empty starting state</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G2.16</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Every bug ever found has a regression test that fails without its fix</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G2.17</code></td><td><span class='sev s-S3'>S3</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Total suite runtime recorded and acceptable for the team&#x27;s cadence</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G2.18</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>CI runs the same commands as local, and CI is GREEN on the exact release commit</strong><div class="meta">No evidence recorded.</div></td></tr>
+</table></div>
+<div class="gatehead"><h2>G3 &mdash; Functional Correctness &amp; States</h2></div>
+<div class="sub">Every promised behaviour works, including the eight ways it can go wrong. &middot; veto holder: <strong>Verifier</strong></div>
+<div class="scroll"><table><tr><th>ID</th><th>Sev</th><th>Status</th><th>Proof</th><th>Check &amp; evidence</th></tr>
+<tr><td><code>G3.01</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Every acceptance criterion demonstrated one by one, with proof per criterion</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G3.03</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>First-run experience walked from a genuinely empty account -- no seed data, no pre-existing state</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G3.04</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Every form: client validation, server validation, inline field errors, and double-submit protection</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G3.05</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Every destructive action has confirmation and either undo or a documented recovery path</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G3.06</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>List boundaries: zero results, one result, exact page boundary, past the last page, item inserted between page 1 and 2</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G3.07</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-fail'>FAIL</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>Money correctness: rounding both directions, zero, negative, maximum, precision, currency mixing, and NO floating point</strong><details><summary>FAIL &nbsp;<code>git grep -nE &#x27;(price|amount|total|cost|tax)\s*[*+-]&#x27; -- src/pricing.js</code> &nbsp;exit 0 &nbsp;(181 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:31+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected no findings; found 2 line(s)<br>sha256 7a76b9f58812ce9c9ccf3901cfad448b18b33c4579931b5f753c3b31dc054b29 &nbsp;&middot;&nbsp; evidence/G3.07/01-floating-point-money-scan.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G3.07  floating-point money scan
+title        : Money correctness: rounding both directions, zero, negative, maximum, precision, currency mixing, and NO floating point
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : git grep -nE &#x27;(price|amount|total|cost|tax)\s*[*+-]&#x27; -- src/pricing.js
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:31+05:30
+duration     : 181 ms
+pass rule    : PASS when the command finds NOTHING (empty stdout)
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+src/pricing.js:9:  return total - (total * percent) / 100;
+
+src/pricing.js:14:  return Math.round((total + total * taxRate) * 100) / 100;
+
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G3.08</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Date/time correctness: DST both directions, offsets east and west, half-hour offsets, leap year, server tz != user tz != db tz</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G3.09</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Unicode, emoji, right-to-left text, and 10,000-character strings accepted, stored, and rendered without corruption</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G3.10</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-fail'>FAIL</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>Every mutating endpoint is idempotent, or documented as unsafe to retry with a client-side guard</strong><details><summary>FAIL &nbsp;<code>bash -c &#x27;git grep -lE &quot;idempotency|Idempotency-Key&quot; -- src || echo &quot;NO IDEMPOTENCY HANDLING FOUND&quot;&#x27;</code> &nbsp;exit 0 &nbsp;(331 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:32+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected no findings; found 1 line(s)<br>sha256 7a1b73a2ffe1ba6518cd2572e345afb3f387f0281ac9d938d9e0e6caad2e7860 &nbsp;&middot;&nbsp; evidence/G3.10/01-idempotency-guard-on-mutating-paths.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G3.10  idempotency guard on mutating paths
+title        : Every mutating endpoint is idempotent, or documented as unsafe to retry with a client-side guard
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : bash -c &#x27;git grep -lE &quot;idempotency|Idempotency-Key&quot; -- src || echo &quot;NO IDEMPOTENCY HANDLING FOUND&quot;&#x27;
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:32+05:30
+duration     : 331 ms
+pass rule    : PASS when the command finds NOTHING (empty stdout)
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+NO IDEMPOTENCY HANDLING FOUND
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G3.11</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Concurrency: two actors mutate the same resource at the same instant -- outcome is correct and deterministic</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G3.12</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Browser back, forward, and refresh mid-flow behave correctly; every screen is deep-linkable</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G3.14</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Outbound email / push / SMS actually sends and renders correctly in a real client -- screenshot from a real inbox</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G3.15</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Search: empty query, no results, special and regex characters, very long query, permission-filtered counts match visible rows</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G3.16</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Every documented error code is reachable by a test and produces a message a user can act on</strong><div class="meta">No evidence recorded.</div></td></tr>
+</table></div>
+<div class="gatehead"><h2>G4 &mdash; Security</h2></div>
+<div class="sub">A motivated stranger cannot read, write, or break what is not theirs. &middot; veto holder: <strong>Security reviewer</strong></div>
+<div class="scroll"><table><tr><th>ID</th><th>Sev</th><th>Status</th><th>Proof</th><th>Check &amp; evidence</th></tr>
+<tr><td><code>G4.01</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Every protected route enumerated and tested unauthenticated -- all deny</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.02</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Authorization matrix: every role x every resource x every action, implemented as a table-driven test</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.03</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-fail'>FAIL</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>Cross-tenant READ is blocked and proven by a test</strong><details><summary>FAIL &nbsp;<code>bash -c &#x27;git grep -n &quot;FROM orders WHERE&quot; -- src | grep -v tenant_id&#x27;</code> &nbsp;exit 0 &nbsp;(331 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:34+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected no findings; found 1 line(s)<br>sha256 7cb988193490b4efaf302e4555fc8931485045e7f3262597ecdc20d038158fab &nbsp;&middot;&nbsp; evidence/G4.03/01-tenant-filter-present-on-every-order-read.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G4.03  tenant filter present on every order read
+title        : Cross-tenant READ is blocked and proven by a test
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : bash -c &#x27;git grep -n &quot;FROM orders WHERE&quot; -- src | grep -v tenant_id&#x27;
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:34+05:30
+duration     : 331 ms
+pass rule    : PASS when the command finds NOTHING (empty stdout)
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+src/orders.js:19:  return query(&#x27;SELECT * FROM orders WHERE id = &#x27; + orderId);
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G4.04</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Cross-tenant WRITE is blocked and proven by a SEPARATE test</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.05</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>IDOR: requesting another account&#x27;s object by its raw ID is denied on every resource type</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.06</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Privilege escalation blocked: cannot self-grant a role, change own tenant, or mass-assign role/isAdmin fields</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.07</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Sessions: expire, revoke on logout, rotate on privilege change; cookies are Secure + HttpOnly + SameSite</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.08</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Credentials stored with a modern KDF (argon2id / bcrypt / scrypt / PBKDF2 at current cost), never reversible, never plaintext</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.09</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-fail'>FAIL</span></td><td><span class='proof pr-executed'>executed</span></td><td><strong>Injection: every query parameterised -- SQL, NoSQL, shell, LDAP, template. No string-built queries on user input</strong><details><summary>FAIL &nbsp;<code>git grep -nE &#x27;query\(.*(\+|\$\{)&#x27; -- src</code> &nbsp;exit 0 &nbsp;(165 ms)</summary>
+<div class="meta">ran 2026-08-15T03:36:33+05:30 in C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop<br>rule: expected no findings; found 3 line(s)<br>sha256 ec90055ad807fbd27a83ce5d39acfa5b9af7debf65374509e43d87ec05468dc8 &nbsp;&middot;&nbsp; evidence/G4.09/01-sql-built-by-string-concatenation.log</div>
+<pre>==============================================================================
+LAUNCH READINESS EVIDENCE
+==============================================================================
+check        : G4.09  SQL built by string concatenation
+title        : Injection: every query parameterised -- SQL, NoSQL, shell, LDAP, template. No string-built queries on user input
+severity     : S0 BLOCKER  - launch forbidden while open
+command      : git grep -nE &#x27;query\(.*(\+|\$\{)&#x27; -- src
+shell        : bash (D:\Git\usr\bin\bash.EXE)
+working dir  : C:\Users\teenl\AppData\Local\Temp\claude\D--skill-Test-Befor-Real-World-deployment\42937e7e-c3f7-4754-a7c0-858b8981b79b\scratchpad\demo-shop
+started      : 2026-08-15T03:36:33+05:30
+duration     : 165 ms
+pass rule    : PASS when the command finds NOTHING (empty stdout)
+exit code    : 0
+host         : Zeaul_Rahman  |  Windows 11
+git commit   : 08f4a684fc74 (master)  DIRTY
+==============================================================================
+----- STDOUT -----
+src/orders.js:19:  return query(&#x27;SELECT * FROM orders WHERE id = &#x27; + orderId);
+src/orders.js:24:  await query(&quot;UPDATE orders SET status=&#x27;cancelled&#x27; WHERE id = &quot; + orderId);
+src/orders.js:25:  await query(&quot;INSERT INTO refunds (order_id) VALUES (&quot; + orderId + &quot;)&quot;);
+
+----- STDERR -----
+
+</pre></details></td></tr>
+<tr><td><code>G4.10</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>XSS: stored, reflected, and DOM-based tested; output encoded; Content-Security-Policy present and not &#x27;unsafe-inline&#x27;</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.11</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>CSRF protection active on every state-changing request</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.12</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>SSRF: any user-supplied URL fetched server-side is validated against an allowlist and blocks internal/metadata addresses</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.13</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Path traversal impossible in any filesystem path built from user input</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.14</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Unsafe deserialization, prototype pollution, and mass assignment tested and blocked</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.15</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Rate limiting and brute-force protection on login, password reset, OTP, and every expensive endpoint</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.16</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Security headers present: HSTS, CSP, X-Content-Type-Options, frame-ancestors, Referrer-Policy, Permissions-Policy</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.17</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>TLS valid: certificate chain good, TLS 1.2+, HTTP redirects to HTTPS, no mixed content, expiry date recorded</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.18</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>CORS is not a wildcard when credentials are allowed; allowed origins are an explicit list</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.19</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Runtime secrets come from a secret store or environment, never the repo; rotation procedure documented</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.20</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Error responses leak nothing: no stack traces, SQL fragments, internal paths, or framework versions in production mode</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.22</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Supply chain: lockfile integrity verified, no unexpected postinstall scripts, SBOM generated and stored</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.23</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Admin surfaces are authenticated, not publicly discoverable, and every default credential is removed</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.24</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Audit log records security-relevant events: login, failed login, permission change, data export, deletion</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.25</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>An automated security scan was run (SAST and/or DAST and/or dependency scan) and its raw output is attached</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.26</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>A line-by-line security review of the release diff was performed by a reviewer who did not write it</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.27</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Inbound webhooks verify signatures and reject replays (timestamp window + seen-ID cache)</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G4.28</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>API keys and tokens are scoped, expiring, and revocable; revocation tested</strong><div class="meta">No evidence recorded.</div></td></tr>
+</table></div>
+<div class="gatehead"><h2>G5 &mdash; Data &amp; Migration Safety</h2></div>
+<div class="sub">Data survives the deploy, the rollback, and the disaster. &middot; veto holder: <strong>Data owner</strong></div>
+<div class="scroll"><table><tr><th>ID</th><th>Sev</th><th>Status</th><th>Proof</th><th>Check &amp; evidence</th></tr>
+<tr><td><code>G5.01</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Migrations run forward successfully from a completely empty database</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.02</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-fail'>FAIL</span></td><td><span class='proof pr-asserted'>asserted</span></td><td><strong>ROLLBACK EXECUTED -- not merely written -- and the elapsed time recorded in seconds</strong><div class="note"><strong>FAIL</strong> &mdash; No down migration exists and no rollback has ever been executed. Schema changes are applied by hand against production. <span class="meta">(Demo Owner)</span></div></td></tr>
+<tr><td><code>G5.03</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Migration rehearsed on a production-scale data copy; total time and lock duration measured</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.04</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Backward compatibility proven: the OLD code runs correctly against the NEW schema (the rolling-deploy window)</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.05</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>BACKUP RESTORE DRILL performed end to end into a scratch environment, and the data verified</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.06</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>RPO and RTO stated as numbers and proven by the drill&#x27;s measured timings</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.07</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Integrity constraints present where they matter: foreign keys, unique, check, not-null</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.08</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>No destructive migration ships without a backup taken immediately before it, verified restorable</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.09</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>PII inventory written: what personal data is stored, where, why, and for how long</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.10</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Sensitive data encrypted at rest and in transit; key management documented</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.11</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>User data export and deletion actually work end to end and are timed</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.12</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>No seed, demo, or test data is reachable in production; no test accounts with weak passwords</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.13</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>N+1 queries checked on every list and detail endpoint; query counts recorded</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.14</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Every critical-path query has a supporting index, proven with EXPLAIN output</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.15</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Connection pool sized deliberately; behaviour under pool exhaustion tested</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G5.16</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Replica lag / eventual consistency behaviour understood and handled on read-after-write paths</strong><div class="meta">No evidence recorded.</div></td></tr>
+</table></div>
+<div class="gatehead"><h2>G6 &mdash; Performance &amp; Capacity</h2></div>
+<div class="sub">It is fast enough at real volume, and we know where it breaks. &middot; veto holder: <strong>Performance owner</strong></div>
+<div class="scroll"><table><tr><th>ID</th><th>Sev</th><th>Status</th><th>Proof</th><th>Check &amp; evidence</th></tr>
+<tr><td><code>G6.01</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>A written performance budget exists and was written BEFORE the measurements were taken</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G6.02</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>p50 / p95 / p99 latency measured for every critical endpoint at realistic data volume</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G6.03</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Frontend field metrics measured on a throttled device profile: LCP, CLS, INP, TTFB</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G6.04</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Bundle / binary size measured against the budget; the largest contributors listed</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G6.05</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Cold start and first meaningful interaction timed</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G6.06</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Load test at expected peak concurrency; throughput, latency, and error rate recorded</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G6.07</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Load test at 3-10x expected peak: the breaking point is FOUND and its number written down</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G6.08</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Soak test of at least one hour: memory, file handles, and connections are flat, not climbing</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G6.09</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>At capacity the system degrades gracefully -- queues, sheds load, or returns 429 -- it does not crash or corrupt</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G6.10</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Database performance under load measured; slow query log reviewed and the worst queries fixed</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G6.11</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Cache hit rate measured; cache stampede / thundering herd on expiry tested</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G6.12</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-waived'>WAIVED</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Infrastructure cost modelled at launch volume and at 10x; a billing surprise is impossible</strong><div class="note"><strong>WAIVED</strong> by Demo Owner (CTO) &mdash; Pre-revenue; single region; fewer than 200 users expected in month one.<br><em>Risk accepted:</em> An unexpected traffic spike produces a surprise cloud bill. No hard spend cap is configured. &middot; expires 2026-11-01</div></td></tr>
+<tr><td><code>G6.14</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Autoscaling tested in BOTH directions -- scale out under load, and scale back in afterwards</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G6.15</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Timeouts set at every layer and ordered correctly: client &lt; gateway &lt; service &lt; database</strong><div class="meta">No evidence recorded.</div></td></tr>
+</table></div>
+<div class="gatehead"><h2>G7 &mdash; Reliability &amp; Failure Injection</h2></div>
+<div class="sub">Every dependency has been killed on purpose and the system behaved. &middot; veto holder: <strong>SRE</strong></div>
+<div class="scroll"><table><tr><th>ID</th><th>Sev</th><th>Status</th><th>Proof</th><th>Check &amp; evidence</th></tr>
+<tr><td><code>G7.01</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Every external dependency killed one at a time; the observed behaviour is acceptable and documented per dependency</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G7.02</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Latency injected into each dependency; no cascading failure, no thread-pool exhaustion</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G7.04</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Database down and database read-only both simulated; the app degrades safely and says so</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G7.05</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Network interrupted mid-operation; no partial writes, no lost user work, clear recovery</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G7.06</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Process SIGKILLed mid-write; on restart there is no half-committed state</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G7.07</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Disk full and out-of-memory behaviour observed; failure is loud, safe, and recoverable</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G7.09</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Circuit breaker or bulkhead engages under sustained failure AND recovers when the dependency returns</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G7.11</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Graceful shutdown: readiness flips first, in-flight requests drain, then the process exits</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G7.12</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Health, readiness, and liveness endpoints exist and tell the truth -- they are not hardcoded 200s</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G7.13</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Every single point of failure enumerated, each with a mitigation or an explicitly accepted risk</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G7.14</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Clock skew, DNS failure, and expired certificate scenarios simulated</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G7.15</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Full-outage recovery test: everything down, then restarted -- state is correct and the recovery is timed</strong><div class="meta">No evidence recorded.</div></td></tr>
+</table></div>
+<div class="gatehead"><h2>G8 &mdash; UX, Accessibility &amp; Devices</h2></div>
+<div class="sub">A real person on a real device, including one using a screen reader, can finish the job. &middot; veto holder: <strong>Design owner</strong></div>
+<div class="scroll"><table><tr><th>ID</th><th>Sev</th><th>Status</th><th>Proof</th><th>Check &amp; evidence</th></tr>
+<tr><td><code>G8.01</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Keyboard only: every critical path completed with no mouse, no focus trap, focus always visible</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G8.02</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Screen reader: one complete critical path traversed; every control announces a name, role, and state</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G8.03</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Automated accessibility scan run on every major screen: zero critical, zero serious violations</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G8.05</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Layout works at 320px width and at an ultra-wide viewport; nothing clips, overlaps, or scrolls horizontally</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G8.06</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Device and browser support matrix declared, and every entry actually tested</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G8.09</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Zoom to 200% and 400% without loss of content or function</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G8.12</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Slow-network (throttled 3G) and fully-offline behaviour observed on every critical path</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G8.13</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-fail'>FAIL</span></td><td><span class='proof pr-asserted'>asserted</span></td><td><strong>CUSTOMER ZERO: a person with no knowledge of the build completed the primary job unaided; friction log written</strong><div class="note"><strong>FAIL</strong> &mdash; Customer Zero not performed. Nobody outside the two people who wrote this has ever used it. <span class="meta">(Demo Owner)</span></div></td></tr>
+<tr><td><code>G8.15</code></td><td><span class='sev s-S2'>S2</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Print, export, share, and embed surfaces work if the product claims them</strong><div class="meta">No evidence recorded.</div></td></tr>
+</table></div>
+<div class="gatehead"><h2>G9 &mdash; Privacy, Legal &amp; Compliance</h2></div>
+<div class="sub">Shipping this does not create a legal or ethical liability. &middot; veto holder: <strong>Owner / counsel</strong></div>
+<div class="scroll"><table><tr><th>ID</th><th>Sev</th><th>Status</th><th>Proof</th><th>Check &amp; evidence</th></tr>
+<tr><td><code>G9.01</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Privacy policy and Terms exist, are reachable from the product, and accurately describe what the code actually does</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G9.02</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Consent for non-essential cookies/tracking implemented where required; non-essential defaults to OFF</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G9.03</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Data processing record: what is collected, the lawful basis, where it is stored, and data residency</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G9.04</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Every third party receiving user data is disclosed, and a processing agreement is in place</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G9.05</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>User rights work end to end: access, export, correction, deletion -- each performed once and timed</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G9.06</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Retention policy implemented in code -- data actually gets deleted, proven by a test or a job run</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G9.07</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Age gating / children&#x27;s data handling addressed if the product is reachable by minors</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G9.09</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Open-source licence obligations satisfied: attribution file generated and shipped with the product</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G9.10</code></td><td><span class='sev s-S2'>S2</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Product name, logo, and domain checked for trademark conflict</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G9.11</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-na'>NA</span></td><td><span class='proof pr-asserted'>asserted</span></td><td><strong>App store / marketplace review guidelines walked item by item</strong><div class="note"><strong>NA</strong> &mdash; Web application only, served at demo-shop.example. No iOS, Android, or marketplace distribution in v1.0 (confirmed against the cut line in G0.12).</div></td></tr>
+<tr><td><code>G9.12</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Payment compliance scope stated; raw card data never touches your servers unless you are PCI-certified</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G9.13</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Regulated-domain requirements identified (health, finance, education, employment) and addressed</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G9.14</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Security contact and vulnerability disclosure policy published (security.txt or equivalent)</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G9.15</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Breach notification procedure written: who decides, who is told, within what deadline</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G9.16</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Telemetry audited: no PII in logs or analytics; every collected field justified and disclosed</strong><div class="meta">No evidence recorded.</div></td></tr>
+</table></div>
+<div class="gatehead"><h2>G10 &mdash; Operability</h2></div>
+<div class="sub">When it breaks at 3am, a human is woken and knows exactly what to do. &middot; veto holder: <strong>SRE</strong></div>
+<div class="scroll"><table><tr><th>ID</th><th>Sev</th><th>Status</th><th>Proof</th><th>Check &amp; evidence</th></tr>
+<tr><td><code>G10.01</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Structured logs with a request/correlation ID on every entry; zero secrets or PII in log output</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.02</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Log levels are correct, every ERROR is actionable, and log volume and cost are estimated</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.03</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Metrics exist for rate, errors, and duration on every service, with a dashboard that a human can open</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.04</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>SLOs defined as numbers, with a stated error budget</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.05</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>An alert exists for every SLO breach and for every failure mode discovered in G7</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.06</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-fail'>FAIL</span></td><td><span class='proof pr-asserted'>asserted</span></td><td><strong>EVERY ALERT FIRED ON PURPOSE and confirmed to reach a named human -- proof per alert</strong><div class="note"><strong>FAIL</strong> &mdash; No alerting configured at all. No monitor has ever fired. Detection of an outage depends entirely on a customer reporting it. <span class="meta">(Demo Owner)</span></div></td></tr>
+<tr><td><code>G10.07</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Alert quality checked: expected pages per week is a number a human can sustain; no known false positives</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.08</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>On-call rota exists with named humans, contact method, and an escalation path</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.09</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>A runbook exists per alert: symptom -&gt; diagnosis -&gt; action, executable by someone who did not build this</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.10</code></td><td><span class='sev s-S2'>S2</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Distributed tracing enabled on the critical path</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.11</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Error tracking wired up and PROVEN by deliberately throwing a test error and seeing it arrive</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.12</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Feature flag or kill switch exists for every risky feature, and was tested ON and OFF in production configuration</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.13</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Config can be changed and reverted without a deploy; the procedure is written and rehearsed</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.14</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Production access is least-privilege and audited: who can deploy, who can read customer data</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.15</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Support readiness: the top five predicted user questions are answerable from shipped documentation alone</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.16</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Status page or user communication channel exists and someone knows how to post to it</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.17</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Pre-launch baseline captured: current error rate, latency, and the key business metric, with numbers</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G10.18</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Cost and billing alarms configured with thresholds</strong><div class="meta">No evidence recorded.</div></td></tr>
+</table></div>
+<div class="gatehead"><h2>G11 &mdash; Release Mechanics</h2></div>
+<div class="sub">The deploy is rehearsed, the rollback is timed, and a stranger could run both. &middot; veto holder: <strong>Release manager</strong></div>
+<div class="scroll"><table><tr><th>ID</th><th>Sev</th><th>Status</th><th>Proof</th><th>Check &amp; evidence</th></tr>
+<tr><td><code>G11.01</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Version assigned, artifact immutably tagged, and the build reproducible from that tag alone</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.02</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Release notes / CHANGELOG written in the user&#x27;s language, describing outcomes not commits</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.03</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Feature freeze in effect; every post-freeze change restarts verification of the affected gates</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.04</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Deploy runbook: numbered steps, the expected output of each, and an explicit abort condition</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.05</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>The runbook was executed or cold-read by someone who did not write it, and every gap fixed</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.06</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Deployed to a production-LIKE environment and every critical path exercised there, not locally</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.07</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>ROLLBACK REHEARSED on the production-like environment and TIMED -- the number of seconds is recorded</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.08</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Data rollback is possible, or explicitly declared impossible with the compensating control named</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.09</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Staged rollout plan with NUMERIC promotion thresholds and numeric automatic-rollback triggers</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.10</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Kill switch tested: the feature was turned off in a production-like environment and the system stayed healthy</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.11</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Environment contract verified IN THE TARGET: every env var, secret, permission, quota, DNS record, and certificate</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.12</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>A production smoke suite exists, runs in under five minutes, and has been rehearsed</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.13</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Go/No-Go decision held; named humans said GO; the decision and its date recorded</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.14</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Launch window chosen deliberately: not Friday evening, not during a dependency&#x27;s maintenance window, humans available</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.15</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Communications ready and scheduled: users, support, stakeholders, status page</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G11.16</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Migration guide published for existing users or integrators if anything is breaking</strong><div class="meta">No evidence recorded.</div></td></tr>
+</table></div>
+<div class="gatehead"><h2>G12 &mdash; Launch &amp; 72-Hour Watch</h2></div>
+<div class="sub">The rollout was staged, watched, measured, and learned from. &middot; veto holder: <strong>Release manager</strong></div>
+<div class="scroll"><table><tr><th>ID</th><th>Sev</th><th>Status</th><th>Proof</th><th>Check &amp; evidence</th></tr>
+<tr><td><code>G12.01</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Baseline metrics captured in the minutes immediately before the first stage</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G12.02</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Canary stage deployed to a small share of traffic; production smoke passed; held for the planned duration</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G12.03</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Metrics compared against baseline at every stage, with the actual numbers recorded</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G12.04</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Every promotion decision recorded together with the numbers that justified it</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G12.05</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Rollback confirmed still available and still valid at each stage</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G12.06</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Full production smoke suite passed at 100% rollout</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G12.07</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Structured watch checks logged at T+1h, T+6h, T+24h, T+48h, and T+72h</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G12.08</code></td><td><span class='sev s-S0'>S0</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Every incident triaged with severity, owner, timestamps, and resolution</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G12.09</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Support themes reviewed at T+24h and T+72h -- what are real users actually confused by</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G12.10</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>The success metric measured against the target set before launch</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G12.11</code></td><td><span class='sev s-S1'>S1</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Postmortem written: predicted correctly / surprised us / which gate caught it / which gate missed it</strong><div class="meta">No evidence recorded.</div></td></tr>
+<tr><td><code>G12.12</code></td><td><span class='sev s-S2'>S2</span></td><td><span class='pill p-todo'>TODO</span></td><td><span class='proof pr-none'>none</span></td><td><strong>Exactly ONE process improvement written back into this checklist</strong><div class="meta">No evidence recorded.</div></td></tr>
+</table></div>
+<h2>Evidence integrity</h2>
+<div class="note"><strong>22 evidence file(s) verified.</strong> Every log and attachment matches the SHA-256 recorded at the moment it was captured. Re-check at any time with <code>python lrk.py verify</code>.</div>
+<div class="foot">Launch Readiness Kit &middot; 216 checks in catalogue, 199 applicable to this profile. This report is generated from recorded evidence; it has no opinions and cannot be argued with. Raw logs live in <code>.launch\evidence</code>.</div>
+</div>
