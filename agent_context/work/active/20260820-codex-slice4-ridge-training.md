@@ -55,24 +55,33 @@ metrics, multiplicity accounting, and reproducible hashes.
 
 1. COMPLETE - freeze exact trial, preprocessing, ridge, prediction, baseline, metric, and
    failure contracts.
-2. IN PROGRESS - implement the vertical training/evaluation journey and evidence adapters.
-3. IN PROGRESS - add failing-first tests, provider replay, and dangerous mutation evidence.
-4. PENDING - run the exact gate, Red Team, repairs, and independent clean-state verification.
+2. COMPLETE - implement the vertical training/evaluation journey and evidence adapters.
+3. COMPLETE - add failing-first tests, provider replay, and dangerous mutation evidence.
+4. IN PROGRESS - run the exact gate, Red Team, repairs, and independent clean-state verification.
 5. PENDING - certify Slice 4 and hand off Slice 5 final-holdout work.
 
 ## Current step
 
-Candidate implementation and four mutation kills are complete. Prepare an exact candidate commit
-for independent Red Team and clean-clone verification.
+The original Red Team candidate was blocked because an in-memory registry could reset persisted
+multiplicity. The repair makes the verified immutable trial catalog authoritative under the global
+evidence lease. Its failing-first regression, fifth mutation kill, and exact local gate are
+complete. Commit the repair evidence and request independent rechecks.
 
 ## Evidence so far
 
 - Exact local gate: Ruff format 191 files; strict Mypy 81 source files; 235 tests; 5,580
   statements / 630 missed / 88.71%; 68 focused modeling tests; vulture, zero secret candidates,
   Code Craft, and Test Craft clean.
+- Exact repaired gate: Ruff format 194 inputs; strict Mypy 82 source files; 236 tests; 5,678
+  statements / 646 missed / 88.62%; 69 focused modeling tests; vulture, zero application secret
+  candidates, Code Craft, and Test Craft clean.
 - Independent-root replay pinned equal start, model, and outcome manifest hashes.
-- Four raw mutations killed and restored: score equality, validation leakage, success-only
-  multiplicity, and trial-start-after-fit. See `.launch/reports/MUTATION-SLICE-04.md`.
+- Five raw mutations killed and restored: score equality, validation leakage, success-only
+  multiplicity, trial-start-after-fit, and removal of persisted multiplicity authority. See
+  `.launch/reports/MUTATION-SLICE-04.md`.
+- The original Red Team Major was reproduced: a second persisted attempt could reset its ordinal
+  and evaluated multiplicity to one. Repair revision `bbd1f36` derives both from fully verified
+  start/outcome evidence and validates the next ordinal atomically during evidence commit.
 - No holdout was opened and every model evidence record remains `RESEARCH_ONLY` with
   `UNCALIBRATED_SCORE` outputs.
 

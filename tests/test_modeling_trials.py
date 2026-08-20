@@ -255,13 +255,11 @@ def test_persistence_rejects_terminal_time_before_trial_start(tmp_path: Path) ->
     assert captured.value.code == ModelingFailureCode.TRIAL_OUTCOME_INVALID
 
 
-def test_persisted_history_prevents_second_trial_from_resetting_multiplicity(
-    tmp_path: Path,
-) -> None:
+def test_persisted_history_blocks_multiplicity_reset(tmp_path: Path) -> None:
     first = governed_training_journey()
     reset = governed_training_journey(trial_id="trial_ridge_002")
     store = EvidenceStore(EvidenceStoreConfig(root=tmp_path / "evidence", min_free_bytes=0))
-    run_persisted_ridge_trial(
+    first_run = run_persisted_ridge_trial(
         store,
         operation_id="op-slice4-first",
         start=first.start,
@@ -270,6 +268,7 @@ def test_persisted_history_prevents_second_trial_from_resetting_multiplicity(
         fold=first.fold,
         ended_at=ENDED_AT,
     )
+    assert first_run.evaluation.multiplicity_count == 1
 
     with pytest.raises(ModelingError) as captured:
         run_persisted_ridge_trial(
@@ -286,7 +285,13 @@ def test_persisted_history_prevents_second_trial_from_resetting_multiplicity(
     with pytest.raises(EvidenceNotFound):
         store.open_verified(EvidenceResourceType.TRIAL, reset.start.trial_id)
 
-    legitimate = replace(reset.start, multiplicity_ordinal=2)
+    # A materially different parameter search must still inherit the persisted
+    # global multiplicity count; it cannot begin a fresh local search.
+    legitimate = replace(
+        reset.start,
+        l2_penalty="2",
+        multiplicity_ordinal=2,
+    )
     second = run_persisted_ridge_trial(
         store,
         operation_id="op-slice4-second",

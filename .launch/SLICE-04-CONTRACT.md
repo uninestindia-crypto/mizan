@@ -31,8 +31,13 @@ insufficient training rows, and constant targets fail closed with typed codes.
 - A terminal `SUCCEEDED`, `FAILED`, `CANCELLED`, or `ABANDONED` outcome is a separate immutable
   evidence resource bound to the start hash.
 - Every unique start increments multiplicity, regardless of terminal outcome.
-- Duplicate trial IDs or ordinals, missing outcomes, outcome/start mismatches, and uncounted starts
-  fail closed.
+- The verified immutable trial catalog is the sole authority for the global next ordinal and full
+  multiplicity count; a caller-supplied in-memory registry is not accepted as authority.
+- A later start is admitted only while the evidence-store lease is held, at the next global ordinal,
+  and after every preceding start has exactly one valid terminal outcome. This applies across all
+  candidate, feature, parameter, threshold, universe, and source identities.
+- Duplicate trial IDs or ordinals, missing outcomes, outcome/start mismatches, stale caller state,
+  and uncounted starts fail closed.
 
 ## Fold evaluation
 

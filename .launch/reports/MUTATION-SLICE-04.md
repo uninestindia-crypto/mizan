@@ -1,7 +1,7 @@
 # Mutation Report - Slice 4
 
 DATE: 2026-08-20  
-STATUS: PASS - four dangerous mutations killed; exact implementation restored  
+STATUS: PASS - five dangerous mutations killed; exact implementation restored
 BASE REVISION: `e6002d2bd73759beb8e4cb5a8354b2eb0e77f8f6`
 
 ## Method
@@ -122,8 +122,42 @@ tests\test_modeling_trials.py .                                          [100%]
 EXIT_CODE=0
 ```
 
+## Raw run 5 - persisted multiplicity authority removed
+
+Mutation: removed the evidence-store commit precondition that derives the next ordinal from the
+verified immutable trial catalog while holding the global evidence lease.
+
+```diff
+     start_commit = store.commit(
+         draft_from_trial_start(start),
+         operation_id=f"{operation_id}-start",
+-        precondition=lambda: require_next_persisted_trial(store, start),
+     )
+```
+
+Command and red output:
+
+```text
+> pytest tests/test_modeling_trials.py::test_persisted_history_blocks_multiplicity_reset -q
+collected 1 item
+tests\test_modeling_trials.py F                                          [100%]
+E Failed: DID NOT RAISE EvidenceNotFound
+FAILED tests/test_modeling_trials.py::test_persisted_history_blocks_multiplicity_reset
+============================== 1 failed in 0.40s ==============================
+EXIT_CODE=1
+```
+
+The failure proves the mutation published a second ordinal-one start. Restored output:
+
+```text
+tests\test_modeling_trials.py .                                          [100%]
+============================== 1 passed in 0.38s ==============================
+EXIT_CODE=0
+```
+
 ## Restoration proof
 
-After all four restorations, the exact Slice 4 gate passed: Ruff lint/format, strict Mypy, 235
-repository tests at 88.71% coverage, 68 focused tests, vulture, zero secret candidates, Code
-Craft, and Test Craft. This report records raw red and restored-green markers for every mutation.
+After all five restorations, the exact Slice 4 gate passed: Ruff lint and format across 194 inputs,
+strict Mypy across 82 source files, 236 repository tests at 88.62% coverage, 69 focused tests,
+vulture, zero application secret candidates, Code Craft, and Test Craft. This report records raw
+red and restored-green markers for every mutation.
