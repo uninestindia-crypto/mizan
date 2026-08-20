@@ -36,7 +36,7 @@ packages = ["src/quant_system"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
-addopts = "-ra -v"
+addopts = "-ra -v --basetemp=tmp/pytest"
 
 [tool.ruff]
 target-version = "py312"
