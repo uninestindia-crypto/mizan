@@ -11,23 +11,23 @@ from quant_system.data.bars import BarAggregator
 from quant_system.data.loader import SyntheticDataGenerator
 
 
+def _minute_bar(base_time: datetime, offset: int) -> PriceBar:
+    """One synthetic minute bar, offset minutes after base_time."""
+    return PriceBar(
+        symbol="INFY",
+        timestamp=base_time + timedelta(minutes=offset),
+        open=Decimal("1500.00") + Decimal(offset),
+        high=Decimal("1505.00") + Decimal(offset),
+        low=Decimal("1495.00") + Decimal(offset),
+        close=Decimal("1502.00") + Decimal(offset),
+        volume=1000,
+    )
+
+
 def test_bar_aggregator_resample_5min_and_hourly() -> None:
     base_time = datetime(2025, 1, 1, 9, 15)
-    minute_bars = []
-
-    for i in range(60):
-        t = base_time + timedelta(minutes=i)
-        minute_bars.append(
-            PriceBar(
-                symbol="INFY",
-                timestamp=t,
-                open=Decimal("1500.00") + Decimal(i),
-                high=Decimal("1505.00") + Decimal(i),
-                low=Decimal("1495.00") + Decimal(i),
-                close=Decimal("1502.00") + Decimal(i),
-                volume=1000,
-            )
-        )
+    minute_bars = [_minute_bar(base_time, i) for i in range(60)]
+    assert len(minute_bars) == 60
 
     # 5-minute aggregation: 60 1-min bars -> 12 5-min bars
     bars_5m = BarAggregator.resample(minute_bars, 5)
@@ -59,10 +59,13 @@ def test_bar_series_window_and_properties() -> None:
     assert len(series.volumes) == 30
 
     # Test window query
-    w = series.window(datetime(2025, 1, 5, 0, 0), datetime(2025, 1, 10, 23, 59))
+    window_start = datetime(2025, 1, 5, 0, 0)
+    window_end = datetime(2025, 1, 10, 23, 59)
+    w = series.window(window_start, window_end)
     assert len(w) > 0
-    for b in w:
-        assert datetime(2025, 1, 5, 0, 0) <= b.timestamp <= datetime(2025, 1, 10, 23, 59)
+
+    outside = [b for b in w if not window_start <= b.timestamp <= window_end]
+    assert outside == [], f"window returned bars outside its bounds: {outside[:3]}"
 
 
 def test_holdout_vault_partition() -> None:
@@ -82,10 +85,15 @@ def test_holdout_vault_partition() -> None:
     assert len(partition.discovery_bars) + len(partition.out_of_sample_bars) == 50
     assert len(partition.manifest_hash) == 64  # SHA-256 hex string
 
-    for b in partition.discovery_bars:
-        assert b.timestamp.date() < split
-    for b in partition.out_of_sample_bars:
-        assert b.timestamp.date() >= split
+    leaked_into_discovery = [b for b in partition.discovery_bars if b.timestamp.date() >= split]
+    assert leaked_into_discovery == [], (
+        f"discovery must hold only pre-split bars, got {leaked_into_discovery[:3]}"
+    )
+
+    leaked_into_holdout = [b for b in partition.out_of_sample_bars if b.timestamp.date() < split]
+    assert leaked_into_holdout == [], (
+        f"holdout must hold only post-split bars, got {leaked_into_holdout[:3]}"
+    )
 
 
 def test_holdout_vault_invalid_split() -> None:

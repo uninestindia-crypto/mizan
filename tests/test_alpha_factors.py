@@ -20,23 +20,26 @@ def test_rsi(sample_bars: list[PriceBar]) -> None:
     closes = [b.close for b in sample_bars]
     rsi14 = TechnicalIndicators.rsi(closes, 14)
     assert len(rsi14) == len(closes) - 14
-    for r in rsi14:
-        assert 0.0 <= r <= 100.0
+
+    out_of_range = [value for value in rsi14 if not 0.0 <= value <= 100.0]
+    assert out_of_range == [], f"RSI outside [0, 100]: {out_of_range[:5]}"
 
 
 def test_rsi_flat_prices() -> None:
     flat_closes = [100.0] * 30
     rsi = TechnicalIndicators.rsi(flat_closes, 14)
     assert len(rsi) == 16
-    for r in rsi:
-        assert r == 50.0
+
+    not_neutral = [value for value in rsi if value != 50.0]
+    assert not_neutral == [], f"flat prices must give a neutral RSI, got {not_neutral[:5]}"
 
 
 def test_atr(sample_bars: list[PriceBar]) -> None:
     atr14 = TechnicalIndicators.atr(sample_bars, 14)
     assert len(atr14) == len(sample_bars) - 13
-    for a in atr14:
-        assert a > 0.0
+
+    non_positive = [value for value in atr14 if value <= 0.0]
+    assert non_positive == [], f"ATR must be strictly positive, got {non_positive[:5]}"
 
 
 def test_bollinger_bands(sample_bars: list[PriceBar]) -> None:
@@ -44,8 +47,9 @@ def test_bollinger_bands(sample_bars: list[PriceBar]) -> None:
     upper, mid, lower = TechnicalIndicators.bollinger_bands(closes, 20, 2.0)
     assert len(upper) == len(mid) == len(lower) == len(closes) - 19
 
-    for u, m, low_b in zip(upper, mid, lower, strict=True):
-        assert u >= m >= low_b
+    bands = zip(upper, mid, lower, strict=True)
+    unordered = [t for t in bands if not t[0] >= t[1] >= t[2]]
+    assert unordered == [], f"bands must stay ordered upper >= mid >= lower, got {unordered[:3]}"
 
 
 def test_momentum() -> None:

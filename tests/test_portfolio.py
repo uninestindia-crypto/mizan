@@ -42,9 +42,11 @@ def test_portfolio_allocator_deterministic_rebalance() -> None:
     assert len(sells) == 2  # INFY and TCS
     assert len(buys) == 1  # RELIANCE
 
-    for o in orders:
-        assert o.created_at == now
-        assert o.order_type == OrderType.MARKET
+    mistimed = [o for o in orders if o.created_at != now]
+    assert mistimed == [], f"every rebalance order must carry the decision time, got {mistimed}"
+
+    non_market = [o for o in orders if o.order_type != OrderType.MARKET]
+    assert non_market == [], f"rebalance orders must be MARKET, got {non_market}"
 
 
 def test_position_sizer_methods() -> None:

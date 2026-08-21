@@ -51,8 +51,11 @@ def test_backtest_engine_execution() -> None:
     assert result.total_friction_paid > Decimal("0.00")
 
     # Verify that each fill happened at or after its bar date (zero lookahead)
-    for fill in result.fills:
-        assert fill.timestamp >= datetime(2025, 1, 1, 9, 15)
+    first_bar_time = datetime(2025, 1, 1, 9, 15)
+    lookahead_fills = [f for f in result.fills if f.timestamp < first_bar_time]
+    assert lookahead_fills == [], (
+        f"fills before the first bar imply lookahead: {lookahead_fills[:3]}"
+    )
 
     stats = PerformanceMetrics.calculate(result.equity_curve, result.fills)
     assert stats.total_trades == len(result.fills)

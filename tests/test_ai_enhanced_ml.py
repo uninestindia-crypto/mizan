@@ -47,7 +47,16 @@ def test_ai_enhanced_ml_strategy_signal_generation() -> None:
 
     signals = strategy.generate_signals(ctx)
     assert isinstance(signals, list)
-    for sig in signals:
-        assert sig.strategy_name == "TestAIEnhancedML"
-        assert sig.target_weight is not None
-        assert sig.target_weight <= 0.35
+    # The fixture is fully deterministic, so the count is asserted rather than assumed. Without
+    # this the property checks below would silently stop running if the strategy ever produced
+    # no signals, and the test would still pass.
+    assert len(signals) == 1
+
+    misattributed = [s for s in signals if s.strategy_name != "TestAIEnhancedML"]
+    assert misattributed == [], f"signals must carry the strategy name, got {misattributed[:3]}"
+
+    unweighted = [s for s in signals if s.target_weight is None]
+    assert unweighted == [], f"every signal needs a target weight, got {unweighted[:3]}"
+
+    over_cap = [s for s in signals if s.target_weight is not None and s.target_weight > 0.35]
+    assert over_cap == [], f"target weight must respect the 0.35 cap, got {over_cap[:3]}"
