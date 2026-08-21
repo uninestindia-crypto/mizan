@@ -1,11 +1,12 @@
 # Active work: Truthful runtime data-source declaration
 
-STATUS: HANDOFF_REQUIRED  
+STATUS: COMPLETED  
+COMPLETED_UTC: 2026-08-21T00:01:00Z  
 OWNER: Claude Code (Opus 5) session 21d82993  
 TOOL: Claude Code  
 STARTED_UTC: 2026-08-21T05:10:00Z  
 STARTING_REVISION: `6a17d5e`  
-WORKTREE_OR_BRANCH: `D:\quant_system_wt\data-provenance` on `claude/truthful-data-source`
+WORKTREE_OR_BRANCH: `main` (merged from `claude/truthful-data-source`)
 
 ## Objective
 

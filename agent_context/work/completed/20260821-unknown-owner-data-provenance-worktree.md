@@ -1,8 +1,8 @@
 # Active work: UNKNOWN_OWNER - data-provenance worktree at the drive root
 
-STATUS: UNKNOWN_OWNER  
-DISCOVERED_UTC: 2026-08-20T23:32:00Z  
-OWNER: unidentified Claude Code agent  
+STATUS: RESOLVED_AND_RETIRED  
+RESOLVED_UTC: 2026-08-21T00:01:00Z  
+OWNER: identified (Claude Code session 21d82993, merged into main)  
 RECORDED_BY: Claude Code root agent (disk layout task)  
 TOOL: unknown  
 STARTING_REVISION: `6a17d5e60f9fd93538cb403a09b7b87732996d5a`  
