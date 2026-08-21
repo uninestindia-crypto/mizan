@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * CODE CRAFT â€” THE STRUCTURAL CHECKER
+ * CODE CRAFT — THE STRUCTURAL CHECKER
  *
  * Zero dependencies. Node 18+.
  *
@@ -15,11 +15,11 @@
  *   2  bad usage / unreadable input
  *
  * ESCAPE HATCH, on the offending line or the line above it:
- *   craft-allow: <rule-id> â€” <reason>
+ *   craft-allow: <rule-id> — <reason>
  * Works with any language's comment syntax, because it is matched as text. A
  * reason is required; an unexplained escape is itself reported.
  *
- * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ * ─────────────────────────────────────────────────────────────────────────────
  * WHY THESE RULES AND NOT OTHERS
  *
  * This checks only what is TRUE IN EVERY LANGUAGE and mechanically decidable:
@@ -37,7 +37,7 @@
  * finding trains people to ignore the tool, and a tool that is ignored is worse
  * than one that was never installed.
  *
- * craft-allow: god-file â€” one copy-paste artifact carrying 18 language
+ * craft-allow: god-file — one copy-paste artifact carrying 18 language
  * definitions; splitting it would defeat the point of installing a single file
  */
 
@@ -66,12 +66,12 @@ const SKIP_FILE = /\.(min|bundle|generated|gen|pb|g)\.[a-z]+$|_pb2?\.py$|\.d\.ts
 
 /* --------------------------------------------------------------- languages
  *
- * `block` â€” how a unit's body is delimited:
+ * `block` — how a unit's body is delimited:
  *   "brace"  { ... }         C-family
  *   "indent" leading spaces  Python-family
  *   "end"    do ... end      Ruby/Lua/Elixir-family
  *
- * `func` â€” patterns that begin a callable unit. Deliberately permissive: a
+ * `func` — patterns that begin a callable unit. Deliberately permissive: a
  * missed function costs a missed finding, while a false match costs trust.
  * ------------------------------------------------------------------------ */
 
@@ -113,7 +113,7 @@ const FUNC_START = {
     /\bfn\s+[a-z_]/,                              // Rust
     /\bfun\s+[A-Za-z_]/,                          // Kotlin
     // Java / C# / Kotlin: modifiers, then a return type, then name and body.
-    // craft-allow: long-line â€” one regex; wrapping it would hurt readability
+    // craft-allow: long-line — one regex; wrapping it would hurt readability
     /\b(?:public|private|protected|internal|static|final|override|async|suspend)[\w\s<>,\[\]]*\s+[A-Za-z_]\w*\s*\([^;]*\)\s*\{/,
     /\bdef\s+[A-Za-z_]/,                          // Scala
     /\bfunc\s+[A-Za-z_]/,                         // Swift
@@ -156,7 +156,7 @@ function loadConfig(root) {
     const parsed = JSON.parse(readFileSync(p, "utf8"));
     return { ...DEFAULTS, ...parsed };
   } catch {
-    process.stderr.write(`warning: ${p} is not valid JSON â€” using defaults\n`);
+    process.stderr.write(`warning: ${p} is not valid JSON — using defaults\n`);
     return { ...DEFAULTS };
   }
 }
@@ -181,7 +181,7 @@ function decommented(line, lang) {
  *
  * Each pattern is anchored to something structural rather than scanning for
  * "an identifier", because a loose scan picks up return types and parameter
- * types instead â€” `fn process(a: u32) -> u32` yields "u32", which is worse than
+ * types instead — `fn process(a: u32) -> u32` yields "u32", which is worse than
  * useless in a finding.
  */
 function extractName(raw) {
@@ -207,10 +207,10 @@ function countParams(raw) {
 }
 
 /* Each extent finder returns { endLine, maxDepth }, or endLine -1 when the end
-   cannot be determined confidently â€” in which case the unit is dropped rather
+   cannot be determined confidently — in which case the unit is dropped rather
    than reported with a guessed length. */
 
-// craft-allow: deep-nesting â€” a character scanner is inherently lineâ†’charâ†’branch
+// craft-allow: deep-nesting — a character scanner is inherently line→char→branch
 function extentBrace(lines, start, lang) {
   let depth = 0, maxDepth = 0, opened = false;
   for (let j = start; j < lines.length; j++) {
@@ -315,10 +315,10 @@ function findCommentedCode(lines, lang) {
 
 /* The separator must have whitespace on BOTH sides. Rule ids are hyphenated, so
    an escape naming `god-file` with no reason would otherwise parse as id="god"
-   + reason="file" â€” silently breaking suppression and hiding the missing
+   + reason="file" — silently breaking suppression and hiding the missing
    reason. Surrounding whitespace disambiguates it from a hyphen in the id. */
 function parseAllow(line) {
-  const m = /craft-allow:\s*([a-z0-9-]+?)\s+[â€”â€“-]\s+(.+?)\s*(?:\*\/|-->|$)/.exec(line);
+  const m = /craft-allow:\s*([a-z0-9-]+?)\s+[\u2014\u2013-]\s+(.+?)\s*(?:\*\/|-->|$)/.exec(line);
   if (m) return { id: m[1], reason: m[2].trim() };
   const bare = /craft-allow:\s*([a-z0-9-]+)/.exec(line);
   if (bare) return { id: bare[1], reason: "" };
@@ -328,8 +328,8 @@ function parseAllow(line) {
 /* ---------------------------------------------------------------- checking */
 
 // The nesting here is helper closures (allowAt, add), not control flow.
-// craft-allow: long-function â€” one file's checks, read as a sequence
-function checkFile(path, root, cfg) { // craft-allow: deep-nesting â€” closures, not branching
+// craft-allow: long-function — one file's checks, read as a sequence
+function checkFile(path, root, cfg) { // craft-allow: deep-nesting — closures, not branching
   const ext = extname(path);
   const lang = LANGS[ext];
   const rel = relative(root, path) || path;
@@ -346,7 +346,7 @@ function checkFile(path, root, cfg) { // craft-allow: deep-nesting â€” clos
     return (here && here.id === id) || (above && above.id === id);
   };
 
-  /* File-level findings are reported at line 1, which may be a shebang â€” there
+  /* File-level findings are reported at line 1, which may be a shebang — there
      is no line above it to annotate. So a file-level rule accepts its escape
      anywhere in the file's header, before the first non-comment line. */
   const allowInHeader = (id) => {
@@ -361,7 +361,7 @@ function checkFile(path, root, cfg) { // craft-allow: deep-nesting â€” clos
   };
 
   // Unexplained escapes are themselves findings. Routed through `add` so that
-  // a deliberate one â€” a test fixture, a doc example â€” can itself be annotated.
+  // a deliberate one — a test fixture, a doc example — can itself be annotated.
   lines.forEach((l, i) => {
     const a = parseAllow(l);
     if (a && a.reason === "") {
@@ -370,7 +370,7 @@ function checkFile(path, root, cfg) { // craft-allow: deep-nesting â€” clos
     }
   });
 
-  // Law 10 â€” a file that holds everything is a file nobody can hold.
+  // Law 10 — a file that holds everything is a file nobody can hold.
   const code = lines.filter((l) => l.trim() && !isComment(l, lang)).length;
   if (code > cfg.maxFileLines && !allowInHeader("god-file")) {
     add(1, "god-file",
@@ -412,15 +412,15 @@ const SWALLOW_MSG =
   "A discarded failure becomes a silent wrong answer. Handle it, propagate it, or state why it is ignored.";
 
 /** Per-line checks: Laws 5 and 10. */
-function checkLines(lines, lang, cfg, add) { // craft-allow: deep-nesting â€” one callback, flat checks
+function checkLines(lines, lang, cfg, add) { // craft-allow: deep-nesting — one callback, flat checks
   lines.forEach((raw, i) => {
     const n = i + 1;
 
-    // craft-allow: unowned-todo â€” naming the tag in the rule that detects it
-    // Law 10 â€” an untracked task marker is permanent.
+    // craft-allow: unowned-todo — naming the tag in the rule that detects it
+    // Law 10 — an untracked task marker is permanent.
     if (isComment(raw, lang)) {
       if (TODO_TAG.test(raw) && !TODO_REF.test(raw)) {
-        add(n, "unowned-todo", "TODO/FIXME with no ticket or link. Untracked, it is permanent â€” file it or fix it.");
+        add(n, "unowned-todo", "TODO/FIXME with no ticket or link. Untracked, it is permanent — file it or fix it.");
       }
       return;
     }
@@ -428,7 +428,7 @@ function checkLines(lines, lang, cfg, add) { // craft-allow: deep-nesting â€�
     if (raw.length > cfg.maxLineLength) {
       add(n, "long-line", `${raw.length} chars (limit ${cfg.maxLineLength}).`);
     }
-    // Law 5 â€” the most expensive line in software.
+    // Law 5 — the most expensive line in software.
     if (SWALLOWED.some((p) => p.test(raw))) {
       add(n, "swallowed-error", SWALLOW_MSG);
     }
@@ -459,7 +459,7 @@ function collect(target, acc = []) {
 }
 
 // Splitting this would scatter one output format across several functions.
-// craft-allow: long-function â€” sequential report assembly, read top to bottom
+// craft-allow: long-function — sequential report assembly, read top to bottom
 function run(targets, { json = false } = {}) {
   const root = process.cwd();
   const cfg = loadConfig(root);
@@ -490,7 +490,7 @@ function run(targets, { json = false } = {}) {
 
   if (all.length === 0) {
     const langs = [...langCount.entries()].map(([l, n]) => `${l} ${n}`).join(", ");
-    console.log(`code-craft: clean â€” ${checked} file(s) checked (${langs}), ${skipped} skipped.`);
+    console.log(`code-craft: clean — ${checked} file(s) checked (${langs}), ${skipped} skipped.`);
     return 0;
   }
 
@@ -517,8 +517,8 @@ function run(targets, { json = false } = {}) {
   for (const [rule, n] of [...byRule].sort((a, b) => b[1] - a[1])) {
     console.log(`  ${String(n).padStart(4)}  ${rule}`);
   }
-  console.log(`\nFix them, or annotate the genuinely-correct ones:  craft-allow: <rule-id> â€” <reason>`);
-  console.log(`Thresholds differ legitimately by language and product type â€” override in .code-craft.json`);
+  console.log(`\nFix them, or annotate the genuinely-correct ones:  craft-allow: <rule-id> — <reason>`);
+  console.log(`Thresholds differ legitimately by language and product type — override in .code-craft.json`);
   return 1;
 }
 
@@ -526,14 +526,14 @@ function run(targets, { json = false } = {}) {
 
 // Grouping these assertions into helpers would hide what is being tested. The
 // fixtures below are code-shaped strings, so the checker reads them as
-// functions too â€” correct behavior, and unavoidable for test data.
-// craft-allow: long-function â€” a flat list of assertions, deliberately
+// functions too — correct behavior, and unavoidable for test data.
+// craft-allow: long-function — a flat list of assertions, deliberately
 function selfTest() {
   const problems = [];
   const t = (name, cond) => { if (!cond) problems.push(name); };
 
   // Brace: a 4-deep function must be caught.
-  const js = [ // craft-allow: long-function â€” code-shaped fixture strings
+  const js = [ // craft-allow: long-function — code-shaped fixture strings
     "function outer(a, b) {",
     "  if (a) {",
     "    if (b) {",
@@ -551,7 +551,7 @@ function selfTest() {
   t("brace: counts params", jsFns[0]?.params === 2);
 
   // Indent: Python extent and depth.
-  // craft-allow: long-function â€” code-shaped fixture strings
+  // craft-allow: long-function — code-shaped fixture strings
   const py = ["def outer(a, b):", "    if a:", "        if b:", "            return 1", "    return 0", "", "x = 1"];
   const pyFns = findFunctions(py, LANGS[".py"]);
   t("indent: finds one function", pyFns.length === 1);
@@ -572,10 +572,10 @@ function selfTest() {
   const strFns = findFunctions(['function f() {', '  const s = "}{";', '  return s;', '}'], LANGS[".js"]);
   t("brace: ignores braces in strings", strFns.length === 1 && strFns[0].lines === 4);
 
-  // craft-allow: swallowed-error â€” these are the detector's own test fixtures
+  // craft-allow: swallowed-error — these are the detector's own test fixtures
   t("swallow: js inline", SWALLOWED.some((p) => p.test("try { x() } catch (e) {}")));
   t("swallow: python", SWALLOWED.some((p) => p.test("except ValueError: pass")));
-  // craft-allow: swallowed-error â€” the detector's own test fixture
+  // craft-allow: swallowed-error — the detector's own test fixture
   t("swallow: go", SWALLOWED.some((p) => p.test("if err != nil {}")));
 
   // Commented-out code vs prose.
@@ -585,9 +585,9 @@ function selfTest() {
   t("commented-code: ignores prose", cc.every((h) => h.count === 2));
 
   // Escape hatch. Both fixtures below are escapes-as-test-data, not real ones.
-  const withReason = parseAllow("// craft-allow: long-function â€” generated parser");
+  const withReason = parseAllow("// craft-allow: long-function \u2014 generated parser");
   t("allow: parses with reason", withReason?.reason === "generated parser");
-  // craft-allow: unexplained-escape â€” fixture for the missing-reason case
+  // craft-allow: unexplained-escape — fixture for the missing-reason case
   t("allow: flags missing reason", parseAllow("# craft-allow: god-file")?.reason === "");
 
   // Names must be the DECLARED name, not a return type or a parameter type.
@@ -624,7 +624,7 @@ function main() {
 
   if (argv.includes("--help") || argv.includes("-h")) {
     console.log(`
-code-craft â€” the structural checker
+code-craft — the structural checker
 
   node check-code.mjs [paths...]   check files (default: .)
   node check-code.mjs --json       machine-readable
@@ -635,13 +635,13 @@ Rules: god-file, long-function, deep-nesting, many-params, long-line,
        swallowed-error, unowned-todo, commented-out-code, unexplained-escape
 
 Escape hatch, on the line or the line above (any comment syntax):
-  craft-allow: <rule-id> â€” <reason>
+  craft-allow: <rule-id> — <reason>
 
 Thresholds come from .code-craft.json when present:
 ${JSON.stringify(DEFAULTS, null, 2)}
 
 This checks structure only. Naming quality, earned abstraction, and whether two
-similar functions change for the same reason need judgment â€” see the references.
+similar functions change for the same reason need judgment — see the references.
 `);
     return 0;
   }

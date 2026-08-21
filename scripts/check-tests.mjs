@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * TEST CRAFT â€” THE TEST CHECKER
+ * TEST CRAFT — THE TEST CHECKER
  *
  * Zero dependencies. Node 18+.
  *
@@ -15,9 +15,9 @@
  *   2  bad usage
  *
  * ESCAPE HATCH, on the offending line or the line above it:
- *   test-allow: <rule-id> â€” <reason>
+ *   test-allow: <rule-id> — <reason>
  *
- * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ * ─────────────────────────────────────────────────────────────────────────────
  * WHY THESE RULES
  *
  * Each one is a defect that makes a suite silently stop protecting you, and
@@ -59,11 +59,11 @@ const SKIP_DIR = new Set([
 
 /* ---------------------------------------------------------------- languages
  *
- * `assert` â€” patterns that count as making an assertion.
- * `focus`  â€” patterns that restrict the run to a subset (the dangerous one).
- * `skip`   â€” patterns that disable a test.
- * `sleep`  â€” patterns that block on wall-clock time.
- * `case`   â€” patterns that open a single test case.
+ * `assert` — patterns that count as making an assertion.
+ * `focus`  — patterns that restrict the run to a subset (the dangerous one).
+ * `skip`   — patterns that disable a test.
+ * `sleep`  — patterns that block on wall-clock time.
+ * `case`   — patterns that open a single test case.
  * ------------------------------------------------------------------------ */
 
 const JS_LIKE = {
@@ -182,13 +182,13 @@ function loadConfig(root) {
   if (!existsSync(p)) return { ...DEFAULTS };
   try { return { ...DEFAULTS, ...JSON.parse(read(p)) }; }
   catch {
-    process.stderr.write(`warning: ${p} is not valid JSON â€” using defaults\n`);
+    process.stderr.write(`warning: ${p} is not valid JSON — using defaults\n`);
     return { ...DEFAULTS };
   }
 }
 
 function parseAllow(line) {
-  const m = /test-allow:\s*([a-z0-9-]+?)\s+[â€”â€“-]\s+(.+?)\s*(?:\*\/|-->|$)/.exec(line);
+  const m = /test-allow:\s*([a-z0-9-]+?)\s+[\u2014\u2013-]\s+(.+?)\s*(?:\*\/|-->|$)/.exec(line);
   if (m) return { id: m[1], reason: m[2].trim() };
   const bare = /test-allow:\s*([a-z0-9-]+)/.exec(line);
   if (bare) return { id: bare[1], reason: "" };
@@ -201,9 +201,17 @@ const anyMatch = (patterns, line) => patterns.some((p) => p.test(line));
 /**
  * The body of one test case, from its opening line to whichever comes first:
  * the next case, or a dedent to at or below the opening indentation.
- * Approximate on purpose â€” precise parsing per language is not worth the
+ * Approximate on purpose — precise parsing per language is not worth the
  * false-confidence it would buy.
  */
+/* A dedented line that merely FINISHES the declaration does not end the body.
+   Bare closers (`)`, `}`, `]`) were already allowed, but Python ends a multi-line signature
+   with `) -> None:` and Go with `) error {`. Treating those as the end truncated the body to
+   the parameter list, which asserts nothing, so EVERY multi-line signature reported a false
+   no-assertion -- and worse, the real body was never scanned, hiding genuine loop-in-test and
+   sleep-in-test findings. */
+const DECL_TAIL = /^\s*[})\]]*\s*(?:->\s*[^:{]+)?\s*[:{]?\s*[;,]?\s*$/;
+
 function caseBody(lines, start, lang) {
   const open = lines[start];
   const baseIndent = open.length - open.trimStart().length;
@@ -212,7 +220,7 @@ function caseBody(lines, start, lang) {
     const l = lines[j];
     if (!l.trim()) { body.push(l); continue; }
     const ind = l.length - l.trimStart().length;
-    if (ind <= baseIndent && (anyMatch(lang.case, l) || /^\s*[})\]]*\s*$/.test(l) === false)) {
+    if (ind <= baseIndent && (anyMatch(lang.case, l) || DECL_TAIL.test(l) === false)) {
       if (anyMatch(lang.case, l)) break;
       if (ind <= baseIndent && body.length > 0) break;
     }
@@ -284,16 +292,16 @@ function checkFile(path, root, cfg) {
     }
     if (!code.some((l) => anyMatch(lang.assert, l))) {
       add(n, "no-assertion",
-        "No assertion found. This proves only that the code did not throw â€” say that out loud and it stops sounding like a test.");
+        "No assertion found. This proves only that the code did not throw — say that out loud and it stops sounding like a test.");
     }
-    /* Law 3 â€” a LOOP in a test body can iterate zero times and assert nothing,
+    /* Law 3 — a LOOP in a test body can iterate zero times and assert nothing,
        and it is unambiguous in every language.
 
        `if` is deliberately NOT flagged. In Go the standard assertion IS a
        conditional (`if got != want { t.Errorf(...) }`), and in table-driven
        tests everywhere it is idiomatic. Telling those apart from
        `if (flag) { expect(...) }` requires knowing whether the condition
-       references the result under test â€” beyond a line-based checker. A rule
+       references the result under test — beyond a line-based checker. A rule
        that fires on correct idiomatic code gets the whole tool switched off,
        so this one is left to the review checklist. */
     const loops = code.filter((l) => /^\s*(for|while|forEach\s*\()\b/.test(l));
@@ -350,7 +358,7 @@ function run(targets, { json = false } = {}) {
   }
 
   if (checked === 0) {
-    console.log(`test-craft: UNKNOWN â€” no recognized test files found (${files.length} file(s) scanned).`);
+    console.log(`test-craft: UNKNOWN — no recognized test files found (${files.length} file(s) scanned).`);
     console.log(`            Recognized: ${[...new Set(Object.values(LANGS).map((l) => l.name))].join(", ")}`);
     console.log(`            Test files are matched by name (*.test.*, *_test.*, test_*.py, *Test.java)`);
     console.log(`            or by living in ${cfg.testDirs.join("/")}.`);
@@ -359,7 +367,7 @@ function run(targets, { json = false } = {}) {
 
   if (all.length === 0) {
     const langs = [...langCount.entries()].map(([l, n]) => `${l} ${n}`).join(", ");
-    console.log(`test-craft: clean â€” ${checked} test file(s) (${langs}).`);
+    console.log(`test-craft: clean — ${checked} test file(s) (${langs}).`);
     return 0;
   }
 
@@ -387,7 +395,7 @@ function run(targets, { json = false } = {}) {
   if (byRule.has("focused-test")) {
     console.log(`\n  focused-test is the urgent one: the rest of that file is not running.`);
   }
-  console.log(`\nFix them, or annotate the genuinely-correct ones:  test-allow: <rule-id> â€” <reason>`);
+  console.log(`\nFix them, or annotate the genuinely-correct ones:  test-allow: <rule-id> — <reason>`);
   return 1;
 }
 
@@ -435,7 +443,7 @@ function selfTest() {
   t("rb: focus", anyMatch(LANGS[".rb"].focus, "  fit 'works' do"));
 
   // Escape hatch
-  t("allow: with reason", parseAllow("// test-allow: sleep-in-test â€” third-party poll interval")?.reason === "third-party poll interval");
+  t("allow: with reason", parseAllow("// test-allow: sleep-in-test \u2014 third-party poll interval")?.reason === "third-party poll interval");
   t("allow: missing reason", parseAllow("# test-allow: focused-test")?.reason === "");
 
   // Every language entry must be well formed.
@@ -461,7 +469,7 @@ function main() {
 
   if (argv.includes("--help") || argv.includes("-h")) {
     console.log(`
-test-craft â€” the test checker
+test-craft — the test checker
 
   node check-tests.mjs [paths...]   check test files (default: .)
   node check-tests.mjs --json       machine-readable
@@ -475,7 +483,7 @@ focused-test is the one that matters most: a committed .only silently disables
 every other test in the file while CI stays green.
 
 Escape hatch, on the line or the line above (any comment syntax):
-  test-allow: <rule-id> â€” <reason>
+  test-allow: <rule-id> — <reason>
 
 Config from .test-craft.json:
 ${JSON.stringify(DEFAULTS, null, 2)}

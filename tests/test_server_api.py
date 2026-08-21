@@ -167,7 +167,6 @@ def test_api_portfolio_optimize(client: TestClient) -> None:
         ),
     ],
 )
-# test-allow: no-assertion - check-tests.mjs caseBody() truncates every multi-line Python signature, so the assertions below are invisible to it
 def test_api_results_declare_their_data_source(
     client: TestClient,
     endpoint: str,
@@ -186,7 +185,6 @@ def test_api_results_declare_their_data_source(
     assert data["data_source_disclosure"] == describe(RuntimeDataSource.SYNTHETIC)
 
 
-# test-allow: no-assertion - check-tests.mjs caseBody() truncates every multi-line Python signature, so the assertions below are invisible to it
 def test_api_diagnostics_reports_absent_credentials(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
@@ -200,7 +198,6 @@ def test_api_diagnostics_reports_absent_credentials(
     assert data["market_data_source"] == str(RuntimeDataSource.SYNTHETIC)
 
 
-# test-allow: no-assertion - check-tests.mjs caseBody() truncates every multi-line Python signature, so the assertions below are invisible to it
 def test_api_diagnostics_reports_present_credentials_without_echoing_them(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,

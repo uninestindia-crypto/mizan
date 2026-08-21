@@ -105,7 +105,6 @@ def test_daily_pipeline_declares_synthetic_source_in_every_artifact(tmp_path: Pa
     assert data["data_source_disclosure"] == describe(RuntimeDataSource.SYNTHETIC)
 
 
-# test-allow: no-assertion - check-tests.mjs caseBody() truncates every multi-line Python signature, so the assertions below are invisible to it
 def test_daily_pipeline_does_not_claim_to_ingest_market_data(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,

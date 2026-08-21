@@ -58,7 +58,6 @@ def test_env_var_names_match_the_client_that_reads_them(monkeypatch: pytest.Monk
         pytest.param("token-value-under-test", True, id="present"),
     ],
 )
-# test-allow: no-assertion - check-tests.mjs caseBody() truncates every multi-line Python signature, so the assertions below are invisible to it
 def test_credential_presence_detection(
     monkeypatch: pytest.MonkeyPatch,
     token_value: str | None,
@@ -98,7 +97,6 @@ def test_real_disclosure_is_distinct_from_synthetic() -> None:
     assert describe(RuntimeDataSource.UPSTOX_HISTORICAL) != describe(RuntimeDataSource.SYNTHETIC)
 
 
-# test-allow: no-assertion - check-tests.mjs caseBody() truncates every multi-line Python signature, so the assertions below are invisible to it
 def test_launcher_warns_when_no_credentials_are_configured(
     monkeypatch: pytest.MonkeyPatch,
     restore_process_env: object,
@@ -116,7 +114,6 @@ def test_launcher_warns_when_no_credentials_are_configured(
     assert passed is True, "absent credentials are a supported mode, not a boot failure"
 
 
-# test-allow: no-assertion - check-tests.mjs caseBody() truncates every multi-line Python signature, so the assertions below are invisible to it
 def test_launcher_reports_configured_credentials(
     monkeypatch: pytest.MonkeyPatch,
     restore_process_env: object,
