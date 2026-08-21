@@ -3,6 +3,9 @@
 Executes end-to-end daily data processing, point-in-time feature generation,
 model training/inference, event-driven backtesting, risk governor checks,
 and performance reporting with immutable evidence capture.
+
+This pipeline runs on generated data. It does not call the governed Upstox acquisition path, so
+every figure it reports describes a deterministic random walk. Live acquisition is Slice 9 scope.
 """
 
 from __future__ import annotations
@@ -25,7 +28,9 @@ from quant_system.analytics.metrics import PerformanceMetrics  # noqa: E402
 from quant_system.analytics.tearsheet import TearsheetGenerator  # noqa: E402
 from quant_system.backtest.engine import BacktestEngine  # noqa: E402
 from quant_system.data.loader import SyntheticDataGenerator  # noqa: E402
-from quant_system.risk.governor import PreTradeRiskGovernor, RiskLimits  # noqa: E402
+from quant_system.data.provenance import RuntimeDataSource, describe  # noqa: E402
+from quant_system.risk.checks import RiskLimits  # noqa: E402
+from quant_system.risk.governor import PreTradeRiskGovernor  # noqa: E402
 from quant_system.strategies.equity_momentum import EquityDualMomentumStrategy  # noqa: E402
 from quant_system.strategies.ml_equity import MLEquityStrategy  # noqa: E402
 
@@ -43,6 +48,8 @@ class DailyPipelineSummary:
 
     execution_date: str
     timestamp_utc: str
+    data_source: str
+    data_source_disclosure: str
     universe: list[str]
     days_evaluated: int
     strategies_run: list[str]
@@ -89,8 +96,14 @@ def run_daily_pipeline(
     logger.info("Universe: %s | Historical Days: %d", universe, history_days)
     logger.info("=" * 70)
 
-    # 1. Ingest / Generate Point-in-Time Data for Universe
-    logger.info("Phase 1: Ingesting and validating point-in-time market data...")
+    # 1. Generate Point-in-Time Data for Universe
+    # No provider call happens here. Naming the source is mandatory: an operator reading these
+    # logs must never conclude that real NSE prices were ingested.
+    logger.warning(
+        "Phase 1: Generating %s bars. %s",
+        RuntimeDataSource.SYNTHETIC,
+        describe(RuntimeDataSource.SYNTHETIC),
+    )
     dataset = {}
     for idx, symbol in enumerate(universe):
         drift = 0.0008 if idx % 2 == 0 else -0.0002
@@ -106,7 +119,12 @@ def run_daily_pipeline(
         )
         dataset[symbol] = bars_container.bars
 
-    logger.info("Generated %d bars per symbol across %d symbols.", history_days, len(universe))
+    logger.info(
+        "Generated %d %s bars per symbol across %d symbols.",
+        history_days,
+        RuntimeDataSource.SYNTHETIC,
+        len(universe),
+    )
 
     # 2. Risk Governor Setup
     risk_limits = RiskLimits(
@@ -180,6 +198,8 @@ def run_daily_pipeline(
     daily_report_path = output_dir / f"daily_report_{date_str}.md"
     with open(daily_report_path, "w", encoding="utf-8") as f:
         f.write(f"# QuantOS Daily Automated Report — {date_str}\n\n")
+        f.write(f"> **DATA SOURCE: {RuntimeDataSource.SYNTHETIC}.** ")
+        f.write(describe(RuntimeDataSource.SYNTHETIC) + "\n\n")
         f.write(f"Generated at: {run_timestamp.isoformat()}\n\n")
         f.write(f"Universe: {', '.join(universe)}\n\n")
         f.write("## 1. Machine Learning Strategy Tearsheet\n\n")
@@ -191,6 +211,8 @@ def run_daily_pipeline(
     summary = DailyPipelineSummary(
         execution_date=date_str,
         timestamp_utc=run_timestamp.isoformat(),
+        data_source=str(RuntimeDataSource.SYNTHETIC),
+        data_source_disclosure=describe(RuntimeDataSource.SYNTHETIC),
         universe=universe,
         days_evaluated=history_days,
         strategies_run=[ml_strategy.name, momentum_strategy.name],
@@ -211,7 +233,10 @@ def run_daily_pipeline(
     logger.info("Daily report saved: %s", daily_report_path)
     logger.info("Daily summary JSON: %s", json_path)
     logger.info("=" * 70)
-    logger.info("QuantOS Daily Pipeline completed successfully.")
+    logger.info(
+        "QuantOS Daily Pipeline completed successfully on %s data.",
+        RuntimeDataSource.SYNTHETIC,
+    )
     logger.info("=" * 70)
 
     return summary

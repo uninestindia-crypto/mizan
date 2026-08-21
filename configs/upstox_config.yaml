@@ -1,7 +1,12 @@
-# Upstox API v2 & AI Multi-Agent Advisory Configuration
+# Upstox instrument mapping & AI Multi-Agent Advisory Configuration.
+#
+# NOTE: no code currently loads this file, and ConfigLoader.load_yaml performs no environment
+# expansion. Credentials therefore CANNOT be supplied here. UpstoxClient reads UPSTOX_API_KEY and
+# UPSTOX_ACCESS_TOKEN from the process environment only; see .env.example.
+#
+# The former "${UPSTOX_API_KEY}" / "${UPSTOX_ACCESS_TOKEN}" placeholders were removed because a
+# never-expanded placeholder in a tracked file invites a live secret into version control.
 upstox:
-  api_key: "${UPSTOX_API_KEY}"
-  access_token: "${UPSTOX_ACCESS_TOKEN}"
   redirect_uri: "https://127.0.0.1:5000"
   instruments:
     INFY: "NSE_EQ|INE009A01021"

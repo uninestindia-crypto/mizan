@@ -6,6 +6,20 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from quant_system.data.provenance import RuntimeDataSource, describe
+
+
+class SyntheticSourcedResponse(BaseModel):
+    """Base for results computed from generated bars rather than acquired market data.
+
+    The defaults are deliberately the honest ones for every endpoint that exists today. A future
+    endpoint backed by real acquisition must override them explicitly, so the failure mode of
+    forgetting is understating realness rather than overstating it.
+    """
+
+    data_source: str = Field(default=str(RuntimeDataSource.SYNTHETIC))
+    data_source_disclosure: str = Field(default=describe(RuntimeDataSource.SYNTHETIC))
+
 
 class VersionInfo(BaseModel):
     version: str = "1.0.0"
@@ -76,7 +90,7 @@ class QuantStatsDTO(BaseModel):
     avg_trade_pnl: float
 
 
-class BacktestRunResponse(BaseModel):
+class BacktestRunResponse(SyntheticSourcedResponse):
     initial_cash: float
     final_equity: float
     total_return_pct: float
@@ -121,6 +135,8 @@ class OptionStraddleResponse(BaseModel):
 
 class DiagnosticsReport(BaseModel):
     status: str
+    market_data_source: str
+    market_data_credentials_configured: bool
     version: str
     python_version: str
     platform: str
@@ -138,7 +154,7 @@ class MonteCarloRequest(BaseModel):
     initial_capital: float = Field(1000000.0, ge=10000.0)
 
 
-class MonteCarloResponse(BaseModel):
+class MonteCarloResponse(SyntheticSourcedResponse):
     num_simulations: int
     horizon_days: int
     initial_capital: float
@@ -173,7 +189,7 @@ class FrontierPointDTO(BaseModel):
     weights: dict[str, float]
 
 
-class PortfolioOptimizeResponse(BaseModel):
+class PortfolioOptimizeResponse(SyntheticSourcedResponse):
     symbols: list[str]
     max_sharpe_point: FrontierPointDTO
     min_variance_point: FrontierPointDTO

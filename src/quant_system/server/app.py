@@ -24,6 +24,11 @@ from quant_system.backtest.engine import BacktestEngine
 from quant_system.core.domain import InstrumentType, Side
 from quant_system.core.ledger import DecimalLedger
 from quant_system.data.loader import SyntheticDataGenerator
+from quant_system.data.provenance import (
+    RuntimeDataSource,
+    describe,
+    market_data_credentials_configured,
+)
 from quant_system.portfolio.optimization import PortfolioOptimizer
 from quant_system.risk.checks import RiskLimits
 from quant_system.risk.governor import PreTradeRiskGovernor
@@ -211,6 +216,8 @@ def run_backtest(req: BacktestRunRequest) -> BacktestRunResponse:
     )
 
     return BacktestRunResponse(
+        data_source=str(RuntimeDataSource.SYNTHETIC),
+        data_source_disclosure=describe(RuntimeDataSource.SYNTHETIC),
         initial_cash=float(result.initial_cash),
         final_equity=float(result.final_equity),
         total_return_pct=result.total_return_pct,
@@ -336,6 +343,8 @@ def run_diagnostics() -> DiagnosticsReport:
 
     return DiagnosticsReport(
         status="HEALTHY" if checks_passed == total_checks else "DEGRADED",
+        market_data_source=str(RuntimeDataSource.SYNTHETIC),
+        market_data_credentials_configured=market_data_credentials_configured(),
         version=__version__,
         python_version=platform.python_version(),
         platform=f"{platform.system()} {platform.release()}",
@@ -372,6 +381,8 @@ def run_monte_carlo(req: MonteCarloRequest) -> MonteCarloResponse:
     )
 
     return MonteCarloResponse(
+        data_source=str(RuntimeDataSource.SYNTHETIC),
+        data_source_disclosure=describe(RuntimeDataSource.SYNTHETIC),
         num_simulations=res.num_simulations,
         horizon_days=res.horizon_days,
         initial_capital=res.initial_capital,
@@ -460,6 +471,8 @@ def optimize_portfolio(req: PortfolioOptimizeRequest) -> PortfolioOptimizeRespon
     ]
 
     return PortfolioOptimizeResponse(
+        data_source=str(RuntimeDataSource.SYNTHETIC),
+        data_source_disclosure=describe(RuntimeDataSource.SYNTHETIC),
         symbols=opt_res.symbols,
         max_sharpe_point=ms_dto,
         min_variance_point=mv_dto,
