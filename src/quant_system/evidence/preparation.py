@@ -44,6 +44,11 @@ def prepare_draft(draft: EvidenceDraft, config: EvidenceStoreConfig) -> Prepared
     if not isinstance(metadata, dict):
         raise EvidenceIntegrityError("evidence metadata must be an object")
     reject_sensitive_keys(metadata, path="$.metadata")
+    metadata_size = len(canonical_json_bytes(metadata))
+    if metadata_size > config.max_manifest_bytes:
+        raise EvidenceLimitExceeded(
+            f"canonical metadata is {metadata_size} bytes; limit is {config.max_manifest_bytes}"
+        )
     records: list[dict[str, Any]] = []
     lines: list[bytes] = []
     for index, raw_record in enumerate(draft.records):

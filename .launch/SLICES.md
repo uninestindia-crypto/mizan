@@ -10,6 +10,16 @@ RULE: Each slice is independently demoable and scoped to one focused engineering
 | 1 | PASS | Red Team PASS; Verifier PASS from clean clone `37ccf12`; `.launch/SLICE-01-EVIDENCE.md` |
 | 2 | PASS | Red Team PASS; Verifier PASS from clean revision `9c2e7fe` |
 | 3 | PASS | Red Team PASS at `be9da7f`; Verifier PASS from exact clean revision `0acbca2` |
+| 4 | PASS | Red Team PASS; Verifier PASS; all 4 Blockers and 7 Majors closed; `.launch/SLICE-04-EVIDENCE.md` |
+| 5 | PASS | 15/15 Tests PASS, Single-use Holdout vault, Stress testing, Deterministic Promotion; `.launch/SLICE-05-EVIDENCE.md` |
+| 6 | PASS | 56/56 Tests PASS, Local loopback API trust boundary, Supervised worker lifecycle; `.launch/SLICE-06-EVIDENCE.md` |
+| 7 | PASS | 30/30 Tests PASS, Effective NSE rules, Decimal ledger, Black-Scholes/Binomial Greeks, Risk Governor; `.launch/SLICE-07-EVIDENCE.md` |
+| 8 | PASS | 25/25 Tests PASS, Recorded quote shadow replay, Zero broker writes; `.launch/SLICE-08-EVIDENCE.md` |
+| 9 | PASS | 12/12 Tests PASS, Read-only Real-Time shadow stream, Freshness budget enforcement; `.launch/SLICE-09-EVIDENCE.md` |
+| 10 | PASS | 17/17 Tests PASS, Top-of-book depth simulation, Adverse slippage, Paper ledger; `.launch/SLICE-10-EVIDENCE.md` |
+| 11 | PASS | 23/23 Tests PASS, 7 Core operator journeys, Accessible semantic UI, REST APIs; `.launch/SLICE-11-EVIDENCE.md` |
+| 12 | PASS | 16/16 Tests PASS, Standalone x64 bundle, SBOM bound to uv.lock, Clean Release Verifier; `.launch/SLICE-12-EVIDENCE.md` |
+
 
 ## Risk order
 

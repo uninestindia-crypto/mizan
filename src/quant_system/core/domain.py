@@ -10,6 +10,14 @@ from enum import StrEnum
 from typing import Any
 
 
+def _assert_no_float(val: Any, name: str) -> None:
+    """Enforces rejection of binary floats across financial domain primitives."""
+    if isinstance(val, float):
+        raise TypeError(
+            f"Binary float forbidden in exact accounting kernel: {name}={val}. Use exact Decimal or integer."
+        )
+
+
 class Side(StrEnum):
     BUY = "BUY"
     SELL = "SELL"
@@ -50,6 +58,10 @@ class PriceBar:
     volume: int
 
     def __post_init__(self) -> None:
+        _assert_no_float(self.open, "open")
+        _assert_no_float(self.high, "high")
+        _assert_no_float(self.low, "low")
+        _assert_no_float(self.close, "close")
         if (
             self.open <= Decimal("0")
             or self.close <= Decimal("0")
@@ -86,6 +98,10 @@ class Quote:
     last_price: Decimal | None = None
 
     def __post_init__(self) -> None:
+        _assert_no_float(self.bid, "bid")
+        _assert_no_float(self.ask, "ask")
+        if self.last_price is not None:
+            _assert_no_float(self.last_price, "last_price")
         if self.bid < Decimal("0") or self.ask < Decimal("0"):
             raise ValueError(f"Quote bid and ask must be non-negative for {self.symbol}")
         if self.ask < self.bid:
@@ -139,10 +155,16 @@ class Order:
     rejection_reason: str | None = None
 
     def __post_init__(self) -> None:
-        if self.quantity <= 0:
+        if (
+            isinstance(self.quantity, bool)
+            or not isinstance(self.quantity, int)
+            or self.quantity <= 0
+        ):
             raise ValueError(
-                f"Order quantity must be positive, got {self.quantity} for {self.symbol}"
+                f"Order quantity must be a positive integer, got {self.quantity} for {self.symbol}"
             )
+        if self.limit_price is not None:
+            _assert_no_float(self.limit_price, "limit_price")
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,9 +181,15 @@ class Fill:
     timestamp: datetime
 
     def __post_init__(self) -> None:
-        if self.quantity <= 0:
+        _assert_no_float(self.price, "price")
+        _assert_no_float(self.fee, "fee")
+        if (
+            isinstance(self.quantity, bool)
+            or not isinstance(self.quantity, int)
+            or self.quantity <= 0
+        ):
             raise ValueError(
-                f"Fill quantity must be positive, got {self.quantity} for {self.symbol}"
+                f"Fill quantity must be a positive integer, got {self.quantity} for {self.symbol}"
             )
         if self.price <= Decimal("0"):
             raise ValueError(
@@ -191,10 +219,16 @@ class Position:
     average_price: Decimal
     realized_pnl: Decimal = Decimal("0.00")
 
+    def __post_init__(self) -> None:
+        _assert_no_float(self.average_price, "average_price")
+        _assert_no_float(self.realized_pnl, "realized_pnl")
+
     def current_market_value(self, current_price: Decimal) -> Decimal:
+        _assert_no_float(current_price, "current_price")
         return current_price * Decimal(self.quantity)
 
     def unrealized_pnl(self, current_price: Decimal) -> Decimal:
+        _assert_no_float(current_price, "current_price")
         return (current_price - self.average_price) * Decimal(self.quantity)
 
 
@@ -208,6 +242,12 @@ class PortfolioSnapshot:
     total_market_value: Decimal
     unrealized_pnl: Decimal
     realized_pnl: Decimal
+
+    def __post_init__(self) -> None:
+        _assert_no_float(self.cash, "cash")
+        _assert_no_float(self.total_market_value, "total_market_value")
+        _assert_no_float(self.unrealized_pnl, "unrealized_pnl")
+        _assert_no_float(self.realized_pnl, "realized_pnl")
 
     @property
     def total_equity(self) -> Decimal:

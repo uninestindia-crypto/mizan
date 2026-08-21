@@ -9,12 +9,17 @@ from typing import Any
 from quant_system.data.market_data_evidence import canonical_sha256
 from quant_system.evidence import EvidenceResourceType, EvidenceStore, VerifiedEvidence
 from quant_system.modeling.errors import ModelingError, ModelingFailureCode
+from quant_system.modeling.metrics import (
+    ALLOCATION_CONTRACT_V1,
+    strategy_report_from_records,
+)
 from quant_system.modeling.trials import (
     RidgeTrialStartV1,
     TrialOutcomeV1,
     TrialRegistryV1,
     TrialState,
 )
+from quant_system.modeling.validation import deflate_ridge_report
 
 _START_SCHEMA = "quantos.ridge_trial_start"
 _OUTCOME_SCHEMA = "quantos.trial_outcome"
@@ -26,6 +31,7 @@ _START_METADATA_KEYS = {
     "parameter_hash",
     "start_hash",
 }
+_RIDGE_STRATEGY = "RIDGE"
 _OUTCOME_METADATA_KEYS = {"outcome_hash", "start_hash", "trial_id"}
 _MODEL_METADATA_KEYS = {
     "candidate_id",
@@ -53,6 +59,31 @@ def load_persisted_trial_registry(store: EvidenceStore) -> TrialRegistryV1:
         starts=tuple(sorted(starts, key=lambda start: start.multiplicity_ordinal)),
         outcomes=tuple(sorted(outcomes, key=lambda outcome: outcome.trial_id)),
     )
+
+
+def campaign_deflated_sharpe_ratios(store: EvidenceStore) -> dict[str, str]:
+    """Re-deflate every published model against the complete immutable attempt count.
+
+    Each model publishes a deflated Sharpe computed against its own ordinal, because the
+    campaign was still open when that evidence was written and immutable evidence cannot be
+    rewritten afterwards. Reading the published number alone therefore overstates every early
+    attempt in a finished sweep. This recomputes each one against the final attempt count,
+    from the published decisions, without modifying any stored resource.
+    """
+    registry = load_persisted_trial_registry(store)
+    multiplicity_count = registry.multiplicity_count
+    deflations: dict[str, str] = {}
+    for evidence in store.list_verified(EvidenceResourceType.MODEL):
+        trial_id = _text(evidence.manifest.metadata, "trial_id")
+        decisions = tuple(
+            record for record in evidence.records if record.get("strategy_id") == _RIDGE_STRATEGY
+        )
+        ridge_report = strategy_report_from_records(_RIDGE_STRATEGY, decisions)
+        deflations[trial_id] = deflate_ridge_report(
+            ridge_report,
+            multiplicity_count=multiplicity_count,
+        )
+    return deflations
 
 
 def require_next_persisted_trial(store: EvidenceStore, start: RidgeTrialStartV1) -> None:
@@ -89,12 +120,27 @@ def require_resumable_persisted_trial(store: EvidenceStore, start: RidgeTrialSta
             ModelingFailureCode.TRIAL_ALREADY_RECORDED,
             "duplicate trial start is not the latest exact resumable attempt",
         )
-    if any(outcome.trial_id == start.trial_id for outcome in outcomes):
+    terminal = next(
+        (outcome for outcome in outcomes if outcome.trial_id == start.trial_id),
+        None,
+    )
+    if terminal is not None:
         raise ModelingError(
             ModelingFailureCode.TRIAL_ALREADY_RECORDED,
-            "terminal trial cannot be resumed",
+            _terminal_trial_message(terminal),
         )
     TrialRegistryV1(starts=ordered, outcomes=tuple(outcomes)).require_ready_for_evaluation(start)
+
+
+def _terminal_trial_message(outcome: TrialOutcomeV1) -> str:
+    """Explain that a trial is already complete and, on success, where its result lives."""
+    detail = (
+        f"trial {outcome.trial_id} is already terminal in state {outcome.state.value} "
+        "and cannot be resumed"
+    )
+    if outcome.state is TrialState.SUCCEEDED and outcome.result_hash is not None:
+        detail = f"{detail}; its result is published as models/model_{outcome.result_hash[:24]}"
+    return detail
 
 
 def _load_trial_records(
@@ -313,16 +359,18 @@ def _rebuild_strategy_reports(
             record for record in evidence.records if record.get("strategy_id") == strategy_id
         ]
         assigned += len(decisions)
-        reports.append(
-            {
-                "allocation_contract": "EQUAL_WEIGHT_ACTIVE_LONGS_PER_DECISION_TIME",
-                "decisions": decisions,
-                "metrics": dict(_mapping(summary, "metrics")),
-                "metrics_hash": _text(summary, "metrics_hash"),
-                "prediction_hash": _text(summary, "prediction_hash"),
-                "strategy_id": strategy_id,
-            }
-        )
+        rederived = strategy_report_from_records(strategy_id, tuple(decisions)).to_canonical_dict()
+        claimed = {
+            "allocation_contract": ALLOCATION_CONTRACT_V1,
+            "decisions": decisions,
+            "metrics": dict(_mapping(summary, "metrics")),
+            "metrics_hash": _text(summary, "metrics_hash"),
+            "prediction_hash": _text(summary, "prediction_hash"),
+            "strategy_id": strategy_id,
+        }
+        if canonical_sha256(rederived) != canonical_sha256(claimed):
+            raise ValueError("published strategy summary does not bind its decision records")
+        reports.append(rederived)
     if assigned != len(evidence.records):
         raise ValueError("model decisions do not match strategy summaries")
     return reports

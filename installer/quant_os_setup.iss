@@ -1,13 +1,14 @@
 ; ==============================================================================
 ; QuantOS Windows Setup Script (Inno Setup 6)
 ; Builds single-file standalone installer: QuantOS_v1.0.0_Setup.exe
+; Guarantees drive isolation and evidence preservation.
 ; ==============================================================================
 
 #define MyAppName "QuantOS"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "QuantOS Quantitative Technologies"
 #define MyAppURL "https://github.com/quant-system/quantos"
-#define MyAppExeName "QuantOS.exe"
+#define MyAppExeName "quantos.exe"
 
 [Setup]
 ; App Metadata
@@ -19,7 +20,7 @@ AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 
-; Installation Paths
+; Installation Paths (Drive-Isolated)
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
@@ -41,7 +42,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\dist\QuantOS\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\quantos\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

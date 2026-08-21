@@ -28,7 +28,9 @@ from quant_system.modeling.ridge import (
     predict_ridge_scores,
 )
 from quant_system.modeling.rows import (
+    LABEL_HORIZON_SESSIONS_V1,
     FeatureDatasetV1,
+    FeatureRowV1,
     LabelDatasetV1,
     LabelRowV1,
     require_feature_dataset_identity,
@@ -93,10 +95,27 @@ def evaluate_governed_ridge_fold(
     label_dataset: LabelDatasetV1,
     fold: PartitionedFoldV1,
 ) -> RidgeFoldEvaluationV1:
+    """Evaluate one governed fold and deflate its Sharpe against ``registry``.
+
+    ``registry`` is the caller's attempt count and is NOT an authority. This is the pure
+    building block; the governed entry point is ``run_persisted_ridge_trial``, which loads the
+    registry from the immutable catalog itself and binds the published multiplicity to the
+    trial's ordinal. Calling this directly with a fabricated registry produces a number that
+    is honest about its own inputs but says nothing about a real campaign, so never quote its
+    ``deflated_sharpe_ratio`` without the ``multiplicity_count`` beside it.
+    """
     fold_hash = _validate_training_inputs(start, registry, feature_dataset, label_dataset, fold)
-    feature_index = {
-        (row.candidate_id, row.symbol, row.decision_at): row for row in feature_dataset.rows
-    }
+    feature_index: dict[tuple[str, str, datetime], FeatureRowV1] = {}
+    for row in feature_dataset.rows:
+        key = (row.candidate_id, row.symbol, row.decision_at)
+        if key in feature_index:
+            raise ModelingError(
+                ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+                "two feature rows share one symbol and decision time; instrument identity is "
+                "ambiguous and the fit would silently use whichever row sorted last",
+                offending_record_key=row.record_key,
+            )
+        feature_index[key] = row
     training_features = tuple(feature_index[_label_key(row)] for row in fold.train_rows)
     validation_features = tuple(feature_index[_label_key(row)] for row in fold.validation_rows)
     preprocessing = fit_standardization(training_features)
@@ -133,16 +152,6 @@ def evaluate_governed_ridge_fold(
         )
         for strategy_id in STRATEGY_ORDER_V1
     )
-    ridge_sharpe = Decimal(reports[0].metrics.sharpe_ratio)
-    ridge_period_returns = _portfolio_period_returns(reports[0])
-    skewness, kurtosis = _return_moments(ridge_period_returns)
-    dsr = OverfittingDiagnostics.deflated_sharpe_ratio(
-        estimated_sharpe=float(ridge_sharpe),
-        num_trials=registry.multiplicity_count,
-        sample_length_bars=len(ridge_period_returns),
-        skewness=skewness,
-        kurtosis=kurtosis,
-    )
     return RidgeFoldEvaluationV1(
         trial_id=start.trial_id,
         candidate_id=start.candidate_id,
@@ -151,8 +160,40 @@ def evaluate_governed_ridge_fold(
         fitted_state=fitted,
         strategy_reports=reports,
         multiplicity_count=registry.multiplicity_count,
-        deflated_sharpe_ratio=metric_decimal(Decimal(str(dsr))),
+        deflated_sharpe_ratio=deflate_ridge_report(
+            reports[0],
+            multiplicity_count=registry.multiplicity_count,
+        ),
     )
+
+
+def deflate_ridge_report(
+    ridge_report: StrategyFoldReportV1,
+    *,
+    multiplicity_count: int,
+) -> str:
+    """Deflate one fold's ridge Sharpe against a given attempt count.
+
+    The value published with a trial deflates against that trial's own ordinal, because the
+    campaign is still open when the evidence is written and immutable evidence cannot be
+    rewritten later. Readers who need the complete-campaign number call this again with the
+    final attempt count; see ``campaign_deflated_sharpe_ratios``.
+    """
+    if multiplicity_count < 1:
+        raise ModelingError(
+            ModelingFailureCode.MULTIPLICITY_INVALID,
+            "deflation requires a positive attempt count",
+        )
+    period_returns = _portfolio_period_returns(ridge_report)
+    skewness, kurtosis = _return_moments(period_returns)
+    dsr = OverfittingDiagnostics.deflated_sharpe_ratio(
+        estimated_sharpe=float(Decimal(ridge_report.metrics.sharpe_ratio)),
+        num_trials=multiplicity_count,
+        sample_length_bars=len(period_returns),
+        skewness=skewness,
+        kurtosis=kurtosis,
+    )
+    return metric_decimal(Decimal(str(dsr)))
 
 
 def fold_spec_hash(fold: PartitionedFoldV1) -> str:
@@ -237,7 +278,7 @@ def _validate_fold_integrity(
         or fold.spec.validation_start != fold.validation_rows[0].decision_at
         or fold.spec.validation_end != fold.validation_rows[-1].decision_at
         or fold.spec.purge_end != fold.spec.validation_start
-        or fold.spec.label_horizon_sessions < 1
+        or fold.spec.label_horizon_sessions != LABEL_HORIZON_SESSIONS_V1
         or fold.spec.embargo_sessions < fold.spec.label_horizon_sessions
     ):
         raise ModelingError(
@@ -278,6 +319,13 @@ def _validate_removed_rows(
             ModelingFailureCode.PARTITION_INVALID,
             "fold does not account for every label inside its expanding-window boundary",
         )
+    for row in fold.train_rows:
+        if row.exit_at >= fold.spec.validation_start:
+            raise ModelingError(
+                ModelingFailureCode.PARTITION_INVALID,
+                "training label matures at or after the validation window opens",
+                offending_record_key=row.record_key,
+            )
     rows_by_key = _dataset_rows_by_key(dataset_rows)
     purged_rows = tuple(rows_by_key[key] for key in purged_keys)
     embargoed_rows = tuple(rows_by_key[key] for key in embargoed_keys)
@@ -361,11 +409,26 @@ def _portfolio_period_returns(report: StrategyFoldReportV1) -> tuple[float, ...]
 
 
 def _return_moments(values: tuple[float, ...]) -> tuple[float, float]:
+    """Return the skewness and kurtosis of a non-degenerate portfolio return series.
+
+    A zero-variance series has no defined Sharpe ratio, so it has no defined deflated Sharpe
+    either. Substituting the moments of a normal distribution would publish a probability of
+    0.5 for a candidate that never took a position, which ranks it above every genuinely
+    losing model, so this fails closed instead.
+    """
+    if len(values) < 2:
+        raise ModelingError(
+            ModelingFailureCode.PARTITION_INVALID,
+            "deflated Sharpe needs at least two validation decision times",
+        )
     mean = sum(values) / len(values)
     deviations = tuple(value - mean for value in values)
     second = sum(value**2 for value in deviations) / len(values)
     if second == 0.0:
-        return 0.0, 3.0
+        raise ModelingError(
+            ModelingFailureCode.DEGENERATE_RETURN_SERIES,
+            "portfolio return series has zero variance, so its deflated Sharpe is undefined",
+        )
     skewness = (sum(value**3 for value in deviations) / len(values)) / second**1.5
     kurtosis = (sum(value**4 for value in deviations) / len(values)) / second**2
     return skewness, kurtosis

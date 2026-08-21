@@ -4,8 +4,10 @@ from quant_system.alpha.ai_advisor import (
     AntigravityCLIAdvisor,
     ClaudeCLIAdvisor,
     CodexCLIAdvisor,
+    DirectAPIAdvisor,
     MultiAgentConsensusEngine,
 )
+from quant_system.alpha.key_pool import KeyPoolManager, ProviderType
 from quant_system.core.domain import Side
 
 
@@ -80,3 +82,21 @@ def test_multi_agent_consensus_engine_approval_and_veto() -> None:
     )
     assert veto_opinion.action_bias == "VETO"
     assert veto_opinion.weight_multiplier == 0.0
+
+
+def test_hybrid_consensus_with_key_pool() -> None:
+    pool = KeyPoolManager()
+    pool.add_key("sk-test-groq", ProviderType.GROQ)
+    pool.add_key("sk-test-or", ProviderType.OPENROUTER)
+
+    engine = MultiAgentConsensusEngine(key_pool=pool)
+    assert any(isinstance(a, DirectAPIAdvisor) for a in engine.advisors)
+
+    opinion = engine.evaluate(
+        symbol="HDFCBANK",
+        quant_side=Side.BUY,
+        quant_strength=0.70,
+        technical_summary={"rsi": 52.0, "atr_normalized": 0.015},
+    )
+    assert opinion.action_bias in {"BULLISH", "NEUTRAL"}
+    assert opinion.weight_multiplier > 0.0

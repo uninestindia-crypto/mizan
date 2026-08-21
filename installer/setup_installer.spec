@@ -6,9 +6,12 @@ from pathlib import Path
 
 block_cipher = None
 
-# Bundle the entire compiled QuantOS distribution directory into the Setup executable
+# Bundle compiled QuantOS distribution directory into the Setup executable
+dist_dir = Path('../dist').resolve()
+source_bundle = '../dist/quantos' if (dist_dir / 'quantos').exists() else '../dist/QuantOS'
+
 added_files = [
-    ('../dist/QuantOS', 'QuantOS'),
+    (source_bundle, 'quantos'),
 ]
 
 a = Analysis(

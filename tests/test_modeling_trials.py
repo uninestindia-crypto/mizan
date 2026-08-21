@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from quant_system.evidence import (
+    EvidenceBusy,
     EvidenceNotFound,
     EvidenceResourceType,
     EvidenceStorageError,
@@ -27,6 +28,7 @@ from quant_system.modeling import (
     succeeded_outcome,
     unsuccessful_outcome,
 )
+from quant_system.modeling.metrics import StrategyMetricsV1
 from quant_system.modeling.persisted_trials import load_persisted_trial_registry
 from tests.modeling_training_fixtures import governed_training_journey
 
@@ -447,3 +449,186 @@ def test_start_only_interruption_can_resume_same_attempt(tmp_path: Path) -> None
     assert resumed.start_commit.deduplicated is True
     assert resumed.evaluation_commit.deduplicated is False
     assert resumed.outcome.state == TrialState.SUCCEEDED
+
+
+def test_trial_id_colliding_with_a_derived_outcome_id_is_rejected() -> None:
+    """Red Team Blocker 4: `trial_alpha_outcome` collides with `trial_alpha`'s outcome id."""
+    with pytest.raises(ModelingError) as captured:
+        replace(governed_training_journey().start, trial_id="trial_alpha_outcome")
+
+    assert captured.value.code == ModelingFailureCode.TRIAL_INVALID
+
+
+def test_reserved_outcome_suffix_cannot_deadlock_a_store(tmp_path: Path) -> None:
+    """Red Team Blocker 4 blast radius: the store must stay usable after the rejection."""
+    journey = governed_training_journey()
+    store = EvidenceStore(EvidenceStoreConfig(root=tmp_path / "evidence", min_free_bytes=0))
+
+    with pytest.raises(ModelingError):
+        replace(journey.start, trial_id="trial_alpha_outcome")
+
+    run = run_persisted_ridge_trial(
+        store,
+        operation_id="op-after-rejection",
+        start=replace(journey.start, trial_id="trial_alpha"),
+        feature_dataset=journey.features,
+        label_dataset=journey.labels,
+        fold=journey.fold,
+        ended_at=ENDED_AT,
+    )
+
+    assert run.outcome.state is TrialState.SUCCEEDED
+    assert sorted(path.name for path in (tmp_path / "evidence" / "trials").iterdir()) == [
+        "trial_alpha",
+        "trial_alpha_outcome",
+    ]
+    assert load_persisted_trial_registry(store).multiplicity_count == 1
+
+
+def test_failed_outcome_commit_failure_preserves_the_original_diagnosis(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """Red Team Major 4: a failing FAILED-fallback replaced the real failure code.
+
+    The caller was shown ``EvidenceBusy`` from the fallback commit while the actual reason the
+    trial failed survived only on ``__context__``. The original error must reach the caller,
+    carrying a note that says what state the store is now in.
+    """
+    journey = governed_training_journey()
+    store = EvidenceStore(EvidenceStoreConfig(root=tmp_path / "evidence", min_free_bytes=0))
+    original_commit = store.commit
+
+    def fail_model_and_fallback(draft, **kwargs):
+        if draft.resource_type == EvidenceResourceType.MODEL:
+            raise ModelingError(
+                ModelingFailureCode.MODEL_FIT_FAILED,
+                "injected fit failure",
+            )
+        if draft.schema_id == "quantos.trial_outcome":
+            raise EvidenceBusy("evidence mutation is owned by op-other (pid 5284)")
+        return original_commit(draft, **kwargs)
+
+    monkeypatch.setattr(store, "commit", fail_model_and_fallback)
+
+    with pytest.raises(ModelingError) as captured:
+        run_persisted_ridge_trial(
+            store,
+            operation_id="op-lease-contention",
+            start=journey.start,
+            feature_dataset=journey.features,
+            label_dataset=journey.labels,
+            fold=journey.fold,
+            ended_at=ENDED_AT,
+        )
+
+    assert captured.value.code is ModelingFailureCode.MODEL_FIT_FAILED
+    notes = getattr(captured.value, "__notes__", [])
+    assert any("remains open" in note for note in notes)
+    assert any("replay" in note for note in notes)
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    ("ordinal", "embargo_sessions", "label_horizon_sessions", "train_row_count"),
+)
+def test_fold_spec_integer_fields_reject_booleans(field_name: str) -> None:
+    """Red Team Minor 3: bool subclasses int, so True entered the fold spec hash as JSON true."""
+    journey = governed_training_journey()
+
+    with pytest.raises((ModelingError, ValueError)):
+        replace(journey.fold.spec, **{field_name: True})
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    ("max_drawdown_duration_rows", "attributable_count", "trade_count"),
+)
+def test_strategy_metric_counts_reject_booleans(field_name: str) -> None:
+    """Red Team Minor 3: the same gap in the published metric counts."""
+    journey = governed_training_journey()
+    evaluation = evaluate_governed_ridge_fold(
+        journey.start,
+        journey.registry,
+        journey.features,
+        journey.labels,
+        journey.fold,
+    )
+
+    with pytest.raises((ModelingError, ValueError)):
+        replace(evaluation.ridge_report.metrics, **{field_name: True})
+
+
+@pytest.mark.parametrize(
+    "dataset_id",
+    (
+        "dset_" + "a" * 10_000,
+        "dset_\u202eabc",
+        "dset_a\u200bb",
+        "dset_\U0001f600",
+    ),
+)
+def test_trial_dataset_id_rejects_unbounded_and_deceptive_text(dataset_id: str) -> None:
+    """Red Team Minor 5: zero-width and RTL text render identically but hash differently."""
+    with pytest.raises(ModelingError) as captured:
+        replace(governed_training_journey().start, dataset_id=dataset_id)
+
+    assert captured.value.code == ModelingFailureCode.TRIAL_INVALID
+
+
+def test_completed_trial_replay_says_where_to_read_the_result(tmp_path: Path) -> None:
+    """Red Team Minor 1: a crash after the outcome published looked like a failure.
+
+    Replaying the exact start of an already-successful trial raised
+    ``TRIAL_ALREADY_RECORDED: terminal trial cannot be resumed``, which a caller cannot
+    distinguish from a genuine failure and which does not say the result is already there.
+    """
+    journey = governed_training_journey()
+    store = EvidenceStore(EvidenceStoreConfig(root=tmp_path / "evidence", min_free_bytes=0))
+    run = run_persisted_ridge_trial(
+        store,
+        operation_id="op-first",
+        start=journey.start,
+        feature_dataset=journey.features,
+        label_dataset=journey.labels,
+        fold=journey.fold,
+        ended_at=ENDED_AT,
+    )
+
+    with pytest.raises(ModelingError) as captured:
+        run_persisted_ridge_trial(
+            store,
+            operation_id="op-replay-after-crash",
+            start=journey.start,
+            feature_dataset=journey.features,
+            label_dataset=journey.labels,
+            fold=journey.fold,
+            ended_at=ENDED_AT,
+        )
+
+    assert captured.value.code is ModelingFailureCode.TRIAL_ALREADY_RECORDED
+    message = str(captured.value)
+    assert "SUCCEEDED" in message
+    assert run.evaluation.model_id in message
+
+
+def test_sharpe_cannot_be_published_beside_a_volatility_that_rounds_to_zero() -> None:
+    """Red Team Minor 4: the published ratio was unverifiable from the published inputs."""
+    with pytest.raises(ValueError, match="volatility"):
+        StrategyMetricsV1(
+            accuracy="0.5",
+            balanced_accuracy=None,
+            total_return="0.000000000001",
+            annualized_volatility="0",
+            sharpe_ratio="14.849242404917",
+            sortino_ratio="0",
+            max_drawdown="0",
+            max_drawdown_duration_rows=0,
+            turnover="0",
+            exposure="1",
+            concentration="1",
+            attributable_count=8,
+            trade_count=8,
+            hit_rate="1",
+            profit_factor=None,
+        )

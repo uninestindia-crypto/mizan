@@ -9,10 +9,8 @@ from decimal import Decimal
 from typing import Any
 
 from quant_system.analytics.metrics import PerformanceMetrics
-from quant_system.backtest.engine import BacktestEngine
 from quant_system.core.domain import PriceBar
 from quant_system.risk.governor import PreTradeRiskGovernor
-from quant_system.strategies.registry import StrategyRegistry
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +39,9 @@ class StrategyGridOptimizer:
         top_k: int = 10,
     ) -> list[ParamOptimizationResult]:
         """Runs combinatorial grid search across parameter space."""
+        from quant_system.backtest.engine import BacktestEngine
+        from quant_system.strategies.registry import StrategyRegistry
+
         keys = list(param_grid.keys())
         values = list(param_grid.values())
         combinations = [dict(zip(keys, prod, strict=True)) for prod in itertools.product(*values)]

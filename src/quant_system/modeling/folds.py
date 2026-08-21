@@ -38,6 +38,15 @@ class FoldSpecV1:
     def __post_init__(self) -> None:
         if _FOLD_PATTERN.fullmatch(self.fold_id) is None:
             raise ValueError("fold_id is invalid")
+        for name in (
+            "ordinal",
+            "embargo_sessions",
+            "label_horizon_sessions",
+            "train_row_count",
+            "validation_row_count",
+        ):
+            if type(getattr(self, name)) is not int:
+                raise ValueError(f"{name} must be an exact integer")
         if self.ordinal < 1:
             raise ValueError("fold ordinal must be positive")
         _require_hash(self.train_hash, "train_hash")

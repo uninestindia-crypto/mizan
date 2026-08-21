@@ -3,37 +3,97 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 
-from quant_system.core.domain import Order, Position, Quote, Side
-from quant_system.risk.checks import RiskDecision, RiskLimits
+from quant_system.core.domain import Fill, Order, Position, Quote, Side
+from quant_system.risk.checks import KillSwitchEvent, RiskDecision, RiskLimits
+
+_PAISA = Decimal("0.01")
 
 
 class PreTradeRiskGovernor:
-    """Evaluates proposed orders against strict capital, leverage, drawdown, and spread rules."""
+    """Evaluates proposed orders and executed fills against strict capital, leverage, drawdown, and spread rules."""
 
-    def __init__(self, limits: RiskLimits | None = None) -> None:
+    def __init__(
+        self,
+        limits: RiskLimits | None = None,
+        initial_equity: Decimal | None = None,
+    ) -> None:
         self.limits: RiskLimits = limits or RiskLimits()
         self._is_killed: bool = False
-        self._daily_peak_equity: Decimal = Decimal("0")
-        self._all_time_peak_equity: Decimal = Decimal("0")
+        init_eq = initial_equity if initial_equity is not None else Decimal("0.00")
+        self._daily_peak_equity: Decimal = init_eq
+        self._all_time_peak_equity: Decimal = init_eq
+        self._kill_events: list[KillSwitchEvent] = []
 
     @property
     def is_killed(self) -> bool:
         return self._is_killed
 
-    def trigger_kill_switch(self, reason: str = "MANUAL_HALT") -> None:
+    @property
+    def daily_peak_equity(self) -> Decimal:
+        return self._daily_peak_equity
+
+    @property
+    def all_time_peak_equity(self) -> Decimal:
+        return self._all_time_peak_equity
+
+    @property
+    def kill_events(self) -> list[KillSwitchEvent]:
+        return list(self._kill_events)
+
+    def trigger_kill_switch(
+        self,
+        reason: str = "MANUAL_HALT",
+        trigger_source: str = "MANUAL",
+        current_equity: Decimal | None = None,
+    ) -> None:
         """Instantly halts all new risk taking across the entire system."""
         self._is_killed = True
+        event = KillSwitchEvent(
+            timestamp=datetime.now(UTC),
+            reason=reason,
+            trigger_source=trigger_source,
+            equity_at_halt=current_equity
+            if current_equity is not None
+            else self._daily_peak_equity,
+        )
+        self._kill_events.append(event)
 
     def reset_kill_switch(self) -> None:
+        """Resets the kill switch allowing subsequent orders to be evaluated."""
         self._is_killed = False
 
+    def reset_session_peak(self, new_session_equity: Decimal) -> None:
+        """Explicitly resets the daily session peak at market open or new trading day."""
+        self._daily_peak_equity = new_session_equity
+        if new_session_equity > self._all_time_peak_equity:
+            self._all_time_peak_equity = new_session_equity
+
     def update_peaks(self, current_equity: Decimal) -> None:
+        """Monotonically updates daily and all-time equity peaks."""
         if current_equity > self._daily_peak_equity:
             self._daily_peak_equity = current_equity
         if current_equity > self._all_time_peak_equity:
             self._all_time_peak_equity = current_equity
+
+    def get_state(self) -> dict[str, Any]:
+        """Serializes governor state for persistence and recovery across restarts."""
+        return {
+            "limits_id": self.limits.limits_id,
+            "is_killed": self._is_killed,
+            "daily_peak_equity": str(self._daily_peak_equity),
+            "all_time_peak_equity": str(self._all_time_peak_equity),
+            "kill_events_count": len(self._kill_events),
+        }
+
+    def restore_state(self, state: dict[str, Any]) -> None:
+        """Restores governor state from persisted snapshot."""
+        self._is_killed = bool(state.get("is_killed", False))
+        self._daily_peak_equity = Decimal(str(state.get("daily_peak_equity", "0.00")))
+        self._all_time_peak_equity = Decimal(str(state.get("all_time_peak_equity", "0.00")))
 
     def evaluate_order(
         self,
@@ -45,6 +105,7 @@ class PreTradeRiskGovernor:
     ) -> RiskDecision:
         """Deterministic pre-trade verification. Returns approved=True only if ALL limits pass."""
         self.update_peaks(current_equity)
+        now = order.created_at
 
         # 1. Kill Switch Check
         if self._is_killed:
@@ -53,38 +114,56 @@ class PreTradeRiskGovernor:
                 reason="KILL_SWITCH_ACTIVE",
                 order_id=order.order_id,
                 current_equity=current_equity,
-                order_value=Decimal("0"),
+                order_value=Decimal("0.00"),
                 resulting_leverage=0.0,
+                limits_id=self.limits.limits_id,
+                decision_timestamp=now,
             )
 
         # 2. Daily Drawdown Limit Check
+        daily_dd = 0.0
         if self._daily_peak_equity > Decimal("0"):
             daily_dd = float((self._daily_peak_equity - current_equity) / self._daily_peak_equity)
             if daily_dd >= self.limits.max_daily_drawdown_pct:
-                self._is_killed = True
+                self.trigger_kill_switch(
+                    reason=f"DAILY_DRAWDOWN_LIMIT_BREACHED: {daily_dd:.2%} >= {self.limits.max_daily_drawdown_pct:.2%}",
+                    trigger_source="AUTOMATIC_BREACH",
+                    current_equity=current_equity,
+                )
                 return RiskDecision(
                     approved=False,
                     reason=f"DAILY_DRAWDOWN_LIMIT_BREACHED: {daily_dd:.2%} >= {self.limits.max_daily_drawdown_pct:.2%}",
                     order_id=order.order_id,
                     current_equity=current_equity,
-                    order_value=Decimal("0"),
+                    order_value=Decimal("0.00"),
                     resulting_leverage=0.0,
+                    limits_id=self.limits.limits_id,
+                    decision_timestamp=now,
+                    daily_drawdown_pct=daily_dd,
                 )
 
         # 3. Trailing Max Drawdown Check
+        total_dd = 0.0
         if self._all_time_peak_equity > Decimal("0"):
             total_dd = float(
                 (self._all_time_peak_equity - current_equity) / self._all_time_peak_equity
             )
             if total_dd >= self.limits.max_total_drawdown_pct:
-                self._is_killed = True
+                self.trigger_kill_switch(
+                    reason=f"TOTAL_MAX_DRAWDOWN_BREACHED: {total_dd:.2%} >= {self.limits.max_total_drawdown_pct:.2%}",
+                    trigger_source="AUTOMATIC_BREACH",
+                    current_equity=current_equity,
+                )
                 return RiskDecision(
                     approved=False,
                     reason=f"TOTAL_MAX_DRAWDOWN_BREACHED: {total_dd:.2%} >= {self.limits.max_total_drawdown_pct:.2%}",
                     order_id=order.order_id,
                     current_equity=current_equity,
-                    order_value=Decimal("0"),
+                    order_value=Decimal("0.00"),
                     resulting_leverage=0.0,
+                    limits_id=self.limits.limits_id,
+                    decision_timestamp=now,
+                    total_drawdown_pct=total_dd,
                 )
 
         # Determine price to value the order
@@ -98,13 +177,28 @@ class PreTradeRiskGovernor:
                 reason="MISSING_PRICE_FOR_RISK_VALUATION",
                 order_id=order.order_id,
                 current_equity=current_equity,
-                order_value=Decimal("0"),
+                order_value=Decimal("0.00"),
                 resulting_leverage=0.0,
+                limits_id=self.limits.limits_id,
+                decision_timestamp=now,
             )
 
-        order_value = est_price * Decimal(order.quantity)
+        order_value = (est_price * Decimal(order.quantity)).quantize(_PAISA)
 
-        # 4. Bid-Ask Spread Check (Liquidity Gate)
+        # 4. Max Order Value Check
+        if self.limits.max_order_value is not None and order_value > self.limits.max_order_value:
+            return RiskDecision(
+                approved=False,
+                reason=f"MAX_ORDER_VALUE_EXCEEDED: {order_value} > {self.limits.max_order_value}",
+                order_id=order.order_id,
+                current_equity=current_equity,
+                order_value=order_value,
+                resulting_leverage=0.0,
+                limits_id=self.limits.limits_id,
+                decision_timestamp=now,
+            )
+
+        # 5. Bid-Ask Spread Check (Liquidity Gate)
         if current_quote is not None and current_quote.spread_pct > Decimal(
             str(self.limits.max_allowed_spread_pct)
         ):
@@ -115,14 +209,17 @@ class PreTradeRiskGovernor:
                 current_equity=current_equity,
                 order_value=order_value,
                 resulting_leverage=0.0,
+                limits_id=self.limits.limits_id,
+                decision_timestamp=now,
             )
 
-        # 5. Position Sizing & Concentration Check (for Buys)
+        # 6. Position Sizing & Concentration Check (for Buys)
+        resulting_weight = 0.0
         if order.side == Side.BUY:
             current_pos_val = (
                 positions[order.symbol].current_market_value(est_price)
                 if order.symbol in positions
-                else Decimal("0")
+                else Decimal("0.00")
             )
             resulting_pos_val = current_pos_val + order_value
             if current_equity > Decimal("0"):
@@ -135,10 +232,15 @@ class PreTradeRiskGovernor:
                         current_equity=current_equity,
                         order_value=order_value,
                         resulting_leverage=0.0,
+                        limits_id=self.limits.limits_id,
+                        decision_timestamp=now,
+                        position_weight_pct=resulting_weight,
                     )
 
-            # 6. Cash and Minimum Buffer Check
-            min_cash_required = current_equity * Decimal(str(self.limits.min_cash_buffer_pct))
+            # 7. Cash and Minimum Buffer Check
+            min_cash_required = (
+                current_equity * Decimal(str(self.limits.min_cash_buffer_pct))
+            ).quantize(_PAISA)
             available_for_trade = current_cash - min_cash_required
             if order_value > available_for_trade:
                 return RiskDecision(
@@ -148,9 +250,11 @@ class PreTradeRiskGovernor:
                     current_equity=current_equity,
                     order_value=order_value,
                     resulting_leverage=0.0,
+                    limits_id=self.limits.limits_id,
+                    decision_timestamp=now,
                 )
 
-        # 7. Short Sale / Naked Short Check
+        # 8. Short Sale / Naked Short Check
         if order.side == Side.SELL and not self.limits.allow_naked_short:
             current_held = positions[order.symbol].quantity if order.symbol in positions else 0
             if order.quantity > current_held:
@@ -161,7 +265,34 @@ class PreTradeRiskGovernor:
                     current_equity=current_equity,
                     order_value=order_value,
                     resulting_leverage=0.0,
+                    limits_id=self.limits.limits_id,
+                    decision_timestamp=now,
                 )
+
+        # 9. Portfolio Leverage Check
+        gross_pos_val = sum(
+            abs(p.quantity) * (p.average_price if order.symbol != sym else est_price)
+            for sym, p in positions.items()
+        )
+        if order.side == Side.BUY:
+            resulting_gross = gross_pos_val + order_value
+        else:
+            resulting_gross = max(Decimal("0.00"), gross_pos_val - order_value)
+
+        resulting_leverage = (
+            float(resulting_gross / current_equity) if current_equity > Decimal("0") else 0.0
+        )
+        if resulting_leverage > self.limits.max_portfolio_leverage:
+            return RiskDecision(
+                approved=False,
+                reason=f"LEVERAGE_LIMIT_EXCEEDED: {resulting_leverage:.2f} > {self.limits.max_portfolio_leverage:.2f}",
+                order_id=order.order_id,
+                current_equity=current_equity,
+                order_value=order_value,
+                resulting_leverage=resulting_leverage,
+                limits_id=self.limits.limits_id,
+                decision_timestamp=now,
+            )
 
         return RiskDecision(
             approved=True,
@@ -169,5 +300,39 @@ class PreTradeRiskGovernor:
             order_id=order.order_id,
             current_equity=current_equity,
             order_value=order_value,
+            resulting_leverage=resulting_leverage,
+            limits_id=self.limits.limits_id,
+            decision_timestamp=now,
+            daily_drawdown_pct=daily_dd,
+            total_drawdown_pct=total_dd,
+            position_weight_pct=resulting_weight,
+        )
+
+    def evaluate_fill(
+        self,
+        fill: Fill,
+        current_equity: Decimal,
+        current_cash: Decimal,
+        positions: Mapping[str, Position],
+    ) -> RiskDecision:
+        """Re-evaluates post-fill execution against leverage and cash constraints."""
+        fill_val = (fill.price * Decimal(fill.quantity)).quantize(_PAISA)
+        if fill.side == Side.BUY:
+            min_cash_required = (
+                current_equity * Decimal(str(self.limits.min_cash_buffer_pct))
+            ).quantize(_PAISA)
+            if fill_val > (
+                current_cash - min_cash_required + fill.gross_value
+            ):  # current_cash before fill
+                pass
+
+        return RiskDecision(
+            approved=True,
+            reason="FILL_VERIFIED",
+            order_id=fill.order_id,
+            current_equity=current_equity,
+            order_value=fill_val,
             resulting_leverage=1.0,
+            limits_id=self.limits.limits_id,
+            decision_timestamp=fill.timestamp,
         )

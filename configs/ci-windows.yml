@@ -1,0 +1,120 @@
+# QuantOS continuous integration.
+#
+# Runs the gates that pass repository-wide, so a red run always means a real regression.
+#
+# Deliberately excluded, and why:
+#   - Repository-wide Code Craft and Test Craft. They currently report 55 and 1 legacy findings
+#     (open Major #2). Wiring them in now would make CI red from the first commit and teach
+#     everyone to ignore it. Their --self-test runs instead, which proves the tooling is intact
+#     without claiming the codebase already is. Add the full scans when that debt reaches zero.
+#   - scripts/run-slice*-gates.ps1. Those assume a local .venv layout and pin slice-specific
+#     evidence. CI proves the repository-wide baseline; slice certification stays a deliberate
+#     local and clean-clone activity.
+#   - scripts/audit-agent-claims.ps1 and audit-disk-layout.ps1. Both reason about workspaces on
+#     the developer's install drive, and work records claim absolute local paths such as
+#     D:\quant_system. A CI checkout lives elsewhere, so those paths are legitimately absent and
+#     the audits would report STALE against a healthy repository. They gate handoffs, not builds.
+#
+# Runner is windows-latest (x64). The product targets a Windows x64 release and GitHub offers no
+# hosted Windows ARM64 runner, so this matches the release claim rather than the ARM64 development
+# machine.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned to the exact version this repository's evidence was produced with.
+  UV_VERSION: "0.12.5"
+  UV_LINK_MODE: copy
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  gates:
+    name: Static analysis, tests, and build
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Install uv (pinned)
+        run: pip install "uv==${{ env.UV_VERSION }}"
+
+      - name: Report toolchain versions
+        run: |
+          uv --version
+          node --version
+
+      - name: Install from the lockfile
+        run: uv sync --frozen --extra dev
+
+      # --- static analysis -------------------------------------------------------------------
+      - name: Format check
+        run: uv run ruff format --check .
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Strict type check
+        run: uv run mypy src launcher.py scripts
+
+      - name: Dead-code scan
+        run: uv run vulture src launcher.py scripts --min-confidence 80
+
+      # --- tests -----------------------------------------------------------------------------
+      - name: Tests with coverage
+        run: uv run pytest --cov=quant_system --cov-report=term-missing --cov-report=xml
+
+      # --- integrity of the craft checkers ---------------------------------------------------
+      # Not a scan of the codebase: this proves the checkers themselves still work. Both
+      # self-tests were failing before commit 34c0683, which is exactly the silent breakage
+      # this step exists to catch.
+      - name: Craft checker self-tests
+        run: |
+          node scripts/check-code.mjs --self-test
+          node scripts/check-tests.mjs --self-test
+
+      # --- secrets ---------------------------------------------------------------------------
+      # Same exclusions as the slice gates: generated environments and the .agents skill corpus
+      # contain detector fixtures, which are not application secrets.
+      - name: Application secret scan
+        run: |
+          $excluded = '(^|[\\/])(\.venv|build|dist|tmp|logs|\.git|\.agents|\.mypy_cache|\.pytest_cache|\.ruff_cache|__pycache__)([\\/]|$)|(^|[\\/])uv\.lock$|(^|[\\/])\.coverage$'
+          $json = uv run detect-secrets scan --all-files --no-verify --exclude-files $excluded .
+          $scan = $json | ConvertFrom-Json
+          $count = 0
+          $scan.results.PSObject.Properties | ForEach-Object { $count += @($_.Value).Count }
+          Write-Host "Application secret candidates: $count"
+          if ($count -ne 0) {
+            $scan.results.PSObject.Properties | ForEach-Object { Write-Host "  $($_.Name)" }
+            throw "Application secret scan found $count candidate secret(s)"
+          }
+
+      # --- build -----------------------------------------------------------------------------
+      - name: Build wheel and sdist
+        run: uv build --out-dir dist
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: quant-system-dist
+          path: dist/
+          retention-days: 14
+          if-no-files-found: error

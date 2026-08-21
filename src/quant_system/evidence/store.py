@@ -60,7 +60,10 @@ class EvidenceStore:
         self.config = config
         self.root = config.root.resolve()
         self._initialize_directories()
-        self._lease = LeaseManager(self.root / "locks" / "governed-operation.lock")
+        self._lease = LeaseManager(
+            self.root / "locks" / "governed-operation.lock",
+            wait_seconds=config.lease_wait_seconds,
+        )
 
     def commit(
         self,
@@ -99,6 +102,14 @@ class EvidenceStore:
         resource_directory = self._resource_directory(resource_type, resource_id)
         if not resource_directory.is_dir():
             raise EvidenceNotFound(f"evidence resource does not exist: {resource_id}")
+        return self._verify_resource_directory(resource_directory, resource_type, resource_id)
+
+    def _verify_resource_directory(
+        self,
+        resource_directory: Path,
+        resource_type: EvidenceResourceType,
+        resource_id: str,
+    ) -> VerifiedEvidence:
         reject_symlink(resource_directory)
         manifest_path = resource_directory / "manifest.json"
         marker_path = resource_directory / "COMMITTED"
@@ -206,11 +217,27 @@ class EvidenceStore:
         """Rebuild the deterministic valid/invalid catalog from immutable source evidence."""
         valid: list[str] = []
         invalid: list[str] = []
+        referenced: set[str] = set()
         for resource_type in EvidenceResourceType:
-            found_valid, found_invalid = self._scan_resource_type(resource_type)
+            found_valid, found_invalid, found_blobs = self._scan_resource_type(resource_type)
             valid.extend(found_valid)
             invalid.extend(found_invalid)
-        return IntegrityScanReport(tuple(sorted(valid)), tuple(sorted(invalid)))
+            referenced |= found_blobs
+        return IntegrityScanReport(
+            tuple(sorted(valid)),
+            tuple(sorted(invalid)),
+            tuple(sorted(self._stored_blob_hashes() - referenced)),
+        )
+
+    def _stored_blob_hashes(self) -> set[str]:
+        blob_root = self.root / "blobs" / "sha256"
+        if not blob_root.is_dir():
+            return set()
+        return {
+            path.name.removesuffix(".jsonl.gz")
+            for path in blob_root.rglob("*.jsonl.gz")
+            if path.is_file()
+        }
 
     def scan_integrity(self) -> IntegrityScanReport:
         """Compatibility name for a full source-of-truth index rebuild."""
@@ -219,20 +246,22 @@ class EvidenceStore:
     def _scan_resource_type(
         self,
         resource_type: EvidenceResourceType,
-    ) -> tuple[list[str], list[str]]:
+    ) -> tuple[list[str], list[str], set[str]]:
         valid: list[str] = []
         invalid: list[str] = []
+        referenced: set[str] = set()
         resource_root = self.root / resource_type.value
         for resource_directory in sorted(resource_root.iterdir(), key=lambda path: path.name):
             if not resource_directory.is_dir():
                 continue
             try:
-                self.open_verified(resource_type, resource_directory.name)
+                verified = self.open_verified(resource_type, resource_directory.name)
             except (EvidenceIntegrityError, EvidenceNotFound, OSError, ValueError):
                 invalid.append(resource_directory.name)
             else:
                 valid.append(resource_directory.name)
-        return valid, invalid
+                referenced |= {blob.stored_hash for blob in verified.manifest.blobs}
+        return valid, invalid, referenced
 
     def _existing_result(
         self,
@@ -319,6 +348,13 @@ class EvidenceStore:
         hook(CommitPhase.MANIFEST_STAGED)
         write_fsynced(staged_resource / "COMMITTED", f"{manifest_hash}\n".encode())
         hook(CommitPhase.COMMIT_MARKER_STAGED)
+        staged_verified = self._verify_resource_directory(
+            staged_resource,
+            draft.resource_type,
+            draft.resource_id,
+        )
+        if staged_verified.manifest != manifest or staged_verified.records != prepared.records:
+            raise EvidenceIntegrityError("staged evidence readback does not match prepared content")
         final_resource = self._resource_directory(draft.resource_type, draft.resource_id)
         final_resource.parent.mkdir(parents=True, exist_ok=True)
         if final_resource.exists():

@@ -1,6 +1,7 @@
 """QuantOS Standalone Setup Wizard (GUI Installer).
 
-Installs QuantOS onto any selected drive with 100% drive isolation (Zero C: leakage).
+Installs QuantOS onto any selected drive with 100% drive isolation (Zero C: leakage)
+and guarantees immutable evidence preservation on uninstall.
 """
 
 from __future__ import annotations
@@ -64,7 +65,7 @@ class SetupWizard(tk.Tk):
         super().__init__()
         self.bundle_source = bundle_source_dir
         self.title(f"QuantOS v{__version__} Setup Wizard")
-        self.geometry("580x420")
+        self.geometry("580x440")
         self.resizable(False, False)
         self.configure(bg="#1E1E1E")
 
@@ -264,29 +265,37 @@ class SetupWizard(tk.Tk):
 
             self.progress["value"] = 70
 
-            # Write uninstaller script inside target folder
+            # Write uninstaller script inside target folder that preserves data/evidence
             uninst_script = target_dir / "uninstall.bat"
             uninst_script.write_text(
                 f"""@echo off
 echo =======================================================
-echo   QuantOS v{__version__} Uninstaller
+echo   QuantOS v{__version__} Safe Uninstaller
 echo =======================================================
-echo Uninstalling from: {target_dir}
+echo Uninstalling application binaries from: {target_dir}
+echo Note: User datasets, evidence, and logs in data/ and logs/ will be preserved.
 pause
 cd ..
-rd /s /q "{target_dir}"
-echo QuantOS has been completely removed from your drive.
+if exist "{target_dir}\\quantos.exe" del /f /q "{target_dir}\\quantos.exe"
+if exist "{target_dir}\\QuantOS.exe" del /f /q "{target_dir}\\QuantOS.exe"
+if exist "{target_dir}\\_internal" rd /s /q "{target_dir}\\_internal"
+if exist "{target_dir}\\quant_system" rd /s /q "{target_dir}\\quant_system"
+echo QuantOS application binaries have been cleanly removed.
+echo Your research and evidence records remain intact.
 pause
 """,
                 encoding="utf-8",
             )
 
-            # Create Desktop Shortcut if selected
-            if self.desktop_icon_var.get():
+            # Locate executable
+            target_exe = target_dir / "quantos.exe"
+            if not target_exe.exists():
                 target_exe = target_dir / "QuantOS.exe"
-                if target_exe.exists():
-                    self.lbl_status.config(text="Creating desktop shortcut...")
-                    create_shortcuts(target_exe)
+
+            # Create Desktop Shortcut if selected
+            if self.desktop_icon_var.get() and target_exe.exists():
+                self.lbl_status.config(text="Creating desktop shortcut...")
+                create_shortcuts(target_exe)
 
             self.progress["value"] = 100
             self.lbl_status.config(
@@ -298,10 +307,8 @@ pause
                 f"QuantOS v{__version__} has been successfully installed on {target_dir.drive}!\n\nWould you like to launch QuantOS now?",
             )
 
-            if launch_now:
-                target_exe = target_dir / "QuantOS.exe"
-                if target_exe.exists():
-                    os.startfile(str(target_exe))
+            if launch_now and target_exe.exists():
+                os.startfile(str(target_exe))
 
             self.destroy()
 
@@ -312,11 +319,15 @@ pause
 
 
 def main() -> None:
-    # Bundle source directory (defaults to sibling dist/QuantOS or sys._MEIPASS when frozen)
+    # Bundle source directory (defaults to sibling dist/quantos or dist/QuantOS or sys._MEIPASS when frozen)
     if getattr(sys, "frozen", False):
-        bundle_source = Path(sys._MEIPASS) / "QuantOS"  # type: ignore[attr-defined]
+        bundle_source = Path(sys._MEIPASS) / "quantos"  # type: ignore[attr-defined]
+        if not bundle_source.exists():
+            bundle_source = Path(sys._MEIPASS) / "QuantOS"  # type: ignore[attr-defined]
     else:
-        bundle_source = Path(__file__).parent.parent / "dist" / "QuantOS"
+        bundle_source = Path(__file__).parent.parent / "dist" / "quantos"
+        if not bundle_source.exists():
+            bundle_source = Path(__file__).parent.parent / "dist" / "QuantOS"
 
     app = SetupWizard(bundle_source_dir=bundle_source)
     app.mainloop()

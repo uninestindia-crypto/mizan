@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller specification for QuantOS Desktop Application v1.0.0."""
+"""PyInstaller specification for QuantOS Desktop Application v1.0.0 (quantos.exe)."""
 
 import sys
 from pathlib import Path
@@ -14,6 +14,7 @@ added_files = [
 ]
 
 hidden_imports = [
+    'uvicorn',
     'uvicorn.logging',
     'uvicorn.loops',
     'uvicorn.loops.auto',
@@ -26,7 +27,12 @@ hidden_imports = [
     'uvicorn.lifespans.on',
     'fastapi',
     'pydantic',
+    'numpy',
+    'scipy',
+    'yaml',
+    'tomllib',
     'quant_system',
+    'quant_system.release',
 ] + collect_submodules('quant_system')
 
 a = Analysis(
@@ -52,7 +58,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='QuantOS',
+    name='quantos',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -73,5 +79,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='QuantOS',
+    name='quantos',
 )

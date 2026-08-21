@@ -42,6 +42,7 @@ class EvidenceStoreConfig:
     max_bundle_bytes: int = 100 * 1024 * 1024
     min_free_bytes: int = 1024 * 1024 * 1024
     max_manifest_bytes: int = 1024 * 1024
+    lease_wait_seconds: float = 2.0
     clock: Callable[[], datetime] = lambda: datetime.now(UTC)
 
     def __post_init__(self) -> None:
@@ -55,6 +56,8 @@ class EvidenceStoreConfig:
             raise ValueError("min_free_bytes cannot be negative")
         if not 1024 <= self.max_manifest_bytes <= 4 * 1024 * 1024:
             raise ValueError("max_manifest_bytes must be between 1 KiB and 4 MiB")
+        if not 0 <= self.lease_wait_seconds <= 60:
+            raise ValueError("lease_wait_seconds must be between 0 and 60 seconds")
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +74,7 @@ class EvidenceDraft:
         _validate_resource_id(self.resource_type, self.resource_id)
         if not 1 <= len(self.schema_id) <= 128:
             raise ValueError("schema_id must contain 1-128 characters")
-        if self.schema_version != 1:
+        if type(self.schema_version) is not int or self.schema_version != 1:
             raise ValueError("only evidence schema version 1 is writable")
         if not self.records:
             raise ValueError("evidence records cannot be empty")
@@ -260,6 +263,15 @@ class ActiveReference:
 class IntegrityScanReport:
     valid_resource_ids: tuple[str, ...]
     invalid_resource_ids: tuple[str, ...]
+    orphan_blob_hashes: tuple[str, ...] = ()
+    """Content-addressed blobs on disk that no verified manifest references.
+
+    A non-empty tuple means the catalog no longer accounts for everything the store
+    published. Deleting trailing resources rolls their accounting back silently, but the
+    blobs they wrote survive, so orphans make that rollback detectable. An interrupted
+    commit can also leave one, because blobs publish before their resource does, so this
+    is reported rather than treated as corruption.
+    """
 
 
 _RESOURCE_PREFIXES = {

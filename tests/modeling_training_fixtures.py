@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from decimal import Decimal
 
+from quant_system.data.market_data_evidence import canonical_sha256
 from quant_system.modeling import (
     FeatureDatasetV1,
     FeatureRowV1,
     LabelDatasetV1,
+    LabelRowV1,
     PartitionedFoldV1,
     RidgeTrialStartV1,
     SessionCalendarV1,
@@ -18,6 +20,11 @@ from quant_system.modeling import (
     build_label_dataset,
     build_purged_fold,
     fold_spec_hash,
+)
+from quant_system.modeling.rows import (
+    FEATURE_ROW_SCHEMA,
+    LABEL_ROW_SCHEMA,
+    derived_dataset_hash,
 )
 from tests.modeling_fixtures import (
     governed_acquisition,
@@ -109,3 +116,119 @@ def fold_feature_rows(
         (row.candidate_id, row.symbol, row.decision_at): row for row in journey.features.rows
     }
     return tuple(feature_index[(row.candidate_id, row.symbol, row.decision_at)] for row in labels)
+
+
+def rebound_journey(
+    journey: TrainingJourneyV1,
+    fold: PartitionedFoldV1,
+) -> TrainingJourneyV1:
+    """Re-pin a journey's trial start and registry onto a rewritten fold."""
+    start = replace(journey.start, fold_spec_hashes=(fold_spec_hash(fold),))
+    return replace(
+        journey,
+        fold=fold,
+        start=start,
+        registry=TrialRegistryV1(starts=(start,), outcomes=()),
+    )
+
+
+def leaky_zero_removal_fold(journey: TrainingJourneyV1) -> PartitionedFoldV1:
+    """Rebuild the governed fold with every purged and embargoed row back in training.
+
+    Reproduces the Red Team Blocker 1 attack: the removal evidence is emptied, the purge
+    boundary is collapsed onto the validation start, and every summary field is recomputed so
+    the fold is internally consistent and correctly hashed.
+    """
+    removed_keys = {*journey.fold.purged_record_keys, *journey.fold.embargoed_record_keys}
+    train_rows = tuple(
+        row
+        for row in journey.labels.rows
+        if row.decision_at < journey.fold.spec.validation_start
+        and (
+            row.record_key in removed_keys
+            or row.record_key in {member.record_key for member in journey.fold.train_rows}
+        )
+    )
+    spec = replace(
+        journey.fold.spec,
+        train_end=train_rows[-1].decision_at,
+        purge_start=journey.fold.spec.validation_start,
+        purge_end=journey.fold.spec.validation_start,
+        train_row_count=len(train_rows),
+        train_class_balance=_fixture_class_balance(train_rows),
+        train_hash=_fixture_rows_hash(train_rows),
+    )
+    return replace(
+        journey.fold,
+        spec=spec,
+        train_rows=train_rows,
+        purged_record_keys=(),
+        embargoed_record_keys=(),
+    )
+
+
+def symbol_collision_features(
+    journey: TrainingJourneyV1,
+) -> tuple[FeatureDatasetV1, LabelDatasetV1]:
+    """Duplicate every feature row under a second instrument sharing one symbol.
+
+    Reproduces the Red Team Major 3 attack. Each clone keeps the symbol and decision time but
+    takes a different ``provider_instrument_id`` and constant features, so record keys stay
+    unique and the dataset identity is rebuilt to be internally consistent.
+    """
+    clones = tuple(
+        replace(
+            row,
+            provider_instrument_id="ZZZ_EQ|INE009A01021",
+            features=dict.fromkeys(row.features, "0.5"),
+        )
+        for row in journey.features.rows
+    )
+    rows = tuple(
+        sorted(
+            journey.features.rows + clones,
+            key=lambda row: (row.candidate_id, row.decision_at, row.provider_instrument_id),
+        )
+    )
+    poisoned = _rebind_feature_identity(replace(journey.features, rows=rows))
+    labels = _rebind_label_identity(
+        replace(
+            journey.labels,
+            feature_dataset_id=poisoned.dataset_id,
+            feature_dataset_hash=poisoned.dataset_hash,
+        )
+    )
+    return poisoned, labels
+
+
+def _rebind_feature_identity(dataset: FeatureDatasetV1) -> FeatureDatasetV1:
+    metadata = dataset.metadata_dict()
+    metadata.pop("dataset_id")
+    metadata.pop("dataset_hash")
+    dataset_hash = derived_dataset_hash(FEATURE_ROW_SCHEMA, metadata, dataset.rows)
+    return replace(dataset, dataset_hash=dataset_hash, dataset_id=f"dset_{dataset_hash[:24]}")
+
+
+def _rebind_label_identity(dataset: LabelDatasetV1) -> LabelDatasetV1:
+    metadata = dataset.metadata_dict()
+    metadata.pop("dataset_id")
+    metadata.pop("dataset_hash")
+    dataset_hash = derived_dataset_hash(LABEL_ROW_SCHEMA, metadata, dataset.rows)
+    return replace(dataset, dataset_hash=dataset_hash, dataset_id=f"dset_{dataset_hash[:24]}")
+
+
+def _fixture_class_balance(rows: tuple[LabelRowV1, ...]) -> dict[str, int]:
+    return {
+        "DOWN": sum(row.target == "DOWN" for row in rows),
+        "UP": sum(row.target == "UP" for row in rows),
+    }
+
+
+def _fixture_rows_hash(rows: tuple[LabelRowV1, ...]) -> str:
+    return canonical_sha256(
+        {
+            "records": [row.to_canonical_dict() for row in rows],
+            "schema_id": "quantos.fold_label_rows",
+            "schema_version": 1,
+        }
+    )

@@ -166,7 +166,10 @@ def _matrix(rows: tuple[tuple[str, ...], ...]) -> np.ndarray:
 
 
 def _float_decimal(value: np.floating[Any] | float) -> str:
-    return format(float(value), ".12f").rstrip("0").rstrip(".") or "0"
+    fixed = format(float(value), ".12f")
+    if "." in fixed:
+        fixed = fixed.rstrip("0").rstrip(".")
+    return "0" if fixed in {"-0", ""} else fixed
 
 
 def _require_canonical_fitted_decimal(value: str) -> Decimal:

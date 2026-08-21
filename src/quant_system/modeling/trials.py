@@ -20,9 +20,11 @@ from quant_system.modeling.rows import (
 MODEL_FAMILY_V1 = "RIDGE_CLASSIFIER"
 MODEL_CONTRACT_VERSION_V1 = "ridge-six-v1"
 SCORE_KIND_V1 = "UNCALIBRATED_SCORE"
+_OUTCOME_SUFFIX = "_outcome"
 
 _TRIAL_ID_PATTERN = re.compile(r"trial_[a-z0-9][a-z0-9_-]{0,62}")
 _CANDIDATE_PATTERN = re.compile(r"cand_[a-z0-9][a-z0-9_-]{0,91}")
+_DATASET_ID_PATTERN = re.compile(r"dset_[a-z0-9][a-z0-9_-]{0,91}")
 _REVISION_PATTERN = re.compile(r"[0-9a-f]{7,64}")
 _HASH_PATTERN = re.compile(r"[0-9a-f]{64}")
 
@@ -76,7 +78,7 @@ class RidgeTrialStartV1:
 
     @property
     def outcome_resource_id(self) -> str:
-        return f"{self.trial_id}_outcome"
+        return f"{self.trial_id}{_OUTCOME_SUFFIX}"
 
     def parameter_dict(self) -> dict[str, Any]:
         return {
@@ -132,7 +134,7 @@ class TrialOutcomeV1:
 
     @property
     def resource_id(self) -> str:
-        return f"{self.trial_id}_outcome"
+        return f"{self.trial_id}{_OUTCOME_SUFFIX}"
 
     def to_canonical_dict(self) -> dict[str, Any]:
         payload = self._unsigned_dict()
@@ -227,6 +229,11 @@ def unsuccessful_outcome(
 def _validate_trial_outcome(outcome: TrialOutcomeV1) -> None:
     if _TRIAL_ID_PATTERN.fullmatch(outcome.trial_id) is None:
         raise ModelingError(ModelingFailureCode.TRIAL_OUTCOME_INVALID, "trial_id is invalid")
+    if outcome.trial_id.endswith(_OUTCOME_SUFFIX):
+        raise ModelingError(
+            ModelingFailureCode.TRIAL_OUTCOME_INVALID,
+            f"trial_id cannot end with the reserved suffix {_OUTCOME_SUFFIX!r}",
+        )
     _require_hash(
         outcome.start_hash,
         "start_hash",
@@ -307,12 +314,7 @@ def _validate_registered_outcome(
         )
 
 
-def _validate_trial_start(start: RidgeTrialStartV1) -> None:
-    if _TRIAL_ID_PATTERN.fullmatch(start.trial_id) is None:
-        raise ModelingError(ModelingFailureCode.TRIAL_INVALID, "trial_id is invalid")
-    if _CANDIDATE_PATTERN.fullmatch(start.candidate_id) is None:
-        raise ModelingError(ModelingFailureCode.TRIAL_INVALID, "candidate_id is invalid")
-    _require_aware(start.created_at, "created_at")
+def _validate_trial_start_hashes(start: RidgeTrialStartV1) -> None:
     for value, name in (
         (start.dataset_hash, "dataset_hash"),
         (start.universe_policy_hash, "universe_policy_hash"),
@@ -328,13 +330,9 @@ def _validate_trial_start(start: RidgeTrialStartV1) -> None:
         )
     for fold_hash in start.fold_spec_hashes:
         _require_hash(fold_hash, "fold_spec_hash")
-    if _REVISION_PATTERN.fullmatch(start.source_revision) is None:
-        raise ModelingError(ModelingFailureCode.TRIAL_INVALID, "source_revision is invalid")
-    if not start.dataset_id or not start.architecture or len(start.architecture) > 128:
-        raise ModelingError(
-            ModelingFailureCode.TRIAL_INVALID,
-            "dataset and architecture identities are required",
-        )
+
+
+def _validate_trial_start_contract(start: RidgeTrialStartV1) -> None:
     if (
         type(start.numpy_seed) is not int
         or type(start.multiplicity_ordinal) is not int
@@ -357,6 +355,30 @@ def _validate_trial_start(start: RidgeTrialStartV1) -> None:
         or start.label_contract_version != LABEL_CONTRACT_VERSION_V1
     ):
         raise ModelingError(ModelingFailureCode.TRIAL_INVALID, "trial contract version is invalid")
+
+
+def _validate_trial_start(start: RidgeTrialStartV1) -> None:
+    if _TRIAL_ID_PATTERN.fullmatch(start.trial_id) is None:
+        raise ModelingError(ModelingFailureCode.TRIAL_INVALID, "trial_id is invalid")
+    if start.trial_id.endswith(_OUTCOME_SUFFIX):
+        raise ModelingError(
+            ModelingFailureCode.TRIAL_INVALID,
+            f"trial_id cannot end with the reserved suffix {_OUTCOME_SUFFIX!r}",
+        )
+    if _CANDIDATE_PATTERN.fullmatch(start.candidate_id) is None:
+        raise ModelingError(ModelingFailureCode.TRIAL_INVALID, "candidate_id is invalid")
+    if _DATASET_ID_PATTERN.fullmatch(start.dataset_id) is None:
+        raise ModelingError(ModelingFailureCode.TRIAL_INVALID, "dataset_id is invalid")
+    _require_aware(start.created_at, "created_at")
+    _validate_trial_start_hashes(start)
+    if _REVISION_PATTERN.fullmatch(start.source_revision) is None:
+        raise ModelingError(ModelingFailureCode.TRIAL_INVALID, "source_revision is invalid")
+    if not start.dataset_id or not start.architecture or len(start.architecture) > 128:
+        raise ModelingError(
+            ModelingFailureCode.TRIAL_INVALID,
+            "dataset and architecture identities are required",
+        )
+    _validate_trial_start_contract(start)
 
 
 def _canonical_decimal(value: str, field_name: str) -> str:

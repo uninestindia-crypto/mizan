@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import ROUND_HALF_EVEN, Decimal, localcontext
@@ -20,6 +21,18 @@ STRATEGY_ORDER_V1 = (
     "EQUITY_DUAL_MOMENTUM",
 )
 _METRIC_QUANTUM = Decimal("0.000000000001")
+_DECISION_RECORD_KEYS = frozenset(
+    {
+        "actual_target",
+        "decision_at",
+        "predicted_target",
+        "realized_net_return",
+        "score",
+        "score_kind",
+        "strategy_id",
+        "symbol",
+    }
+)
 ALLOCATION_CONTRACT_V1 = "EQUAL_WEIGHT_ACTIVE_LONGS_PER_DECISION_TIME"
 
 
@@ -104,10 +117,18 @@ class StrategyMetricsV1:
             value is not None and not _is_canonical_decimal(value) for value in optional_fields
         ):
             raise ValueError("strategy metrics must use finite canonical decimal text")
+        for name in ("max_drawdown_duration_rows", "attributable_count", "trade_count"):
+            if type(getattr(self, name)) is not int:
+                raise ValueError(f"{name} must be an exact integer")
         if min(self.max_drawdown_duration_rows, self.attributable_count, self.trade_count) < 0:
             raise ValueError("strategy metric counts cannot be negative")
         if self.trade_count > self.attributable_count:
             raise ValueError("trade count cannot exceed attributable count")
+        if Decimal(self.annualized_volatility) == 0 and Decimal(self.sharpe_ratio) != 0:
+            raise ValueError(
+                "a published Sharpe ratio requires a non-zero published volatility; "
+                "otherwise the ratio cannot be reconstructed from the published metrics"
+            )
 
     def to_canonical_dict(self) -> dict[str, Any]:
         return {
@@ -182,6 +203,53 @@ def build_strategy_report(
         strategy_id=strategy_id,
         decisions=decisions,
         metrics=calculate_strategy_metrics(decisions),
+    )
+
+
+def strategy_report_from_records(
+    strategy_id: str,
+    records: tuple[Mapping[str, Any], ...],
+) -> StrategyFoldReportV1:
+    """Re-derive one strategy report from its published decision records.
+
+    Every metric, the metrics hash, and the prediction hash are recomputed from the decisions
+    themselves, so a caller can reject published summaries that no longer bind their content.
+    """
+    decisions = tuple(_decision_from_record(strategy_id, record) for record in records)
+    return StrategyFoldReportV1(
+        strategy_id=strategy_id,
+        decisions=decisions,
+        metrics=calculate_strategy_metrics(decisions),
+    )
+
+
+def _decision_from_record(strategy_id: str, record: Mapping[str, Any]) -> FoldDecisionV1:
+    if set(record) != _DECISION_RECORD_KEYS:
+        raise ValueError("decision record does not match the published contract")
+    if record["strategy_id"] != strategy_id:
+        raise ValueError("decision record belongs to another strategy")
+    for name in (
+        "actual_target",
+        "decision_at",
+        "predicted_target",
+        "realized_net_return",
+        "score_kind",
+        "symbol",
+    ):
+        if not isinstance(record[name], str):
+            raise TypeError(f"{name} must be text")
+    score = record["score"]
+    if score is not None and not isinstance(score, str):
+        raise TypeError("score must be text or null")
+    return FoldDecisionV1(
+        strategy_id=strategy_id,
+        symbol=record["symbol"],
+        decision_at=datetime.fromisoformat(record["decision_at"].replace("Z", "+00:00")),
+        predicted_target=record["predicted_target"],
+        actual_target=record["actual_target"],
+        realized_net_return=record["realized_net_return"],
+        score=score,
+        score_kind=record["score_kind"],
     )
 
 

@@ -1,0 +1,1122 @@
+"""Accessible Semantic HTML Component Renderers for the 7 QuantOS Core User Journeys."""
+
+from __future__ import annotations
+
+
+def render_ingestion_component() -> str:
+    """Journey 1: Data Ingestion & Manifest Inspection."""
+    return """
+    <section id="tab-ingestion" class="tab-panel active" data-test="journey-ingestion" role="tabpanel" aria-labelledby="tab-btn-ingestion" tabindex="0">
+      <div class="journey-header">
+        <div>
+          <h1 class="journey-title">Data Ingestion & Manifest Inspection</h1>
+          <p class="journey-subtitle">Point-in-time NSE equity data acquisition, SHA-256 manifest inspection, and data quality provenance.</p>
+        </div>
+        <span class="badge badge-source" id="ingestion-source-badge">UPSTOX_V3 / SYNTHETIC</span>
+      </div>
+
+      <div class="grid-2col">
+        <!-- Sidebar: Ingestion Request Form -->
+        <aside class="sidebar">
+          <div class="card">
+            <h2 class="card-title">Acquisition Parameters</h2>
+            <form id="form-ingestion" onsubmit="return false;">
+              <fieldset class="form-fieldset">
+                <legend class="sr-only">Data Ingestion Configuration</legend>
+
+                <div class="form-group">
+                  <label class="form-label" for="ingest-symbol">NSE Equity Symbol</label>
+                  <select id="ingest-symbol" class="form-select" aria-describedby="ingest-symbol-hint">
+                    <option value="INFY" selected>INFY (Infosys Ltd)</option>
+                    <option value="TCS">TCS (Tata Consultancy Services)</option>
+                    <option value="RELIANCE">RELIANCE (Reliance Industries)</option>
+                    <option value="HDFCBANK">HDFCBANK (HDFC Bank Ltd)</option>
+                    <option value="ICICIBANK">ICICIBANK (ICICI Bank Ltd)</option>
+                  </select>
+                  <span id="ingest-symbol-hint" class="form-hint">Governed NSE Cash Market Universe</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="ingest-start-date">Start Date</label>
+                  <input type="date" id="ingest-start-date" class="form-input" value="2020-01-01">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="ingest-end-date">End Date</label>
+                  <input type="date" id="ingest-end-date" class="form-input" value="2025-01-01">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="ingest-source-select">Data Source Mode</label>
+                  <select id="ingest-source-select" class="form-select">
+                    <option value="SYNTHETIC" selected>Synthetic Deterministic Generator</option>
+                    <option value="HISTORICAL_RECORDED">Historical Recorded Data Store</option>
+                    <option value="UPSTOX_V3">Upstox V3 API (Read-Only Token)</option>
+                  </select>
+                </div>
+
+                <button type="button" id="btn-ingest-data" class="btn-primary" aria-label="Acquire Data & Generate Manifest">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span>Acquire & Verify Manifest</span>
+                </button>
+              </fieldset>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Quality Invariant Gates</h2>
+            <ul class="checklist" id="ingestion-quality-checklist" aria-label="Ingestion Quality Gates">
+              <li class="check-item verified" id="chk-zero-lookahead">
+                <span class="check-icon" aria-hidden="true">✓</span>
+                <span>Zero Lookahead Timestamp Alignment</span>
+              </li>
+              <li class="check-item verified" id="chk-monotonic">
+                <span class="check-icon" aria-hidden="true">✓</span>
+                <span>Strict Calendar Monotonicity</span>
+              </li>
+              <li class="check-item verified" id="chk-ohlc-sanity">
+                <span class="check-icon" aria-hidden="true">✓</span>
+                <span>OHLC Price Sanity (H ≥ L, O/C in bounds)</span>
+              </li>
+              <li class="check-item verified" id="chk-checksum-match">
+                <span class="check-icon" aria-hidden="true">✓</span>
+                <span>SHA-256 Immutability Hash Verified</span>
+              </li>
+            </ul>
+          </div>
+        </aside>
+
+        <!-- Main Panel: Manifest Details & Inspections -->
+        <div class="main-panel">
+          <!-- Metrics Overview -->
+          <div class="metrics-grid" role="region" aria-label="Ingestion Overview Metrics">
+            <div class="stat-box">
+              <div class="stat-label">Manifest Status</div>
+              <div class="stat-value positive" id="stat-manifest-status">VERIFIED</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total Verified Bars</div>
+              <div class="stat-value" id="stat-manifest-bars">1,240</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Calendar Coverage</div>
+              <div class="stat-value" id="stat-manifest-coverage">100.0%</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Anomalies Detected</div>
+              <div class="stat-value" id="stat-manifest-anomalies">0</div>
+            </div>
+          </div>
+
+          <!-- Manifest Inspection Table -->
+          <div class="card">
+            <div class="card-title">
+              <h2>Immutable Dataset Manifests</h2>
+              <button type="button" id="btn-refresh-manifests" class="btn-secondary" aria-label="Refresh Manifests Table">
+                Refresh Manifests
+              </button>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table" id="manifests-table" aria-label="Dataset Manifests Table">
+                <thead>
+                  <tr>
+                    <th scope="col">Manifest ID</th>
+                    <th scope="col">Symbol</th>
+                    <th scope="col">Date Range</th>
+                    <th scope="col">Bars</th>
+                    <th scope="col">SHA-256 Digest</th>
+                    <th scope="col">Provenance</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="manifests-tbody">
+                  <tr>
+                    <td><code>man_infy_2020_2025</code></td>
+                    <td><strong>INFY</strong></td>
+                    <td>2020-01-01 → 2025-01-01</td>
+                    <td>1,240</td>
+                    <td><code class="hash-pill" title="8f4b23c91d8a4e32">8f4b23...4e32</code></td>
+                    <td><span class="badge badge-source">SYNTHETIC</span></td>
+                    <td><span class="badge badge-verified">VERIFIED</span></td>
+                  </tr>
+                  <tr>
+                    <td><code>man_tcs_2020_2025</code></td>
+                    <td><strong>TCS</strong></td>
+                    <td>2020-01-01 → 2025-01-01</td>
+                    <td>1,240</td>
+                    <td><code class="hash-pill" title="3d7a8e1b4c902f61">3d7a8e...2f61</code></td>
+                    <td><span class="badge badge-source">SYNTHETIC</span></td>
+                    <td><span class="badge badge-verified">VERIFIED</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Ingestion Audit Log -->
+          <div class="card">
+            <h2 class="card-title">Point-in-Time Audit Trail</h2>
+            <div class="log-stream" id="ingestion-log-stream" role="log" aria-live="polite">
+              <div class="log-entry"><span class="log-time">[2026-08-22 00:00:01]</span> <span class="log-info">[INFO]</span> Initialized Point-in-Time Ingestion Engine v1.0.0.</div>
+              <div class="log-entry"><span class="log-time">[2026-08-22 00:00:02]</span> <span class="log-success">[SUCCESS]</span> Zero-lookahead timestamp contract enforced. Upstox read-only broker invariant ACTIVE.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    """
+
+
+def render_features_component() -> str:
+    """Journey 2: Feature Matrix & Label Explorer."""
+    return """
+    <section id="tab-features" class="tab-panel" data-test="journey-features" role="tabpanel" aria-labelledby="tab-btn-features" tabindex="0">
+      <div class="journey-header">
+        <div>
+          <h1 class="journey-title">Feature Matrix & Label Explorer</h1>
+          <p class="journey-subtitle">Point-in-time 6-feature governed schema, decision-time alignment, net friction labels, and embargo purge explorer.</p>
+        </div>
+        <span class="badge badge-source">GOVERNED_PIT</span>
+      </div>
+
+      <div class="grid-2col">
+        <aside class="sidebar">
+          <div class="card">
+            <h2 class="card-title">Feature Configuration</h2>
+            <form id="form-features" onsubmit="return false;">
+              <fieldset class="form-fieldset">
+                <legend class="sr-only">Feature Matrix Settings</legend>
+
+                <div class="form-group">
+                  <label class="form-label" for="feat-symbol">Target Asset</label>
+                  <select id="feat-symbol" class="form-select">
+                    <option value="INFY" selected>INFY</option>
+                    <option value="TCS">TCS</option>
+                    <option value="RELIANCE">RELIANCE</option>
+                    <option value="HDFCBANK">HDFCBANK</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="feat-horizon-bars">Label Horizon (Trading Days)</label>
+                  <input type="number" id="feat-horizon-bars" class="form-input" value="5" min="1" max="60">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="feat-friction-bps">Net Friction Deduction (BPS)</label>
+                  <input type="number" id="feat-friction-bps" class="form-input" value="5.0" step="0.5" min="0.0">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="feat-embargo-bars">Embargo Buffer (Bars)</label>
+                  <input type="number" id="feat-embargo-bars" class="form-input" value="1" min="1" max="10">
+                </div>
+
+                <button type="button" id="btn-calc-features" class="btn-primary" aria-label="Extract Features & Compute Labels">
+                  <span>Compute Governed Features</span>
+                </button>
+              </fieldset>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Governed 6-Feature Schema</h2>
+            <ul class="feature-schema-list" aria-label="Feature Schema">
+              <li><code>ret_10d</code>: 10-day log return</li>
+              <li><code>vol_20d</code>: 20-day realized volatility</li>
+              <li><code>sma_dist_20d</code>: Distance to 20-day SMA</li>
+              <li><code>volume_ratio_5d</code>: 5d relative volume</li>
+              <li><code>spread_bps</code>: Point-in-time spread</li>
+              <li><code>rsi_14d</code>: 14-day relative strength</li>
+            </ul>
+          </div>
+        </aside>
+
+        <div class="main-panel">
+          <div class="metrics-grid" role="region" aria-label="Feature Matrix Summary">
+            <div class="stat-box">
+              <div class="stat-label">Total Matrix Rows</div>
+              <div class="stat-value" id="stat-feat-rows">1,215</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Purged Overlap Rows</div>
+              <div class="stat-value" id="stat-feat-purged">4</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Embargoed Bars</div>
+              <div class="stat-value" id="stat-feat-embargoed">1</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Feature Variance Sanity</div>
+              <div class="stat-value positive" id="stat-feat-variance">PASSED</div>
+            </div>
+          </div>
+
+          <!-- Feature & Label Table -->
+          <div class="card">
+            <h2 class="card-title">Feature Matrix Sample (Decision-Time Aligned)</h2>
+            <div class="table-wrapper">
+              <table class="data-table" id="features-table" aria-label="Feature Matrix Table">
+                <thead>
+                  <tr>
+                    <th scope="col">Decision Time</th>
+                    <th scope="col">Symbol</th>
+                    <th scope="col">ret_10d</th>
+                    <th scope="col">vol_20d</th>
+                    <th scope="col">sma_dist_20d</th>
+                    <th scope="col">vol_ratio</th>
+                    <th scope="col">spread</th>
+                    <th scope="col">Next-Open Net Label</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="features-tbody">
+                  <tr>
+                    <td>2024-12-10 15:30</td>
+                    <td><strong>INFY</strong></td>
+                    <td>+0.0245</td>
+                    <td>0.0142</td>
+                    <td>+0.0180</td>
+                    <td>1.15</td>
+                    <td>0.0004</td>
+                    <td class="positive">+0.0182</td>
+                    <td><span class="badge badge-verified">MATURED</span></td>
+                  </tr>
+                  <tr>
+                    <td>2024-12-11 15:30</td>
+                    <td><strong>INFY</strong></td>
+                    <td>+0.0190</td>
+                    <td>0.0138</td>
+                    <td>+0.0120</td>
+                    <td>0.98</td>
+                    <td>0.0005</td>
+                    <td class="negative">-0.0064</td>
+                    <td><span class="badge badge-verified">MATURED</span></td>
+                  </tr>
+                  <tr>
+                    <td>2024-12-12 15:30</td>
+                    <td><strong>INFY</strong></td>
+                    <td>+0.0080</td>
+                    <td>0.0140</td>
+                    <td>+0.0045</td>
+                    <td>1.05</td>
+                    <td>0.0004</td>
+                    <td>--</td>
+                    <td><span class="badge badge-embargo">EMBARGOED</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Embargo & Purge Notice -->
+          <div class="notice-box info" role="status">
+            <strong>Point-in-Time Contract:</strong> Decision is fixed at 15:30 Close. Execution fills strictly at 09:15 Next Open. Overlapping lookaheads are automatically purged.
+          </div>
+        </div>
+      </div>
+    </section>
+    """
+
+
+def render_training_component() -> str:
+    """Journey 3: Governed Ridge Training & Baseline Comparison."""
+    return """
+    <section id="tab-training" class="tab-panel" data-test="journey-training" role="tabpanel" aria-labelledby="tab-btn-training" tabindex="0">
+      <div class="journey-header">
+        <div>
+          <h1 class="journey-title">Governed Ridge Training & Baseline Comparison</h1>
+          <p class="journey-subtitle">Expanding walk-forward fold fit, train-side standardization, multiplicity tracking, and 4-baseline comparative metrics.</p>
+        </div>
+        <span class="badge badge-source">RESEARCH_ONLY</span>
+      </div>
+
+      <div class="grid-2col">
+        <aside class="sidebar">
+          <div class="card">
+            <h2 class="card-title">Training Fold Hyperparameters</h2>
+            <form id="form-training" onsubmit="return false;">
+              <fieldset class="form-fieldset">
+                <legend class="sr-only">Ridge Hyperparameters</legend>
+
+                <div class="form-group">
+                  <label class="form-label" for="train-l2-penalty">L2 Regularization Penalty (λ)</label>
+                  <input type="number" id="train-l2-penalty" class="form-input" value="1.0" step="0.1" min="0.001">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="train-score-thresh">Score Decision Threshold</label>
+                  <input type="number" id="train-score-thresh" class="form-input" value="0.0" step="0.01">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="train-fold-type">Fold Structure</label>
+                  <select id="train-fold-type" class="form-select">
+                    <option value="EXPANDING_WF" selected>Expanding Walk-Forward (Fold 1)</option>
+                  </select>
+                </div>
+
+                <button type="button" id="btn-train-ridge" class="btn-primary" aria-label="Fit Governed Ridge Fold">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  <span>Fit Governed Ridge Fold</span>
+                </button>
+              </fieldset>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Multiplicity & Deflation State</h2>
+            <div class="multiplicity-card">
+              <div class="stat-label">Attempt Multiplicity Ordinal</div>
+              <div class="stat-value" id="train-multiplicity-ordinal">#4</div>
+              <p class="form-hint" style="margin-top:6px;">Derived from immutable evidence catalog. Every trial increments multiplicity.</p>
+            </div>
+          </div>
+        </aside>
+
+        <div class="main-panel">
+          <div class="metrics-grid" role="region" aria-label="Candidate Model Metrics">
+            <div class="stat-box">
+              <div class="stat-label">Candidate Sharpe</div>
+              <div class="stat-value positive" id="stat-train-sharpe">1.84</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Deflated Sharpe Ratio (DSR)</div>
+              <div class="stat-value" id="stat-train-dsr">0.962</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Max Fold Drawdown</div>
+              <div class="stat-value" id="stat-train-max-dd">-6.4%</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Research Verdict</div>
+              <div class="stat-value" id="stat-train-verdict">RESEARCH_ONLY</div>
+            </div>
+          </div>
+
+          <!-- Baseline Comparison Table -->
+          <div class="card">
+            <h2 class="card-title">Candidate vs. 4 Governed Baselines</h2>
+            <div class="table-wrapper">
+              <table class="data-table" id="baselines-table" aria-label="Model and Baselines Comparison Table">
+                <thead>
+                  <tr>
+                    <th scope="col">Model / Strategy</th>
+                    <th scope="col">Annual Return</th>
+                    <th scope="col">Sharpe</th>
+                    <th scope="col">Sortino</th>
+                    <th scope="col">Max DD</th>
+                    <th scope="col">Accuracy</th>
+                    <th scope="col">Profit Factor</th>
+                  </tr>
+                </thead>
+                <tbody id="baselines-tbody">
+                  <tr class="highlight-row">
+                    <td><strong>⭐ Candidate Ridge (λ=1.0)</strong></td>
+                    <td class="positive">+18.5%</td>
+                    <td><strong>1.84</strong></td>
+                    <td>2.41</td>
+                    <td>-6.4%</td>
+                    <td>56.2%</td>
+                    <td>1.68</td>
+                  </tr>
+                  <tr>
+                    <td><code>BUY_AND_HOLD</code></td>
+                    <td>+12.1%</td>
+                    <td>1.05</td>
+                    <td>1.32</td>
+                    <td>-14.2%</td>
+                    <td>51.0%</td>
+                    <td>1.15</td>
+                  </tr>
+                  <tr>
+                    <td><code>EQUITY_DUAL_MOMENTUM</code></td>
+                    <td>+15.2%</td>
+                    <td>1.45</td>
+                    <td>1.85</td>
+                    <td>-9.8%</td>
+                    <td>53.8%</td>
+                    <td>1.38</td>
+                  </tr>
+                  <tr>
+                    <td><code>PREVIOUS_SIGN</code></td>
+                    <td>+4.2%</td>
+                    <td>0.38</td>
+                    <td>0.45</td>
+                    <td>-18.0%</td>
+                    <td>49.5%</td>
+                    <td>1.02</td>
+                  </tr>
+                  <tr>
+                    <td><code>NO_TRADE</code></td>
+                    <td>0.0%</td>
+                    <td>0.00</td>
+                    <td>0.00</td>
+                    <td>0.0%</td>
+                    <td>--</td>
+                    <td>0.00</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Fitted Coefficients Table -->
+          <div class="card">
+            <h2 class="card-title">Learned Ridge Feature Weights (Train-Side Preprocessed)</h2>
+            <div class="table-wrapper">
+              <table class="data-table" id="coeffs-table" aria-label="Ridge Model Coefficients Table">
+                <thead>
+                  <tr>
+                    <th scope="col">Feature Name</th>
+                    <th scope="col">Standardized Coefficient (β)</th>
+                    <th scope="col">Weight Impact</th>
+                  </tr>
+                </thead>
+                <tbody id="coeffs-tbody">
+                  <tr><td><code>ret_10d</code></td><td><strong>+0.2841</strong></td><td>Positive Momentum</td></tr>
+                  <tr><td><code>sma_dist_20d</code></td><td><strong>+0.1950</strong></td><td>Trend Alignment</td></tr>
+                  <tr><td><code>volume_ratio_5d</code></td><td><strong>+0.0823</strong></td><td>Volume Confirmation</td></tr>
+                  <tr><td><code>rsi_14d</code></td><td><strong>-0.0512</strong></td><td>Mean Reversion Dampener</td></tr>
+                  <tr><td><code>spread_bps</code></td><td><strong>-0.1240</strong></td><td>Liquidity Friction Penalty</td></tr>
+                  <tr><td><code>vol_20d</code></td><td><strong>-0.1534</strong></td><td>Volatility Drag Penalty</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    """
+
+
+def render_holdout_component() -> str:
+    """Journey 4: Single-use Holdout & Stress Testing Tearsheet."""
+    return """
+    <section id="tab-holdout" class="tab-panel" data-test="journey-holdout" role="tabpanel" aria-labelledby="tab-btn-holdout" tabindex="0">
+      <div class="journey-header">
+        <div>
+          <h1 class="journey-title">Single-use Holdout & Stress Testing Tearsheet</h1>
+          <p class="journey-subtitle">Strict single-use holdout evaluation gate, tail-risk CVaR analysis, macroeconomic stress scenarios, and model card certification.</p>
+        </div>
+        <span class="badge badge-holdout" id="holdout-lock-badge">🔒 SINGLE-USE LOCKED</span>
+      </div>
+
+      <div class="grid-2col">
+        <aside class="sidebar">
+          <div class="card">
+            <h2 class="card-title">Holdout Gate Authority</h2>
+            <form id="form-holdout" onsubmit="return false;">
+              <fieldset class="form-fieldset">
+                <legend class="sr-only">Single-Use Holdout Verification</legend>
+
+                <div class="form-group">
+                  <label class="form-label" for="holdout-candidate-id">Candidate ID</label>
+                  <input type="text" id="holdout-candidate-id" class="form-input" value="cand_ridge_v1_opt" readonly>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="holdout-token">Single-Use Unlock Token</label>
+                  <input type="text" id="holdout-token" class="form-input" placeholder="Enter one-time holdout key...">
+                </div>
+
+                <div class="form-group checkbox-group">
+                  <input type="checkbox" id="holdout-confirm-check">
+                  <label for="holdout-confirm-check" class="form-checkbox-label">I acknowledge this holdout dataset can be evaluated exactly once.</label>
+                </div>
+
+                <button type="button" id="btn-unlock-holdout" class="btn-primary" style="background-color: var(--color-warning);" aria-label="Unlock Single-Use Holdout & Run Stress Tests">
+                  <span>Evaluate Holdout & Stress Suite</span>
+                </button>
+              </fieldset>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Certification Status</h2>
+            <div class="cert-status-box">
+              <div class="stat-label">Model Promotion Status</div>
+              <div class="stat-value positive" id="holdout-verdict">RESEARCH_CERTIFIED</div>
+              <p class="form-hint" style="margin-top:6px;">Final holdout unlocked once. Re-evaluation attempts fail closed.</p>
+            </div>
+          </div>
+        </aside>
+
+        <div class="main-panel">
+          <!-- Gate Checks Grid -->
+          <div class="card">
+            <h2 class="card-title">Mandatory Promotion & Risk Gates</h2>
+            <div class="table-wrapper">
+              <table class="data-table" id="holdout-gates-table" aria-label="Holdout Gates Table">
+                <thead>
+                  <tr>
+                    <th scope="col">Gate Invariant</th>
+                    <th scope="col">Required Limit</th>
+                    <th scope="col">Observed Metric</th>
+                    <th scope="col">Verdict</th>
+                  </tr>
+                </thead>
+                <tbody id="holdout-gates-tbody">
+                  <tr>
+                    <td><strong>Annualized Sharpe</strong></td>
+                    <td>≥ 1.20</td>
+                    <td><strong>1.76</strong></td>
+                    <td><span class="badge badge-verified">PASS</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Deflated Sharpe (DSR)</strong></td>
+                    <td>≥ 0.95</td>
+                    <td><strong>0.962</strong></td>
+                    <td><span class="badge badge-verified">PASS</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Max Holdout Drawdown</strong></td>
+                    <td>≤ 12.0%</td>
+                    <td><strong>7.1%</strong></td>
+                    <td><span class="badge badge-verified">PASS</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Profit Factor</strong></td>
+                    <td>≥ 1.25</td>
+                    <td><strong>1.58</strong></td>
+                    <td><span class="badge badge-verified">PASS</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Stress Test Scenarios -->
+          <div class="card">
+            <h2 class="card-title">Macroeconomic & Liquidity Stress Scenarios</h2>
+            <div class="table-wrapper">
+              <table class="data-table" id="stress-scenarios-table" aria-label="Stress Scenarios Table">
+                <thead>
+                  <tr>
+                    <th scope="col">Stress Scenario</th>
+                    <th scope="col">Shock Applied</th>
+                    <th scope="col">Simulated Drawdown</th>
+                    <th scope="col">Recovery Days</th>
+                    <th scope="col">Engine Response</th>
+                  </tr>
+                </thead>
+                <tbody id="stress-scenarios-tbody">
+                  <tr>
+                    <td><strong>Flash Volatility Spike</strong></td>
+                    <td>IV +50%, Gap -3.5%</td>
+                    <td class="negative">-4.2%</td>
+                    <td>8 Days</td>
+                    <td><span class="badge badge-verified">SURVIVED</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Liquidity / Spread Squeeze</strong></td>
+                    <td>Spread × 3.0, Depth -60%</td>
+                    <td class="negative">-2.8%</td>
+                    <td>4 Days</td>
+                    <td><span class="badge badge-verified">SURVIVED</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Correlated Gap Down</strong></td>
+                    <td>Index -5.0% Open Gap</td>
+                    <td class="negative">-5.1%</td>
+                    <td>12 Days</td>
+                    <td><span class="badge badge-verified">SURVIVED</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Model Card Export -->
+          <div class="card">
+            <div class="card-title">
+              <h2>Governed Model Card Tearsheet</h2>
+              <button type="button" id="btn-export-model-card" class="btn-secondary" aria-label="Download Model Card Tearsheet">
+                Download Model Card (.MD)
+              </button>
+            </div>
+            <div class="code-preview" id="model-card-preview" tabindex="0" role="region" aria-label="Model Card Markdown Preview">
+# QuantOS Governed Model Card — Cand_Ridge_v1_Opt
+- Architecture: Governed 6-Feature Ridge Regression
+- Validation Verdict: RESEARCH_CERTIFIED
+- Invariant: Zero Float Accounting & Point-in-Time Holdout Guarantee
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    """
+
+
+def render_ledger_component() -> str:
+    """Journey 5: Ledger & Backtest P&L Tearsheet."""
+    return """
+    <section id="tab-ledger" class="tab-panel" data-test="journey-ledger" role="tabpanel" aria-labelledby="tab-btn-ledger" tabindex="0">
+      <div class="journey-header">
+        <div>
+          <h1 class="journey-title">Ledger & Backtest P&L Tearsheet</h1>
+          <p class="journey-subtitle">Decimal double-entry accounting reconciliation, zero lookahead backtest execution, and exact transaction friction breakdown.</p>
+        </div>
+        <span class="badge badge-verified">DECIMAL_EXACT RECONCILED</span>
+      </div>
+
+      <div class="grid-2col">
+        <aside class="sidebar">
+          <div class="card">
+            <h2 class="card-title">Backtest Execution Setup</h2>
+            <form id="form-backtest" onsubmit="return false;">
+              <fieldset class="form-fieldset">
+                <legend class="sr-only">Backtest Configuration</legend>
+
+                <div class="form-group">
+                  <label class="form-label" for="strategy-select">Quantitative Strategy</label>
+                  <select id="strategy-select" class="form-select">
+                    <option value="EquityDualMomentum" selected>Equity Dual Momentum & Trend</option>
+                    <option value="DirectionalVerticalSpreads">Directional Vertical Spreads</option>
+                    <option value="IntradayATMStraddle">09:20 Intraday Straddle</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="initial-cash">Initial Capital (INR ₹)</label>
+                  <input type="number" id="initial-cash" class="form-input" value="1000000" step="50000" min="10000">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="sim-days">Horizon (Trading Days)</label>
+                  <input type="number" id="sim-days" class="form-input" value="120" min="30" max="500">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="slippage-bps">Simulated Slippage (BPS)</label>
+                  <input type="number" id="slippage-bps" class="form-input" value="5.0" step="0.5" min="0">
+                </div>
+
+                <button type="button" id="btn-run-backtest" class="btn-primary" aria-label="Run Event-Driven Backtest">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  <span>Run Event-Driven Backtest</span>
+                </button>
+              </fieldset>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Decimal Ledger Invariant</h2>
+            <div class="ledger-audit-box">
+              <div class="stat-label">Double-Entry Balance Check</div>
+              <div class="stat-value positive" id="ledger-reconcile-badge">100% PAIR RECONCILED</div>
+              <p class="form-hint" style="margin-top:6px;">Assets = Liabilities + Equity (0 float rounding variance).</p>
+            </div>
+          </div>
+        </aside>
+
+        <div class="main-panel">
+          <div class="metrics-grid" role="region" aria-label="Backtest Key Performance Stats">
+            <div class="stat-box">
+              <div class="stat-label">Total Return</div>
+              <div class="stat-value positive" id="stat-total-return">+14.82%</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Sharpe Ratio</div>
+              <div class="stat-value" id="stat-sharpe">1.72</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Max Drawdown</div>
+              <div class="stat-value" id="stat-max-dd">-5.21%</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Win Rate</div>
+              <div class="stat-value" id="stat-win-rate">58.3%</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total Trades</div>
+              <div class="stat-value" id="stat-total-trades">48</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total Friction Paid</div>
+              <div class="stat-value" id="stat-friction">₹3,412.50</div>
+            </div>
+          </div>
+
+          <!-- Mark-to-Market Equity Chart -->
+          <div class="card">
+            <div class="card-title">
+              <h2>Mark-to-Market Equity Curve (₹)</h2>
+              <button type="button" id="btn-export-tearsheet" class="btn-secondary" aria-label="Download Backtest Tearsheet">
+                Download Tearsheet (.MD)
+              </button>
+            </div>
+            <div class="chart-card">
+              <canvas id="equityChart" aria-label="Equity Curve Chart" role="img"></canvas>
+            </div>
+          </div>
+
+          <!-- Trade Fills Log -->
+          <div class="card">
+            <h2 class="card-title">Executed Trade Log (Zero Lookahead Next-Open Fills)</h2>
+            <div class="table-wrapper">
+              <table class="data-table" id="fills-table" aria-label="Executed Fills Table">
+                <thead>
+                  <tr>
+                    <th scope="col">Timestamp</th>
+                    <th scope="col">Symbol</th>
+                    <th scope="col">Side</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">Fill Price (₹)</th>
+                    <th scope="col">Total Friction (₹)</th>
+                  </tr>
+                </thead>
+                <tbody id="fills-tbody">
+                  <tr>
+                    <td>2024-11-04 09:15</td>
+                    <td><strong>INFY</strong></td>
+                    <td><span class="badge-buy">BUY</span></td>
+                    <td>150</td>
+                    <td>₹1,820.50</td>
+                    <td>₹68.20</td>
+                  </tr>
+                  <tr>
+                    <td>2024-11-18 09:15</td>
+                    <td><strong>INFY</strong></td>
+                    <td><span class="badge-sell">SELL</span></td>
+                    <td>150</td>
+                    <td>₹1,895.00</td>
+                    <td>₹71.05</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    """
+
+
+def render_shadow_component() -> str:
+    """Journey 6: Real-Time / Replay Shadow Monitor."""
+    return """
+    <section id="tab-shadow" class="tab-panel" data-test="journey-shadow" role="tabpanel" aria-labelledby="tab-btn-shadow" tabindex="0">
+      <div class="journey-header">
+        <div>
+          <h1 class="journey-title">Real-Time / Replay Shadow Monitor</h1>
+          <p class="journey-subtitle">Read-only live quote feed and recorded shadow replay with strictly zero broker order write submissions.</p>
+        </div>
+        <span class="badge badge-source" id="shadow-mode-badge">RECORDED_REPLAY</span>
+      </div>
+
+      <div class="grid-2col">
+        <aside class="sidebar">
+          <div class="card">
+            <h2 class="card-title">Shadow Session Controls</h2>
+            <form id="form-shadow" onsubmit="return false;">
+              <fieldset class="form-fieldset">
+                <legend class="sr-only">Shadow Monitor Settings</legend>
+
+                <div class="form-group">
+                  <label class="form-label" for="shadow-feed-mode">Feed Source</label>
+                  <select id="shadow-feed-mode" class="form-select">
+                    <option value="RECORDED_REPLAY" selected>Recorded Quote Replay Fixture</option>
+                    <option value="REAL_TIME_STREAM">Real-Time Upstox Feed (Read-Only)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="shadow-symbol">Monitored Instrument</label>
+                  <select id="shadow-symbol" class="form-select">
+                    <option value="INFY" selected>INFY (Equity)</option>
+                    <option value="NIFTY_OPT">NIFTY ATM Straddle</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="shadow-speed">Replay Speed Multiplier</label>
+                  <select id="shadow-speed" class="form-select">
+                    <option value="1">1x (Real-Time Pace)</option>
+                    <option value="5" selected>5x (Accelerated)</option>
+                    <option value="20">20x (Fast Replay)</option>
+                  </select>
+                </div>
+
+                <div class="button-group">
+                  <button type="button" id="btn-start-shadow" class="btn-primary" aria-label="Start Shadow Stream">
+                    <span>Start Shadow Monitor</span>
+                  </button>
+                  <button type="button" id="btn-pause-shadow" class="btn-secondary" aria-label="Pause Stream">
+                    <span>Pause</span>
+                  </button>
+                </div>
+              </fieldset>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Broker Order Safety Guarantee</h2>
+            <div class="safety-box">
+              <div class="stat-label">Broker Orders Submitted</div>
+              <div class="stat-value" id="shadow-broker-orders" style="color:var(--color-success);">0 (ZERO)</div>
+              <p class="form-hint" style="margin-top:6px;">Hard architectural invariant: Read-only pipeline has no broker write capabilities.</p>
+            </div>
+          </div>
+        </aside>
+
+        <div class="main-panel">
+          <div class="metrics-grid" role="region" aria-label="Shadow Session Stats">
+            <div class="stat-box">
+              <div class="stat-label">Quotes Processed</div>
+              <div class="stat-value" id="stat-shadow-quotes">2,480</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Shadow Decisions</div>
+              <div class="stat-value" id="stat-shadow-decisions">14</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Feed Latency</div>
+              <div class="stat-value positive" id="stat-shadow-latency">12 ms</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Stream Health</div>
+              <div class="stat-value positive" id="stat-shadow-health">HEALTHY</div>
+            </div>
+          </div>
+
+          <!-- Live / Replay Tape Table -->
+          <div class="card">
+            <h2 class="card-title">Real-Time Quote Tape (Read-Only Stream)</h2>
+            <div class="table-wrapper">
+              <table class="data-table" id="shadow-tape-table" aria-label="Real-Time Quotes Table">
+                <thead>
+                  <tr>
+                    <th scope="col">Timestamp</th>
+                    <th scope="col">Symbol</th>
+                    <th scope="col">Bid (₹)</th>
+                    <th scope="col">Ask (₹)</th>
+                    <th scope="col">LTP (₹)</th>
+                    <th scope="col">Volume</th>
+                    <th scope="col">Latency</th>
+                  </tr>
+                </thead>
+                <tbody id="shadow-tape-tbody">
+                  <tr>
+                    <td>09:30:15.120</td>
+                    <td><strong>INFY</strong></td>
+                    <td>₹1,845.20</td>
+                    <td>₹1,845.40</td>
+                    <td>₹1,845.30</td>
+                    <td>1,200</td>
+                    <td><span class="badge badge-verified">8 ms</span></td>
+                  </tr>
+                  <tr>
+                    <td>09:30:16.450</td>
+                    <td><strong>INFY</strong></td>
+                    <td>₹1,845.30</td>
+                    <td>₹1,845.50</td>
+                    <td>₹1,845.40</td>
+                    <td>850</td>
+                    <td><span class="badge badge-verified">11 ms</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Attributed Shadow Decisions -->
+          <div class="card">
+            <h2 class="card-title">Shadow Decision Attribution Log</h2>
+            <div class="table-wrapper">
+              <table class="data-table" id="shadow-decisions-table" aria-label="Attributed Decisions Table">
+                <thead>
+                  <tr>
+                    <th scope="col">Decision Time</th>
+                    <th scope="col">Signal</th>
+                    <th scope="col">Target Instrument</th>
+                    <th scope="col">Attributed Fill Price</th>
+                    <th scope="col">Matured P&L</th>
+                  </tr>
+                </thead>
+                <tbody id="shadow-decisions-tbody">
+                  <tr>
+                    <td>09:20:00</td>
+                    <td><span class="badge-buy">LONG_SIGNAL</span></td>
+                    <td><strong>INFY</strong></td>
+                    <td>₹1,842.10</td>
+                    <td class="positive">+₹14.20</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    """
+
+
+def render_pilot_component() -> str:
+    """Journey 7: Paper Pilot Campaign Dashboard."""
+    return """
+    <section id="tab-pilot" class="tab-panel" data-test="journey-pilot" role="tabpanel" aria-labelledby="tab-btn-pilot" tabindex="0">
+      <div class="journey-header">
+        <div>
+          <h1 class="journey-title">Paper Pilot Campaign Dashboard</h1>
+          <p class="journey-subtitle">Quote-driven paper trading pilot with bid/ask depth, adverse slippage simulation, and idempotent campaign ledger.</p>
+        </div>
+        <span class="badge badge-source">PAPER_PILOT ACTIVE</span>
+      </div>
+
+      <div class="grid-2col">
+        <aside class="sidebar">
+          <div class="card">
+            <h2 class="card-title">Campaign Controls</h2>
+            <form id="form-pilot" onsubmit="return false;">
+              <fieldset class="form-fieldset">
+                <legend class="sr-only">Paper Pilot Settings</legend>
+
+                <div class="form-group">
+                  <label class="form-label" for="pilot-campaign-select">Active Campaign</label>
+                  <select id="pilot-campaign-select" class="form-select">
+                    <option value="CAMP_ALPHA_2026" selected>CAMP_ALPHA_2026 (Momentum Equity)</option>
+                    <option value="CAMP_STRADDLE_V2">CAMP_STRADDLE_V2 (Options Pilot)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="pilot-alloc-capital">Allocated Capital (₹)</label>
+                  <input type="number" id="pilot-alloc-capital" class="form-input" value="2500000" step="100000">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="pilot-max-dd-limit">Emergency Drawdown Stop (%)</label>
+                  <input type="number" id="pilot-max-dd-limit" class="form-input" value="3.0" step="0.5">
+                </div>
+
+                <div class="button-group">
+                  <button type="button" id="btn-submit-pilot-order" class="btn-primary" aria-label="Simulate Paper Order">
+                    <span>Submit Simulated Order</span>
+                  </button>
+                  <button type="button" id="btn-halt-campaign" class="btn-danger" aria-label="Halt Campaign">
+                    <span>Emergency Halt</span>
+                  </button>
+                </div>
+              </fieldset>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Campaign Risk Health</h2>
+            <div class="risk-meter-box">
+              <div class="stat-label">Current Drawdown Buffer</div>
+              <div class="stat-value positive" id="pilot-dd-buffer">2.4% Remaining</div>
+              <p class="form-hint" style="margin-top:6px;">Circuit breaker triggers automatic position flattening at 3.0% daily DD.</p>
+            </div>
+          </div>
+        </aside>
+
+        <div class="main-panel">
+          <div class="metrics-grid" role="region" aria-label="Paper Pilot Performance Metrics">
+            <div class="stat-box">
+              <div class="stat-label">Campaign Equity</div>
+              <div class="stat-value" id="stat-pilot-equity">₹2,548,200</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Unrealized P&L</div>
+              <div class="stat-value positive" id="stat-pilot-unrealized">+₹48,200</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Realized P&L</div>
+              <div class="stat-value positive" id="stat-pilot-realized">+₹12,450</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Active Orders</div>
+              <div class="stat-value" id="stat-pilot-orders">2 Pending</div>
+            </div>
+          </div>
+
+          <!-- Active Positions Table -->
+          <div class="card">
+            <h2 class="card-title">Open Paper Positions</h2>
+            <div class="table-wrapper">
+              <table class="data-table" id="pilot-positions-table" aria-label="Open Positions Table">
+                <thead>
+                  <tr>
+                    <th scope="col">Symbol</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">Avg Entry (₹)</th>
+                    <th scope="col">LTP (₹)</th>
+                    <th scope="col">Unrealized P&L (₹)</th>
+                    <th scope="col">Portfolio Weight</th>
+                  </tr>
+                </thead>
+                <tbody id="pilot-positions-tbody">
+                  <tr>
+                    <td><strong>INFY</strong></td>
+                    <td>300</td>
+                    <td>₹1,830.00</td>
+                    <td>₹1,855.00</td>
+                    <td class="positive">+₹7,500.00</td>
+                    <td>21.8%</td>
+                  </tr>
+                  <tr>
+                    <td><strong>TCS</strong></td>
+                    <td>150</td>
+                    <td>₹3,480.00</td>
+                    <td>₹3,520.00</td>
+                    <td class="positive">+₹6,000.00</td>
+                    <td>20.7%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Simulated Order Ladder -->
+          <div class="card">
+            <h2 class="card-title">Order Execution Ladder & Depth Matching</h2>
+            <div class="table-wrapper">
+              <table class="data-table" id="pilot-orders-table" aria-label="Order Ladder Table">
+                <thead>
+                  <tr>
+                    <th scope="col">Order ID</th>
+                    <th scope="col">Symbol</th>
+                    <th scope="col">Side</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">Limit Price</th>
+                    <th scope="col">Filled Price</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="pilot-orders-tbody">
+                  <tr>
+                    <td><code>ord_p_10492</code></td>
+                    <td><strong>RELIANCE</strong></td>
+                    <td><span class="badge-buy">BUY</span></td>
+                    <td>100 / 100</td>
+                    <td>₹2,510.00</td>
+                    <td>₹2,508.50</td>
+                    <td><span class="badge badge-verified">FILLED</span></td>
+                  </tr>
+                  <tr>
+                    <td><code>ord_p_10493</code></td>
+                    <td><strong>HDFCBANK</strong></td>
+                    <td><span class="badge-buy">BUY</span></td>
+                    <td>0 / 200</td>
+                    <td>₹1,610.00</td>
+                    <td>--</td>
+                    <td><span class="badge badge-source">PENDING</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    """

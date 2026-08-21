@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from decimal import Decimal
 
 import pytest
 
+from quant_system.data.market_data_evidence import decimal_text
 from quant_system.modeling import (
     ModelingError,
     ModelingFailureCode,
@@ -14,6 +16,7 @@ from quant_system.modeling import (
     fit_standardization,
     transform_feature_rows,
 )
+from quant_system.modeling.ridge import _float_decimal
 from tests.modeling_training_fixtures import fold_feature_rows, governed_training_journey
 
 
@@ -189,3 +192,41 @@ def test_unregistered_trial_and_wrong_dataset_identity_fail_closed() -> None:
 
     assert unregistered.value.code == ModelingFailureCode.MULTIPLICITY_INVALID
     assert mismatch.value.code == ModelingFailureCode.TRAINING_INPUT_MISMATCH
+
+
+@pytest.mark.parametrize(
+    "l2_penalty",
+    ("1000000000000000", "100000000000000000000"),
+)
+def test_large_but_legal_l2_penalty_still_fits(  # test-allow: loop-in-test - fitted coefficients and decisions are guaranteed non-empty.
+    l2_penalty: str,
+) -> None:
+    """Red Team Major 5: coefficients collapsing toward zero must not read as non-finite."""
+    journey = governed_training_journey(l2_penalty=l2_penalty)
+
+    evaluation = evaluate_governed_ridge_fold(
+        journey.start,
+        journey.registry,
+        journey.features,
+        journey.labels,
+        journey.fold,
+    )
+
+    assert evaluation.fitted_state.coefficients
+    assert all(
+        decimal_text(Decimal(coefficient)) == coefficient
+        for coefficient in evaluation.fitted_state.coefficients
+    )
+    assert all(
+        decimal_text(Decimal(decision.score)) == decision.score
+        for decision in evaluation.ridge_report.decisions
+        if decision.score is not None
+    )
+
+
+def test_negative_zero_coefficients_render_as_canonical_zero() -> None:
+    """Red Team Major 5: `format(-1e-15, '.12f')` yields '-0', which is not canonical."""
+    assert _float_decimal(-1e-15) == "0"
+    assert _float_decimal(-4.9e-13) == "0"
+    assert _float_decimal(0.0) == "0"
+    assert _float_decimal(-0.0) == "0"

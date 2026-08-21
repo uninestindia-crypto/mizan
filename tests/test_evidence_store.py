@@ -645,6 +645,7 @@ def _store(
     max_bundle_bytes: int = 8192,
     min_free_bytes: int = 0,
     clock: Callable[[], datetime] = lambda: FIXED_TIME,
+    lease_wait_seconds: float = 0.0,
 ) -> EvidenceStore:
     return EvidenceStore(
         EvidenceStoreConfig(
@@ -653,6 +654,7 @@ def _store(
             max_bundle_bytes=max_bundle_bytes,
             min_free_bytes=min_free_bytes,
             clock=clock,
+            lease_wait_seconds=lease_wait_seconds,
         )
     )
 

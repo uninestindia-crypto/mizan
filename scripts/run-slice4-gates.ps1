@@ -34,19 +34,29 @@ try {
     Invoke-Gate "Repository tests and coverage" {
         & $python -m pytest --cov=quant_system --cov-report=term --cov-fail-under=80 -q
     }
-    Invoke-Gate "Slice 4 focused tests" {
-        & $python -m pytest `
-            tests/test_modeling_features.py `
-            tests/test_modeling_labels.py `
-            tests/test_modeling_partitions.py `
-            tests/test_modeling_provider_replay.py `
-            tests/test_modeling_preprocessing.py `
-            tests/test_modeling_ridge.py `
-            tests/test_modeling_metrics.py `
-            tests/test_modeling_trials.py `
-            tests/test_modeling_validation.py `
-            tests/test_modeling_training_replay.py `
-            -q
+    # The focused suite is selected by pattern, not by an explicit file list. An explicit list
+    # silently excludes every test file added after it was written, which is how the Blocker 2,
+    # Blocker 3 and Major 2 regressions all ended up outside this gate while it still reported
+    # green. Patterns fail open into the suite rather than out of it.
+    $focusedPatterns = @(
+        "test_modeling_*.py",
+        "test_multiplicity.py",
+        "test_evidence_publish_atomicity.py"
+    )
+    $testsRoot = Join-Path $projectRoot "tests"
+    $focusedTests = @(
+        foreach ($pattern in $focusedPatterns) {
+            Get-ChildItem -Path $testsRoot -Filter $pattern -File |
+                ForEach-Object { "tests/$($_.Name)" }
+        }
+    ) | Sort-Object -Unique
+    if ($focusedTests.Count -eq 0) {
+        throw "Focused Slice 4 suite matched no test files under $testsRoot"
+    }
+    Write-Host "[gate] Slice 4 focused tests ($($focusedTests.Count) files)"
+    & $python -m pytest @focusedTests -q
+    if ($LASTEXITCODE -ne 0) {
+        throw "Slice 4 focused tests failed with exit code $LASTEXITCODE"
     }
     Invoke-Gate "Dead-code scan" {
         & $vulture src tests launcher.py installer `

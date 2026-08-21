@@ -177,10 +177,18 @@ def run_persisted_ridge_trial(
             ended_at=ended_at,
             failure_codes=(failure_code,),
         )
-        store.commit(
-            draft_from_trial_outcome(failed),
-            operation_id=f"{operation_id}-failed",
-        )
+        try:
+            store.commit(
+                draft_from_trial_outcome(failed),
+                operation_id=f"{operation_id}-failed",
+            )
+        except Exception as fallback_error:  # noqa: BLE001 - the original diagnosis must win
+            error.add_note(
+                "the terminal FAILED outcome could not be recorded "
+                f"({type(fallback_error).__name__}: {fallback_error}); trial "
+                f"{start.trial_id} remains open, and the store will refuse the next ordinal "
+                "until this exact start is replayed byte-identically"
+            )
         raise
     outcome = succeeded_outcome(
         start,

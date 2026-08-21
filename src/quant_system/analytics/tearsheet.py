@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from quant_system.analytics.metrics import QuantStats
-from quant_system.backtest.engine import BacktestResult
+
+if TYPE_CHECKING:
+    from quant_system.backtest.engine import BacktestResult
 
 
 class TearsheetGenerator:

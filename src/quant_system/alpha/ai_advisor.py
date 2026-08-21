@@ -1,4 +1,4 @@
-"""AI Multi-Agent Advisory Layer interfacing with Claude CLI, Codex CLI, Antigravity CLI, and arXiv RAG."""
+"""AI Multi-Agent Advisory Layer interfacing with Claude CLI, Codex CLI, Antigravity CLI, Direct REST APIs, and arXiv RAG."""
 
 from __future__ import annotations
 
@@ -11,6 +11,12 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from quant_system.alpha.direct_providers import (
+    BaseDirectAPIClient,
+    get_direct_client_for_provider,
+    parse_json_from_llm_response,
+)
+from quant_system.alpha.key_pool import KeyPoolManager, ProviderType
 from quant_system.core.domain import Side
 
 if TYPE_CHECKING:
@@ -34,7 +40,7 @@ class AIOpinion:
 
 
 class BaseAIAdvisor(ABC):
-    """Abstract interface for AI advisors and external LLM CLIs."""
+    """Abstract interface for AI advisors, external LLM CLIs, and Direct APIs."""
 
     def __init__(self, name: str, rag_engine: QuantPaperRAG | None = None) -> None:
         self.name = name
@@ -50,6 +56,43 @@ class BaseAIAdvisor(ABC):
     ) -> AIOpinion:
         """Evaluates a trade proposal and returns an AI opinion."""
         raise NotImplementedError
+
+    def _fallback_heuristic(
+        self,
+        quant_side: Side | None,
+        quant_strength: float,
+        technical_summary: Mapping[str, Any],
+        rag_context: str = "",
+    ) -> AIOpinion:
+        """Deterministic rule-based safety fallback when AI/CLI is offline."""
+        rsi = float(technical_summary.get("rsi", 50.0))
+        atr_norm = float(technical_summary.get("atr_normalized", 0.02))
+
+        if quant_side == Side.BUY and rsi > 80.0:
+            return AIOpinion(
+                advisor_name=self.name,
+                action_bias="VETO",
+                confidence=0.85,
+                rationale=f"Overbought exhaustion warning: RSI is {rsi:.1f} > 80.",
+                weight_multiplier=0.0,
+            )
+        if atr_norm > 0.05:
+            return AIOpinion(
+                advisor_name=self.name,
+                action_bias="NEUTRAL",
+                confidence=0.70,
+                rationale=f"Elevated volatility regime (ATR {atr_norm:.1%}). Scaling position down.",
+                weight_multiplier=0.5,
+            )
+
+        return AIOpinion(
+            advisor_name=self.name,
+            action_bias="BULLISH" if quant_side == Side.BUY else "BEARISH",
+            confidence=max(0.5, quant_strength),
+            rationale=f"Macro structure aligned with quantitative {quant_side} signal.",
+            weight_multiplier=1.0,
+            metadata={"rag_grounding_used": bool(rag_context), "mode": "HEURISTIC_FALLBACK"},
+        )
 
 
 class ClaudeCLIAdvisor(BaseAIAdvisor):
@@ -101,51 +144,23 @@ class ClaudeCLIAdvisor(BaseAIAdvisor):
                 )
                 if proc.returncode == 0:
                     text = proc.stdout.strip()
-                    start = text.find("{")
-                    end = text.rfind("}")
-                    if start != -1 and end != -1:
-                        data = json.loads(text[start : end + 1])
+                    data = parse_json_from_llm_response(text)
+                    if data:
                         return AIOpinion(
                             advisor_name=self.name,
                             action_bias=str(data.get("action_bias", "NEUTRAL")).upper(),
                             confidence=float(data.get("confidence", 0.5)),
                             rationale=str(data.get("rationale", "Claude CLI evaluated.")),
                             weight_multiplier=float(data.get("weight_multiplier", 1.0)),
-                            metadata={"rag_grounding_used": bool(rag_context)},
+                            metadata={
+                                "rag_grounding_used": bool(rag_context),
+                                "mode": "CLI_SUBSCRIPTION",
+                            },
                         )
             except Exception as e:
                 logger.debug(f"Claude CLI execution fallback: {e}")
 
-        # Rule-based fallback when CLI is offline
-        rsi = float(technical_summary.get("rsi", 50.0))
-        atr_norm = float(technical_summary.get("atr_normalized", 0.02))
-
-        # Risk heuristics
-        if quant_side == Side.BUY and rsi > 80.0:
-            return AIOpinion(
-                advisor_name=self.name,
-                action_bias="VETO",
-                confidence=0.85,
-                rationale=f"Overbought exhaustion warning: RSI is {rsi:.1f} > 80.",
-                weight_multiplier=0.0,
-            )
-        if atr_norm > 0.05:
-            return AIOpinion(
-                advisor_name=self.name,
-                action_bias="NEUTRAL",
-                confidence=0.70,
-                rationale=f"Elevated volatility regime (ATR {atr_norm:.1%}). Scaling position down.",
-                weight_multiplier=0.5,
-            )
-
-        return AIOpinion(
-            advisor_name=self.name,
-            action_bias="BULLISH" if quant_side == Side.BUY else "BEARISH",
-            confidence=max(0.5, quant_strength),
-            rationale=f"Macro structure aligned with quantitative {quant_side} signal.",
-            weight_multiplier=1.0,
-            metadata={"rag_grounding_used": bool(rag_context)},
-        )
+        return self._fallback_heuristic(quant_side, quant_strength, technical_summary, rag_context)
 
 
 class CodexCLIAdvisor(BaseAIAdvisor):
@@ -225,23 +240,129 @@ class AntigravityCLIAdvisor(BaseAIAdvisor):
         )
 
 
+class DirectAPIAdvisor(BaseAIAdvisor):
+    """Direct REST API Advisor supporting OpenRouter, Groq, OpenAI, and Anthropic with auto-rotation."""
+
+    def __init__(
+        self,
+        provider: ProviderType,
+        name: str | None = None,
+        key_pool: KeyPoolManager | None = None,
+        model: str | None = None,
+        rag_engine: QuantPaperRAG | None = None,
+        client: BaseDirectAPIClient | None = None,
+    ) -> None:
+        advisor_name = name or f"{provider.value.capitalize()}_Direct_Advisor"
+        super().__init__(name=advisor_name, rag_engine=rag_engine)
+        self.provider = provider
+        self.key_pool = key_pool
+        self.model = model
+        self.client = client or get_direct_client_for_provider(provider)
+
+    def evaluate_opportunity(
+        self,
+        symbol: str,
+        quant_side: Side | None,
+        quant_strength: float,
+        technical_summary: Mapping[str, Any],
+    ) -> AIOpinion:
+        rag_context = ""
+        if self.rag_engine:
+            rag_context = self.rag_engine.format_advisor_context(
+                f"momentum breakout and volatility regime for {symbol}"
+            )
+
+        prompt = (
+            f"Role: Institutional Quant Macro & Risk Advisor.\n"
+            f"Analyze trade proposal for {symbol}.\n"
+            f"Quantitative Signal: {quant_side} (Strength: {quant_strength:.2f})\n"
+            f"Technical Context: {json.dumps(technical_summary)}\n"
+            f"{rag_context}\n"
+            f"Task: Respond in valid JSON with keys: action_bias (BULLISH/BEARISH/NEUTRAL/VETO), "
+            f"confidence (0.0-1.0), weight_multiplier (0.0-1.5), rationale (string)."
+        )
+
+        if self.key_pool and self.client:
+            # Multi-key failover loop
+            while True:
+                active_key = self.key_pool.get_active_key(self.provider)
+                if not active_key:
+                    break
+
+                content, status_code, retry_after, err_msg = self.client.execute(
+                    prompt, active_key, model=self.model
+                )
+
+                if status_code == 200 and content:
+                    parsed = parse_json_from_llm_response(content)
+                    if parsed:
+                        self.key_pool.record_success(active_key)
+                        return AIOpinion(
+                            advisor_name=self.name,
+                            action_bias=str(parsed.get("action_bias", "NEUTRAL")).upper(),
+                            confidence=float(parsed.get("confidence", 0.5)),
+                            rationale=str(
+                                parsed.get("rationale", f"{self.provider.value} evaluated.")
+                            ),
+                            weight_multiplier=float(parsed.get("weight_multiplier", 1.0)),
+                            metadata={
+                                "provider": self.provider.value,
+                                "key_id": active_key.key_id,
+                                "masked_key": active_key.mask_key(),
+                                "rag_grounding_used": bool(rag_context),
+                                "mode": "DIRECT_API",
+                            },
+                        )
+
+                # If rate limited (429) or temporary server error, put key in cooldown and auto-rotate
+                if status_code in {429, 503, 408}:
+                    self.key_pool.record_rate_limit(active_key, retry_after_seconds=retry_after)
+                    logger.warning(
+                        f"Direct API key {active_key.key_id} hit status {status_code}; auto-rotating to backup key..."
+                    )
+                    continue
+                else:
+                    self.key_pool.record_error(active_key, is_fatal=(status_code in {401, 403}))
+                    break
+
+        return self._fallback_heuristic(quant_side, quant_strength, technical_summary, rag_context)
+
+
 class MultiAgentConsensusEngine:
-    """Aggregates opinions from Claude, Codex, Antigravity, and arXiv RAG into a single consensus."""
+    """Aggregates opinions from Claude, Codex, Antigravity, OpenRouter, Groq, and arXiv RAG into a single consensus."""
 
     def __init__(
         self,
         advisors: Sequence[BaseAIAdvisor] | None = None,
+        key_pool: KeyPoolManager | None = None,
         rag_engine: QuantPaperRAG | None = None,
     ) -> None:
         self.rag_engine = rag_engine
-        self.advisors: list[BaseAIAdvisor] = list(
-            advisors
-            or [
+        self.key_pool = key_pool
+
+        if advisors is not None:
+            self.advisors = list(advisors)
+        else:
+            # Build default hybrid panel (CLI + Direct API if keys exist)
+            panel: list[BaseAIAdvisor] = [
                 ClaudeCLIAdvisor(rag_engine=self.rag_engine),
                 CodexCLIAdvisor(rag_engine=self.rag_engine),
                 AntigravityCLIAdvisor(rag_engine=self.rag_engine),
             ]
-        )
+            if self.key_pool:
+                for prov in [
+                    ProviderType.OPENROUTER,
+                    ProviderType.GROQ,
+                    ProviderType.OPENAI,
+                    ProviderType.ANTHROPIC,
+                ]:
+                    if any(k.provider == prov for k in self.key_pool.keys):
+                        panel.append(
+                            DirectAPIAdvisor(
+                                provider=prov, key_pool=self.key_pool, rag_engine=self.rag_engine
+                            )
+                        )
+            self.advisors = panel
 
     def evaluate(
         self,

@@ -16,7 +16,11 @@ class OrderStateMachine:
             OrderStatus.CANCELLED,
             OrderStatus.REJECTED,
         },
-        OrderStatus.PARTIALLY_FILLED: {OrderStatus.FILLED, OrderStatus.CANCELLED},
+        OrderStatus.PARTIALLY_FILLED: {
+            OrderStatus.FILLED,
+            OrderStatus.CANCELLED,
+            OrderStatus.PARTIALLY_FILLED,
+        },
         OrderStatus.FILLED: set(),  # Terminal state
         OrderStatus.CANCELLED: set(),  # Terminal state
         OrderStatus.REJECTED: set(),  # Terminal state

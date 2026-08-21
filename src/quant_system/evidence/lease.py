@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import os
 import re
+import time
 import uuid
+from collections.abc import Callable
 from contextlib import AbstractContextManager
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
@@ -15,6 +17,7 @@ from quant_system.evidence.canonical import canonical_json_bytes, parse_canonica
 from quant_system.evidence.errors import EvidenceBusy, EvidenceIntegrityError
 
 _LEASE_MAX_BYTES = 4096
+_LEASE_POLL_SECONDS = 0.025
 _TOKEN_PATTERN = re.compile(r"[0-9a-f]{32}")
 
 
@@ -75,8 +78,18 @@ class LeaseHandle(AbstractContextManager[LeaseRecord]):
 
 
 class LeaseManager:
-    def __init__(self, path: Path) -> None:
+    def __init__(
+        self,
+        path: Path,
+        *,
+        wait_seconds: float = 0.0,
+        monotonic: Callable[[], float] = time.monotonic,
+        sleep: Callable[[float], None] = time.sleep,
+    ) -> None:
         self.path = path
+        self.wait_seconds = wait_seconds
+        self._monotonic = monotonic
+        self._sleep = sleep
 
     def acquire(self, operation_id: str, now: datetime) -> LeaseHandle:
         if not operation_id or len(operation_id) > 128:
@@ -91,14 +104,20 @@ class LeaseManager:
             token=uuid.uuid4().hex,
         )
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            _write_new_lease(self.path, record)
-        except FileExistsError as error:
-            owner = _read_lease(self.path)
-            raise EvidenceBusy(
-                f"evidence mutation is owned by {owner.operation_id} (pid {owner.pid})"
-            ) from error
-        return LeaseHandle(self.path, record)
+        deadline = self._monotonic() + self.wait_seconds
+        while True:
+            try:
+                _write_new_lease(self.path, record)
+            except FileExistsError as error:
+                if self._monotonic() >= deadline:
+                    owner = _read_lease(self.path)
+                    raise EvidenceBusy(
+                        f"evidence mutation is owned by {owner.operation_id} "
+                        f"(pid {owner.pid}); waited {self.wait_seconds:g}s"
+                    ) from error
+                self._sleep(_LEASE_POLL_SECONDS)
+                continue
+            return LeaseHandle(self.path, record)
 
 
 def recover_stale_lease(path: Path, quarantine_directory: Path) -> int:
