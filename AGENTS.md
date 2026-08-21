@@ -12,7 +12,11 @@ Before planning or editing:
 2. Read `.launch/STATE.md` and `.launch/SLICES.md` for the authoritative release state.
 3. Run `git status --short --branch` and inspect every existing change as someone else's work.
 4. Read every record in `agent_context/work/active/`.
-5. Create your own uniquely named active-work record before editing. Declare exact owned paths.
+5. Run `git worktree list` and `git branch --list`. Every registered worktree and non-default branch
+   is a live agent until proven otherwise, even with no matching record.
+6. Create your own uniquely named active-work record before editing. Declare exact owned paths.
+   If you will work in a worktree, create the record here in the install root **first**, and name
+   the workspace path and branch in it.
 
 ## Concurrent work rules
 
@@ -24,6 +28,31 @@ Before planning or editing:
   agent is active unless all affected paths are jointly owned.
 - Treat untracked files as owned work, not disposable files.
 - Keep one work record per task. Do not append to one global work log.
+
+## Workspace ownership law
+
+A claim is only real where every agent can see it. A record inside a worktree is invisible from the
+install root, so it claims nothing.
+
+- Write the active work record in the install root **before** creating a worktree or clone. Name the
+  workspace path and branch in it. A copy inside the worktree is optional.
+- Never run `git worktree remove`, `git worktree prune`, `git branch -d`, `git branch -D`, or delete
+  a workspace directory you did not create. This holds when it looks idle, when it is clean, when no
+  record claims it, and during reconciliation. An agent between edits looks exactly like one that
+  has stopped.
+- Never infer abandonment from a clean tree, an idle timestamp, or a missing record. Record the
+  observation, attempt contact, leave it alone. An `UNKNOWN_OWNER` record is not grounds to remove,
+  delete, or merge anything.
+- Before merging another agent's branch, read its record's `Next safe action` and `Blockers and
+  conflicts`. A precondition stated there is binding. If the merge would change any number another
+  record pins as evidence — test counts, coverage, hashes — wait, or leave a uniquely named notice
+  record saying what it invalidates. Never edit their record. The record, not the diff, carries the
+  conditions.
+- Run `scripts/audit-agent-claims.ps1` before any handoff or completion. It exits 1 when a workspace
+  has no claim or a claim has no workspace.
+
+The full contract is `agent_context/PROTOCOL.md` section 8, decided in
+`agent_context/decisions/20260821-concurrent-workspace-ownership.md`.
 
 ## Disk layout law
 
