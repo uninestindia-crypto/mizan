@@ -53,6 +53,7 @@ from pathlib import Path
 from typing import Final
 
 from quant_system.analytics.nse_rules import CostBreakdown, MarketSegment, NSERuleEngine
+from quant_system.config import load_env_file
 from quant_system.core.domain import Side
 from quant_system.data.market_data import (
     AuthorityReference,
@@ -752,37 +753,14 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 def _load_credentials_from_env_file(env_file: Path) -> tuple[str, ...]:
-    """Load only the Upstox keys from a dotenv file into the process environment.
+    """Load the Upstox credentials from a dotenv file into the process environment.
 
-    This project depends on no dotenv library, and adding one would touch ``pyproject.toml`` and
-    ``uv.lock`` — shared files this runner does not own — so the parse is done here.
-
-    Two deliberate restrictions:
-
-    * **Only ``UPSTOX_*`` keys are read.** A real ``.env`` also carries unrelated provider keys.
-      This runner spawns ``git`` as a subprocess, which inherits the environment, so loading
-      secrets it has no use for would widen their exposure for no benefit.
-    * **An already-set variable always wins.** A value exported in the shell is never overwritten
-      by the file, so the environment stays the authority and a stale file cannot silently
-      shadow it.
-
-    Returns the names loaded. Never returns, logs, or prints a value.
+    Delegates to ``quant_system.config.load_env_file`` so the product and this runner share one
+    implementation. Restricted to ``UPSTOX_*``: this runner spawns ``git`` as a subprocess, which
+    inherits the environment, so loading provider keys it has no use for would widen their exposure
+    for no benefit. Returns the names loaded, never a value.
     """
-    wanted = ("UPSTOX_ACCESS_TOKEN", "UPSTOX_API_KEY")
-    if not env_file.is_file():
-        return ()
-    loaded: list[str] = []
-    for raw_line in env_file.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        name, _, value = line.removeprefix("export ").partition("=")
-        name = name.strip()
-        if name not in wanted or os.getenv(name):
-            continue
-        os.environ[name] = value.strip().strip("\"'")
-        loaded.append(name)
-    return tuple(loaded)
+    return load_env_file(env_file, only=("UPSTOX_ACCESS_TOKEN", "UPSTOX_API_KEY"))
 
 
 def main(argv: Sequence[str] | None = None) -> int:

@@ -15,6 +15,7 @@ import uvicorn
 
 from quant_system import __version__
 from quant_system.alpha.greeks import BlackScholes
+from quant_system.config import load_env_file
 from quant_system.core.domain import InstrumentType
 from quant_system.core.ledger import DecimalLedger
 from quant_system.data.provenance import (
@@ -43,6 +44,20 @@ def configure_drive_isolation() -> Path:
     os.environ["MPLCONFIGDIR"] = str(app_root / "tmp" / "matplotlib")
     os.environ["PYTHONPYCACHEPREFIX"] = str(app_root / "tmp" / "pycache")
     return app_root
+
+
+def load_startup_environment() -> tuple[str, ...]:
+    """Load credentials from .env and report which names were set.
+
+    Runs before anything inspects the environment for credentials. Without it the preflight
+    credential gate reports "not configured" while the user is looking at the .env they filled
+    in. Deliberately not part of run_prerequisite_checks, which must stay a pure inspection of
+    the environment it is given rather than one that mutates it. Only names are printed.
+    """
+    loaded = load_env_file()
+    if loaded:
+        print(f"  Loaded {len(loaded)} variable(s) from .env: {', '.join(loaded)}")
+    return loaded
 
 
 def run_prerequisite_checks() -> tuple[bool, list[str]]:
@@ -170,6 +185,7 @@ def main() -> None:
     print("  Institutional Quantitative Trading, Research & Risk Management")
     print("=" * 70)
 
+    load_startup_environment()
     # Execute Pre-flight Prerequisite Checks
     passed, check_logs = run_prerequisite_checks()
     for log in check_logs:
