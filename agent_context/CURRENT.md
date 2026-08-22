@@ -48,7 +48,7 @@ Status by stage. **All seven stages have now executed on real market data.**
 | 4. `build_feature_dataset` | **PROVEN** | 478 feature rows |
 | 5. `build_label_dataset` | **PROVEN** | 476 label rows; real NSE statutory costs, 0.224% round trip |
 | 6. `build_purged_fold` | **PROVEN** | train=411, validation=63, embargo=2 |
-| 7. `run_persisted_ridge_trial` | **PROVEN — fails closed** | Trial start and terminal `FAILED` outcome both published; `failure_codes=["DEGENERATE_RETURN_SERIES"]` |
+| 7. `run_persisted_ridge_trial` | **PROVEN — both paths** | Trials 1-2 published a terminal `FAILED` outcome (`DEGENERATE_RETURN_SERIES`); trial 3 published `SUCCEEDED` with full model evidence |
 
 Corporate-action authority: `data/authorities/nse-corporate-actions-INFY-20240101-20251231.json`,
 fetched from the NSE public API, 5 real records (dividends 2024-05-31, 2024-10-29, 2025-05-30,
@@ -56,14 +56,50 @@ fetched from the NSE public API, 5 real records (dividends 2024-05-31, 2024-10-2
 `650bd8197d8c1ac39e1c6b1f2469d96ee88e468384f07b1b3df83987544cb400`. Committed so the hash is
 re-verifiable from the repository.
 
-### No model has been successfully trained. Two trials, both refused.
+### Three trials. The model trains, and it loses money.
 
-`trial_real_001` (validation=8) and `trial_real_002` (validation=63) both terminated `FAILED` with
-`DEGENERATE_RETURN_SERIES`. Both are recorded in the evidence store with a committed start and a
-committed terminal outcome, so the multiplicity ordinal has advanced twice. **A third attempt is a
-third look at the same data and must be treated as such.**
+| Trial | Ordinal | Threshold | Validation | Outcome |
+|---|---:|---:|---:|---|
+| `trial_real_001` | 1 | `0` | 8 | `FAILED` — `DEGENERATE_RETURN_SERIES` |
+| `trial_real_002` | 2 | `0` | 63 | `FAILED` — `DEGENERATE_RETURN_SERIES` |
+| `trial_real_003` | 3 | `-0.1144` | 63 | **`SUCCEEDED`** — model evidence published |
 
-Root cause, measured rather than inferred:
+Trial 3 result, `model_06ae80823d3b66ac8405b9eb`, 315 attributable decision records,
+`verdict=RESEARCH_ONLY`, `multiplicity_count=3`:
+
+| Strategy | Sharpe | Accuracy | Trades | Max DD |
+|---|---:|---:|---:|---:|
+| **RIDGE (the candidate)** | **-0.704** | 0.524 | 22 | 0.060 |
+| NO_TRADE | 0.000 | 0.587 | 0 | 0.000 |
+| BUY_AND_HOLD | -0.547 | 0.413 | 63 | 0.068 |
+| PREVIOUS_SIGN | **+0.144** | 0.556 | 26 | 0.064 |
+| EQUITY_DUAL_MOMENTUM | -3.684 | 0.397 | 42 | 0.139 |
+
+**The candidate is the second-worst strategy on the board.** Its Sharpe is negative. It is beaten by
+doing nothing, by buy-and-hold, and by a trivial repeat-the-previous-sign rule — the only baseline
+with a positive Sharpe. Its 52.4% accuracy is below the 58.7% obtained by never trading: it trades
+22 times and destroys value doing so.
+
+`deflated_sharpe_ratio = 0.120566231116`. **This is a probability, not a Sharpe** — the
+multiplicity- and sampling-adjusted probability that the true Sharpe beats the selection benchmark,
+deflated against all three attempts. `GatePolicyV1.min_deflated_sharpe` defaults to `0.95`, so this
+fails `GATE_DEFLATED_SHARPE` by a wide margin. Nothing here is promotable and the machinery reports
+that itself.
+
+**Honest reading: this six-feature ridge has no edge on INFY over 2024-2025 after real statutory
+costs.** Trials 1-2 could not measure that because the candidate never traded; trial 3 made it
+legible. The threshold change bought a measurable result, not a good one — the same underlying
+finding either way.
+
+Caveat that must travel with these numbers: the trial-3 threshold `-0.1144` was chosen as the
+training-partition mean target (train-only information, consistent with train-only preprocessing),
+but it was chosen **after** the trial-1/2 diagnostic had already revealed the validation score
+distribution. It is an informed choice, not a blind one. That is precisely why it carries ordinal 3
+and deflates against three attempts. Do not sweep further thresholds hoping for a publishable
+number; a fourth attempt inherits ordinal 4 and a harsher deflation, and the evidence above does not
+suggest one is warranted.
+
+Root cause of the trials 1-2 degeneracy, measured rather than inferred:
 
 - Targets are encoded UP `+1.0` / DOWN `-1.0` (`modeling/ridge.py:93`).
 - The real label balance is 182 UP / 229 DOWN in the training partition, so the mean target is
@@ -77,14 +113,7 @@ Root cause, measured rather than inferred:
 
 This is **not a defect in the runner and not a defect in the model**. It is the guard behaving as
 documented: it refuses to publish a probability of 0.5 for a candidate that never traded, which
-would otherwise rank a do-nothing model above every genuinely losing one. The honest research
-reading is that this six-feature ridge, with a zero threshold, finds no long setup on INFY over
-2024-2025 that survives real statutory costs.
-
-Changing `--score-threshold` would produce a non-degenerate result. **That is a research design
-decision, not a bug fix**, and taking it after seeing two failures is precisely the multiplicity
-problem this stack exists to account for. It is the founder's call, and it must carry the next
-multiplicity ordinal.
+would otherwise rank a do-nothing model above every genuinely losing one.
 
 Two limitations are stated rather than resolved. The session calendar, absent `--calendar-file`, is
 derived from provider data, so a provider that silently omits a trading day yields a calendar
@@ -113,8 +142,11 @@ Outstanding work: `agent_context/handoffs/20260822-claude-real-data-training-run
 
 1. Clone and sync on the remote development machine using `START_HERE.md`.
 2. Proceed with Slice 4 implementation (One Governed Ridge Fold) following `.launch/SLICES.md`.
-3. Decide, as a research design decision, whether the `--score-threshold` of the governed ridge
-   should remain `0` under `+1/-1` target encoding with an imbalanced base rate. Two trials have
-   already been spent; any third carries multiplicity ordinal 3 and must be registered as such. Do
-   not sweep thresholds until one produces a publishable Sharpe.
+3. Do **not** run a fourth threshold on INFY 2024-2025. Three ordinals are spent and the candidate
+   posts a negative Sharpe beaten by doing nothing; further sweeps are multiplicity spend against
+   evidence that already points one way. If the ridge family is to be pursued, change something
+   real — instrument, universe breadth, horizon, or feature set — and treat it as a new campaign.
+4. Independent adjudication of the runner and these results has **not** occurred. No Red Team pass,
+   no clean-clone Verifier pass. `verdict=RESEARCH_ONLY` is the model's own label, not a
+   certification.
 4. Reconcile the stale sections at the top of this file against `.launch/STATE.md` (coordinator).
