@@ -246,14 +246,20 @@ def _run_one(  # noqa: C901 - one linear pipeline; each failure mode is reported
     except runner.ConfigurationRefused as error:
         return InstrumentResult(symbol, instrument_key, "CONFIG_REFUSED", str(error))
 
-    start = runner._trial_start(
-        _namespace(args, trial_id=trial_id, multiplicity_ordinal=ordinal, score_threshold="auto"),
-        features=features,
-        labels=labels,
-        fold=fold,
-        repo_root=repo_root,
-        created_at=datetime.now(UTC),
-    )
+    try:
+        start = runner._trial_start(
+            _namespace(
+                args, trial_id=trial_id, multiplicity_ordinal=ordinal, score_threshold="auto"
+            ),
+            features=features,
+            labels=labels,
+            fold=fold,
+            repo_root=repo_root,
+            created_at=datetime.now(UTC),
+        )
+    except (ModelingError, runner.ConfigurationRefused) as error:
+        code = error.code.value if isinstance(error, ModelingError) else str(error)
+        return InstrumentResult(symbol, instrument_key, "TRIAL_START_REJECTED", code)
     try:
         run_persisted_ridge_trial(
             store,
@@ -267,6 +273,20 @@ def _run_one(  # noqa: C901 - one linear pipeline; each failure mode is reported
     except ModelingError as error:
         return InstrumentResult(
             symbol, instrument_key, "TRIAL_FAILED", error.code.value, trial_id=trial_id
+        )
+    except Exception as error:  # noqa: BLE001 - see below; one instrument must not end the sweep
+        # evaluate_governed_ridge_fold can raise a bare ValueError out of
+        # analytics/multiplicity.py:_validate_dsr_inputs when a two-point return series lands on
+        # the kurtosis >= skewness**2 + 1 boundary. That is an untyped escape from a governed
+        # evaluation, not a ModelingError, so it is caught here and reported per instrument.
+        # run_persisted_ridge_trial has already committed a terminal FAILED outcome by this
+        # point, so the store stays consistent.
+        return InstrumentResult(
+            symbol,
+            instrument_key,
+            "TRIAL_CRASHED",
+            f"{type(error).__name__}: {error}",
+            trial_id=trial_id,
         )
     sharpe, accuracy, trades, dsr = _metrics_for(args.evidence_root, trial_id)
     return InstrumentResult(

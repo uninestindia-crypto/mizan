@@ -115,11 +115,77 @@ This is **not a defect in the runner and not a defect in the model**. It is the 
 documented: it refuses to publish a probability of 0.5 for a candidate that never traded, which
 would otherwise rank a do-nothing model above every genuinely losing one.
 
-Two limitations are stated rather than resolved. The session calendar, absent `--calendar-file`, is
-derived from provider data, so a provider that silently omits a trading day yields a calendar
-agreeing with its own gap. The default universe is the single requested instrument — content-bound
-and honest, but a stated universe, not a point-in-time membership authority, so it does nothing
-about survivorship bias.
+### NIFTY 50 campaign — 51 trials, nothing promotable
+
+`scripts/run_universe_ridge_campaign.py` ran the same governed trial across all 50 real NIFTY 50
+constituents, 2024-01-01..2025-12-31, into the same evidence store as the three INFY trials.
+Universe authority is the real NSE constituent list
+(`data/authorities/nse-nifty50-constituents.csv`); membership is genuinely enforced against it by
+`modeling/features.py:135`. Every instrument used one pre-declared rule — threshold = that
+instrument's own training-partition base rate, train-only information, no per-name tuning.
+
+**Campaign totals: 51 trials, `multiplicity_count = 51`, 40 published models, 11 terminal
+`FAILED` outcomes (10 `DEGENERATE_RETURN_SERIES`, 1 `TRIAL_EXECUTION_FAILED`), 2 instruments
+skipped for having no NSE corporate-actions record (ETERNAL, M&M).**
+
+| Statistic | Value |
+|---|---:|
+| Published models | 40 |
+| Positive Sharpe | **14 of 40** |
+| Median Sharpe | **-1.1791** |
+| Mean Sharpe | -0.7756 |
+| Best / worst Sharpe | +4.3143 (GRASIM) / -5.7716 (APOLLOHOSP) |
+
+How often the candidate beat each baseline on Sharpe, across the 40 published models:
+
+| Baseline | Ridge wins | Baseline median Sharpe |
+|---|---:|---:|
+| BUY_AND_HOLD | 28 / 40 | -1.8756 |
+| EQUITY_DUAL_MOMENTUM | 26 / 40 | -2.2591 |
+| PREVIOUS_SIGN | 20 / 40 | -1.1549 |
+| **NO_TRADE** | **14 / 40** | +0.0000 |
+
+The candidate beats doing nothing on 14 names out of 40 — the wrong side of a coin flip.
+
+**The deflation is what matters here.** GRASIM is the best name at Sharpe +4.3143, and its *published*
+DSR is `0.696673`, which read alone looks close to promotable. Re-deflated against the final attempt
+count of 51 it is `0.397794`. The gate `GatePolicyV1.min_deflated_sharpe` requires `>= 0.95`. It was
+never close; the published figure was an artifact of being scored while the campaign was still open,
+exactly as `campaign_deflated_sharpe_ratios` documents.
+
+**Best campaign DSR across all 51 trials: `0.397794`. VERDICT: NONE PROMOTABLE.**
+
+Two properties of the winners are worth recording, because they are how a sweep manufactures a
+false positive. First, the top names trade almost nothing — GRASIM 9 trades, TECHM 4, BHARTIARTL 3,
+TCS exactly 1 — so those Sharpes rest on a handful of decisions. Second, searching fifty names finds
+the tail of a noise distribution by construction, which is the precise thing deflation exists to
+discount. Neither observation requires believing the model has no edge; both mean this evidence
+cannot establish that it does.
+
+**Survivorship warning on the summary statistics above.** They cover the 40 *published* models. The
+10 degenerate names are excluded — and they became degenerate by declining to trade, which on this
+evidence was the better decision. The honest denominator is 50, not 40; the table flatters the
+candidate by dropping its most conservative outcomes.
+
+### Open defect raised by this campaign
+
+`agent_context/work/active/20260822-NOTICE-dsr-two-point-boundary-crash.md` — a two-point validation
+return series lands exactly on the `kurtosis >= skewness**2 + 1` boundary in
+`analytics/multiplicity.py:92`, where floating-point rounding at the 15th decimal decides between a
+published result and an uncaught `ValueError` that no caller can type-match. Proposed Blocker. One
+NIFTY 50 constituent hit it. Not repaired here: those files are claimed by other active records.
+
+### Limitations stated rather than resolved
+
+- **This is not a portfolio.** The governed dataset contract is single-instrument
+  (`modeling/labels.py:135`), so the campaign is 40 independent single-name studies, not one
+  cross-sectional strategy. `_portfolio_period_returns` (`validation.py:402`) averages decisions
+  sharing a `decision_at` and would support a portfolio, but nothing can build a multi-instrument
+  dataset to feed it. Closing that needs `modeling/**` changes.
+- The session calendar, absent `--calendar-file`, is derived from provider data, so a provider that
+  silently omits a trading day yields a calendar agreeing with its own gap.
+- Neither Red Team nor an independent clean-clone Verifier has adjudicated the runner, the campaign
+  driver, or any of these results.
 
 Full record: `agent_context/work/completed/20260822-claude-real-data-training-runner.md`.
 Outstanding work: `agent_context/handoffs/20260822-claude-real-data-training-runner-handoff.md`.

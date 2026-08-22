@@ -61,7 +61,7 @@ from quant_system.data.market_data import (
     HistoricalDailyRequest,
     PointInTimeBar,
 )
-from quant_system.data.market_data_evidence import canonical_sha256
+from quant_system.data.market_data_evidence import canonical_sha256, decimal_text
 from quant_system.data.upstox import UpstoxClient
 from quant_system.evidence import EvidenceStore, EvidenceStoreConfig
 from quant_system.evidence.errors import EvidenceError
@@ -509,7 +509,10 @@ def base_rate_threshold(fold: PartitionedFoldV1) -> str:
         raise ConfigurationRefused("cannot derive a base-rate threshold from an empty train split")
     ups = sum(1 for row in fold.train_rows if row.target == "UP")
     mean = (Decimal(ups) - Decimal(len(fold.train_rows) - ups)) / Decimal(len(fold.train_rows))
-    return str(mean.quantize(Decimal("0.000001")))
+    # decimal_text strips trailing zeros; emitting fixed-width text here makes the trial
+    # start reject its own threshold as non-canonical whenever the base rate is a round
+    # value such as -1 or -0.15.
+    return decimal_text(mean.quantize(Decimal("0.000001")))
 
 
 def _trial_start(
