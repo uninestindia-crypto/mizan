@@ -489,6 +489,29 @@ def _fold_from_tail(
     )
 
 
+def base_rate_threshold(fold: PartitionedFoldV1) -> str:
+    """Return the training partition's mean target as a decision threshold.
+
+    Targets encode UP as ``+1`` and DOWN as ``-1`` (``modeling/ridge.py``), so a ridge fit on
+    standardized features puts its intercept at the mean target. Under an imbalanced base rate that
+    mean is not zero, and a fixed ``score_threshold`` of ``0`` therefore demands the features
+    overcome the entire class skew before a single long position is taken — which on a
+    DOWN-skewed name means no position is ever taken and the fold is degenerate.
+
+    Thresholding at the base rate instead asks the intended question: is this row more bullish than
+    the unconditional prior? The value uses **training rows only**, consistent with the train-only
+    standardization the stack already enforces, so it leaks nothing from validation.
+
+    This is a uniform rule, not a per-instrument tuning knob. Applying it across a universe means
+    every name is judged by the same pre-declared criterion.
+    """
+    if not fold.train_rows:
+        raise ConfigurationRefused("cannot derive a base-rate threshold from an empty train split")
+    ups = sum(1 for row in fold.train_rows if row.target == "UP")
+    mean = (Decimal(ups) - Decimal(len(fold.train_rows) - ups)) / Decimal(len(fold.train_rows))
+    return str(mean.quantize(Decimal("0.000001")))
+
+
 def _trial_start(
     args: argparse.Namespace,
     *,
@@ -498,6 +521,9 @@ def _trial_start(
     repo_root: Path,
     created_at: datetime,
 ) -> RidgeTrialStartV1:
+    threshold = (
+        base_rate_threshold(fold) if args.score_threshold == "auto" else args.score_threshold
+    )
     return RidgeTrialStartV1(
         trial_id=args.trial_id,
         candidate_id=features.candidate_id,
@@ -506,7 +532,7 @@ def _trial_start(
         dataset_hash=labels.dataset_hash,
         universe_policy_hash=features.universe_authority_hash,
         l2_penalty=args.l2_penalty,
-        score_threshold=args.score_threshold,
+        score_threshold=threshold,
         numpy_seed=0,
         fold_spec_hashes=(fold_spec_hash(fold),),
         source_revision=_source_revision(repo_root),
@@ -703,7 +729,11 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--operation-id", default="real-governed-ridge-training")
     parser.add_argument("--request-id", default="real-governed-ridge-training")
     parser.add_argument("--l2-penalty", default="1")
-    parser.add_argument("--score-threshold", default="0")
+    parser.add_argument(
+        "--score-threshold",
+        default="0",
+        help="decision threshold, or 'auto' for the training-partition base rate",
+    )
     parser.add_argument("--multiplicity-ordinal", type=int, default=1)
     parser.add_argument("--validation-sessions", type=int, default=8)
     parser.add_argument("--embargo-sessions", type=int, default=2)
