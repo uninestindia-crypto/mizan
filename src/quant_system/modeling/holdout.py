@@ -112,6 +112,9 @@ class HoldoutPartitionV1:
     purged_record_keys: tuple[str, ...]
     embargoed_record_keys: tuple[str, ...]
 
+    def __post_init__(self) -> None:
+        _validate_holdout_partition(self)
+
 
 @dataclass(frozen=True, slots=True)
 class HoldoutEvaluationStartV1:
@@ -454,6 +457,7 @@ def evaluate_governed_holdout(
     tracker.require_unconsumed(holdout.spec.holdout_id, token_hash)
 
     # 3. Identity and integrity check
+    _validate_holdout_partition(holdout)
     if evaluation.candidate_id != holdout.spec.candidate_id:
         raise ModelingError(
             ModelingFailureCode.TRAINING_INPUT_MISMATCH,
@@ -646,3 +650,49 @@ def _validate_holdout_spec(spec: HoldoutSpecV1) -> None:
             ModelingFailureCode.EMBARGO_TOO_SHORT,
             "embargo must be at least label horizon",
         )
+
+
+def _validate_holdout_partition(partition: HoldoutPartitionV1) -> None:
+    _validate_holdout_spec(partition.spec)
+    if len(partition.holdout_rows) != partition.spec.holdout_row_count:
+        raise ModelingError(
+            ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+            f"holdout row count mismatch: {len(partition.holdout_rows)} != {partition.spec.holdout_row_count}",
+        )
+    if _label_rows_hash(partition.holdout_rows) != partition.spec.holdout_hash:
+        raise ModelingError(
+            ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+            "holdout rows hash does not match spec holdout_hash",
+        )
+    if len(partition.discovery_rows) != partition.spec.discovery_row_count:
+        raise ModelingError(
+            ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+            f"discovery row count mismatch: {len(partition.discovery_rows)} != {partition.spec.discovery_row_count}",
+        )
+    if _label_rows_hash(partition.discovery_rows) != partition.spec.discovery_hash:
+        raise ModelingError(
+            ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+            "discovery rows hash does not match spec discovery_hash",
+        )
+    for row in partition.holdout_rows:
+        if row.candidate_id != partition.spec.candidate_id:
+            raise ModelingError(
+                ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+                f"holdout row candidate_id '{row.candidate_id}' != spec candidate_id '{partition.spec.candidate_id}'",
+            )
+        if not (partition.spec.holdout_start <= row.decision_at <= partition.spec.holdout_end):
+            raise ModelingError(
+                ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+                f"holdout row decision_at {row.decision_at} outside holdout window [{partition.spec.holdout_start}, {partition.spec.holdout_end}]",
+            )
+    for row in partition.discovery_rows:
+        if row.candidate_id != partition.spec.candidate_id:
+            raise ModelingError(
+                ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+                f"discovery row candidate_id '{row.candidate_id}' != spec candidate_id '{partition.spec.candidate_id}'",
+            )
+        if row.decision_at >= partition.spec.holdout_start:
+            raise ModelingError(
+                ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+                f"discovery row decision_at {row.decision_at} overlaps with holdout window starting {partition.spec.holdout_start}",
+            )

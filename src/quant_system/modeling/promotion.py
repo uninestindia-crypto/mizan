@@ -269,6 +269,26 @@ def evaluate_promotion(
             "promotion evaluation requires at least one fold evaluation",
         )
 
+    # 3. Input evidence candidate_id and model_id binding checks
+    for f in fold_evaluations:
+        if f.candidate_id != candidate_id or f.model_id != model_id:
+            raise ModelingError(
+                ModelingFailureCode.TRAINING_INPUT_MISMATCH,
+                f"fold evaluation candidate_id/model_id ({f.candidate_id}/{f.model_id}) does not match promotion target ({candidate_id}/{model_id})",
+            )
+    if holdout_report is not None:
+        if holdout_report.candidate_id != candidate_id or holdout_report.model_id != model_id:
+            raise ModelingError(
+                ModelingFailureCode.TRAINING_INPUT_MISMATCH,
+                f"holdout report candidate_id/model_id ({holdout_report.candidate_id}/{holdout_report.model_id}) does not match promotion target ({candidate_id}/{model_id})",
+            )
+    if stress_report is not None:
+        if stress_report.candidate_id != candidate_id or stress_report.model_id != model_id:
+            raise ModelingError(
+                ModelingFailureCode.TRAINING_INPUT_MISMATCH,
+                f"stress report candidate_id/model_id ({stress_report.candidate_id}/{stress_report.model_id}) does not match promotion target ({candidate_id}/{model_id})",
+            )
+
     # Evaluate gates
     gate_results: list[GateResultV1] = []
     failed_codes: list[str] = []
@@ -417,7 +437,7 @@ def evaluate_promotion(
             gate_id=PromotionGateId.GATE_SCORE_CALIBRATION_INTEGRITY.value,
             operator=GateOperator.BOOLEAN.value,
             threshold="UNCALIBRATED_SCORE",
-            observed=list(score_kinds)[0] if score_kinds else "UNKNOWN",
+            observed=sorted(score_kinds)[0] if score_kinds else "UNKNOWN",
             unit="BOOLEAN",
             passed=calib_passed,
             evidence_hash=primary_eval.evaluation_hash,
@@ -427,8 +447,21 @@ def evaluate_promotion(
         failed_codes.append(PromotionGateId.GATE_SCORE_CALIBRATION_INTEGRITY.value)
 
     # Determine verdict
+    all_states_order = [
+        PromotionState.REJECT,
+        PromotionState.RESEARCH_ONLY,
+        PromotionState.SHADOW,
+        PromotionState.PAPER_PILOT,
+        PromotionState.PAPER,
+    ]
+    from_idx = all_states_order.index(from_state)
+    to_idx = all_states_order.index(to_state)
+    is_demotion = to_idx < from_idx
+
     all_gates_passed = len(failed_codes) == 0
-    if all_gates_passed:
+    if is_demotion:
+        verdict = to_state
+    elif all_gates_passed:
         verdict = to_state
     else:
         # If any gate fails when advancing, verdict stays at from_state (or demotes to REJECT)
@@ -450,9 +483,13 @@ def evaluate_promotion(
         rollback_model_id=rollback_model_id,
     )
 
-    # Generate model card if promoting to SHADOW or PAPER_PILOT
+    # Generate model card only on successful forward promotion
     model_card = None
-    if verdict in {PromotionState.SHADOW, PromotionState.PAPER_PILOT, PromotionState.PAPER}:
+    if (
+        not is_demotion
+        and all_gates_passed
+        and verdict in {PromotionState.SHADOW, PromotionState.PAPER_PILOT, PromotionState.PAPER}
+    ):
         model_card = ModelCardV1(
             model_id=model_id,
             candidate_id=candidate_id,

@@ -100,7 +100,7 @@ def test_ledger_buy_sell_fifo_realized_pnl() -> None:
 
     # Sell 75 INFY @ 1400, fee = 20 (FIFO: 50 from Lot 1 @ 1000, 25 from Lot 2 @ 1200)
     # Revenue = 75 * 1400 = 105,000 - 20 = 104,980 net cash inflow
-    # Realized PnL = (1400 - 1000)*50 + (1400 - 1200)*25 - 20 = 20,000 + 5,000 - 20 = 24,980.00
+    # Realized PnL = (1400 - 1000)*50 - 10 (entry fee) + (1400 - 1200)*25 - 5 (pro-rata entry fee) - 20 (exit fee) = 24,965.00
     f3 = Fill(
         fill_id="f3",
         order_id="o3",
@@ -114,12 +114,13 @@ def test_ledger_buy_sell_fifo_realized_pnl() -> None:
     ledger.process_fill(f3)
 
     assert ledger.cash == Decimal("89980.00") + Decimal("104980.00")  # 194,960.00
-    assert ledger.realized_pnl == Decimal("24980.00")
+    assert ledger.realized_pnl == Decimal("24965.00")
     assert ledger.positions["INFY"].quantity == 25
     assert ledger.positions["INFY"].average_price == Decimal("1200.00")
     assert len(ledger.lots["INFY"]) == 1
     assert ledger.lots["INFY"][0].quantity == 25
     assert ledger.lots["INFY"][0].entry_price == Decimal("1200.00")
+    assert ledger.lots["INFY"][0].entry_fee == Decimal("5.00")
     assert ledger.reconcile() is True
 
 
@@ -144,7 +145,7 @@ def test_ledger_position_flip_long_to_short() -> None:
     assert ledger.positions["TCS"].quantity == 30
 
     # Sell 50 TCS @ 3500, fee = 20 (closes 30 long, opens 20 short)
-    # Realized PnL on 30 long = (3500 - 3000)*30 - 20 = 15,000 - 20 = 14,980.00
+    # Realized PnL on 30 long = (3500 - 3000)*30 - 10 (entry fee) - 20 (exit fee) = 15,000 - 30 = 14,970.00
     # Net cash inflow = 50 * 3500 - 20 = 175,000 - 20 = 174,980.00
     ledger.process_fill(
         Fill(
@@ -161,7 +162,7 @@ def test_ledger_position_flip_long_to_short() -> None:
 
     assert ledger.positions["TCS"].quantity == -20
     assert ledger.positions["TCS"].average_price == Decimal("3500.00")
-    assert ledger.realized_pnl == Decimal("14980.00")
+    assert ledger.realized_pnl == Decimal("14970.00")
     assert len(ledger.lots["TCS"]) == 1
     assert ledger.lots["TCS"][0].side == Side.SELL
     assert ledger.lots["TCS"][0].quantity == 20

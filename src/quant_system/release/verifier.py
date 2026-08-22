@@ -49,7 +49,7 @@ class CleanReleaseVerificationReport:
     summary_message: str
 
 
-def _remove_readonly(func: Any, path: str, exc_info: Any) -> None:
+def _remove_readonly(func: Any, path: str, *_: Any) -> None:
     """Error handler for shutil.rmtree on Windows read-only files."""
     try:
         os.chmod(path, stat.S_IWRITE)

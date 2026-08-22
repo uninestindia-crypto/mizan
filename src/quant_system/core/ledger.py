@@ -320,13 +320,20 @@ class DecimalLedger:
                         continue
                     if lot.quantity <= remaining_to_cover:
                         # Fully close this short lot
-                        lot_pnl = (lot.entry_price - fill.price) * Decimal(lot.quantity)
+                        lot_pnl = (lot.entry_price - fill.price) * Decimal(
+                            lot.quantity
+                        ) - lot.entry_fee
                         total_realized_pnl_delta += lot_pnl
                         remaining_to_cover -= lot.quantity
                     else:
                         # Partially close this short lot
                         closed_qty = remaining_to_cover
-                        lot_pnl = (lot.entry_price - fill.price) * Decimal(closed_qty)
+                        pro_rata_entry_fee = (
+                            lot.entry_fee * Decimal(closed_qty) / Decimal(lot.quantity)
+                        ).quantize(_PAISA)
+                        lot_pnl = (lot.entry_price - fill.price) * Decimal(
+                            closed_qty
+                        ) - pro_rata_entry_fee
                         total_realized_pnl_delta += lot_pnl
                         buy_remaining_lots.append(
                             PositionLot(
@@ -335,7 +342,7 @@ class DecimalLedger:
                                 side=lot.side,
                                 quantity=lot.quantity - closed_qty,
                                 entry_price=lot.entry_price,
-                                entry_fee=lot.entry_fee,
+                                entry_fee=lot.entry_fee - pro_rata_entry_fee,
                                 timestamp=lot.timestamp,
                                 fill_id=lot.fill_id,
                             )
@@ -396,13 +403,20 @@ class DecimalLedger:
                         continue
                     if lot.quantity <= remaining_to_sell:
                         # Fully close this long lot
-                        lot_pnl = (fill.price - lot.entry_price) * Decimal(lot.quantity)
+                        lot_pnl = (fill.price - lot.entry_price) * Decimal(
+                            lot.quantity
+                        ) - lot.entry_fee
                         total_realized_pnl_delta += lot_pnl
                         remaining_to_sell -= lot.quantity
                     else:
                         # Partially close this long lot
                         closed_qty = remaining_to_sell
-                        lot_pnl = (fill.price - lot.entry_price) * Decimal(closed_qty)
+                        pro_rata_entry_fee = (
+                            lot.entry_fee * Decimal(closed_qty) / Decimal(lot.quantity)
+                        ).quantize(_PAISA)
+                        lot_pnl = (fill.price - lot.entry_price) * Decimal(
+                            closed_qty
+                        ) - pro_rata_entry_fee
                         total_realized_pnl_delta += lot_pnl
                         sell_remaining_lots.append(
                             PositionLot(
@@ -411,7 +425,7 @@ class DecimalLedger:
                                 side=lot.side,
                                 quantity=lot.quantity - closed_qty,
                                 entry_price=lot.entry_price,
-                                entry_fee=lot.entry_fee,
+                                entry_fee=lot.entry_fee - pro_rata_entry_fee,
                                 timestamp=lot.timestamp,
                                 fill_id=lot.fill_id,
                             )

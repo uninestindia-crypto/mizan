@@ -27,6 +27,8 @@ from quant_system.data.upstox_failures import require_aware_utc
 from quant_system.risk.governor import PreTradeRiskGovernor
 from quant_system.strategies.base import BaseStrategy, MarketContext
 
+_PAISA = Decimal("0.01")
+
 
 class ShadowSessionState(StrEnum):
     """Lifecycle states of the real-time shadow session."""
@@ -51,6 +53,10 @@ class ShadowHaltReason(StrEnum):
     FEED_ERROR = "FEED_ERROR"
     RISK_KILL_SWITCH = "RISK_KILL_SWITCH"
     MANUAL_HALT = "MANUAL_HALT"
+    # Names deliberately match ReplayFeedFailureCode so the recorded (Slice 8) and live
+    # (Slice 9) surfaces describe the same defect with the same word in the audit.
+    DUPLICATE_TICK = "DUPLICATE_TICK"
+    OUT_OF_ORDER_TIMESTAMP = "OUT_OF_ORDER_TIMESTAMP"
 
 
 class ShadowDecisionStatus(StrEnum):
@@ -60,6 +66,19 @@ class ShadowDecisionStatus(StrEnum):
     REJECTED_BY_RISK = "REJECTED_BY_RISK"
     HALTED = "HALTED"
     NO_SIGNAL = "NO_SIGNAL"
+
+
+class DecisionCadence(StrEnum):
+    """How often the strategy is consulted for a given symbol within one session.
+
+    `PER_QUOTE` is the quote-driven behaviour this runner was built for. `ONCE_PER_SESSION`
+    exists for governed models, which decide on a completed daily bar: scoring one unchanged
+    feature row on every tick would emit the same signal all session and stack position on
+    each one. See `agent_context/decisions/20260822-point-in-time-bars-at-execution.md`.
+    """
+
+    PER_QUOTE = "PER_QUOTE"
+    ONCE_PER_SESSION = "ONCE_PER_SESSION"
 
 
 @dataclass(frozen=True, slots=True)
@@ -189,6 +208,7 @@ class RealtimeShadowConfig:
     default_order_quantity: int = 10
     initial_cash: Decimal = Decimal("1000000.00")
     execution_mode: str = "SHADOW_READ_ONLY"
+    decision_cadence: DecisionCadence = DecisionCadence.PER_QUOTE
 
 
 class RealtimeShadowRunner:
@@ -224,6 +244,12 @@ class RealtimeShadowRunner:
         self._positions: dict[str, Position] = {}
         self._last_quotes: dict[str, Quote] = {}
         self._open_entries: dict[str, tuple[ShadowProposal, Decimal, datetime]] = {}
+        self._decided_symbols: set[str] = set()
+        self._pending_fills: dict[str, list[ShadowProposal]] = {}
+        # Sequence integrity state. The signature set mirrors ReplayQuoteFeed._seen_signatures;
+        # it grows for the life of a clean session, which is bounded by one trading day.
+        self._seen_quote_signatures: set[tuple[str, datetime, Decimal, Decimal]] = set()
+        self._last_event_at_by_symbol: dict[str, datetime] = {}
 
         # Zero broker orders tracking (strictly remains 0)
         self._broker_orders_submitted: int = 0
@@ -297,12 +323,48 @@ class RealtimeShadowRunner:
             return None
 
         # 3. Quality Validation
-        if live_quote.ask < live_quote.bid or live_quote.bid < Decimal("0"):
+        # A zero or negative side is an absent book, not a tradable price. Without this the
+        # quote reached the risk governor, which refused it as MISSING_PRICE_FOR_RISK_VALUATION
+        # and so blamed risk for what is a data-quality fault (S9-M1). Defence in depth: the
+        # parser refuses these too, but a record can reach the runner without passing it.
+        if live_quote.bid <= Decimal("0") or live_quote.ask <= Decimal("0"):
             self._halt(
                 ShadowHaltReason.QUALITY_VIOLATION,
-                f"Crossed or negative quote: bid={live_quote.bid}, ask={live_quote.ask} for {live_quote.symbol}",
+                f"Quote for {live_quote.symbol} carries no usable book: "
+                f"bid={live_quote.bid}, ask={live_quote.ask}",
             )
             return None
+
+        if live_quote.ask < live_quote.bid:
+            self._halt(
+                ShadowHaltReason.QUALITY_VIOLATION,
+                f"Crossed quote: bid={live_quote.bid}, ask={live_quote.ask} for {live_quote.symbol}",
+            )
+            return None
+
+        # 3b. Sequence integrity: a live stream must neither replay an event nor rewind a
+        # symbol's clock. Both fabricate outcomes from a single market event (S9-M2, S9-M3).
+        # Ordering is per symbol, because one multi-instrument message legitimately carries
+        # several instruments stamped with the same event time.
+        signature = (live_quote.symbol, live_quote.event_at, live_quote.bid, live_quote.ask)
+        if signature in self._seen_quote_signatures:
+            self._halt(
+                ShadowHaltReason.DUPLICATE_TICK,
+                f"Duplicate quote for {live_quote.symbol} at {live_quote.event_at.isoformat()}",
+            )
+            return None
+
+        last_event_at = self._last_event_at_by_symbol.get(live_quote.symbol)
+        if last_event_at is not None and live_quote.event_at < last_event_at:
+            self._halt(
+                ShadowHaltReason.OUT_OF_ORDER_TIMESTAMP,
+                f"Quote for {live_quote.symbol} at {live_quote.event_at.isoformat()} "
+                f"precedes the previous event at {last_event_at.isoformat()}",
+            )
+            return None
+
+        self._seen_quote_signatures.add(signature)
+        self._last_event_at_by_symbol[live_quote.symbol] = live_quote.event_at
 
         # 4. Check Risk Governor Kill Switch
         if self.risk_governor.is_killed:
@@ -318,8 +380,17 @@ class RealtimeShadowRunner:
         # 5. Check Matured Outcomes on Existing Open Shadow Entries
         self._check_matured_outcomes(domain_quote, now)
 
+        # 5b. Fill decisions taken on an earlier quote (never on their own quote — S9-B1)
+        self._execute_pending_fills(domain_quote, now)
+
         # 6. Generate Strategy Signal & Shadow Decision
         if self.strategy is None:
+            return None
+
+        if (
+            self.config.decision_cadence == DecisionCadence.ONCE_PER_SESSION
+            and domain_quote.symbol in self._decided_symbols
+        ):
             return None
 
         context = MarketContext(
@@ -364,15 +435,6 @@ class RealtimeShadowRunner:
             status = ShadowDecisionStatus.APPROVED
             risk_approved = True
             rejection_reason = None
-
-            # Mark hypothetical shadow fill (NO broker order is sent)
-            exec_price = domain_quote.ask if primary_signal.side == Side.BUY else domain_quote.bid
-            self._record_hypothetical_fill(
-                symbol=domain_quote.symbol,
-                side=primary_signal.side,
-                quantity=quantity,
-                price=exec_price,
-            )
         else:
             status = ShadowDecisionStatus.REJECTED_BY_RISK
             risk_approved = False
@@ -397,12 +459,33 @@ class RealtimeShadowRunner:
             resulting_leverage=risk_decision.resulting_leverage,
         )
         self._decisions.append(proposal)
+        self._decided_symbols.add(domain_quote.symbol)
 
         if risk_approved:
-            exec_price = domain_quote.ask if primary_signal.side == Side.BUY else domain_quote.bid
-            self._open_entries[proposal_id] = (proposal, exec_price, now)
+            # A decision never fills against the quote that produced it. The fill is deferred
+            # to the first later quote for this symbol, executed in _execute_pending_fills.
+            self._pending_fills.setdefault(domain_quote.symbol, []).append(proposal)
 
         return proposal
+
+    def _execute_pending_fills(self, current_quote: Quote, now: datetime) -> None:
+        """Fill decisions taken on an earlier quote, at this quote's prices.
+
+        Called after maturity and before the strategy is consulted, so an entry opened here
+        cannot also mature here, and a decision taken later in this same quote cannot fill here.
+        """
+        pending = self._pending_fills.pop(current_quote.symbol, [])
+        for proposal in pending:
+            if proposal.side is None:
+                continue
+            exec_price = current_quote.ask if proposal.side == Side.BUY else current_quote.bid
+            self._record_hypothetical_fill(
+                symbol=proposal.symbol,
+                side=proposal.side,
+                quantity=proposal.quantity,
+                price=exec_price,
+            )
+            self._open_entries[proposal.proposal_id] = (proposal, exec_price, now)
 
     def _record_hypothetical_fill(
         self, symbol: str, side: Side, quantity: int, price: Decimal
@@ -420,10 +503,28 @@ class RealtimeShadowRunner:
             self._cash += price * Decimal(quantity)
 
         if new_qty != 0:
+            if current_pos.quantity == 0 or (
+                (current_pos.quantity > 0 and signed_qty > 0)
+                or (current_pos.quantity < 0 and signed_qty < 0)
+            ):
+                # Adding to position in same direction: weighted average price
+                total_val = current_pos.average_price * Decimal(
+                    abs(current_pos.quantity)
+                ) + price * Decimal(quantity)
+                avg_price = (total_val / Decimal(abs(new_qty))).quantize(_PAISA)
+            elif (current_pos.quantity > 0 and new_qty > 0) or (
+                current_pos.quantity < 0 and new_qty < 0
+            ):
+                # Partially reducing position: average price stays the same
+                avg_price = current_pos.average_price
+            else:
+                # Position flipped: new average price is the fill price
+                avg_price = price
+
             self._positions[symbol] = Position(
                 symbol=symbol,
                 quantity=new_qty,
-                average_price=price,
+                average_price=avg_price,
             )
         else:
             self._positions.pop(symbol, None)
@@ -473,6 +574,17 @@ class RealtimeShadowRunner:
                     matured_at=now,
                     holding_seconds=holding_seconds,
                 )
+                # Close the hypothetical position the entry opened. Without this the same
+                # market move is counted twice: once as unrealised mark-to-market on a
+                # position that never closes, and again as realised net_pnl here.
+                self._record_hypothetical_fill(
+                    symbol=prop.symbol,
+                    side=exit_side,
+                    quantity=prop.quantity,
+                    price=exit_price,
+                )
+                self._cash -= friction_fee
+
                 self._matured_outcomes.append(outcome)
                 to_remove.append(prop_id)
 

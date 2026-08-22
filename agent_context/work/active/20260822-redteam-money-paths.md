@@ -173,3 +173,39 @@ Negative results (tried, could NOT break):
    Binomial zero-vol undiscounted intrinsic; CRR `p>1` with small vol).
 4. Slice 7: `analytics/nse_rules.py` dated boundary, cost components summing to the paise.
 5. Slice 7: `risk/governor.py`, `risk/checks.py`, `portfolio/**`.
+
+## Checkpoint 2 — Slice 7 families run (greeks, nse_rules, risk, ledger, domain)
+
+Added to the findings table:
+
+| # | Severity | Finding | Probe |
+|---|---|---|---|
+| R-1 | Blocker | `PreTradeRiskGovernor.evaluate_fill` is a no-op: `governor.py:324-327` is an `if` whose body is `pass`. A Rs 50,000,000,000 fill against Rs 1,000 equity returns `approved=True, reason="FILL_VERIFIED"` | p08 |
+| R-2 | Major | `restore_state` silently drops `limits` and the kill-event trail; a restarted governor runs DEFAULT limits (`max_position_weight` 0.25) after being configured 0.01 | p08 |
+| R-3 | Major | Portfolio leverage is valued at average COST, not market. Approved decision reports `resulting_leverage=0.1` when the true value is 1.0, and that number is hashed into `decision_hash` | p09 |
+| R-4 | Minor | `KillSwitchEvent.timestamp` is `datetime.now(UTC)`, not the decision clock: a 2019 backtest decision produced a 2026 audit timestamp | p08 |
+| G-1 | Blocker | `calculate_time_to_expiry_years` builds expiry at 15:30 in the CALLER's tzinfo, not IST. Same instant IST vs UTC -> 6.25 h vs 11.75 h to expiry; ATM 0DTE NIFTY price 38.96 vs 53.73 (Rs 1,107.59 per 75 lot) | p10 |
+| G-2 | Blocker | `BinomialOptionModel.price` returns undiscounted intrinsic at zero vol: 0.000000 vs the correct 6.760618 that `BlackScholes` in the same module returns | p10 |
+| G-3 | Blocker | No CRR stability guard. vol=0.001, T=1, steps=200 -> risk-neutral p = 2.975289 and the price collapses to 0.000000 vs Black-Scholes 6.760618 | p10 |
+| G-4 | Blocker | `BinomialOptionModel.calculate_greeks` gamma is wrong by 465% (0.10184324 vs analytic 0.01802635) at the shipped default `steps=200`; every other Greek agrees to ~0.1% | p10 |
+| G-5 | Major | `get_lot_size` fails OPEN: returns 1 for every non-index symbol and for dates before the table. `validate_quantity('RELIANCE', 7, ...)` -> True | p10 |
+| G-6 | Major | `validate_strike('NIFTY', Decimal('0'))` and `Decimal('-50')` both return True | p10 |
+| N-1 | Major | `DatedExchangeRule.rounding_unit`, `.rounding_method`, `.minimum` are hashed into `rule_hash` but never read by `calculate_costs`. A rule declaring `ROUND_HALF_UP_RUPEE` + `minimum=1000.00` computes 0.33 | p11 |
+| N-2 | Major | `NSERuleEngine.register_rule` bypasses `validate_catalog`; the engine stays live in a state its own validator rejects | p11 |
+
+Negative results this round (tried hard, could NOT break):
+- NSE dated STT boundary selection is EXACT at 2024-09-30/2024-10-01 (futures) and
+  2023-03-31/2023-04-01, 2024-09-30/2024-10-01 (options). Verified rule-by-rule (p11 11A).
+- NSE cost components sum to `total_statutory_charges`, `total_fee`, `total_friction` exactly to
+  the paise across delivery/intraday/options/futures, both sides, prices 0.01 to 24345.75 (p11 11B).
+- Black-Scholes analytic price/delta/theta/vega/rho agree with the binomial lattice to <=1.1% (p10 10G).
+- `Fill`, `PriceBar`, `Quote`, `Position`, `PortfolioSnapshot` all reject binary floats (`_assert_no_float`).
+- LIVE prohibition: `PromotionState` has no LIVE member; no reachable path to a LIVE verdict (p07).
+
+## Next probe (exact)
+
+6. `portfolio/allocation.py`, `portfolio/optimization.py`, `portfolio/sizing.py`.
+7. Slice 4 repair re-attack: `validation.py` Blocker 1 embargo lower bound directly,
+   `persisted_trials.py` Blocker 2 re-derivation, `evidence/store.py` Blocker 3 publish-then-verify,
+   Blocker 4 `_outcome` suffix.
+8. Write `.launch/reports/RED-TEAM-MONEY-PATHS.md` in the clone, copy to the install root.

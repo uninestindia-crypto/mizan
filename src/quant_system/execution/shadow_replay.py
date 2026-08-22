@@ -108,6 +108,10 @@ class ShadowReplayEngine:
             self._finalize_completed_session()
         except ReplayFeedError as err:
             self._handle_feed_error(err)
+        except Exception as err:
+            self._status = ShadowSessionStatus.HALTED
+            self._halt_reason = f"UNEXPECTED_ENGINE_ERROR: {err}"
+            self._cancel_remaining_pending(self._halt_reason)
         return self._build_audit()
 
     def _process_tick(self, quote: ReplayQuote) -> None:
@@ -352,9 +356,16 @@ class ShadowReplayEngine:
         )
         total_fees = sum((f.fee for f in self._fills), Decimal("0.00")).quantize(_PAISA)
 
+        is_reconciled = False
+        try:
+            is_reconciled = self.ledger.reconcile()
+        except Exception:
+            is_reconciled = False
+
         summary_text = (
             f"{self.session_id}:{self.model.model_id}:{self._status.value}:{self._quotes_processed}:"
-            f"{len(self._proposals_by_id)}:{counts['FILLED']}:{self.ledger.cash}:{snap.total_equity}"
+            f"{len(self._proposals_by_id)}:{counts['FILLED']}:{self.ledger.cash}:{snap.total_equity}:"
+            f"{is_reconciled}:{self._halt_reason or ''}"
         )
         audit_hash = sha256_hex(summary_text.encode("utf-8"))
 
@@ -378,7 +389,7 @@ class ShadowReplayEngine:
             unrealized_pnl=snap.unrealized_pnl,
             total_equity=snap.total_equity,
             total_fees_paid=total_fees,
-            reconciled=True,
+            reconciled=is_reconciled,
             matured_decisions_count=matured_count,
             audit_hash=audit_hash,
             halt_reason=self._halt_reason,

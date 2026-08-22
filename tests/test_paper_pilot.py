@@ -439,30 +439,35 @@ def test_paper_pilot_session_end_cancellation_of_unfilled_remainder() -> None:
     t0 = datetime(2025, 1, 1, 9, 15, 0, tzinfo=UTC)
     engine.start_session(session_date=date(2025, 1, 1), timestamp=t0)
 
-    # Order 500 shares
+    # Order 80 shares. Sized to pass pre-trade risk once priced: 80 * 2501 = 200,080, which is
+    # 20.0% of equity against max_position_weight 0.25. This previously ordered 500 shares
+    # (1,250,500 = 125% of equity, more than the account's entire cash) and still reached the
+    # book, because an unpriced MARKET order skipped risk entirely (S10-B1). The order was
+    # resized when that bypass was closed; the behaviour under test — partial fill, then
+    # cancellation of the unfilled remainder at session end — is unchanged.
     p = PaperProposal(
         proposal_id="prop_cancel_test",
         symbol="RELIANCE",
         side=Side.BUY,
-        quantity=500,
+        quantity=80,
         order_type=OrderType.MARKET,
         decision_at=t0,
     )
     order, _ = engine.submit_proposal(p)
 
-    # Fills 200 shares
+    # Ask depth is only 30, so 30 fill and 50 remain
     t1 = t0 + timedelta(seconds=1)
     book1 = OrderBookSnapshot.from_levels(
         symbol="RELIANCE",
         timestamp=t1,
         bids=[(Decimal("2500.00"), 100)],
-        asks=[(Decimal("2501.00"), 200)],
+        asks=[(Decimal("2501.00"), 30)],
     )
     engine.process_quote(book1)
     assert engine.orders[order.order_id].status == OrderStatus.PARTIALLY_FILLED
-    assert engine.positions["RELIANCE"].quantity == 200
+    assert engine.positions["RELIANCE"].quantity == 30
 
-    # End session with 300 remaining unfilled
+    # End session with 50 remaining unfilled
     t_end = datetime(2025, 1, 1, 15, 30, 0, tzinfo=UTC)
     report = engine.end_session(timestamp=t_end, close_prices={"RELIANCE": Decimal("2510.00")})
 
@@ -471,8 +476,8 @@ def test_paper_pilot_session_end_cancellation_of_unfilled_remainder() -> None:
     assert engine.orders[order.order_id].status == OrderStatus.CANCELLED
     assert report.orders_cancelled == 1
     assert report.open_orders_remaining == 0
-    # Position remains 200
-    assert report.open_positions["RELIANCE"] == 200
+    # Position remains 30
+    assert report.open_positions["RELIANCE"] == 30
 
 
 def test_paper_pilot_idempotency_and_duplicate_handling() -> None:
@@ -867,3 +872,56 @@ def test_independent_ledger_reconciliation_tamper_detection() -> None:
 
     with pytest.raises(RuntimeError, match="Ledger reconciliation mismatch"):
         engine.ledger.reconcile()
+
+
+# -------------------------------------------------------------------------
+# Ring 5: S10-B1 regression — staged orders must face risk before they fill
+# -------------------------------------------------------------------------
+
+
+def test_unpriced_market_order_faces_risk_before_it_fills() -> None:
+    """S10-B1: an unpriced MARKET order skipped evaluate_order entirely and was stamped approved.
+
+    Position weight cannot be computed without a price, so the check was skipped rather than
+    deferred. The order then filled at 90% concentration against a 25% limit.
+    """
+    engine = PaperPilotEngine(initial_cash=Decimal("1000000.00"), session_id="session_s10b1")
+    t0 = datetime(2025, 1, 1, 9, 15, 0, tzinfo=UTC)
+    engine.start_session(session_date=date(2025, 1, 1), timestamp=t0)
+
+    # Fresh session: no cached price for INFY, and a MARKET order carries no limit price,
+    # so the order value is unknowable at submission time.
+    oversize = PaperProposal(
+        proposal_id="prop_s10b1",
+        symbol="INFY",
+        side=Side.BUY,
+        quantity=9000,
+        order_type=OrderType.MARKET,
+        decision_at=t0,
+    )
+    order, decision = engine.submit_proposal(oversize)
+    assert decision.approved is True, "submission is staged, not yet judged on value"
+    assert order.status == OrderStatus.SUBMITTED
+
+    # The quote supplies the missing price. 9000 * ~100 = ~900,000 of 1,000,000 equity = ~90%,
+    # far beyond max_position_weight 0.25, so the deferred check must now refuse it.
+    t1 = t0 + timedelta(seconds=1)
+    fills = engine.process_quote(
+        Quote(
+            symbol="INFY",
+            timestamp=t1,
+            bid=Decimal("100.00"),
+            ask=Decimal("100.05"),
+            bid_size=20000,
+            ask_size=20000,
+            last_price=Decimal("100.02"),
+        )
+    )
+
+    assert fills == [], "a staged order must not fill without passing pre-trade risk"
+    final_order = engine.orders[order.order_id]
+    assert final_order.status == OrderStatus.REJECTED
+    assert "POSITION_WEIGHT" in (final_order.rejection_reason or ""), (
+        f"rejection must name the limit that refused it; got {final_order.rejection_reason!r}"
+    )
+    assert engine.positions.get("INFY") is None

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from enum import StrEnum
 
@@ -99,7 +99,9 @@ class NSEContractConventions:
 
     @classmethod
     def validate_strike(cls, symbol: str, strike: Decimal) -> bool:
-        """Validates that a strike is a multiple of the valid strike step."""
+        """Validates that a strike is positive and a multiple of the valid strike step."""
+        if strike <= Decimal("0"):
+            return False
         step = cls.get_strike_step(symbol)
         remainder = strike % step
         return remainder == Decimal("0.00") or remainder == Decimal("0")
@@ -121,12 +123,17 @@ class NSEContractConventions:
         market_close_minute: int = 30,
     ) -> float:
         """Calculates exact Act/365 year fraction to expiry time (15:30 IST on expiry date)."""
+        ist = timezone(timedelta(hours=5, minutes=30), name="IST")
         expiry_dt = datetime.combine(
             expiry_date,
             time(market_close_hour, market_close_minute, 0),
-            tzinfo=current_time.tzinfo,
+            tzinfo=ist,
         )
-        delta_seconds = (expiry_dt - current_time).total_seconds()
+        if current_time.tzinfo is None:
+            curr = current_time.replace(tzinfo=ist)
+        else:
+            curr = current_time.astimezone(ist)
+        delta_seconds = (expiry_dt - curr).total_seconds()
         if delta_seconds <= 0:
             return 0.0
         # Act/365 year fraction
@@ -338,16 +345,42 @@ class BinomialOptionModel:
         """Prices an option using the CRR binomial lattice with backward induction."""
         if spot <= 0.0 or strike <= 0.0:
             raise ValueError(f"Spot and strike must be > 0 (got S={spot}, K={strike})")
-        if time_to_expiry_years <= 0.0 or volatility <= 0.0:
+        if time_to_expiry_years <= 0.0:
             if option_type == InstrumentType.OPTION_CALL:
                 return max(0.0, spot - strike)
             return max(0.0, strike - spot)
+        if volatility <= 0.0:
+            discount = math.exp(-risk_free_rate * time_to_expiry_years)
+            if exercise_style == ExerciseStyle.EUROPEAN:
+                if option_type == InstrumentType.OPTION_CALL:
+                    return max(0.0, spot - strike * discount)
+                return max(0.0, strike * discount - spot)
+            else:
+                if option_type == InstrumentType.OPTION_CALL:
+                    return max(0.0, spot - strike)
+                return max(0.0, strike - spot)
 
         dt = time_to_expiry_years / float(steps)
         u = math.exp(volatility * math.sqrt(dt))
         d = 1.0 / u
         disc = math.exp(-risk_free_rate * dt)
-        p = (math.exp(risk_free_rate * dt) - d) / (u - d)
+        if u == d:
+            p = 0.5
+        else:
+            p = (math.exp(risk_free_rate * dt) - d) / (u - d)
+
+        # CRR stability guard for very low volatility / steps
+        if p < 0.0 or p > 1.0:
+            if exercise_style == ExerciseStyle.EUROPEAN:
+                return BlackScholes.calculate_greeks(
+                    spot,
+                    strike,
+                    time_to_expiry_years,
+                    max(0.0001, volatility),
+                    risk_free_rate,
+                    option_type,
+                ).price
+            p = max(0.0, min(1.0, p))
 
         # Boundary condition: terminal asset prices and payoffs
         values = [0.0] * (steps + 1)
@@ -413,7 +446,37 @@ class BinomialOptionModel:
                 model="BINOMIAL",
             )
 
-        # Delta & Gamma via spot shifts (1% shift or 0.5%)
+        # For European options, analytical Black-Scholes gamma provides exact benchmark
+        if exercise_style == ExerciseStyle.EUROPEAN and volatility > 0.0:
+            bs = BlackScholes.calculate_greeks(
+                spot, strike, time_to_expiry_years, volatility, risk_free_rate, option_type
+            )
+            gamma = bs.gamma
+        else:
+            h_s = max(0.01, spot * 0.01)
+            p_up = cls.price(
+                spot + h_s,
+                strike,
+                time_to_expiry_years,
+                volatility,
+                risk_free_rate,
+                option_type,
+                exercise_style,
+                steps,
+            )
+            p_down = cls.price(
+                spot - h_s,
+                strike,
+                time_to_expiry_years,
+                volatility,
+                risk_free_rate,
+                option_type,
+                exercise_style,
+                steps,
+            )
+            gamma = (p_up - 2.0 * base_price + p_down) / (h_s * h_s)
+
+        # Delta via central difference
         h_s = max(0.01, spot * 0.005)
         p_up = cls.price(
             spot + h_s,
@@ -435,9 +498,7 @@ class BinomialOptionModel:
             exercise_style,
             steps,
         )
-
         delta = (p_up - p_down) / (2.0 * h_s)
-        gamma = (p_up - 2.0 * base_price + p_down) / (h_s * h_s)
 
         # Theta via 1-day time reduction
         dt_1d = 1.0 / 365.0

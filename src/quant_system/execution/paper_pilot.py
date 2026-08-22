@@ -165,6 +165,9 @@ class PaperPilotEngine:
         self._orders: dict[str, Order] = {}
         self._order_remaining_qty: dict[str, int] = {}
         self._open_orders: dict[str, list[str]] = defaultdict(list)  # symbol -> list of order_ids
+        # Orders approved without a price, so order value and position weight could not be
+        # evaluated at submission. Their risk check is DEFERRED to first fill, never skipped.
+        self._staged_order_ids: set[str] = set()
         self._fills: list[Fill] = []
         self._order_fills: dict[str, list[Fill]] = defaultdict(list)
         self._fill_by_id: dict[str, Fill] = {}
@@ -371,7 +374,9 @@ class PaperPilotEngine:
                 ask=cached_price,
             )
 
-        if quote_for_risk is not None or order.limit_price is not None:
+        staged_valuation = quote_for_risk is None and order.limit_price is None
+
+        if not staged_valuation:
             decision = self.risk_governor.evaluate_order(
                 order=order,
                 current_equity=current_equity,
@@ -380,7 +385,7 @@ class PaperPilotEngine:
                 current_quote=quote_for_risk,
             )
         else:
-            # Staged valuation: check non-price rules (kill switch, naked shorts)
+            # Staged valuation: check non-price constraints (kill switch, naked short)
             if self.risk_governor.is_killed:
                 decision = RiskDecision(
                     approved=False,
@@ -408,7 +413,7 @@ class PaperPilotEngine:
                 else:
                     decision = RiskDecision(
                         approved=True,
-                        reason="RISK_APPROVED",
+                        reason="RISK_APPROVED_STAGED",
                         order_id=order_id,
                         current_equity=current_equity,
                         order_value=Decimal("0.00"),
@@ -417,7 +422,7 @@ class PaperPilotEngine:
             else:
                 decision = RiskDecision(
                     approved=True,
-                    reason="RISK_APPROVED",
+                    reason="RISK_APPROVED_STAGED",
                     order_id=order_id,
                     current_equity=current_equity,
                     order_value=Decimal("0.00"),
@@ -450,6 +455,8 @@ class PaperPilotEngine:
         self._orders[order_id] = submitted_order
         self._order_remaining_qty[order_id] = proposal.quantity
         self._open_orders[proposal.symbol].append(order_id)
+        if staged_valuation:
+            self._staged_order_ids.add(order_id)
 
         self._log_audit(
             event_type="ORDER_SUBMITTED",
@@ -513,6 +520,54 @@ class PaperPilotEngine:
             remaining_qty = self._order_remaining_qty.get(order_id, 0)
             if remaining_qty <= 0:
                 continue
+
+            # A staged order was approved without a price, so its value and position weight
+            # were unknowable at submission. The quote supplies them: run the pre-trade check
+            # now, before any fill. Skipping it let a 9000-share order reach 90% concentration
+            # against a 25% limit (S10-B1).
+            if order_id in self._staged_order_ids:
+                best_bid = book.best_bid_price
+                best_ask = book.best_ask_price
+                if best_bid is None or best_ask is None or best_ask < best_bid:
+                    # This book cannot value the order. Leave it staged and do not fill it:
+                    # filling here is exactly the unvalued execution this guard exists to stop.
+                    continue
+
+                deferred_decision = self.risk_governor.evaluate_order(
+                    order=order,
+                    current_equity=self.ledger.cash
+                    + sum(
+                        p.current_market_value(self._price_cache.get(p.symbol, p.average_price))
+                        for p in self.ledger.positions.values()
+                    ),
+                    current_cash=self.ledger.cash,
+                    positions=self.ledger.positions,
+                    current_quote=Quote(
+                        symbol=symbol,
+                        timestamp=book.timestamp,
+                        bid=best_bid,
+                        ask=best_ask,
+                    ),
+                )
+                self._staged_order_ids.discard(order_id)
+                if not deferred_decision.approved:
+                    rejected = OrderStateMachine.transition(
+                        order, OrderStatus.REJECTED, reason=deferred_decision.reason
+                    )
+                    self._orders[order_id] = rejected
+                    self._order_remaining_qty[order_id] = 0
+                    self._open_orders[symbol].remove(order_id)
+                    self._log_audit(
+                        event_type="RISK_REJECTED",
+                        timestamp=book.timestamp,
+                        order_id=order_id,
+                        symbol=symbol,
+                        side=order.side,
+                        quantity=order.quantity,
+                        reason=deferred_decision.reason,
+                        details={"deferred_from_submission": "true"},
+                    )
+                    continue
 
             sim_result: FillSimulationResult = self.orderbook_sim.simulate_fill(
                 order=order,

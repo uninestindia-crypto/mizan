@@ -49,11 +49,12 @@ class PreTradeRiskGovernor:
         reason: str = "MANUAL_HALT",
         trigger_source: str = "MANUAL",
         current_equity: Decimal | None = None,
+        timestamp: datetime | None = None,
     ) -> None:
         """Instantly halts all new risk taking across the entire system."""
         self._is_killed = True
         event = KillSwitchEvent(
-            timestamp=datetime.now(UTC),
+            timestamp=timestamp or datetime.now(UTC),
             reason=reason,
             trigger_source=trigger_source,
             equity_at_halt=current_equity
@@ -83,9 +84,31 @@ class PreTradeRiskGovernor:
         """Serializes governor state for persistence and recovery across restarts."""
         return {
             "limits_id": self.limits.limits_id,
+            "limits": {
+                "limits_id": self.limits.limits_id,
+                "max_position_weight": self.limits.max_position_weight,
+                "max_daily_drawdown_pct": self.limits.max_daily_drawdown_pct,
+                "max_total_drawdown_pct": self.limits.max_total_drawdown_pct,
+                "max_portfolio_leverage": self.limits.max_portfolio_leverage,
+                "min_cash_buffer_pct": self.limits.min_cash_buffer_pct,
+                "max_allowed_spread_pct": self.limits.max_allowed_spread_pct,
+                "allow_naked_short": self.limits.allow_naked_short,
+                "max_order_value": str(self.limits.max_order_value)
+                if self.limits.max_order_value is not None
+                else None,
+            },
             "is_killed": self._is_killed,
             "daily_peak_equity": str(self._daily_peak_equity),
             "all_time_peak_equity": str(self._all_time_peak_equity),
+            "kill_events": [
+                {
+                    "timestamp": e.timestamp.isoformat(),
+                    "reason": e.reason,
+                    "trigger_source": e.trigger_source,
+                    "equity_at_halt": str(e.equity_at_halt),
+                }
+                for e in self._kill_events
+            ],
             "kill_events_count": len(self._kill_events),
         }
 
@@ -94,6 +117,45 @@ class PreTradeRiskGovernor:
         self._is_killed = bool(state.get("is_killed", False))
         self._daily_peak_equity = Decimal(str(state.get("daily_peak_equity", "0.00")))
         self._all_time_peak_equity = Decimal(str(state.get("all_time_peak_equity", "0.00")))
+        if "limits" in state and isinstance(state["limits"], dict):
+            lim_dict = state["limits"]
+            self.limits = RiskLimits(
+                limits_id=lim_dict.get("limits_id", self.limits.limits_id),
+                max_position_weight=float(
+                    lim_dict.get("max_position_weight", self.limits.max_position_weight)
+                ),
+                max_daily_drawdown_pct=float(
+                    lim_dict.get("max_daily_drawdown_pct", self.limits.max_daily_drawdown_pct)
+                ),
+                max_total_drawdown_pct=float(
+                    lim_dict.get("max_total_drawdown_pct", self.limits.max_total_drawdown_pct)
+                ),
+                max_portfolio_leverage=float(
+                    lim_dict.get("max_portfolio_leverage", self.limits.max_portfolio_leverage)
+                ),
+                min_cash_buffer_pct=float(
+                    lim_dict.get("min_cash_buffer_pct", self.limits.min_cash_buffer_pct)
+                ),
+                max_allowed_spread_pct=float(
+                    lim_dict.get("max_allowed_spread_pct", self.limits.max_allowed_spread_pct)
+                ),
+                allow_naked_short=bool(
+                    lim_dict.get("allow_naked_short", self.limits.allow_naked_short)
+                ),
+                max_order_value=Decimal(str(lim_dict["max_order_value"]))
+                if lim_dict.get("max_order_value") is not None
+                else None,
+            )
+        if "kill_events" in state and isinstance(state["kill_events"], list):
+            self._kill_events = [
+                KillSwitchEvent(
+                    timestamp=datetime.fromisoformat(ev["timestamp"]),
+                    reason=ev["reason"],
+                    trigger_source=ev.get("trigger_source", "MANUAL"),
+                    equity_at_halt=Decimal(str(ev["equity_at_halt"])),
+                )
+                for ev in state["kill_events"]
+            ]
 
     def evaluate_order(
         self,
@@ -317,14 +379,89 @@ class PreTradeRiskGovernor:
     ) -> RiskDecision:
         """Re-evaluates post-fill execution against leverage and cash constraints."""
         fill_val = (fill.price * Decimal(fill.quantity)).quantize(_PAISA)
+        if self._is_killed:
+            return RiskDecision(
+                approved=False,
+                reason="KILL_SWITCH_ACTIVE",
+                order_id=fill.order_id,
+                current_equity=current_equity,
+                order_value=fill_val,
+                resulting_leverage=0.0,
+                limits_id=self.limits.limits_id,
+                decision_timestamp=fill.timestamp,
+            )
+
+        if self.limits.max_order_value is not None and fill_val > self.limits.max_order_value:
+            return RiskDecision(
+                approved=False,
+                reason=f"MAX_ORDER_VALUE_EXCEEDED: Rs {fill_val} > Rs {self.limits.max_order_value}",
+                order_id=fill.order_id,
+                current_equity=current_equity,
+                order_value=fill_val,
+                resulting_leverage=0.0,
+                limits_id=self.limits.limits_id,
+                decision_timestamp=fill.timestamp,
+            )
+
+        resulting_weight = 0.0
         if fill.side == Side.BUY:
             min_cash_required = (
                 current_equity * Decimal(str(self.limits.min_cash_buffer_pct))
             ).quantize(_PAISA)
-            if fill_val > (
-                current_cash - min_cash_required + fill.gross_value
-            ):  # current_cash before fill
-                pass
+            if fill_val > (current_cash - min_cash_required + fill.gross_value):
+                return RiskDecision(
+                    approved=False,
+                    reason=f"INSUFFICIENT_CASH_BUFFER: Need Rs {fill_val + min_cash_required}, available Rs {current_cash}",
+                    order_id=fill.order_id,
+                    current_equity=current_equity,
+                    order_value=fill_val,
+                    resulting_leverage=0.0,
+                    limits_id=self.limits.limits_id,
+                    decision_timestamp=fill.timestamp,
+                )
+
+            current_held = positions[fill.symbol].quantity if fill.symbol in positions else 0
+            new_qty = current_held + fill.quantity
+            pos_val = (Decimal(new_qty) * fill.price).quantize(_PAISA)
+            resulting_weight = (
+                float(pos_val / current_equity) if current_equity > Decimal("0") else 1.0
+            )
+            if resulting_weight > self.limits.max_position_weight:
+                return RiskDecision(
+                    approved=False,
+                    reason=f"POSITION_WEIGHT_LIMIT_EXCEEDED: {resulting_weight:.2%} > {self.limits.max_position_weight:.2%}",
+                    order_id=fill.order_id,
+                    current_equity=current_equity,
+                    order_value=fill_val,
+                    resulting_leverage=0.0,
+                    limits_id=self.limits.limits_id,
+                    decision_timestamp=fill.timestamp,
+                    position_weight_pct=resulting_weight,
+                )
+
+        gross_pos_val = sum(
+            abs(p.quantity) * p.average_price for sym, p in positions.items() if sym != fill.symbol
+        ) + (
+            abs(
+                (positions[fill.symbol].quantity if fill.symbol in positions else 0)
+                + (fill.quantity if fill.side == Side.BUY else -fill.quantity)
+            )
+            * fill.price
+        )
+        resulting_leverage = (
+            float(gross_pos_val / current_equity) if current_equity > Decimal("0") else 0.0
+        )
+        if resulting_leverage > self.limits.max_portfolio_leverage:
+            return RiskDecision(
+                approved=False,
+                reason=f"LEVERAGE_LIMIT_EXCEEDED: {resulting_leverage:.2f} > {self.limits.max_portfolio_leverage:.2f}",
+                order_id=fill.order_id,
+                current_equity=current_equity,
+                order_value=fill_val,
+                resulting_leverage=resulting_leverage,
+                limits_id=self.limits.limits_id,
+                decision_timestamp=fill.timestamp,
+            )
 
         return RiskDecision(
             approved=True,
@@ -332,7 +469,8 @@ class PreTradeRiskGovernor:
             order_id=fill.order_id,
             current_equity=current_equity,
             order_value=fill_val,
-            resulting_leverage=1.0,
+            resulting_leverage=resulting_leverage,
             limits_id=self.limits.limits_id,
             decision_timestamp=fill.timestamp,
+            position_weight_pct=resulting_weight,
         )

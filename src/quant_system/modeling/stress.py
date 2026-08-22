@@ -219,19 +219,29 @@ def _stress_twice_transaction_costs(
         context.prec = 60
         context.rounding = ROUND_HALF_EVEN
 
+        label_map = {(lbl.symbol, lbl.decision_at): lbl for lbl in labels}
         stressed_period_returns: list[Decimal] = []
         decision_by_time: dict[datetime, list[Decimal]] = {}
         for decision in decisions:
             decision_by_time.setdefault(decision.decision_at, [])
             if decision.predicted_target == "UP":
                 # Find cost quote for this decision
-                quote = cost_quotes.get((decision.symbol, decision.decision_at)) or cost_quotes.get(
-                    decision.symbol
+                label = label_map.get((decision.symbol, decision.decision_at))
+                entry_at = label.entry_at if label is not None else None
+                quote = (
+                    cost_quotes.get((decision.symbol, decision.decision_at))
+                    or (
+                        cost_quotes.get((decision.symbol, entry_at))
+                        if entry_at is not None
+                        else None
+                    )
+                    or cost_quotes.get(decision.symbol)
                 )
                 if (
                     quote is not None
                     and hasattr(quote, "component_costs")
                     and hasattr(quote, "entry_price")
+                    and hasattr(quote, "quantity")
                 ):
                     total_amount = sum(
                         (m.amount_decimal for m in quote.component_costs.values()), start=Decimal(0)
@@ -239,8 +249,10 @@ def _stress_twice_transaction_costs(
                     cost = total_amount / (quote.entry_price * Decimal(quote.quantity))
                 elif quote is not None and hasattr(quote, "total_bps"):
                     cost = Decimal(str(quote.total_bps)) / Decimal(10000)
+                elif quote is not None and isinstance(quote, (Decimal, int, float, str)):
+                    cost = Decimal(str(quote))
                 else:
-                    cost = Decimal("0.001")  # 10 bps default
+                    cost = Decimal("0.001")  # 10 bps default fallback
 
                 # Stressed net return = base net return - 1x additional cost (since base net already subtracted 1x cost)
                 base_net = Decimal(decision.realized_net_return)

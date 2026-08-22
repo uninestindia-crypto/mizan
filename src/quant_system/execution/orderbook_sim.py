@@ -335,6 +335,8 @@ class OrderBookSimulator:
                 ).quantize(_PAISA, rounding=ROUND_UP)
 
                 effective_price = (level.price + slippage_per_unit).quantize(_PAISA)
+                if order.order_type == OrderType.LIMIT and order.limit_price is not None:
+                    effective_price = min(order.limit_price, effective_price)
                 gross_val = effective_price * Decimal(matched_qty)
 
                 allocations.append(
@@ -379,6 +381,8 @@ class OrderBookSimulator:
                 ).quantize(_PAISA, rounding=ROUND_UP)
 
                 effective_price = max(_PAISA, (level.price - slippage_per_unit).quantize(_PAISA))
+                if order.order_type == OrderType.LIMIT and order.limit_price is not None:
+                    effective_price = max(order.limit_price, effective_price)
                 gross_val = effective_price * Decimal(matched_qty)
 
                 allocations.append(

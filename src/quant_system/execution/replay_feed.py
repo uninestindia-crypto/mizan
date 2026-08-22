@@ -180,6 +180,7 @@ class ReplayQuoteFeed:
         self._state: FeedState = FeedState.READY
         self._cursor: int = 0
         self._previous_tick: ReplayQuote | None = None
+        self._last_tick_by_symbol: dict[str, ReplayQuote] = {}
         self._seen_signatures: set[tuple[str, datetime, Decimal, Decimal]] = set()
         self._halt_reason: str | None = None
 
@@ -200,6 +201,7 @@ class ReplayQuoteFeed:
         self._state = FeedState.READY
         self._cursor = 0
         self._previous_tick = None
+        self._last_tick_by_symbol.clear()
         self._seen_signatures.clear()
         self._halt_reason = None
 
@@ -248,6 +250,7 @@ class ReplayQuoteFeed:
             raise
 
         self._previous_tick = tick
+        self._last_tick_by_symbol[tick.symbol] = tick
         self._seen_signatures.add((tick.symbol, tick.timestamp, tick.bid, tick.ask))
         self._cursor += 1
         return tick
@@ -259,9 +262,14 @@ class ReplayQuoteFeed:
     ) -> ReplayQuote:
         """Normalizes and checks internal fields of the raw quote."""
         if isinstance(raw, ReplayQuote):
-            return raw
-
-        if isinstance(raw, Quote):
+            symbol = raw.symbol
+            ts = raw.timestamp
+            bid = raw.bid
+            ask = raw.ask
+            bid_sz = raw.bid_size
+            ask_sz = raw.ask_size
+            last_p = raw.last_price
+        elif isinstance(raw, Quote):
             symbol = raw.symbol
             ts = raw.timestamp
             bid = raw.bid
@@ -326,7 +334,7 @@ class ReplayQuoteFeed:
                 sequence_id=seq,
             )
 
-        if self._previous_tick is None:
+        if self._previous_tick is None and tick.symbol not in self._last_tick_by_symbol:
             return
 
         self._check_time_order(tick, seq)
@@ -351,14 +359,14 @@ class ReplayQuoteFeed:
             )
 
     def _check_staleness(self, tick: ReplayQuote, seq: int) -> None:
-        if self._max_allowed_staleness_seconds is None or self._previous_tick is None:
+        if self._max_allowed_staleness_seconds is None:
             return
-        if tick.symbol != self._previous_tick.symbol:
-            return
-        gap = (tick.timestamp - self._previous_tick.timestamp).total_seconds()
-        if gap > self._max_allowed_staleness_seconds:
-            raise ReplayFeedError(
-                ReplayFeedFailureCode.STALE_QUOTE,
-                f"Quote gap {gap:.1f}s exceeds staleness threshold {self._max_allowed_staleness_seconds:.1f}s",
-                sequence_id=seq,
-            )
+        last_sym_tick = self._last_tick_by_symbol.get(tick.symbol)
+        if last_sym_tick is not None:
+            gap = (tick.timestamp - last_sym_tick.timestamp).total_seconds()
+            if gap > self._max_allowed_staleness_seconds:
+                raise ReplayFeedError(
+                    ReplayFeedFailureCode.STALE_QUOTE,
+                    f"Quote gap {gap:.1f}s for {tick.symbol} exceeds staleness threshold {self._max_allowed_staleness_seconds:.1f}s",
+                    sequence_id=seq,
+                )

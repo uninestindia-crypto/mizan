@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections import deque
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -34,6 +35,9 @@ class FeedQualityCode(StrEnum):
     CLOCK_DRIFT = "CLOCK_DRIFT"
     CROSSED_QUOTE = "CROSSED_QUOTE"
     NEGATIVE_PRICE = "NEGATIVE_PRICE"
+    # Same word as ReplayFeedFailureCode.ZERO_LIQUIDITY, so the recorded and live surfaces
+    # describe an absent book identically.
+    ZERO_LIQUIDITY = "ZERO_LIQUIDITY"
     INVALID_TIMESTAMP = "INVALID_TIMESTAMP"
     SCHEMA_DRIFT = "SCHEMA_DRIFT"
     MALFORMED_PAYLOAD = "MALFORMED_PAYLOAD"
@@ -350,6 +354,18 @@ def _parse_feed_entry(
     raw_ltp = market_data.get("ltp") or market_data.get("last_price")
     last_price = _parse_decimal(raw_ltp, "last_price") if raw_ltp is not None else None
 
+    # A missing side is not a zero price, it is an absent book. Both bid and ask default to 0
+    # when the payload omits depth, and `0 < 0` is false, so the crossed-quote guard below could
+    # never catch it: an LTP-only payload was published as a valid two-sided quote (S9-M1).
+    # Checked before the crossed guard so that a missing side is named accurately rather than
+    # being reported as a crossed book.
+    if bid <= 0 or ask <= 0:
+        raise LiveFeedQualityError(
+            f"Quote for {instrument_key} carries no usable book (bid={bid}, ask={ask}); "
+            "a payload without market depth must not be presented as a two-sided quote",
+            code=FeedQualityCode.ZERO_LIQUIDITY,
+        )
+
     # If ask < bid, that is a crossed quote violation
     if ask < bid:
         raise LiveFeedQualityError(
@@ -467,6 +483,9 @@ class UpstoxLiveFeed:
         self.subscribed_instruments: set[str] = set()
         self.symbol_map: dict[str, str] = {}
         self._last_received_at: datetime | None = None
+        # Records parsed from a multi-instrument message that have not been returned yet.
+        # Without this, every record after the first was silently discarded (S9-B3).
+        self._pending_records: deque[LiveQuoteRecord] = deque()
 
         # STRICT INVARIANT: Live feed must be 100% read-only and have zero order capabilities.
         assert not hasattr(self, "place_order"), "Live feed must not expose order endpoints"
@@ -542,33 +561,42 @@ class UpstoxLiveFeed:
         if self.state == FeedState.UNAUTHORIZED:
             raise LiveFeedUnauthorizedError("Feed is UNAUTHORIZED.")
 
-        timeout = timeout_seconds or self.config.heartbeat_timeout_seconds
-        try:
-            payload = self.dependencies.transport.receive(timeout_seconds=timeout)
-        except TimeoutError as err:
-            self.state = FeedState.HALTED
-            raise LiveFeedTimeoutError(
-                f"Stream timed out waiting for market data after {timeout:.1f}s",
-                timeout_seconds=timeout,
-            ) from err
-        except Exception as err:
+        if not self._pending_records:
+            timeout = timeout_seconds or self.config.heartbeat_timeout_seconds
+            try:
+                payload = self.dependencies.transport.receive(timeout_seconds=timeout)
+            except TimeoutError as err:
+                self.state = FeedState.HALTED
+                raise LiveFeedTimeoutError(
+                    f"Stream timed out waiting for market data after {timeout:.1f}s",
+                    timeout_seconds=timeout,
+                ) from err
+            except Exception as err:
+                now = require_aware_utc(self.dependencies.clock())
+                self.state = FeedState.OFFLINE
+                raise LiveFeedConnectionError(
+                    f"Stream transport disconnect: {err}", disconnected_at=now
+                ) from err
+
             now = require_aware_utc(self.dependencies.clock())
-            self.state = FeedState.OFFLINE
-            raise LiveFeedConnectionError(
-                f"Stream transport disconnect: {err}", disconnected_at=now
-            ) from err
+            self._last_received_at = now
 
-        now = require_aware_utc(self.dependencies.clock())
-        self._last_received_at = now
-
-        records = parse_upstox_feed_message(payload, received_at=now, symbol_map=self.symbol_map)
-        if not records:
-            raise LiveFeedMalformedError(
-                "No valid quote records found in feed message", raw_payload=str(payload)
+            records = parse_upstox_feed_message(
+                payload, received_at=now, symbol_map=self.symbol_map
             )
+            if not records:
+                raise LiveFeedMalformedError(
+                    "No valid quote records found in feed message", raw_payload=str(payload)
+                )
+            # Every instrument in the message is queued. Returning only records[0] silently
+            # dropped the rest, so a subscribed symbol could go permanently unseen (S9-B3).
+            self._pending_records.extend(records)
 
-        # Take primary quote from message
-        quote_record = records[0]
+        quote_record = self._pending_records.popleft()
+
+        # Budgets are evaluated against the instant the record was received, not the instant it
+        # is handed out, so a buffered record cannot age its own way past the freshness budget.
+        now = quote_record.received_at
 
         # 1. Freshness budget check (latency = received_at - event_at)
         latency = quote_record.latency_seconds
