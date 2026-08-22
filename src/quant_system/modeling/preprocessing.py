@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_EVEN, Decimal, localcontext
 from typing import Any
@@ -117,25 +118,28 @@ def transform_feature_rows(
     if not rows:
         return ()
     _validate_feature_rows(rows)
+    return tuple(standardize_feature_values(row.features, state) for row in rows)
+
+
+def standardize_feature_values(
+    features: Mapping[str, str],
+    state: StandardizationStateV1,
+) -> tuple[str, ...]:
+    """Standardize one feature mapping with a fitted training-side state.
+
+    The single standardization kernel. ``transform_feature_rows`` applies it across a training
+    dataset and the execution adapter applies it to one live row, so a model never sees a live value
+    scaled by different arithmetic than its training values were.
+    """
     means = tuple(Decimal(value) for value in state.means)
     scales = tuple(Decimal(value) for value in state.scales)
-    transformed: list[tuple[str, ...]] = []
     with localcontext() as context:
         context.prec = 60
         context.rounding = ROUND_HALF_EVEN
-        for row in rows:
-            transformed.append(
-                tuple(
-                    _state_decimal((Decimal(row.features[name]) - mean) / scale)
-                    for name, mean, scale in zip(
-                        FEATURE_NAMES_V1,
-                        means,
-                        scales,
-                        strict=True,
-                    )
-                )
-            )
-    return tuple(transformed)
+        return tuple(
+            _state_decimal((Decimal(features[name]) - mean) / scale)
+            for name, mean, scale in zip(FEATURE_NAMES_V1, means, scales, strict=True)
+        )
 
 
 def feature_rows_hash(rows: tuple[FeatureRowV1, ...]) -> str:

@@ -10,7 +10,7 @@ from quant_system.modeling.evidence import (
     draft_from_feature_dataset,
     draft_from_label_dataset,
 )
-from quant_system.modeling.features import build_feature_dataset
+from quant_system.modeling.features import build_feature_dataset, compute_feature_values
 from quant_system.modeling.folds import FoldSpecV1, PartitionedFoldV1
 from quant_system.modeling.holdout import (
     HoldoutEvaluationOutcomeV1,
@@ -36,6 +36,7 @@ from quant_system.modeling.preprocessing import (
     StandardizationStateV1,
     feature_rows_hash,
     fit_standardization,
+    standardize_feature_values,
     transform_feature_rows,
 )
 from quant_system.modeling.promotion import (
@@ -151,6 +152,7 @@ __all__ = [
     "TrialRegistryV1",
     "TrialState",
     "build_feature_dataset",
+    "compute_feature_values",
     "build_label_dataset",
     "build_purged_fold",
     "create_holdout_partition",
@@ -169,6 +171,7 @@ __all__ = [
     "feature_rows_hash",
     "fit_ridge_classifier",
     "fit_standardization",
+    "standardize_feature_values",
     "fold_spec_hash",
     "predict_ridge_scores",
     "run_mandatory_stress_suite",

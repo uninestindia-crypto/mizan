@@ -239,7 +239,7 @@ def _build_feature_row(
                 "feature input was not available by the decision time",
                 offending_record_key=_record_key(record),
             )
-    features = _six_features(consumed)
+    features = compute_feature_values(consumed)
     preprocessing_input_hash = canonical_sha256(
         {
             "decision_at": utc_text(session.close_at),
@@ -265,7 +265,18 @@ def _build_feature_row(
     )
 
 
-def _six_features(records: tuple[PointInTimeBar, ...]) -> dict[str, str]:
+def compute_feature_values(records: tuple[PointInTimeBar, ...]) -> dict[str, str]:
+    """Compute the closed six-feature family from a point-in-time bar window.
+
+    This is the single feature kernel. The training dataset builder and the execution adapter both
+    call it, so a model is scored at decision time on values produced by the same arithmetic that
+    produced its training rows. Reimplementing this for execution is what allowed a second,
+    ungoverned ridge to diverge from the governed one; do not do it again.
+
+    ``records`` must be ordered oldest first and hold at least ``FEATURE_WARMUP_BARS_V1`` bars.
+    Availability filtering is the caller's responsibility: this function trusts the window it is
+    given and does not know the decision time.
+    """
     closes = tuple(record.close for record in records)
     current = closes[-1]
     if current <= 0:
