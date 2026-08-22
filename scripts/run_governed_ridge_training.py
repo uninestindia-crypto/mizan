@@ -708,12 +708,56 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--validation-sessions", type=int, default=8)
     parser.add_argument("--embargo-sessions", type=int, default=2)
     parser.add_argument("--quantity", type=int, default=1)
+    parser.add_argument(
+        "--env-file",
+        type=Path,
+        default=None,
+        help="dotenv file to read UPSTOX_* credentials from; defaults to <repo root>/.env",
+    )
     _add_authority_arguments(parser)
     return parser.parse_args(argv)
 
 
+def _load_credentials_from_env_file(env_file: Path) -> tuple[str, ...]:
+    """Load only the Upstox keys from a dotenv file into the process environment.
+
+    This project depends on no dotenv library, and adding one would touch ``pyproject.toml`` and
+    ``uv.lock`` — shared files this runner does not own — so the parse is done here.
+
+    Two deliberate restrictions:
+
+    * **Only ``UPSTOX_*`` keys are read.** A real ``.env`` also carries unrelated provider keys.
+      This runner spawns ``git`` as a subprocess, which inherits the environment, so loading
+      secrets it has no use for would widen their exposure for no benefit.
+    * **An already-set variable always wins.** A value exported in the shell is never overwritten
+      by the file, so the environment stays the authority and a stale file cannot silently
+      shadow it.
+
+    Returns the names loaded. Never returns, logs, or prints a value.
+    """
+    wanted = ("UPSTOX_ACCESS_TOKEN", "UPSTOX_API_KEY")
+    if not env_file.is_file():
+        return ()
+    loaded: list[str] = []
+    for raw_line in env_file.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        name, _, value = line.removeprefix("export ").partition("=")
+        name = name.strip()
+        if name not in wanted or os.getenv(name):
+            continue
+        os.environ[name] = value.strip().strip("\"'")
+        loaded.append(name)
+    return tuple(loaded)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
+    env_file = args.env_file or Path(__file__).resolve().parent.parent / ".env"
+    loaded = _load_credentials_from_env_file(env_file)
+    if loaded:
+        _log("[0/7] credential", f"loaded {', '.join(loaded)} from {env_file.name}")
     if not os.getenv("UPSTOX_ACCESS_TOKEN"):
         # Not a refusal: the provider must still be asked, so that its typed answer is what
         # gets recorded rather than this runner's guess about the answer.
