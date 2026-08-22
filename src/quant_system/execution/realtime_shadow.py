@@ -24,6 +24,8 @@ from quant_system.data.live_feed import (
 )
 from quant_system.data.market_data_evidence import canonical_sha256, decimal_text, utc_text
 from quant_system.data.upstox_failures import require_aware_utc
+from quant_system.execution.bar_history import BarHistoryProvider
+from quant_system.execution.governed_strategy import GOVERNED_BARS_KEY
 from quant_system.risk.governor import PreTradeRiskGovernor
 from quant_system.strategies.base import BaseStrategy, MarketContext
 
@@ -209,6 +211,13 @@ class RealtimeShadowConfig:
     initial_cash: Decimal = Decimal("1000000.00")
     execution_mode: str = "SHADOW_READ_ONLY"
     decision_cadence: DecisionCadence = DecisionCadence.PER_QUOTE
+    bar_history_provider: BarHistoryProvider | None = None
+    """Supplies point-in-time bar history to governed models.
+
+    Defaults to ``None``, in which case the market context is built exactly as before and
+    ``GOVERNED_BARS_KEY`` is absent — so every quote-driven strategy behaves bit-for-bit
+    identically. A governed model requires this; a hand-written strategy does not.
+    """
 
 
 class RealtimeShadowRunner:
@@ -393,13 +402,22 @@ class RealtimeShadowRunner:
         ):
             return None
 
+        extra_data: dict[str, Any] = {"current_quote": domain_quote}
+        provider = self.config.bar_history_provider
+        if provider is not None:
+            # Governed models score a completed daily bar, not the quote. The history is
+            # point-in-time and already filtered to what was available by `now`; the strategy
+            # filters again on receipt.
+            extra_data[GOVERNED_BARS_KEY] = {
+                domain_quote.symbol: provider(domain_quote.symbol, now)
+            }
         context = MarketContext(
             current_time=now,
             current_bars={},
             historical_bars={},
             current_positions=dict(self._positions),
             available_cash=self._cash,
-            extra_data={"current_quote": domain_quote},
+            extra_data=extra_data,
         )
         signals = self.strategy.generate_signals(context)
         if not signals:
