@@ -38,27 +38,53 @@ implemented, tested, and unreachable. The runner chains real Upstox acquisition 
 `run_persisted_ridge_trial` -> `EvidenceStore`. It imports no data generator, so it has no synthetic
 fallback to take.
 
-Status by stage, measured at `d5b21b8` plus the uncommitted dotenv fix:
+Status by stage. **All seven stages have now executed on real market data.**
 
 | Stage | Status | Evidence |
 |---|---|---|
-| 1. Real Upstox acquisition | **PROVEN** | Returned **498 real daily bars** for `NSE_EQ\|INE009A01021` (INFY), 2024-01-01..2025-12-31 |
+| 1. Real Upstox acquisition | **PROVEN** | **498 real daily bars** for `NSE_EQ\|INE009A01021` (INFY), 2024-01-01..2025-12-31 |
 | 2. Session calendar | PROVEN on the provider-derived path | 498 sessions derived from the exchange dates actually returned |
-| 3. Governed re-acquisition | NOT REACHED | blocked below |
-| 4. `build_feature_dataset` | **NOT RUN on real data** | fixtures only |
-| 5. `build_label_dataset` | **NOT RUN on real data** | fixtures only |
-| 6. `build_purged_fold` | **NOT RUN on real data** | fixtures only |
-| 7. `run_persisted_ridge_trial` | **NOT RUN on real data** | fixtures only |
+| 3. Governed re-acquisition | **PROVEN** | 498 bars, `status=ACCEPTED`, `source_status=COMPLETE` |
+| 4. `build_feature_dataset` | **PROVEN** | 478 feature rows |
+| 5. `build_label_dataset` | **PROVEN** | 476 label rows; real NSE statutory costs, 0.224% round trip |
+| 6. `build_purged_fold` | **PROVEN** | train=411, validation=63, embargo=2 |
+| 7. `run_persisted_ridge_trial` | **PROVEN — fails closed** | Trial start and terminal `FAILED` outcome both published; `failure_codes=["DEGENERATE_RETURN_SERIES"]` |
 
-**No model has been trained on real data.** No trial evidence has been published. Anyone citing this
-runner as proof that the governed stack works end to end is citing stages that have never executed.
+Corporate-action authority: `data/authorities/nse-corporate-actions-INFY-20240101-20251231.json`,
+fetched from the NSE public API, 5 real records (dividends 2024-05-31, 2024-10-29, 2025-05-30,
+2025-10-27 and the 2025-11-14 buyback), all ISIN `INE009A01021`. SHA-256
+`650bd8197d8c1ac39e1c6b1f2469d96ee88e468384f07b1b3df83987544cb400`. Committed so the hash is
+re-verifiable from the repository.
 
-**Current blocker: no corporate-actions authority document exists in this repository.**
-`build_feature_dataset` binds every feature row to a corporate-action authority hash. The runner
-exits 2 with `CONFIGURATION REFUSED` rather than emit a placeholder digest for a document that does
-not exist. Note that the governed code itself only checks the hash is 64 hex — it would accept an
-invented one. The refusal is the runner's own guard, and it is deliberate: see
-`.launch/reports/quarantine/README.md` for what fabricated evidence has already cost this project.
+### No model has been successfully trained. Two trials, both refused.
+
+`trial_real_001` (validation=8) and `trial_real_002` (validation=63) both terminated `FAILED` with
+`DEGENERATE_RETURN_SERIES`. Both are recorded in the evidence store with a committed start and a
+committed terminal outcome, so the multiplicity ordinal has advanced twice. **A third attempt is a
+third look at the same data and must be treated as such.**
+
+Root cause, measured rather than inferred:
+
+- Targets are encoded UP `+1.0` / DOWN `-1.0` (`modeling/ridge.py:93`).
+- The real label balance is 182 UP / 229 DOWN in the training partition, so the mean target is
+  `-0.1144` and the fitted ridge intercept is `-0.114355` — they agree to five decimals.
+- Validation scores over 63 sessions span `[-0.243, -0.026]`, mean `-0.140`, stdev `0.053`. The
+  **maximum score is still below the `score_threshold=0`**, so the candidate predicts UP zero times
+  out of 63 and takes no position at all.
+- `_portfolio_period_returns` (`modeling/validation.py:402`) only records a return where
+  `predicted_target == "UP"`, so every validation period is exactly `0.0`, variance is zero, and the
+  deflated Sharpe is undefined.
+
+This is **not a defect in the runner and not a defect in the model**. It is the guard behaving as
+documented: it refuses to publish a probability of 0.5 for a candidate that never traded, which
+would otherwise rank a do-nothing model above every genuinely losing one. The honest research
+reading is that this six-feature ridge, with a zero threshold, finds no long setup on INFY over
+2024-2025 that survives real statutory costs.
+
+Changing `--score-threshold` would produce a non-degenerate result. **That is a research design
+decision, not a bug fix**, and taking it after seeing two failures is precisely the multiplicity
+problem this stack exists to account for. It is the founder's call, and it must carry the next
+multiplicity ordinal.
 
 Two limitations are stated rather than resolved. The session calendar, absent `--calendar-file`, is
 derived from provider data, so a provider that silently omits a trading day yields a calendar
@@ -87,8 +113,8 @@ Outstanding work: `agent_context/handoffs/20260822-claude-real-data-training-run
 
 1. Clone and sync on the remote development machine using `START_HERE.md`.
 2. Proceed with Slice 4 implementation (One Governed Ridge Fold) following `.launch/SLICES.md`.
-3. Supply a real NSE corporate-actions document covering the requested range, then re-run
-   `scripts/run_governed_ridge_training.py` with `--corporate-actions-file <path>` to take the
-   governed stack past stage 3 on real data for the first time. Do not satisfy that flag with an
-   invented file.
+3. Decide, as a research design decision, whether the `--score-threshold` of the governed ridge
+   should remain `0` under `+1/-1` target encoding with an imbalanced base rate. Two trials have
+   already been spent; any third carries multiplicity ordinal 3 and must be registered as such. Do
+   not sweep thresholds until one produces a publishable Sharpe.
 4. Reconcile the stale sections at the top of this file against `.launch/STATE.md` (coordinator).
