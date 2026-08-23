@@ -2,21 +2,42 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import logging
+from collections.abc import Callable, Mapping
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
 import numpy as np
 
-from quant_system.alpha.ai_advisor import MultiAgentConsensusEngine
+from quant_system.advisory import (
+    AdvisorInterface,
+    AdvisoryJournal,
+    ExecutionMode,
+    ModelIdentity,
+    capture_opinion,
+    capture_panel_members,
+    observation_fingerprint,
+)
+from quant_system.alpha.ai_advisor import AIOpinion, MultiAgentConsensusEngine
 from quant_system.alpha.technical import TechnicalIndicators
 from quant_system.core.domain import Side, Signal
 from quant_system.strategies.base import BaseStrategy, MarketContext
 from quant_system.strategies.ml_equity import MLEquityStrategy, RollingRidgeClassifier
 
+logger = logging.getLogger(__name__)
+
+# The aggregate identity. A panel verdict is not a single model call, so it carries no single
+# interface or execution mode — the per-advisor rows written alongside it carry the real ones.
+_PANEL_IDENTITY = ModelIdentity(
+    provider="quant_system",
+    model_id="MultiAgentConsensusEngine",
+    interface=AdvisorInterface.AGGREGATE,
+)
+
 
 class AIEnhancedMLEquityStrategy(BaseStrategy):
-    """Integrates statistical ML probability with multi-agent (Claude/Codex/Antigravity) consensus.
+    """Integrates statistical ML probability with multi-agent advisory consensus.
 
     Pipeline:
     1. Feature Engineering: Returns, RSI, SMA distance, ATR.
@@ -30,6 +51,9 @@ class AIEnhancedMLEquityStrategy(BaseStrategy):
         name: str = "AIEnhancedMLEquityStrategy",
         params: Mapping[str, Any] | None = None,
         consensus_engine: MultiAgentConsensusEngine | None = None,
+        advisory_journal: AdvisoryJournal | None = None,
+        advisory_model: ModelIdentity | None = None,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
         default_params = {
             "train_window": 60,
@@ -42,6 +66,86 @@ class AIEnhancedMLEquityStrategy(BaseStrategy):
             default_params.update(params)
         super().__init__(name=name, params=default_params)
         self.consensus_engine = consensus_engine or MultiAgentConsensusEngine()
+
+        # Observer wiring. `None` disables recording entirely and the strategy behaves exactly as
+        # it did before, which is what keeps the pre-existing signal-count test valid as proof that
+        # observation changes nothing.
+        self.advisory_journal = advisory_journal
+        self.advisory_model = advisory_model or _PANEL_IDENTITY
+        self._clock = clock or (lambda: datetime.now(UTC))
+        self.advisory_write_failures = 0
+
+    def _record_advisory_opinion(
+        self,
+        *,
+        symbol: str,
+        opinion: AIOpinion,
+        observation: Mapping[str, Any],
+        quant_strength: float,
+        ctx: MarketContext,
+    ) -> None:
+        """Seal one panel verdict into the advisory journal. Never raises, never decides.
+
+        Failures are counted and logged rather than propagated. This component holds no authority
+        by construction, so a full disk must not be able to stop the strategy from trading — that
+        would hand the observer exactly the power the design denies it. The counter exists because
+        silently swallowed failures would leave invisible gaps in the dataset, which is the flaw
+        this journal was built to prevent.
+        """
+        if self.advisory_journal is None:
+            return
+
+        try:
+            panel_advisors = [advisor.name for advisor in self.consensus_engine.advisors]
+            fingerprint = observation_fingerprint(observation)
+            recorded_at = self._clock()
+            # The panel is handed `quant_side` and `quant_strength` before being asked, so every
+            # opinion it returns is anchored on the answer by construction.
+            window_end = ctx.current_time.date()
+            strength_shown = Decimal(str(quant_strength))
+
+            # One row per advisor, each carrying its own execution mode, then the panel verdict.
+            # Members come first so a reader of the chain sees the inputs before the aggregate.
+            member_records = capture_panel_members(
+                opinion,
+                symbol=symbol,
+                model=self.advisory_model,
+                prompt_sha256=fingerprint,
+                recorded_at=recorded_at,
+                anchored_on_quant_signal=True,
+                observation_window_end=window_end,
+                quant_side_shown=Side.BUY.value,
+                quant_strength_shown=strength_shown,
+                extra_metadata={"strategy": self.name},
+            )
+            aggregate_record = capture_opinion(
+                opinion,
+                symbol=symbol,
+                model=self.advisory_model,
+                prompt_sha256=fingerprint,
+                # The aggregate is a panel verdict, not a model call. Members carry the real modes.
+                execution_mode=ExecutionMode.UNDETERMINED,
+                recorded_at=recorded_at,
+                anchored_on_quant_signal=True,
+                observation_window_end=window_end,
+                quant_side_shown=Side.BUY.value,
+                quant_strength_shown=strength_shown,
+                extra_metadata={
+                    "strategy": self.name,
+                    "panel_role": "AGGREGATE",
+                    "panel_advisors": panel_advisors,
+                    "observation": {str(k): str(v) for k, v in observation.items()},
+                },
+            )
+            # Every record is constructed — and therefore validated — before anything is appended,
+            # so a rejected record cannot leave a half-written panel in the journal.
+            for record in (*member_records, aggregate_record):
+                self.advisory_journal.append(record)
+        except Exception:
+            self.advisory_write_failures += 1
+            logger.exception(
+                "advisory journal write failed for %s; the decision is unaffected", symbol
+            )
 
     def generate_signals(self, ctx: MarketContext) -> list[Signal]:
         signals: list[Signal] = []
@@ -109,6 +213,17 @@ class AIEnhancedMLEquityStrategy(BaseStrategy):
                     quant_side=Side.BUY,
                     quant_strength=prob_up,
                     technical_summary=tech_summary,
+                )
+
+                # Observe before deciding. The veto below `continue`s, so recording afterwards
+                # would discard every refusal — and refusals are the rows the prospective
+                # "would the panel's vetoes have helped?" question is built on.
+                self._record_advisory_opinion(
+                    symbol=symbol,
+                    opinion=ai_opinion,
+                    observation=tech_summary,
+                    quant_strength=prob_up,
+                    ctx=ctx,
                 )
 
                 # Skip if vetoed by AI advisory layer

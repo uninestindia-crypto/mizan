@@ -1,4 +1,9 @@
-"""AI Multi-Agent Advisory Layer interfacing with Claude CLI, Codex CLI, Antigravity CLI, Direct REST APIs, and arXiv RAG."""
+"""AI Multi-Agent Advisory Layer: Claude CLI, direct REST APIs, arXiv RAG, and deterministic rules.
+
+Not every advisor here reaches a model. `TrendDivergenceRuleAdvisor` and `SignalStrengthRuleAdvisor`
+are hardcoded rules and say so in their `metadata["mode"]`; only `ClaudeCLIAdvisor` and
+`DirectAPIAdvisor` can produce a model response, and each falls back to a rule when it cannot.
+"""
 
 from __future__ import annotations
 
@@ -7,6 +12,7 @@ import logging
 import shutil
 import subprocess
 from abc import ABC, abstractmethod
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -75,6 +81,7 @@ class BaseAIAdvisor(ABC):
                 confidence=0.85,
                 rationale=f"Overbought exhaustion warning: RSI is {rsi:.1f} > 80.",
                 weight_multiplier=0.0,
+                metadata={"rag_grounding_used": bool(rag_context), "mode": "HEURISTIC_FALLBACK"},
             )
         if atr_norm > 0.05:
             return AIOpinion(
@@ -83,6 +90,7 @@ class BaseAIAdvisor(ABC):
                 confidence=0.70,
                 rationale=f"Elevated volatility regime (ATR {atr_norm:.1%}). Scaling position down.",
                 weight_multiplier=0.5,
+                metadata={"rag_grounding_used": bool(rag_context), "mode": "HEURISTIC_FALLBACK"},
             )
 
         return AIOpinion(
@@ -163,21 +171,20 @@ class ClaudeCLIAdvisor(BaseAIAdvisor):
         return self._fallback_heuristic(quant_side, quant_strength, technical_summary, rag_context)
 
 
-class CodexCLIAdvisor(BaseAIAdvisor):
-    """Codex CLI adapter for mathematical sanity and strategy invariant verification."""
+class TrendDivergenceRuleAdvisor(BaseAIAdvisor):
+    """Deterministic trend-divergence rule. **Not a model** — no CLI, no API, no inference.
+
+    Vetoes a BUY when price sits far below its 20-period SMA *and* the 5-day return is sharply
+    negative. Previously named `CodexCLIAdvisor` and carrying a `cli_command` it never invoked,
+    which made a hardcoded threshold look like a second opinion from a language model.
+    """
 
     def __init__(
         self,
-        name: str = "Codex_Model_Sanity",
-        cli_command: str = "codex",
+        name: str = "TrendDivergence_Rule",
         rag_engine: QuantPaperRAG | None = None,
     ) -> None:
         super().__init__(name=name, rag_engine=rag_engine)
-        self.cli_command = cli_command
-
-    @property
-    def is_available(self) -> bool:
-        return shutil.which(self.cli_command) is not None
 
     def evaluate_opportunity(
         self,
@@ -196,6 +203,7 @@ class CodexCLIAdvisor(BaseAIAdvisor):
                 confidence=0.80,
                 rationale="Severe negative trend divergence vs. proposed BUY.",
                 weight_multiplier=0.0,
+                metadata={"mode": "DETERMINISTIC_RULE"},
             )
 
         return AIOpinion(
@@ -204,24 +212,29 @@ class CodexCLIAdvisor(BaseAIAdvisor):
             confidence=0.75,
             rationale="Mathematical factors within acceptable strategy tolerance bounds.",
             weight_multiplier=1.0,
+            metadata={"mode": "DETERMINISTIC_RULE"},
         )
 
 
-class AntigravityCLIAdvisor(BaseAIAdvisor):
-    """Antigravity (AGY) Autonomous Multi-Agent Consensus Advisor."""
+class SignalStrengthRuleAdvisor(BaseAIAdvisor):
+    """Deterministic restatement of the quant signal. **Not a model, and not an opinion.**
+
+    `action_bias` is a direct function of `quant_side`, so this advisor structurally cannot disagree
+    with the signal it is asked to review; `confidence` and `weight_multiplier` are closed-form in
+    `quant_strength`. It therefore adds a vote without adding information, and on a panel it pulls
+    the averaged `weight_multiplier` toward its own constant.
+
+    Previously named `AntigravityCLIAdvisor` and carrying a `cli_command` it never invoked. Kept
+    because the sizing curve is reusable, but it is **not** a default panel member: see
+    `MultiAgentConsensusEngine.__init__`.
+    """
 
     def __init__(
         self,
-        name: str = "Antigravity_Consensus",
-        cli_command: str = "agy",
+        name: str = "SignalStrength_Rule",
         rag_engine: QuantPaperRAG | None = None,
     ) -> None:
         super().__init__(name=name, rag_engine=rag_engine)
-        self.cli_command = cli_command
-
-    @property
-    def is_available(self) -> bool:
-        return shutil.which(self.cli_command) is not None
 
     def evaluate_opportunity(
         self,
@@ -237,6 +250,7 @@ class AntigravityCLIAdvisor(BaseAIAdvisor):
             confidence=confidence,
             rationale=f"Antigravity multi-agent validation confirmed {quant_side} setup.",
             weight_multiplier=1.0 if quant_strength > 0.60 else 0.8,
+            metadata={"mode": "DETERMINISTIC_RULE"},
         )
 
 
@@ -328,6 +342,51 @@ class DirectAPIAdvisor(BaseAIAdvisor):
         return self._fallback_heuristic(quant_side, quant_strength, technical_summary, rag_context)
 
 
+def _majority_action_bias(opinions: Sequence[AIOpinion]) -> str:
+    """The direction most advisors chose; ``NEUTRAL`` when the panel is split.
+
+    Replaces `opinions[0].action_bias`, which made the panel's direction whichever advisor happened
+    to be first in the list — a panel that looked like a vote without being one.
+
+    A tie resolves to ``NEUTRAL`` rather than to any direction, so a divided panel fails toward not
+    trading. That is the conservative side here: `agent_context/CURRENT.md` records `NO_TRADE`
+    beating the ridge candidate on 26 of 40 published models.
+
+    Callers reach this only after the veto check has returned, so no ``VETO`` opinion is in scope.
+    """
+    if not opinions:
+        return "NEUTRAL"
+
+    tally = Counter(op.action_bias for op in opinions)
+    ranked = tally.most_common()
+    if len(ranked) > 1 and ranked[0][1] == ranked[1][1]:
+        return "NEUTRAL"
+    return ranked[0][0]
+
+
+def _panel_member_details(opinions: Sequence[AIOpinion]) -> tuple[dict[str, Any], ...]:
+    """Preserve per-advisor provenance for observers, without leaking credential-shaped fields.
+
+    The aggregate returned by `MultiAgentConsensusEngine.evaluate` previously kept only a list of
+    rationale strings, so no caller downstream could tell whether a verdict came from a model, a
+    fallback, or a hardcoded rule. This carries the fields an observer needs.
+
+    Fields are copied by name rather than by spreading `op.metadata`, so `key_id` and `masked_key`
+    from `DirectAPIAdvisor` cannot ride along into anything that later gets persisted.
+    """
+    return tuple(
+        {
+            "advisor_name": op.advisor_name,
+            "action_bias": op.action_bias,
+            "confidence": op.confidence,
+            "weight_multiplier": op.weight_multiplier,
+            "rationale": op.rationale,
+            "mode": op.metadata.get("mode"),
+        }
+        for op in opinions
+    )
+
+
 class MultiAgentConsensusEngine:
     """Aggregates opinions from Claude, Codex, Antigravity, OpenRouter, Groq, and arXiv RAG into a single consensus."""
 
@@ -343,11 +402,13 @@ class MultiAgentConsensusEngine:
         if advisors is not None:
             self.advisors = list(advisors)
         else:
-            # Build default hybrid panel (CLI + Direct API if keys exist)
+            # Default panel: advisors that can actually reach a model. `TrendDivergenceRuleAdvisor`
+            # and `SignalStrengthRuleAdvisor` are deliberately excluded — they are deterministic
+            # rules, and seating them here made a one-model panel look like a three-model one while
+            # dragging the averaged `weight_multiplier` toward their constants. Pass them in
+            # `advisors=` explicitly if you want a rule on the panel.
             panel: list[BaseAIAdvisor] = [
                 ClaudeCLIAdvisor(rag_engine=self.rag_engine),
-                CodexCLIAdvisor(rag_engine=self.rag_engine),
-                AntigravityCLIAdvisor(rag_engine=self.rag_engine),
             ]
             if self.key_pool:
                 for prov in [
@@ -379,12 +440,15 @@ class MultiAgentConsensusEngine:
                 confidence=0.5,
                 rationale="No advisors configured or signal is flat.",
                 weight_multiplier=1.0,
+                metadata={"mode": "DETERMINISTIC_RULE", "panel_members": ()},
             )
 
         opinions = [
             adv.evaluate_opportunity(symbol, quant_side, quant_strength, technical_summary)
             for adv in self.advisors
         ]
+
+        panel_members = _panel_member_details(opinions)
 
         # 1. Check for any explicit VETO
         vetoes = [op for op in opinions if op.action_bias == "VETO" or op.weight_multiplier <= 0.0]
@@ -396,7 +460,10 @@ class MultiAgentConsensusEngine:
                 confidence=max(v.confidence for v in vetoes),
                 rationale=f"Trade vetoed by advisory panel: {veto_reasons}",
                 weight_multiplier=0.0,
-                metadata={"individual_opinions": [op.rationale for op in opinions]},
+                metadata={
+                    "individual_opinions": [op.rationale for op in opinions],
+                    "panel_members": panel_members,
+                },
             )
 
         # 2. Compute aggregated multiplier and confidence
@@ -407,9 +474,12 @@ class MultiAgentConsensusEngine:
 
         return AIOpinion(
             advisor_name="MultiAgent_Consensus",
-            action_bias=opinions[0].action_bias,
+            action_bias=_majority_action_bias(opinions),
             confidence=avg_confidence,
             rationale=f"Consensus approved ({summary_reasons})",
             weight_multiplier=avg_multiplier,
-            metadata={"individual_opinions": [op.rationale for op in opinions]},
+            metadata={
+                "individual_opinions": [op.rationale for op in opinions],
+                "panel_members": panel_members,
+            },
         )

@@ -1,11 +1,11 @@
 """Unit tests for AI Multi-Agent Advisory Layer."""
 
 from quant_system.alpha.ai_advisor import (
-    AntigravityCLIAdvisor,
     ClaudeCLIAdvisor,
-    CodexCLIAdvisor,
     DirectAPIAdvisor,
     MultiAgentConsensusEngine,
+    SignalStrengthRuleAdvisor,
+    TrendDivergenceRuleAdvisor,
 )
 from quant_system.alpha.key_pool import KeyPoolManager, ProviderType
 from quant_system.core.domain import Side
@@ -25,7 +25,7 @@ def test_claude_advisor_overbought_veto() -> None:
 
 
 def test_codex_advisor_divergence_veto() -> None:
-    advisor = CodexCLIAdvisor()
+    advisor = TrendDivergenceRuleAdvisor()
     opinion = advisor.evaluate_opportunity(
         symbol="TCS",
         quant_side=Side.BUY,
@@ -38,7 +38,7 @@ def test_codex_advisor_divergence_veto() -> None:
 
 
 def test_antigravity_advisor_conviction() -> None:
-    advisor = AntigravityCLIAdvisor()
+    advisor = SignalStrengthRuleAdvisor()
     opinion = advisor.evaluate_opportunity(
         symbol="INFY",
         quant_side=Side.BUY,

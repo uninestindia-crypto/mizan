@@ -2,12 +2,12 @@
 
 from quant_system.alpha.ai_advisor import (
     AIOpinion,
-    AntigravityCLIAdvisor,
     BaseAIAdvisor,
     ClaudeCLIAdvisor,
-    CodexCLIAdvisor,
     DirectAPIAdvisor,
     MultiAgentConsensusEngine,
+    SignalStrengthRuleAdvisor,
+    TrendDivergenceRuleAdvisor,
 )
 from quant_system.alpha.cli_manager import CLIDiagnosticItem, CLIManager
 from quant_system.alpha.direct_providers import (
@@ -32,14 +32,14 @@ from quant_system.alpha.transform import FactorTransform
 __all__ = [
     "AIOpinion",
     "AnthropicClient",
-    "AntigravityCLIAdvisor",
+    "SignalStrengthRuleAdvisor",
     "BaseAIAdvisor",
     "BaseDirectAPIClient",
     "BlackScholes",
     "CLIDiagnosticItem",
     "CLIManager",
     "ClaudeCLIAdvisor",
-    "CodexCLIAdvisor",
+    "TrendDivergenceRuleAdvisor",
     "DirectAPIAdvisor",
     "FactorTransform",
     "GroqClient",
