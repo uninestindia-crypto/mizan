@@ -26,6 +26,7 @@ from quant_system.data.market_data_evidence import canonical_sha256, decimal_tex
 from quant_system.data.upstox_failures import require_aware_utc
 from quant_system.execution.bar_history import BarHistoryProvider
 from quant_system.execution.governed_strategy import GOVERNED_BARS_KEY
+from quant_system.execution.maturity import MaturityPolicy
 from quant_system.risk.governor import PreTradeRiskGovernor
 from quant_system.strategies.base import BaseStrategy, MarketContext
 
@@ -211,6 +212,14 @@ class RealtimeShadowConfig:
     initial_cash: Decimal = Decimal("1000000.00")
     execution_mode: str = "SHADOW_READ_ONLY"
     decision_cadence: DecisionCadence = DecisionCadence.PER_QUOTE
+    maturity_policy: MaturityPolicy | None = None
+    """When an open entry may mature.
+
+    Defaults to ``None``, preserving mature-on-the-next-same-symbol-quote exactly, so existing
+    quote-driven sessions are unchanged. A governed model needs
+    :class:`~quant_system.execution.maturity.SessionHorizonMaturity`, because it was validated on a
+    two-session label and must not open and close inside one session.
+    """
     bar_history_provider: BarHistoryProvider | None = None
     """Supplies point-in-time bar history to governed models.
 
@@ -547,11 +556,22 @@ class RealtimeShadowRunner:
         else:
             self._positions.pop(symbol, None)
 
+    def _may_mature(self, entry_time: datetime, now: datetime) -> bool:
+        """Whether the configured horizon has elapsed for an entry filled at ``entry_time``.
+
+        With no policy configured this is the pre-existing behaviour: any later same-symbol quote
+        matures the entry.
+        """
+        policy = self.config.maturity_policy
+        if policy is None:
+            return True
+        return now >= policy.matures_at(entry_time)
+
     def _check_matured_outcomes(self, current_quote: Quote, now: datetime) -> None:
         """Mature open shadow entries against latest quote."""
         to_remove = []
         for prop_id, (prop, entry_price, entry_time) in self._open_entries.items():
-            if prop.symbol == current_quote.symbol:
+            if prop.symbol == current_quote.symbol and self._may_mature(entry_time, now):
                 exit_price = current_quote.bid if prop.side == Side.BUY else current_quote.ask
                 if prop.side == Side.BUY:
                     gross_pnl = (exit_price - entry_price) * Decimal(prop.quantity)
