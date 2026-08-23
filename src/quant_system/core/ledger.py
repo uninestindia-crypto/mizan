@@ -546,7 +546,15 @@ class DecimalLedger:
         unrealized = Decimal("0.00")
 
         for sym, pos in self._positions.items():
-            price = current_prices.get(sym, pos.average_price)
+            # Falling back to the position's own average price marks it to cost, which reports
+            # unrealized P&L of exactly zero and a wrong market value with no signal to the
+            # caller (L-2). A mark-to-market that cannot be computed is not fabricated here.
+            price = current_prices.get(sym)
+            if price is None:
+                raise LedgerInvariantViolation(
+                    f"cannot mark {sym} to market: no price supplied for a held position of "
+                    f"{pos.quantity}; refusing to substitute its average price"
+                )
             _assert_no_float(price, f"current_prices[{sym}]")
             total_market_val += pos.current_market_value(price)
             unrealized += pos.unrealized_pnl(price)

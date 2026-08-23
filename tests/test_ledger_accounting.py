@@ -276,3 +276,57 @@ def test_ledger_external_cash_flows() -> None:
 
     assert ledger.cash == Decimal("40000.00")
     assert ledger.reconcile() is True
+
+
+# -------------------------------------------------------------------------
+# Ring 5: L-2 regression — a snapshot must not fabricate a mark
+# -------------------------------------------------------------------------
+
+
+def test_portfolio_snapshot_refuses_to_mark_a_position_without_a_price() -> None:
+    """L-2: a missing price silently marked the position to its own cost.
+
+    Unrealized P&L for that symbol came out exactly 0.00 and total market value was wrong,
+    with no signal to the caller, while the method promised an exact mark-to-market.
+    """
+    ledger = DecimalLedger(initial_cash=Decimal("200000.00"))
+    now = datetime(2025, 1, 1, 10, 0)
+    ledger.process_fill(
+        Fill(
+            fill_id="f_l2",
+            order_id="o_l2",
+            symbol="INFY",
+            side=Side.BUY,
+            quantity=50,
+            price=Decimal("1000.00"),
+            fee=Decimal("10.00"),
+            timestamp=now,
+        )
+    )
+
+    with pytest.raises(LedgerInvariantViolation, match="INFY"):
+        ledger.get_portfolio_snapshot(current_prices={}, timestamp=now)
+
+
+def test_portfolio_snapshot_marks_normally_when_the_price_is_supplied() -> None:
+    """The repair must not refuse a snapshot that can actually be computed."""
+    ledger = DecimalLedger(initial_cash=Decimal("200000.00"))
+    now = datetime(2025, 1, 1, 10, 0)
+    ledger.process_fill(
+        Fill(
+            fill_id="f_l2b",
+            order_id="o_l2b",
+            symbol="INFY",
+            side=Side.BUY,
+            quantity=50,
+            price=Decimal("1000.00"),
+            fee=Decimal("10.00"),
+            timestamp=now,
+        )
+    )
+
+    snapshot = ledger.get_portfolio_snapshot(
+        current_prices={"INFY": Decimal("1100.00")}, timestamp=now
+    )
+    assert snapshot.total_market_value == Decimal("55000.00")
+    assert snapshot.unrealized_pnl == Decimal("5000.00")

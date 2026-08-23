@@ -14,6 +14,7 @@ from quant_system.data.market_data_evidence import canonical_sha256, utc_text
 from quant_system.evidence import (
     EvidenceDraft,
     EvidenceResourceType,
+    EvidenceStore,
 )
 from quant_system.modeling.authorities import SessionCalendarV1
 from quant_system.modeling.errors import ModelingError, ModelingFailureCode
@@ -43,6 +44,9 @@ from quant_system.modeling.validation import (
 )
 
 _HOLDOUT_ID_PATTERN = re.compile(r"holdout_[a-z0-9][a-z0-9_-]{0,62}")
+# Consumption records reuse the BUNDLE resource type with their own schema id, so no new
+# EvidenceResourceType is introduced and evidence/models.py is not modified.
+_HOLDOUT_USE_SCHEMA = "quantos.holdout_consumption"
 _EVALUATION_ID_PATTERN = re.compile(r"holdout_eval_[a-z0-9][a-z0-9_-]{0,62}")
 _HASH_PATTERN = re.compile(r"[0-9a-f]{64}")
 _HOLDOUT_START_SCHEMA = "quantos.holdout_evaluation_start"
@@ -290,12 +294,68 @@ class HoldoutReportV1:
 
 
 class HoldoutVaultTracker:
-    """In-memory or store-backed state tracker enforcing single-use holdout unlocking."""
+    """Store-backed state tracker enforcing single-use holdout unlocking.
 
-    def __init__(self) -> None:
+    The store is required, not optional. Vault state used to live only in instance dictionaries,
+    so a second `HoldoutVaultTracker()` — or any process restart — reopened a consumed holdout
+    (H-2). Unlimited re-use turns a final holdout into a second validation set. An optional store
+    would have left the default construction exactly as unsafe, so it is mandatory.
+    """
+
+    def __init__(self, store: EvidenceStore) -> None:
+        self._store = store
         self._consumed_holdout_ids: dict[str, datetime] = {}
         self._consumed_tokens: dict[str, datetime] = {}
         self._evaluation_starts: dict[str, HoldoutEvaluationStartV1] = {}
+        self._load_consumption_from_store()
+
+    def _load_consumption_from_store(self) -> None:
+        """Rebuild consumed state from durable evidence so prior uses are always visible."""
+        for verified in self._store.list_verified(EvidenceResourceType.BUNDLE):
+            if verified.manifest.schema_id != _HOLDOUT_USE_SCHEMA:
+                continue
+            for record in verified.records:
+                holdout_id = record.get("holdout_id")
+                token_hash = record.get("token_hash")
+                consumed_at = record.get("consumed_at")
+                if not isinstance(holdout_id, str) or not isinstance(token_hash, str):
+                    raise ModelingError(
+                        ModelingFailureCode.HOLDOUT_INVALID,
+                        "holdout consumption record is malformed; refusing to open the vault",
+                    )
+                when = (
+                    datetime.fromisoformat(consumed_at)
+                    if isinstance(consumed_at, str)
+                    else datetime.now(UTC)
+                )
+                self._consumed_holdout_ids[holdout_id] = when
+                self._consumed_tokens[token_hash] = when
+
+    def _publish_consumption(self, start: HoldoutEvaluationStartV1) -> None:
+        """Commit the use durably BEFORE it is trusted in memory."""
+        payload = {
+            "holdout_id": start.holdout_id,
+            "token_hash": start.token_hash,
+            "evaluation_id": start.evaluation_id,
+            "consumed_at": utc_text(start.started_at),
+        }
+        digest = canonical_sha256(payload)
+        self._store.commit(
+            EvidenceDraft(
+                resource_type=EvidenceResourceType.BUNDLE,
+                resource_id=f"bundle_holdout_use_{digest[:24]}",
+                schema_id=_HOLDOUT_USE_SCHEMA,
+                schema_version=1,
+                metadata={"holdout_id": start.holdout_id},
+                records=(payload,),
+                total_order=("holdout_id",),
+            ),
+            operation_id=f"holdout-use-{digest[:16]}",
+        )
+
+    def get_evaluation_start(self, evaluation_id: str) -> HoldoutEvaluationStartV1 | None:
+        """The start record this tracker recorded, so a caller can publish its evidence."""
+        return self._evaluation_starts.get(evaluation_id)
 
     def is_consumed(self, holdout_id: str) -> bool:
         return holdout_id in self._consumed_holdout_ids
@@ -312,6 +372,9 @@ class HoldoutVaultTracker:
 
     def record_start(self, start: HoldoutEvaluationStartV1) -> None:
         self.require_unconsumed(start.holdout_id, start.token_hash)
+        # Durable first. If the commit fails, nothing is marked consumed in memory either, so
+        # the vault never believes a use that was not recorded.
+        self._publish_consumption(start)
         self._consumed_holdout_ids[start.holdout_id] = start.started_at
         self._consumed_tokens[start.token_hash] = start.started_at
         self._evaluation_starts[start.evaluation_id] = start

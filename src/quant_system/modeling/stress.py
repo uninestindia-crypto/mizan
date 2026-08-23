@@ -10,6 +10,7 @@ from enum import StrEnum
 from typing import Any
 
 from quant_system.data.market_data_evidence import canonical_sha256, decimal_text, utc_text
+from quant_system.evidence import EvidenceDraft, EvidenceResourceType
 from quant_system.modeling.authorities import SessionCalendarV1
 from quant_system.modeling.errors import ModelingError, ModelingFailureCode
 from quant_system.modeling.metrics import (
@@ -547,3 +548,38 @@ def _require_canonical_decimal(value: str, field_name: str) -> None:
         raise ValueError(f"{field_name} must be canonical decimal text") from error
     if not parsed.is_finite() or decimal_text(parsed) != value:
         raise ValueError(f"{field_name} must be finite canonical decimal text")
+
+
+_STRESS_SCHEMA = "quantos.stress_report"
+
+
+def draft_from_stress_report(report: StressReportV1) -> EvidenceDraft:
+    """Publishable evidence for a mandatory stress suite run.
+
+    Stress was the one Slice 5 artefact with no publisher at all, so even a caller that ran the
+    suite had no way to record that it had (X-1).
+    """
+    return EvidenceDraft(
+        resource_type=EvidenceResourceType.OPERATION,
+        resource_id=f"op_stress_{report.report_hash[:24]}",
+        schema_id=_STRESS_SCHEMA,
+        schema_version=1,
+        metadata={
+            "all_passed": report.all_passed,
+            "candidate_id": report.candidate_id,
+            "evaluated_at": utc_text(report.evaluated_at),
+            "model_id": report.model_id,
+            "report_hash": report.report_hash,
+            "scenario_count": len(report.scenario_results),
+            "scenario_ids": sorted(r.scenario_id for r in report.scenario_results),
+        },
+        # One record per scenario, mirroring draft_from_holdout_report. A single whole-report
+        # record breaches the store's per-record chunk limit on a realistic suite.
+        records=tuple(
+            sorted(
+                (r.to_canonical_dict() for r in report.scenario_results),
+                key=lambda item: str(item["scenario_id"]),
+            )
+        ),
+        total_order=("scenario_id",),
+    )

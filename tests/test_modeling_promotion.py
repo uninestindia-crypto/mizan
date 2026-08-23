@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
+from quant_system.evidence import EvidenceStore, EvidenceStoreConfig
 from quant_system.modeling import (
     GatePolicyV1,
     ModelingError,
@@ -42,7 +45,19 @@ def _sample_cost_quotes(journey) -> tuple[RoundTripCostQuoteV1, ...]:
     )
 
 
-def test_promotion_research_only_to_shadow_success() -> None:
+def _promotion_vault_store(root: Path) -> EvidenceStore:
+    return EvidenceStore(
+        EvidenceStoreConfig(
+            root=root,
+            chunk_uncompressed_bytes=1024,
+            max_bundle_bytes=8192,
+            min_free_bytes=0,
+            clock=lambda: datetime(2026, 8, 22, tzinfo=UTC),
+        )
+    )
+
+
+def test_promotion_research_only_to_shadow_success(tmp_path: Path) -> None:
     journey = governed_training_journey()
     calendar = journey.calendar
 
@@ -65,7 +80,7 @@ def test_promotion_research_only_to_shadow_success() -> None:
         holdout_start=holdout_start,
         holdout_end=holdout_end,
     )
-    tracker = HoldoutVaultTracker()
+    tracker = HoldoutVaultTracker(_promotion_vault_store(tmp_path / "evidence"))
     holdout_report = evaluate_governed_holdout(
         partition,
         token,

@@ -5,9 +5,11 @@ from __future__ import annotations
 import hashlib
 from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
+from quant_system.evidence import EvidenceStore, EvidenceStoreConfig
 from quant_system.modeling import (
     ModelingError,
     ModelingFailureCode,
@@ -55,7 +57,7 @@ def test_holdout_partition_creation_and_integrity() -> None:
     assert disc_keys.isdisjoint(hold_keys)
 
 
-def test_holdout_unlock_and_evaluation_success() -> None:
+def test_holdout_unlock_and_evaluation_success(tmp_path: Path) -> None:
     journey = governed_training_journey()
     calendar = journey.calendar
 
@@ -79,7 +81,7 @@ def test_holdout_unlock_and_evaluation_success() -> None:
         holdout_end=holdout_end,
     )
 
-    tracker = HoldoutVaultTracker()
+    tracker = HoldoutVaultTracker(_vault_store(tmp_path / "evidence"))
     report = evaluate_governed_holdout(
         partition,
         token,
@@ -100,7 +102,7 @@ def test_holdout_unlock_and_evaluation_success() -> None:
     assert tracker.is_consumed("holdout_test_001")
 
 
-def test_holdout_second_access_raises_already_consumed() -> None:
+def test_holdout_second_access_raises_already_consumed(tmp_path: Path) -> None:
     journey = governed_training_journey()
     calendar = journey.calendar
 
@@ -124,7 +126,7 @@ def test_holdout_second_access_raises_already_consumed() -> None:
         holdout_end=holdout_end,
     )
 
-    tracker = HoldoutVaultTracker()
+    tracker = HoldoutVaultTracker(_vault_store(tmp_path / "evidence"))
 
     # First unlock: SUCCEEDS
     evaluate_governed_holdout(
@@ -155,7 +157,7 @@ def test_holdout_second_access_raises_already_consumed() -> None:
     assert "already been unlocked and consumed" in str(exc_info.value)
 
 
-def test_holdout_invalid_token_rejected() -> None:
+def test_holdout_invalid_token_rejected(tmp_path: Path) -> None:
     journey = governed_training_journey()
     calendar = journey.calendar
 
@@ -179,7 +181,7 @@ def test_holdout_invalid_token_rejected() -> None:
         holdout_end=holdout_end,
     )
 
-    tracker = HoldoutVaultTracker()
+    tracker = HoldoutVaultTracker(_vault_store(tmp_path / "evidence"))
     wrong_token = "invalid_token_hex_000000000000000000000000000000000000000000000000"
 
     with pytest.raises(ModelingError) as exc_info:
@@ -198,7 +200,7 @@ def test_holdout_invalid_token_rejected() -> None:
     assert "does not match cryptographic token hash" in str(exc_info.value)
 
 
-def test_holdout_evidence_draft_generation() -> None:
+def test_holdout_evidence_draft_generation(tmp_path: Path) -> None:
     journey = governed_training_journey()
     calendar = journey.calendar
 
@@ -222,7 +224,7 @@ def test_holdout_evidence_draft_generation() -> None:
         holdout_end=holdout_end,
     )
 
-    tracker = HoldoutVaultTracker()
+    tracker = HoldoutVaultTracker(_vault_store(tmp_path / "evidence"))
     now = datetime(2026, 8, 22, 12, 0, tzinfo=UTC)
 
     report = evaluate_governed_holdout(
@@ -265,3 +267,83 @@ def test_holdout_evidence_draft_generation() -> None:
     report_draft = draft_from_holdout_report(report)
     assert report_draft.schema_id == "quantos.holdout_strategy_decision"
     assert len(report_draft.records) > 0
+
+
+# -------------------------------------------------------------------------
+# Ring 5: H-2 regression — single use must survive a new tracker
+# -------------------------------------------------------------------------
+
+
+def _vault_store(root: Path) -> EvidenceStore:
+    return EvidenceStore(
+        EvidenceStoreConfig(
+            root=root,
+            chunk_uncompressed_bytes=1024,
+            max_bundle_bytes=8192,
+            min_free_bytes=0,
+            clock=lambda: datetime(2026, 8, 22, tzinfo=UTC),
+        )
+    )
+
+
+def test_holdout_single_use_survives_a_new_tracker(tmp_path: Path) -> None:
+    """H-2: vault state was in-memory only, so a second tracker reopened a consumed holdout.
+
+    Unlimited re-use turns a final holdout into a second validation set, which is the most
+    direct way this system could manufacture a false positive.
+    """
+    store = _vault_store(tmp_path / "evidence")
+    journey = governed_training_journey()
+    calendar = journey.calendar
+
+    evaluation = evaluate_governed_ridge_fold(
+        journey.start,
+        journey.registry,
+        journey.features,
+        journey.labels,
+        journey.fold,
+    )
+    partition, token = create_holdout_partition(
+        journey.labels,
+        journey.features,
+        calendar,
+        holdout_id="holdout_durable_001",
+        holdout_start=calendar.sessions[48].close_at,
+        holdout_end=calendar.sessions[52].close_at,
+    )
+
+    evaluate_governed_holdout(
+        partition,
+        token,
+        HoldoutVaultTracker(store),
+        evaluation,
+        journey.features,
+        journey.labels,
+        multiplicity_count=1,
+        evaluation_id="holdout_eval_durable_001",
+    )
+
+    # A brand new tracker over the SAME store. This is the defeat the finding describes.
+    fresh = HoldoutVaultTracker(store)
+    assert fresh.is_consumed("holdout_durable_001"), (
+        "a new tracker must see prior consumption; vault state cannot be in-memory only"
+    )
+
+    with pytest.raises(ModelingError) as excinfo:
+        evaluate_governed_holdout(
+            partition,
+            token,
+            fresh,
+            evaluation,
+            journey.features,
+            journey.labels,
+            multiplicity_count=1,
+            evaluation_id="holdout_eval_durable_002",
+        )
+    assert excinfo.value.code == ModelingFailureCode.HOLDOUT_ALREADY_CONSUMED
+
+
+def test_holdout_vault_requires_a_durable_store(tmp_path: Path) -> None:
+    """H-2: an optional store would leave the default construction exactly as unsafe."""
+    with pytest.raises(TypeError):
+        HoldoutVaultTracker()  # type: ignore[call-arg]
