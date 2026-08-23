@@ -226,3 +226,85 @@ def test_journal_never_rewrites_existing_bytes(journal: AdvisoryJournal) -> None
     first_line = journal.path.read_bytes()
     journal.append(_record(symbol="TCS"))
     assert journal.path.read_bytes().startswith(first_line)
+
+
+# --- truncation witness -----------------------------------------------------------------------
+# A hash chain cannot detect its own truncation: dropping the tail leaves a valid shorter chain.
+# These cover the external witness that closes that gap.
+
+
+def test_truncating_the_tail_is_detected(journal: AdvisoryJournal) -> None:
+    for symbol in ("INFY", "TCS", "WIPRO"):
+        journal.append(_record(symbol=symbol))
+
+    lines = journal.path.read_text(encoding="utf-8").splitlines()
+    _rewrite_lines(journal.path, lines[:-1])
+
+    with pytest.raises(AdvisoryError) as excinfo:
+        journal.verify_chain()
+    assert excinfo.value.code is AdvisoryFailureCode.JOURNAL_TRUNCATED
+    assert "1 entry was removed" in str(excinfo.value)
+
+
+def test_truncating_several_rows_reports_how_many(journal: AdvisoryJournal) -> None:
+    for symbol in ("INFY", "TCS", "WIPRO", "HCLTECH"):
+        journal.append(_record(symbol=symbol))
+
+    lines = journal.path.read_text(encoding="utf-8").splitlines()
+    _rewrite_lines(journal.path, lines[:1])
+
+    with pytest.raises(AdvisoryError) as excinfo:
+        journal.verify_chain()
+    assert excinfo.value.code is AdvisoryFailureCode.JOURNAL_TRUNCATED
+    assert "3 entries were removed" in str(excinfo.value)
+
+
+def test_a_missing_witness_is_refused_rather_than_assumed_intact(
+    journal: AdvisoryJournal,
+) -> None:
+    journal.append(_record())
+    journal.witness_path.unlink()
+
+    with pytest.raises(AdvisoryError) as excinfo:
+        journal.verify_chain()
+    assert excinfo.value.code is AdvisoryFailureCode.JOURNAL_WITNESS_MISSING
+
+
+def test_an_unreadable_witness_is_refused(journal: AdvisoryJournal) -> None:
+    journal.append(_record())
+    journal.witness_path.write_text("{not json", encoding="utf-8")
+
+    with pytest.raises(AdvisoryError) as excinfo:
+        journal.verify_chain()
+    assert excinfo.value.code is AdvisoryFailureCode.JOURNAL_WITNESS_MISSING
+
+
+def test_an_empty_journal_needs_no_witness(journal: AdvisoryJournal) -> None:
+    assert journal.verify_chain() == []
+
+
+def test_the_witness_tracks_the_tip_across_appends(journal: AdvisoryJournal) -> None:
+    first = journal.append(_record(symbol="INFY"))
+    assert json.loads(journal.witness_path.read_text(encoding="utf-8"))["entry_sha256"] == (
+        first.entry_sha256
+    )
+
+    second = journal.append(_record(symbol="TCS"))
+    witness = json.loads(journal.witness_path.read_text(encoding="utf-8"))
+    assert witness["entry_sha256"] == second.entry_sha256
+    assert witness["sequence"] == 1
+
+
+def test_a_stale_witness_behind_the_journal_is_tolerated(journal: AdvisoryJournal) -> None:
+    """The witness is written after the row, so a crash between them leaves it behind, not ahead.
+
+    Behind is the safe direction: a longer journal satisfies an older tip. Failing here would turn
+    an ordinary crash into a permanently unreadable journal.
+    """
+    first = journal.append(_record(symbol="INFY"))
+    journal.append(_record(symbol="TCS"))
+    journal.witness_path.write_text(
+        json.dumps({"sequence": first.sequence, "entry_sha256": first.entry_sha256}) + "\n",
+        encoding="utf-8",
+    )
+    assert len(journal.verify_chain()) == 2

@@ -88,8 +88,12 @@ class NSEContractConventions:
             if rec.symbol == sym_clean and rec.effective_from <= trade_date:
                 if rec.effective_to is None or trade_date <= rec.effective_to:
                     return rec.lot_size
-        # Fallback default for unknown / single stock if not in index list
-        return 1
+        # No fail-open default. Returning 1 made every quantity a valid lot, so
+        # validate_quantity waved through 7 shares of a contract whose real lot is 75 (G-5).
+        raise ValueError(
+            f"no effective-dated NSE lot size is known for {sym_clean} on {trade_date}; "
+            "refusing to assume a lot size of 1"
+        )
 
     @classmethod
     def get_strike_step(cls, symbol: str) -> Decimal:
@@ -111,7 +115,12 @@ class NSEContractConventions:
         """Validates that order quantity is a positive multiple of the active lot size."""
         if quantity <= 0:
             return False
-        lot_size = cls.get_lot_size(symbol, trade_date)
+        try:
+            lot_size = cls.get_lot_size(symbol, trade_date)
+        except ValueError:
+            # An unknown lot size cannot validate a quantity. Refusing is the safe answer;
+            # approving on an assumed lot of 1 is how G-5 passed 7 shares of a 75-lot contract.
+            return False
         return quantity % lot_size == 0
 
     @classmethod
@@ -331,6 +340,99 @@ class BinomialOptionModel:
     """Cox-Ross-Rubinstein (CRR) discrete lattice model for European and American options."""
 
     @classmethod
+    def _induct(
+        cls,
+        spot: float,
+        strike: float,
+        option_type: InstrumentType,
+        exercise_style: ExerciseStyle,
+        steps: int,
+        *,
+        u: float,
+        d: float,
+        p: float,
+        disc: float,
+        stop_step: int = 0,
+    ) -> list[float]:
+        """Backward induction from expiry down to `stop_step`, returning that step's node values.
+
+        Shared by pricing and by the gamma calculation so the lattice is defined exactly once.
+        """
+        values = [0.0] * (steps + 1)
+        for i in range(steps + 1):
+            s_terminal = spot * (u ** (steps - i)) * (d**i)
+            if option_type == InstrumentType.OPTION_CALL:
+                values[i] = max(0.0, s_terminal - strike)
+            else:
+                values[i] = max(0.0, strike - s_terminal)
+
+        for step in range(steps - 1, stop_step - 1, -1):
+            for i in range(step + 1):
+                continuation = disc * (p * values[i] + (1.0 - p) * values[i + 1])
+                if exercise_style == ExerciseStyle.AMERICAN:
+                    s_current = spot * (u ** (step - i)) * (d**i)
+                    intrinsic = (
+                        max(0.0, s_current - strike)
+                        if option_type == InstrumentType.OPTION_CALL
+                        else max(0.0, strike - s_current)
+                    )
+                    values[i] = max(continuation, intrinsic)
+                else:
+                    values[i] = continuation
+        return values
+
+    @classmethod
+    def _lattice_gamma(
+        cls,
+        spot: float,
+        strike: float,
+        time_to_expiry_years: float,
+        volatility: float,
+        risk_free_rate: float,
+        option_type: InstrumentType,
+        exercise_style: ExerciseStyle,
+        steps: int,
+    ) -> float | None:
+        """Gamma from the tree's own step-2 nodes, or None when the lattice cannot supply it.
+
+        Re-pricing shifted trees (the previous approach) is unstable: a bump smaller than the
+        node spacing lands inside one lattice cell, so the second difference measures grid noise
+        rather than curvature. At 200 steps that produced a gamma wrong by 182% for an American
+        call. The step-2 nodes give the standard CRR estimate directly.
+        """
+        if steps < 2 or time_to_expiry_years <= 0.0 or volatility <= 0.0:
+            return None
+        dt = time_to_expiry_years / float(steps)
+        u = math.exp(volatility * math.sqrt(dt))
+        d = 1.0 / u
+        if u == d:
+            return None
+        p = (math.exp(risk_free_rate * dt) - d) / (u - d)
+        if p < 0.0 or p > 1.0:
+            return None
+
+        values = cls._induct(
+            spot,
+            strike,
+            option_type,
+            exercise_style,
+            steps,
+            u=u,
+            d=d,
+            p=p,
+            disc=math.exp(-risk_free_rate * dt),
+            stop_step=2,
+        )
+        s_uu = spot * u * u
+        s_ud = spot
+        s_dd = spot * d * d
+        if s_uu == s_ud or s_ud == s_dd or s_uu == s_dd:
+            return None
+        delta_up = (values[0] - values[1]) / (s_uu - s_ud)
+        delta_down = (values[1] - values[2]) / (s_ud - s_dd)
+        return (delta_up - delta_down) / (0.5 * (s_uu - s_dd))
+
+    @classmethod
     def price(
         cls,
         spot: float,
@@ -382,30 +484,18 @@ class BinomialOptionModel:
                 ).price
             p = max(0.0, min(1.0, p))
 
-        # Boundary condition: terminal asset prices and payoffs
-        values = [0.0] * (steps + 1)
-        for i in range(steps + 1):
-            s_terminal = spot * (u ** (steps - i)) * (d**i)
-            if option_type == InstrumentType.OPTION_CALL:
-                values[i] = max(0.0, s_terminal - strike)
-            else:
-                values[i] = max(0.0, strike - s_terminal)
-
-        # Backward induction
-        for step in range(steps - 1, -1, -1):
-            for i in range(step + 1):
-                continuation = disc * (p * values[i] + (1.0 - p) * values[i + 1])
-                if exercise_style == ExerciseStyle.AMERICAN:
-                    s_current = spot * (u ** (step - i)) * (d**i)
-                    intrinsic = (
-                        max(0.0, s_current - strike)
-                        if option_type == InstrumentType.OPTION_CALL
-                        else max(0.0, strike - s_current)
-                    )
-                    values[i] = max(continuation, intrinsic)
-                else:
-                    values[i] = continuation
-
+        values = cls._induct(
+            spot,
+            strike,
+            option_type,
+            exercise_style,
+            steps,
+            u=u,
+            d=d,
+            p=p,
+            disc=disc,
+            stop_step=0,
+        )
         return max(0.0, values[0])
 
     @classmethod
@@ -446,12 +536,21 @@ class BinomialOptionModel:
                 model="BINOMIAL",
             )
 
-        # For European options, analytical Black-Scholes gamma provides exact benchmark
-        if exercise_style == ExerciseStyle.EUROPEAN and volatility > 0.0:
-            bs = BlackScholes.calculate_greeks(
-                spot, strike, time_to_expiry_years, volatility, risk_free_rate, option_type
-            )
-            gamma = bs.gamma
+        # Gamma comes from the lattice's own step-2 nodes. Substituting the Black-Scholes value
+        # for European options hid a defective lattice rather than repairing it, and left the
+        # American case — the reason a lattice exists at all — wrong by 182% (G-4).
+        lattice_gamma = cls._lattice_gamma(
+            spot,
+            strike,
+            time_to_expiry_years,
+            volatility,
+            risk_free_rate,
+            option_type,
+            exercise_style,
+            steps,
+        )
+        if lattice_gamma is not None:
+            gamma = lattice_gamma
         else:
             h_s = max(0.01, spot * 0.01)
             p_up = cls.price(

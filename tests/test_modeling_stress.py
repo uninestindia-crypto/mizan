@@ -5,12 +5,15 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 
+import pytest
+
 from quant_system.modeling import (
     MANDATORY_STRESS_SCENARIOS,
     StressScenarioType,
     evaluate_governed_ridge_fold,
     run_mandatory_stress_suite,
 )
+from quant_system.modeling.errors import ModelingError
 from quant_system.modeling.rows import MoneyV1, RoundTripCostQuoteV1
 from tests.modeling_training_fixtures import governed_training_journey
 
@@ -173,3 +176,37 @@ def test_stress_report_hash_is_deterministic() -> None:
 
     assert report1.report_hash == report2.report_hash
     assert report1.to_canonical_dict() == report2.to_canonical_dict()
+
+
+# -------------------------------------------------------------------------
+# Ring 5: S-1 residual — a missing cost quote must not become a silent 10 bps
+# -------------------------------------------------------------------------
+
+
+def test_missing_cost_quote_refuses_rather_than_assuming_ten_bps() -> None:
+    """S-1 residual: an unfound quote silently became 0.001, so the scenario ignored its input.
+
+    That is why a 10 bps quote and a 9500 bps quote produced an identical scenario_hash: the
+    stressed cost never depended on the quote at all. A cost that cannot be established makes
+    the scenario unevaluable, which is not the same as the model surviving it.
+    """
+    journey = governed_training_journey()
+    evaluation = evaluate_governed_ridge_fold(
+        journey.start,
+        journey.registry,
+        journey.features,
+        journey.labels,
+        journey.fold,
+    )
+
+    with pytest.raises(ModelingError) as excinfo:
+        run_mandatory_stress_suite(
+            evaluation.ridge_report.decisions,
+            journey.fold.validation_rows,
+            (),  # no cost quotes at all
+            journey.calendar,
+            candidate_id=journey.features.candidate_id,
+            model_id=evaluation.model_id,
+            evaluated_at=datetime(2026, 8, 22, 12, 0, tzinfo=UTC),
+        )
+    assert "cost quote" in str(excinfo.value).lower()

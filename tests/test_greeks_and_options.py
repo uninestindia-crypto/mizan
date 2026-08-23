@@ -4,6 +4,8 @@ import math
 from datetime import date, datetime
 from decimal import Decimal
 
+import pytest
+
 from quant_system.analytics.greeks import (
     BinomialOptionModel,
     BlackScholes,
@@ -151,3 +153,92 @@ def test_nse_time_to_expiry_act365() -> None:
     assert t_years > 0.0
     # Expected ~ 7.2604 days / 365
     assert abs(t_years - (7.0 + 6.25 / 24.0) / 365.0) < 1e-4
+
+
+# -------------------------------------------------------------------------
+# Ring 5: G-4 regression — the lattice must compute its own gamma
+# -------------------------------------------------------------------------
+
+
+def test_binomial_american_call_gamma_matches_analytic() -> None:
+    """G-4: the lattice gamma was wrong, and delegating European gamma to Black-Scholes hid it.
+
+    An American call on a non-dividend-paying underlying is never optimally exercised early, so
+    its gamma must equal the European analytic value. This case is not covered by the delegation,
+    which is why it exposes the defective lattice.
+    """
+    spot, strike, t, vol, r = 100.0, 100.0, 1.0, 0.20, 0.05
+    analytic = BlackScholes.calculate_greeks(
+        spot, strike, t, vol, r, InstrumentType.OPTION_CALL
+    ).gamma
+    american = BinomialOptionModel.calculate_greeks(
+        spot, strike, t, vol, r, InstrumentType.OPTION_CALL, ExerciseStyle.AMERICAN, 200
+    ).gamma
+
+    relative_error = abs(american - analytic) / analytic
+    assert relative_error < 0.02, (
+        f"American lattice gamma {american:.8f} differs from analytic {analytic:.8f} "
+        f"by {relative_error * 100:.1f}%"
+    )
+
+
+def test_binomial_european_gamma_is_produced_by_the_lattice() -> None:
+    """G-4: European gamma must come from the tree, not be substituted from Black-Scholes.
+
+    A lattice approximation agreeing with the closed form to every bit is not an approximation;
+    it is the closed form wearing the lattice's name.
+    """
+    spot, strike, t, vol, r = 100.0, 100.0, 1.0, 0.20, 0.05
+    analytic = BlackScholes.calculate_greeks(
+        spot, strike, t, vol, r, InstrumentType.OPTION_CALL
+    ).gamma
+    european = BinomialOptionModel.calculate_greeks(
+        spot, strike, t, vol, r, InstrumentType.OPTION_CALL, ExerciseStyle.EUROPEAN, 200
+    ).gamma
+
+    assert abs(european - analytic) / analytic < 0.02, "lattice gamma must be accurate"
+    assert european != analytic, "gamma was delegated to Black-Scholes rather than computed"
+
+
+def test_binomial_put_gamma_matches_analytic() -> None:
+    """G-4: gamma is symmetric across option type; puts must be right too."""
+    spot, strike, t, vol, r = 100.0, 105.0, 0.5, 0.25, 0.05
+    analytic = BlackScholes.calculate_greeks(
+        spot, strike, t, vol, r, InstrumentType.OPTION_PUT
+    ).gamma
+    lattice = BinomialOptionModel.calculate_greeks(
+        spot, strike, t, vol, r, InstrumentType.OPTION_PUT, ExerciseStyle.EUROPEAN, 200
+    ).gamma
+    assert abs(lattice - analytic) / analytic < 0.02
+
+
+# -------------------------------------------------------------------------
+# Ring 5: G-5 regression — an unknown lot size must not default to 1
+# -------------------------------------------------------------------------
+
+
+def test_lot_size_refuses_an_unknown_symbol() -> None:
+    """G-5: unknown symbols returned lot size 1, so every quantity looked like a valid lot.
+
+    A silent 1 means `validate_quantity` waves through 7 shares of an F&O contract whose real
+    lot is 75.
+    """
+    with pytest.raises(ValueError, match="RELIANCE"):
+        NSEContractConventions.get_lot_size("RELIANCE", date(2024, 6, 1))
+
+
+def test_lot_size_refuses_a_date_before_the_table_starts() -> None:
+    """G-5: a date the effective-dated table does not cover is unknown, not lot size 1."""
+    with pytest.raises(ValueError, match="NIFTY"):
+        NSEContractConventions.get_lot_size("NIFTY", date(1990, 1, 1))
+
+
+def test_validate_quantity_refuses_an_unknown_symbol_rather_than_approving() -> None:
+    """G-5: the fail-open default made validate_quantity return True for anything."""
+    assert NSEContractConventions.validate_quantity("RELIANCE", 7, date(2024, 6, 1)) is False
+
+
+def test_validate_quantity_still_accepts_a_correct_index_lot() -> None:
+    """The repair must not refuse quantities that are genuinely valid."""
+    assert NSEContractConventions.validate_quantity("NIFTY", 75, date(2024, 11, 25)) is True
+    assert NSEContractConventions.validate_quantity("NIFTY", 70, date(2024, 11, 25)) is False

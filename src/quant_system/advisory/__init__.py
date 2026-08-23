@@ -31,6 +31,7 @@ from quant_system.advisory.records import (
     StrategyHypothesisRecord,
     reject_secret_material,
 )
+from quant_system.advisory.registry import HypothesisRegistry
 
 __all__ = [
     "GENESIS_SHA256",
@@ -45,6 +46,7 @@ __all__ = [
     "Authority",
     "ExecutionMode",
     "HindsightStatus",
+    "HypothesisRegistry",
     "JournalEntry",
     "ModelIdentity",
     "StrategyHypothesisRecord",

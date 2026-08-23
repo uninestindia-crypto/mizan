@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from quant_system.core.domain import Order, OrderType, Quote, Side
+from quant_system.core.domain import Order, OrderType, Position, Quote, Side
 from quant_system.risk.checks import RiskLimits
 from quant_system.risk.governor import PreTradeRiskGovernor
 
@@ -214,3 +214,78 @@ def test_risk_governor_state_persistence_and_recovery() -> None:
 
     assert new_gov.is_killed is True
     assert new_gov.all_time_peak_equity == Decimal("1200000.00")
+
+
+# -------------------------------------------------------------------------
+# Ring 5: R-3 regression — leverage must be marked to market, not to cost
+# -------------------------------------------------------------------------
+
+
+def _buy_order(symbol: str = "INFY", quantity: int = 100) -> Order:
+    return Order(
+        order_id="ord_r3",
+        symbol=symbol,
+        side=Side.BUY,
+        quantity=quantity,
+        order_type=OrderType.MARKET,
+        created_at=datetime(2025, 1, 1, 10, 0),
+    )
+
+
+def _quote(symbol: str = "INFY", price: str = "100.00") -> Quote:
+    return Quote(
+        symbol=symbol,
+        timestamp=datetime(2025, 1, 1, 10, 0),
+        bid=Decimal(price),
+        ask=Decimal(price),
+    )
+
+
+def test_leverage_refuses_when_a_held_position_cannot_be_valued() -> None:
+    """R-3: positions other than the traded symbol were valued at average COST.
+
+    Cost-based leverage understates real exposure, and the understated number was hashed into
+    decision_hash, so the audit recorded the wrong figure as evidence.
+    """
+    gov = PreTradeRiskGovernor(limits=RiskLimits(max_portfolio_leverage=1.0))
+    decision = gov.evaluate_order(
+        order=_buy_order(),
+        current_equity=Decimal("1000000.00"),
+        current_cash=Decimal("1000000.00"),
+        positions={"TCS": Position(symbol="TCS", quantity=1000, average_price=Decimal("100.00"))},
+        current_quote=_quote(),
+    )
+    assert decision.approved is False
+    assert "VALUATION_UNAVAILABLE" in decision.reason
+
+
+def test_leverage_uses_supplied_market_prices() -> None:
+    """R-3: with market prices the breach is visible; at cost it was invisible."""
+    gov = PreTradeRiskGovernor(limits=RiskLimits(max_portfolio_leverage=1.0))
+    positions = {"TCS": Position(symbol="TCS", quantity=1000, average_price=Decimal("100.00"))}
+    # At average cost TCS is worth 100,000 (leverage ~0.11 — approved).
+    # At its real market price of 1200 it is worth 1,200,000 (leverage ~1.21 — refused).
+    decision = gov.evaluate_order(
+        order=_buy_order(),
+        current_equity=Decimal("1000000.00"),
+        current_cash=Decimal("1000000.00"),
+        positions=positions,
+        current_quote=_quote(),
+        current_prices={"TCS": Decimal("1200.00")},
+    )
+    assert decision.approved is False
+    assert "LEVERAGE_LIMIT_EXCEEDED" in decision.reason
+    assert decision.resulting_leverage > 1.0
+
+
+def test_single_symbol_portfolio_needs_no_price_map() -> None:
+    """The traded symbol is already valued from its own quote; that path must keep working."""
+    gov = PreTradeRiskGovernor(limits=RiskLimits(max_portfolio_leverage=1.0))
+    decision = gov.evaluate_order(
+        order=_buy_order(),
+        current_equity=Decimal("1000000.00"),
+        current_cash=Decimal("1000000.00"),
+        positions={"INFY": Position(symbol="INFY", quantity=10, average_price=Decimal("100.00"))},
+        current_quote=_quote(),
+    )
+    assert decision.approved is True

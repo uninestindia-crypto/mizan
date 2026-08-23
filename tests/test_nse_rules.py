@@ -11,6 +11,7 @@ from quant_system.analytics.nse_rules import (
     MarketSegment,
     NSERuleEngine,
     RateBasis,
+    RoundingMethod,
     SideBasis,
 )
 from quant_system.core.domain import Side
@@ -266,3 +267,88 @@ def test_overlapping_catalog_rejection() -> None:
     )
     with pytest.raises(ValueError, match="overlap/ambiguity detected"):
         NSERuleEngine(rules=[rule1, rule2_overlapping])
+
+
+# -------------------------------------------------------------------------
+# Ring 5: N-1 / N-2 regressions — declared rule fields must govern, and
+# registration must not bypass the catalog validator
+# -------------------------------------------------------------------------
+
+
+def _brokerage_rule(
+    *,
+    minimum: Decimal | None = None,
+    rounding_method: RoundingMethod = RoundingMethod.ROUND_HALF_UP_PAISA,
+    rate: Decimal = Decimal("0.0000001"),
+) -> DatedExchangeRule:
+    return DatedExchangeRule(
+        rule_id="brk_test_v1",
+        component=FeeComponent.BROKERAGE,
+        source_ref="test",
+        publication_date=date(2024, 1, 1),
+        effective_from=date(2024, 1, 1),
+        effective_to=None,
+        venue="NSE",
+        segment=MarketSegment.EQUITY_DELIVERY,
+        side_basis=SideBasis.BOTH,
+        rate=rate,
+        rate_basis=RateBasis.TURNOVER,
+        minimum=minimum,
+        rounding_method=rounding_method,
+    )
+
+
+def test_declared_minimum_is_applied_not_merely_hashed() -> None:
+    """N-1: `minimum` was hashed into rule_hash and never read, so a 1000.00 floor computed 0.33."""
+    engine = NSERuleEngine()
+    breakdown = engine.calculate_costs(
+        segment=MarketSegment.EQUITY_DELIVERY,
+        side=Side.BUY,
+        quantity=100,
+        price=Decimal("33.00"),
+        trade_date=date(2024, 6, 1),
+        custom_brokerage_rule=_brokerage_rule(minimum=Decimal("1000.00")),
+    )
+    assert breakdown.brokerage >= Decimal("1000.00"), (
+        f"declared minimum of 1000.00 was ignored; brokerage came out {breakdown.brokerage}"
+    )
+
+
+def test_declared_rupee_rounding_is_applied() -> None:
+    """N-1: `rounding_method` was declared and hashed, but every component rounded to the paisa."""
+    engine = NSERuleEngine()
+    breakdown = engine.calculate_costs(
+        segment=MarketSegment.EQUITY_DELIVERY,
+        side=Side.BUY,
+        quantity=100,
+        price=Decimal("33.33"),
+        trade_date=date(2024, 6, 1),
+        custom_brokerage_rule=_brokerage_rule(
+            rate=Decimal("0.001"), rounding_method=RoundingMethod.ROUND_HALF_UP_RUPEE
+        ),
+    )
+    assert breakdown.brokerage == breakdown.brokerage.quantize(Decimal("1")), (
+        f"ROUND_HALF_UP_RUPEE was declared but brokerage kept paisa: {breakdown.brokerage}"
+    )
+
+
+def test_register_rule_refuses_a_rule_that_breaks_the_catalog() -> None:
+    """N-2: register_rule bypassed validate_catalog, leaving the engine in a state it rejects."""
+    engine = NSERuleEngine()
+    existing = next(r for r in engine.rules if r.component == FeeComponent.STT)
+    overlapping = DatedExchangeRule(
+        rule_id="stt_overlap_test",
+        component=existing.component,
+        source_ref="test",
+        publication_date=existing.effective_from,
+        effective_from=existing.effective_from,
+        effective_to=existing.effective_to,
+        venue=existing.venue,
+        segment=existing.segment,
+        side_basis=existing.side_basis,
+        rate=existing.rate,
+        rate_basis=existing.rate_basis,
+    )
+    with pytest.raises(ValueError):
+        engine.register_rule(overlapping)
+    engine.validate_catalog()

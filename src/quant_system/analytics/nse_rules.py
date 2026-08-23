@@ -727,10 +727,20 @@ class NSERuleEngine:
         return list(self._rules)
 
     def register_rule(self, rule: DatedExchangeRule) -> None:
-        """Registers a dated exchange rule."""
+        """Registers a dated exchange rule, refusing any that the catalog validator rejects.
+
+        Registration used to append unconditionally, so the engine could be driven into a state
+        its own `validate_catalog` rejects and then keep pricing from it (N-2). The rule is now
+        rolled back if it does not survive validation.
+        """
         if not isinstance(rule, DatedExchangeRule):
             raise TypeError(f"Expected DatedExchangeRule, got {type(rule)}")
         self._rules.append(rule)
+        try:
+            self.validate_catalog()
+        except Exception:
+            self._rules.pop()
+            raise
 
     def validate_catalog(self) -> None:
         """Verifies that no overlapping active date ranges exist for the same component and segment."""
@@ -773,6 +783,27 @@ class NSERuleEngine:
     ) -> list[DatedExchangeRule]:
         """Returns all effective rules for a market segment on a given trade date."""
         return [r for r in self._rules if r.segment == segment and r.is_effective(trade_date)]
+
+    @staticmethod
+    def _finalize(raw: Decimal, rule: DatedExchangeRule) -> Decimal:
+        """Apply a rule's declared cap, minimum and rounding to a raw component amount.
+
+        `cap`, `minimum`, `rounding_unit` and `rounding_method` are hashed into `rule_hash`, so
+        a rule that declares them is identified by them. They were never read: every component
+        hardcoded paisa rounding and only brokerage honoured a cap, which meant a rule declaring
+        ROUND_HALF_UP_RUPEE with a 1000.00 minimum priced at 0.33 (N-1).
+        """
+        amount = raw
+        if rule.cap is not None:
+            amount = min(amount, rule.cap)
+        if rule.minimum is not None:
+            amount = max(amount, rule.minimum)
+        quantum = (
+            Decimal("1")
+            if rule.rounding_method == RoundingMethod.ROUND_HALF_UP_RUPEE
+            else rule.rounding_unit
+        )
+        return amount.quantize(quantum, rounding=ROUND_HALF_UP)
 
     def calculate_costs(
         self,
@@ -824,14 +855,11 @@ class NSERuleEngine:
         # 2. Compute Brokerage
         brokerage = Decimal("0.00")
         if brk_rule.rate_basis == RateBasis.FLAT_PER_ORDER:
-            brokerage = brk_rule.rate.quantize(_PAISA)
+            brokerage = self._finalize(brk_rule.rate, brk_rule)
         elif brk_rule.rate_basis == RateBasis.PERCENTAGE_WITH_CAP:
-            raw_brk = turnover * brk_rule.rate
-            if brk_rule.cap is not None:
-                raw_brk = min(raw_brk, brk_rule.cap)
-            brokerage = raw_brk.quantize(_PAISA, rounding=ROUND_HALF_UP)
+            brokerage = self._finalize(turnover * brk_rule.rate, brk_rule)
         elif brk_rule.rate_basis == RateBasis.TURNOVER:
-            brokerage = (turnover * brk_rule.rate).quantize(_PAISA, rounding=ROUND_HALF_UP)
+            brokerage = self._finalize(turnover * brk_rule.rate, brk_rule)
 
         # 3. Compute STT
         stt = Decimal("0.00")
@@ -841,16 +869,13 @@ class NSERuleEngine:
             or (stt_rule.side_basis == SideBasis.SELL and side == Side.SELL)
         )
         if stt_applies:
-            raw_stt = turnover * stt_rule.rate
-            stt = raw_stt.quantize(_PAISA, rounding=ROUND_HALF_UP)
+            stt = self._finalize(turnover * stt_rule.rate, stt_rule)
 
         # 4. Compute Exchange Turnover Charges
-        raw_exch = turnover * exch_rule.rate
-        exchange_turnover = raw_exch.quantize(_PAISA, rounding=ROUND_HALF_UP)
+        exchange_turnover = self._finalize(turnover * exch_rule.rate, exch_rule)
 
         # 5. Compute SEBI Charges
-        raw_sebi = turnover * sebi_rule.rate
-        sebi_charges = raw_sebi.quantize(_PAISA, rounding=ROUND_HALF_UP)
+        sebi_charges = self._finalize(turnover * sebi_rule.rate, sebi_rule)
 
         # 6. Compute Stamp Duty (applicable on BUY side)
         stamp_duty = Decimal("0.00")
@@ -860,13 +885,11 @@ class NSERuleEngine:
             or (sd_rule.side_basis == SideBasis.SELL and side == Side.SELL)
         )
         if sd_applies:
-            raw_sd = turnover * sd_rule.rate
-            stamp_duty = raw_sd.quantize(_PAISA, rounding=ROUND_HALF_UP)
+            stamp_duty = self._finalize(turnover * sd_rule.rate, sd_rule)
 
         # 7. Compute GST (18% on Brokerage + Exchange + SEBI)
         gst_base = brokerage + exchange_turnover + sebi_charges
-        raw_gst = gst_base * gst_rule.rate
-        gst = raw_gst.quantize(_PAISA, rounding=ROUND_HALF_UP)
+        gst = self._finalize(gst_base * gst_rule.rate, gst_rule)
 
         # 8. Compute Slippage
         slippage = Decimal("0.00")

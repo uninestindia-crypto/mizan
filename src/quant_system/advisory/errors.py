@@ -17,6 +17,11 @@ class AdvisoryFailureCode(StrEnum):
     HASH_INVALID = "HASH_INVALID"
     JOURNAL_CHAIN_BROKEN = "JOURNAL_CHAIN_BROKEN"
     JOURNAL_RECORD_MALFORMED = "JOURNAL_RECORD_MALFORMED"
+    # A hash chain cannot detect its own truncation: drop the last row and rows 0..n-2 are still
+    # internally consistent and correctly linked. These two codes cover the external witness that
+    # makes truncation visible.
+    JOURNAL_TRUNCATED = "JOURNAL_TRUNCATED"
+    JOURNAL_WITNESS_MISSING = "JOURNAL_WITNESS_MISSING"
     SECRET_MATERIAL_PRESENT = "SECRET_MATERIAL_PRESENT"
     HYPOTHESIS_NOT_REGISTERED = "HYPOTHESIS_NOT_REGISTERED"
     HYPOTHESIS_ALREADY_REGISTERED = "HYPOTHESIS_ALREADY_REGISTERED"

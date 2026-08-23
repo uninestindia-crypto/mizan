@@ -164,6 +164,7 @@ class PreTradeRiskGovernor:
         current_cash: Decimal,
         positions: Mapping[str, Position],
         current_quote: Quote | None,
+        current_prices: Mapping[str, Decimal] | None = None,
     ) -> RiskDecision:
         """Deterministic pre-trade verification. Returns approved=True only if ALL limits pass."""
         self.update_peaks(current_equity)
@@ -332,10 +333,38 @@ class PreTradeRiskGovernor:
                 )
 
         # 9. Portfolio Leverage Check
-        gross_pos_val = sum(
-            abs(p.quantity) * (p.average_price if order.symbol != sym else est_price)
-            for sym, p in positions.items()
-        )
+        # Marking a held position to its own average COST understates real exposure, and the
+        # understated figure was hashed into decision_hash as evidence (R-3). The traded symbol
+        # is valued from its own quote; every other symbol needs a supplied market price, and a
+        # position that cannot be valued means leverage is unknown — which is not the same as
+        # leverage being acceptable, so the order is refused rather than approved.
+        supplied = current_prices or {}
+        gross_pos_val = Decimal("0.00")
+        unvaluable: list[str] = []
+        for sym, p in positions.items():
+            if sym == order.symbol:
+                mark = est_price
+            elif sym in supplied:
+                mark = supplied[sym]
+            else:
+                unvaluable.append(sym)
+                continue
+            gross_pos_val += abs(p.quantity) * mark
+
+        if unvaluable:
+            return RiskDecision(
+                approved=False,
+                reason=(
+                    "PORTFOLIO_VALUATION_UNAVAILABLE: no market price supplied for held "
+                    f"position(s) {', '.join(sorted(unvaluable))}; leverage cannot be determined"
+                ),
+                order_id=order.order_id,
+                current_equity=current_equity,
+                order_value=order_value,
+                resulting_leverage=0.0,
+                limits_id=self.limits.limits_id,
+                decision_timestamp=now,
+            )
         if order.side == Side.BUY:
             resulting_gross = gross_pos_val + order_value
         else:

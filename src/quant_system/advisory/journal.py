@@ -89,6 +89,16 @@ class AdvisoryJournal:
 
     def __init__(self, path: Path) -> None:
         self.path = path
+        # External witness. A hash chain proves that rows 0..n-1 are unaltered and correctly
+        # linked, but it cannot prove that row n ever existed — truncating the tail leaves a
+        # perfectly valid shorter chain. That failure is the dangerous direction here: a shorter
+        # journal means a lower attempt count, which means a weaker deflation, which flatters the
+        # candidate. The witness records the tip so a shortened journal is detectable.
+        #
+        # Honest limits: this defeats accidental truncation, partial writes, and naive tampering.
+        # It does not defeat someone who rewrites journal and witness together. If both are lost,
+        # the attempt count is not recoverable and must be treated as unknown, never as zero.
+        self.witness_path = path.with_suffix(f"{path.suffix}.tip")
 
     def append(self, record: AdvisoryRecord) -> JournalEntry:
         """Seal one record onto the end of the chain and fsync it."""
@@ -134,7 +144,39 @@ class AdvisoryJournal:
             handle.write(encoded)
             handle.flush()
             os.fsync(handle.fileno())
+        self._write_witness(entry)
         return entry
+
+    def _write_witness(self, entry: JournalEntry) -> None:
+        """Record the tip, written after the row so the witness never leads the journal.
+
+        A witness ahead of the journal would report truncation after a crash between the two
+        writes. Behind is the safe direction: it reports a stale tip, which verification treats as
+        satisfied by a longer journal.
+        """
+        payload = json.dumps(
+            {"sequence": entry.sequence, "entry_sha256": entry.entry_sha256},
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        temporary = self.witness_path.with_suffix(".tip.tmp")
+        temporary.write_text(f"{payload}\n", encoding="utf-8")
+        temporary.replace(self.witness_path)
+
+    def _read_witness(self) -> tuple[int, str] | None:
+        if not self.witness_path.exists():
+            return None
+        raw = self.witness_path.read_text(encoding="utf-8").strip()
+        if not raw:
+            return None
+        try:
+            payload = json.loads(raw)
+            return int(payload["sequence"]), str(payload["entry_sha256"])
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            raise AdvisoryError(
+                AdvisoryFailureCode.JOURNAL_WITNESS_MISSING,
+                f"witness file {self.witness_path.name} is unreadable: {exc}",
+            ) from exc
 
     def read_entries(self) -> list[JournalEntry]:
         """Every entry in file order. Does not verify the chain; call :meth:`verify_chain`."""
@@ -172,7 +214,45 @@ class AdvisoryJournal:
                     ),
                 )
             expected_previous = entry.entry_sha256
+
+        self._verify_against_witness(entries)
         return entries
+
+    def _verify_against_witness(self, entries: Sequence[JournalEntry]) -> None:
+        """Catch the one tamper a hash chain cannot: rows removed from the end."""
+        if not entries:
+            return
+
+        witness = self._read_witness()
+        if witness is None:
+            raise AdvisoryError(
+                AdvisoryFailureCode.JOURNAL_WITNESS_MISSING,
+                (
+                    f"{self.path.name} holds {len(entries)} entries but its witness file is "
+                    "absent, so truncation cannot be ruled out and the attempt count cannot be "
+                    "trusted"
+                ),
+            )
+
+        witnessed_sequence, witnessed_hash = witness
+        tip = entries[-1]
+        if tip.sequence < witnessed_sequence:
+            raise AdvisoryError(
+                AdvisoryFailureCode.JOURNAL_TRUNCATED,
+                (
+                    f"{self.path.name} ends at sequence {tip.sequence} but its witness records "
+                    f"{witnessed_sequence}; {witnessed_sequence - tip.sequence} entr"
+                    f"{'y was' if witnessed_sequence - tip.sequence == 1 else 'ies were'} removed"
+                ),
+            )
+        if tip.sequence == witnessed_sequence and tip.entry_sha256 != witnessed_hash:
+            raise AdvisoryError(
+                AdvisoryFailureCode.JOURNAL_CHAIN_BROKEN,
+                (
+                    f"{self.path.name} tip hashes to {tip.entry_sha256} but its witness records "
+                    f"{witnessed_hash}"
+                ),
+            )
 
     def _iter_entries(self) -> Iterator[JournalEntry]:
         if not self.path.exists():

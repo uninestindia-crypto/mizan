@@ -253,7 +253,16 @@ def _stress_twice_transaction_costs(
                 elif quote is not None and isinstance(quote, (Decimal, int, float, str)):
                     cost = Decimal(str(quote))
                 else:
-                    cost = Decimal("0.001")  # 10 bps default fallback
+                    # No silent default. Substituting 10 bps made the stressed cost independent
+                    # of its input, which is why a 10 bps and a 9500 bps quote produced an
+                    # identical scenario_hash (S-1). A cost that cannot be established makes the
+                    # scenario unevaluable; reporting it as survived would be a false pass.
+                    raise ModelingError(
+                        ModelingFailureCode.STRESS_TEST_FAILED,
+                        f"no round-trip cost quote for {decision.symbol} at "
+                        f"{decision.decision_at.isoformat()}; refusing to assume a default "
+                        "transaction cost for the TWICE_TRANSACTION_COSTS scenario",
+                    )
 
                 # Stressed net return = base net return - 1x additional cost (since base net already subtracted 1x cost)
                 base_net = Decimal(decision.realized_net_return)
