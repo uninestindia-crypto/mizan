@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import run_governed_ridge_training as runner  # noqa: E402
 import run_universe_ridge_campaign as universe_runner  # noqa: E402
+from cached_nifty50_catalog import VerifiedAcquisitionCatalog  # noqa: E402
 from cached_nifty50_costs import (  # noqa: E402
     RESEARCH_COST_POLICY_HASH,
     round_trip_cost_quotes,
@@ -32,7 +33,9 @@ from cached_nifty50_costs import (
 )
 from cached_nifty50_evidence import (  # noqa: E402
     CachedAcquisitionQuery,
-    acquire_or_load,
+)
+from cached_nifty50_evidence import (
+    acquire_or_load as acquire_or_load,
 )
 from cached_nifty50_evidence import (
     load_cached_acquisition as load_cached_acquisition,
@@ -90,7 +93,7 @@ class StudyContext:
     ordinal: int
     authority_members: tuple[str, ...]
     client: UpstoxClient
-    cache_store: EvidenceStore
+    cache_catalog: VerifiedAcquisitionCatalog
     model_store: EvidenceStore
     repo_root: Path
 
@@ -116,7 +119,7 @@ class CampaignContext:
     repo_root: Path
     constituents: tuple[tuple[str, str], ...]
     selection: UniverseSelection
-    cache_store: EvidenceStore
+    cache_catalog: VerifiedAcquisitionCatalog
     model_store: EvidenceStore
     client: UpstoxClient
     output: CampaignOutput
@@ -153,8 +156,7 @@ def _acquire_discovery(
         to_date=args.to_date,
         request_id=f"campaign-discovery-{context.symbol}",
     )
-    outcome, cache_state = acquire_or_load(
-        context.cache_store,
+    outcome, cache_state = context.cache_catalog.acquire_or_load(
         CachedAcquisitionQuery.from_request(request),
         lambda: context.client.acquire_historical_daily(request),
         operation_id=f"cache-discovery-{context.symbol.lower()}",
@@ -227,8 +229,7 @@ def _acquire_governed(
     governance: GovernanceInputs,
 ) -> tuple[HistoricalAcquisition | None, str, universe_runner.InstrumentResult | None]:
     request = _governed_request(context, governance)
-    outcome, cache_state = acquire_or_load(
-        context.cache_store,
+    outcome, cache_state = context.cache_catalog.acquire_or_load(
         CachedAcquisitionQuery.from_request(request),
         lambda: context.client.acquire_historical_daily(request),
         operation_id=f"cache-governed-{context.symbol.lower()}",
@@ -374,6 +375,7 @@ def _initialize(args: argparse.Namespace) -> CampaignContext:
     selection = select_constituents(constituents, skip=args.skip, limit=args.limit)
     persist_runtime_authorities(args.cache_root, args.universe_csv)
     cache_store = EvidenceStore(EvidenceStoreConfig(root=args.cache_root / "store"))
+    cache_catalog = VerifiedAcquisitionCatalog.open(cache_store)
     model_store = EvidenceStore(EvidenceStoreConfig(root=args.evidence_root))
     output = CampaignOutput(args, len(constituents))
     return CampaignContext(
@@ -381,7 +383,7 @@ def _initialize(args: argparse.Namespace) -> CampaignContext:
         repo_root,
         constituents,
         selection,
-        cache_store,
+        cache_catalog,
         model_store,
         UpstoxClient(),
         output,
@@ -398,7 +400,7 @@ def _study_context(
         ordinal,
         campaign.selection.authority_members,
         campaign.client,
-        campaign.cache_store,
+        campaign.cache_catalog,
         campaign.model_store,
         campaign.repo_root,
     )

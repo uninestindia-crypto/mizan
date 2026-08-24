@@ -119,6 +119,37 @@ def test_cache_hit_never_calls_the_provider(tmp_path: Path) -> None:
     assert calls == 1
 
 
+def test_verified_catalog_scans_once_then_serves_repeated_hits(tmp_path: Path) -> None:
+    campaign = _runner()
+    catalog_module = importlib.import_module("cached_nifty50_catalog")
+    acquisition = governed_acquisition()
+    store = _store(tmp_path / "cache")
+    query = campaign.CachedAcquisitionQuery.from_manifest(acquisition.manifest)
+    campaign.persist_verified_acquisition(
+        store,
+        acquisition,
+        operation_id="test-indexed-cache-seed",
+    )
+    catalog = catalog_module.VerifiedAcquisitionCatalog.open(store)
+
+    def forbidden_fetch() -> HistoricalAcquisition:
+        raise AssertionError("an indexed cache hit must not call the provider")
+
+    first, first_state = catalog.acquire_or_load(
+        query,
+        forbidden_fetch,
+        operation_id="test-indexed-cache-hit-1",
+    )
+    second, second_state = catalog.acquire_or_load(
+        query,
+        forbidden_fetch,
+        operation_id="test-indexed-cache-hit-2",
+    )
+
+    assert first == second == acquisition
+    assert first_state == second_state == "CACHE_HIT"
+
+
 def test_corrupt_cache_fails_closed_instead_of_refetching(tmp_path: Path) -> None:
     campaign = _runner()
     acquisition = governed_acquisition()

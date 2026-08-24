@@ -27,11 +27,13 @@ corporate-action documents, and no synthetic or generated market data.
 - `scripts/cached_nifty50_evidence.py` (new cache codec and fail-closed reuse support)
 - `scripts/cached_nifty50_costs.py` (new explicit research-cost adapter)
 - `scripts/cached_nifty50_io.py` (new durable authority/summary I/O support)
+- `scripts/cached_nifty50_catalog.py` (new one-scan verified acquisition catalog)
 - `tests/test_cached_nifty50_campaign.py` (new)
 - `agent_context/decisions/20260824-nifty50-ten-year-cache-and-cost-proxy.md` (new)
 - `data/evidence/market-cache/nifty50-current-20160822-20260821/**` (runtime, persistent real-data cache)
 - `data/evidence/models/nifty50-current-20160822-20260821-schema-v2/**` (runtime, persistent trial evidence)
 - `data/evidence/models/nifty50-current-20160822-20260821-schema-v2-source-bound/**` (runtime, post-commit trial evidence)
+- `data/evidence/models/nifty50-current-20160822-20260821-schema-v2-source-bound-v2/**` (runtime, optimized post-commit trial evidence)
 - `data/evidence/training-runs/nifty50-current-20160822-20260821-schema-v2/**` (runtime logs and summaries)
 
 Read-only inputs:
@@ -138,6 +140,9 @@ and reused on rerun without credentials or raw HTTP payloads in the cache.
 | Relevant regression slice | 122 PASSED | Cache, dataset evidence, Upstox acquisition, features, labels, trials, replay, and campaign deflation |
 | Code/Test Craft checkers | CLEAN | Modularized the original delivery script into four focused files; both repository structural checkers now report clean |
 | Post-refactor cache-hit canary | EXIT 0 | ADANIENT again produced identical metrics from `CACHE_HIT/CACHE_HIT`; no market or authority re-download |
+| First post-commit source-bound attempt | STOPPED BY OWNER | Reached 12 source-bound models with only cache hits, then was interrupted because the original lookup verified all 100 datasets twice per symbol; partial atomic evidence preserved and not used as final |
+| Indexed catalog regression slice | 123 PASSED | Added one-scan verified acquisition catalog coverage; prior 122 relevant tests remain green |
+| Indexed cache canary | EXIT 0 | One initial full-catalog verification followed by ADANIENT `CACHE_HIT/CACHE_HIT`; identical metrics; no provider call |
 
 ## Files changed
 
@@ -146,6 +151,7 @@ and reused on rerun without credentials or raw HTTP payloads in the cache.
 - New `scripts/cached_nifty50_evidence.py`.
 - New `scripts/cached_nifty50_costs.py`.
 - New `scripts/cached_nifty50_io.py`.
+- New `scripts/cached_nifty50_catalog.py`.
 - New `tests/test_cached_nifty50_campaign.py`.
 - New `agent_context/decisions/20260824-nifty50-ten-year-cache-and-cost-proxy.md`.
 - Claimed temporary official constituent download under `tmp/nse-authorities/nifty50-20260824/`.
