@@ -1,5 +1,6 @@
 """Quant performance analytics, risk metrics, tearsheet generation, NSE exchange rules, and Greeks."""
 
+from quant_system.analytics.errors import MultiplicityError, MultiplicityFailureCode
 from quant_system.analytics.greeks import (
     BinomialOptionModel,
     BlackScholes,
@@ -33,6 +34,8 @@ __all__ = [
     "MarketSegment",
     "MonteCarloResults",
     "MonteCarloSimulator",
+    "MultiplicityError",
+    "MultiplicityFailureCode",
     "NSEContractConventions",
     "NSERuleEngine",
     "OptionGreeks",

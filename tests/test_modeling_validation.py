@@ -6,6 +6,8 @@ from dataclasses import replace
 
 import pytest
 
+from quant_system.analytics.errors import MultiplicityError, MultiplicityFailureCode
+from quant_system.analytics.multiplicity import OverfittingDiagnostics
 from quant_system.modeling import (
     ModelingError,
     ModelingFailureCode,
@@ -15,6 +17,7 @@ from quant_system.modeling import (
     fold_spec_hash,
     unsuccessful_outcome,
 )
+from quant_system.modeling.validation import deflate_ridge_report
 from tests.modeling_training_fixtures import (
     _fixture_class_balance as _class_balance,
 )
@@ -236,6 +239,38 @@ def test_candidate_that_never_trades_fails_closed_instead_of_publishing_half() -
         )
 
     assert captured.value.code == ModelingFailureCode.DEGENERATE_RETURN_SERIES
+
+
+def test_impossible_return_moments_translate_to_a_typed_modeling_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The analytics code must not escape the governed path as a bare ValueError."""
+    journey = governed_training_journey()
+    evaluation = evaluate_governed_ridge_fold(
+        journey.start,
+        journey.registry,
+        journey.features,
+        journey.labels,
+        journey.fold,
+    )
+
+    def reject_impossible_moments(**_kwargs: object) -> float:
+        raise MultiplicityError(
+            MultiplicityFailureCode.MOMENT_CONSTRAINT_INVALID,
+            "forced impossible moments",
+        )
+
+    monkeypatch.setattr(
+        OverfittingDiagnostics,
+        "deflated_sharpe_ratio",
+        staticmethod(reject_impossible_moments),
+    )
+
+    with pytest.raises(ModelingError) as captured:
+        deflate_ridge_report(evaluation.ridge_report, multiplicity_count=1)
+
+    assert captured.value.code is ModelingFailureCode.MOMENT_CONSTRAINT_INVALID
+    assert isinstance(captured.value.__cause__, MultiplicityError)
 
 
 def test_single_validation_decision_fails_closed_with_a_typed_code() -> None:

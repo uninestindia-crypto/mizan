@@ -7,6 +7,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
+from quant_system.analytics.errors import MultiplicityError
 from quant_system.analytics.multiplicity import OverfittingDiagnostics
 from quant_system.data.market_data_evidence import canonical_sha256, decimal_text
 from quant_system.modeling.errors import ModelingError, ModelingFailureCode
@@ -186,13 +187,19 @@ def deflate_ridge_report(
         )
     period_returns = _portfolio_period_returns(ridge_report)
     skewness, kurtosis = _return_moments(period_returns)
-    dsr = OverfittingDiagnostics.deflated_sharpe_ratio(
-        estimated_sharpe=float(Decimal(ridge_report.metrics.sharpe_ratio)),
-        num_trials=multiplicity_count,
-        sample_length_bars=len(period_returns),
-        skewness=skewness,
-        kurtosis=kurtosis,
-    )
+    try:
+        dsr = OverfittingDiagnostics.deflated_sharpe_ratio(
+            estimated_sharpe=float(Decimal(ridge_report.metrics.sharpe_ratio)),
+            num_trials=multiplicity_count,
+            sample_length_bars=len(period_returns),
+            skewness=skewness,
+            kurtosis=kurtosis,
+        )
+    except MultiplicityError as error:
+        raise ModelingError(
+            ModelingFailureCode.MOMENT_CONSTRAINT_INVALID,
+            "portfolio return moments violate Pearson's skewness-kurtosis constraint",
+        ) from error
     return metric_decimal(Decimal(str(dsr)))
 
 
@@ -326,7 +333,7 @@ def _validate_removed_rows(
                 "training label matures at or after the validation window opens",
                 offending_record_key=row.record_key,
             )
-    rows_by_key = _dataset_rows_by_key(dataset_rows)
+    rows_by_key = {row.record_key: row for row in dataset_rows}
     purged_rows = tuple(rows_by_key[key] for key in purged_keys)
     embargoed_rows = tuple(rows_by_key[key] for key in embargoed_keys)
     if any(row.exit_at < fold.spec.validation_start for row in purged_rows):
@@ -351,10 +358,6 @@ def _validate_removed_rows(
             ModelingFailureCode.PARTITION_INVALID,
             "fold purge boundary does not match its removed rows",
         )
-
-
-def _dataset_rows_by_key(rows: tuple[LabelRowV1, ...]) -> dict[str, LabelRowV1]:
-    return {row.record_key: row for row in rows}
 
 
 def _class_balance(rows: tuple[LabelRowV1, ...]) -> dict[str, int]:

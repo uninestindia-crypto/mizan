@@ -3,10 +3,18 @@
 from __future__ import annotations
 
 import math
+import sys
 from statistics import NormalDist
+
+from quant_system.analytics.errors import MultiplicityError, MultiplicityFailureCode
 
 _EULER_MASCHERONI = 0.5772156649015329
 _STANDARD_NORMAL = NormalDist()
+# Population skewness and kurtosis each aggregate powers, divide, and exponentiate in binary64.
+# Pearson equality is exact for every two-point distribution, so admit a small error envelope
+# scaled to the bound rather than letting the final rounded bit classify valid moments as invalid.
+_PEARSON_BOUND_REL_TOLERANCE = 64.0 * sys.float_info.epsilon
+_PEARSON_BOUND_ABS_TOLERANCE = 64.0 * sys.float_info.epsilon
 
 
 class OverfittingDiagnostics:
@@ -88,8 +96,18 @@ def _validate_dsr_inputs(
     numeric = (estimated_sharpe, skewness, kurtosis)
     if any(isinstance(value, bool) or not math.isfinite(value) for value in numeric):
         raise ValueError("DSR numeric inputs must be finite numbers")
-    if kurtosis < 1.0 + skewness**2:
-        raise ValueError("kurtosis is inconsistent with the supplied skewness")
+    pearson_bound = 1.0 + skewness**2
+    violates_pearson_bound = kurtosis < pearson_bound and not math.isclose(
+        kurtosis,
+        pearson_bound,
+        rel_tol=_PEARSON_BOUND_REL_TOLERANCE,
+        abs_tol=_PEARSON_BOUND_ABS_TOLERANCE,
+    )
+    if violates_pearson_bound:
+        raise MultiplicityError(
+            MultiplicityFailureCode.MOMENT_CONSTRAINT_INVALID,
+            "kurtosis is inconsistent with the supplied skewness",
+        )
     if trial_sharpe_std is not None and (
         isinstance(trial_sharpe_std, bool)
         or not math.isfinite(trial_sharpe_std)
