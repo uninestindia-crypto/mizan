@@ -114,6 +114,19 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _deflation_note(spent: int) -> str:
+    """State the multiplicity cost so it reads correctly at any count, including one."""
+    if spent == 1:
+        return (
+            "This programme has spent 1 attempt. Every deflated Sharpe computed for it must "
+            "discount against that count, and each further hypothesis raises it."
+        )
+    return (
+        f"This programme has spent {spent} attempts. Every deflated Sharpe computed for it must "
+        f"discount against {spent}, not against a single trial."
+    )
+
+
 def _print_status(registry: HypothesisRegistry) -> int:
     hypotheses = registry.hypotheses()
     spent = registry.attempt_count()
@@ -122,10 +135,7 @@ def _print_status(registry: HypothesisRegistry) -> int:
     print(f"trial ordinals spent: {spent}")
     print(f"next ordinal would be: {registry.next_ordinal()}")
     if spent:
-        print(
-            "\nAny deflated Sharpe computed for this programme must deflate against "
-            f"{spent} attempt(s), not against one."
-        )
+        print(f"\n{_deflation_note(spent)}")
     for record in hypotheses:
         ordinal = record.get("trial_ordinal")
         marker = f"ordinal {ordinal}" if ordinal is not None else "UNREGISTERED"
@@ -205,12 +215,8 @@ def main(argv: list[str] | None = None) -> int:
         print("  ^ no --knowledge-cutoff declared, so hindsight could not be computed.")
 
     if hypothesis.is_registered:
-        spent = registry.attempt_count()
         print(f"trial_ordinal: {hypothesis.trial_ordinal} (SPENT, irreversible)")
-        print(
-            f"\nThis programme has now spent {spent} attempt(s). Every deflated Sharpe computed "
-            f"for it must discount against {spent}, not against one."
-        )
+        print(f"\n{_deflation_note(registry.attempt_count())}")
     else:
         print("trial_ordinal: none - UNREGISTERED")
         print(

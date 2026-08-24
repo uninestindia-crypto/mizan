@@ -1,6 +1,6 @@
 # Active work: strategy-hypothesis registry and session runner
 
-STATUS: ACTIVE  
+STATUS: COMPLETED  
 OWNER: Claude Code (founder-directed)  
 TOOL: Claude Code  
 STARTED_UTC: 2026-08-23T00:00:00Z  
@@ -40,15 +40,15 @@ ordinal drawn from the durable history of prior attempts.
 
 ## Plan
 
-1. IN PROGRESS - claim check, this record, stale-lint notice.
-2. PENDING - `HypothesisRegistry` with journal-derived ordinals.
-3. PENDING - `scripts/run_hypothesis_session.py`.
-4. PENDING - tests for both.
-5. PENDING - ruff, format, strict mypy, audits.
+1. COMPLETE - claim check, this record, stale-lint notice.
+2. COMPLETE - `HypothesisRegistry` with journal-derived ordinals.
+3. COMPLETE - `scripts/run_hypothesis_session.py`.
+4. COMPLETE - tests for both, plus witness coverage for the defect found below.
+5. COMPLETE - ruff, format, strict mypy, audits, end-to-end CLI run.
 
 ## Current step
 
-Creating the record.
+Complete.
 
 ## Decision rationale
 
@@ -89,7 +89,49 @@ would give a non-authoritative component a foothold in a governed calculation.
 
 | Command | Result | Evidence/notes |
 |---|---|---|
-| (to be filled after execution) | | |
+| `uv run ruff check src/quant_system scripts tests` | PASS | `All checks passed!` (2 fixes applied) |
+| `uv run ruff format --check src/quant_system scripts tests` | PASS | `197 files already formatted` |
+| `uv run mypy --strict src` | PASS | `Success: no issues found in 120 source files` |
+| `uv run pytest` (11 advisory-related files) | PASS | **237 passed** |
+| `tests/test_advisory_registry.py` | PASS | 13 cases |
+| `tests/test_hypothesis_session_runner.py` | PASS | 21 cases |
+| `tests/test_advisory_journal.py` | PASS | 23 cases (16 pre-existing + 7 new witness cases) |
+| End-to-end CLI: record, register, re-register, status | PASS | duplicate registration refused with exit 3 |
+| `scripts/audit-agent-claims.ps1` | PASS | exit 0 |
+| `scripts/audit-disk-layout.ps1` | PASS | exit 0 |
+
+Full-suite counts remain unclaimable while other agents edit this checkout.
+
+## Defect found in my own prior work, and repaired
+
+`test_deleting_a_row_cannot_lower_the_attempt_count` failed on first run — and it was the
+implementation that was wrong, not the test.
+
+**A hash chain cannot detect its own truncation.** Removing rows from the end of the journal leaves
+rows `0..n-2` internally consistent and correctly linked, so `verify_chain()` passed on a shortened
+file. The consequence was precisely the failure this registry exists to prevent: a shorter journal
+means a lower attempt count, a lower ordinal, and a weaker deflation — an error biased in the
+candidate's favour, which is the dangerous direction.
+
+Repaired with an external witness: `AdvisoryJournal` now maintains a `<journal>.jsonl.tip` sidecar
+holding the tip sequence and hash, written after the row so it can lag but never lead. Verification
+raises `JOURNAL_TRUNCATED` when the journal is shorter than the witness and
+`JOURNAL_WITNESS_MISSING` when the witness is absent or unreadable — refusing rather than assuming
+intact, because an unverifiable count must never be read as zero.
+
+Honest limit, stated in the module: this defeats accidental truncation, partial writes, and naive
+tampering. It does not defeat someone who rewrites journal and witness together. If both are lost
+the attempt count is unrecoverable and must be treated as unknown.
+
+A stale witness behind the journal is deliberately tolerated — the sidecar is written after the row,
+so a crash between the two leaves it behind, and failing there would turn an ordinary crash into a
+permanently unreadable journal.
+
+## Second defect: the multiplicity warning read as nonsense at a count of one
+
+The runner printed `must discount against 1, not against one`. The whole purpose of that line is
+that a human reads it and understands the cost of the ordinal they just spent, so garbled wording
+defeats it. Replaced with `_deflation_note()`, which branches on the count, and pinned by two tests.
 
 ## Blockers and conflicts
 
@@ -98,10 +140,23 @@ both test files are new. `scripts/run_hypothesis_session.py` collides with no cl
 active records name `run_governed_promotion.py`, `run_governed_ridge_training.py`, and
 `run_governed_shadow_session.py` only.
 
+## Files changed
+
+- `src/quant_system/advisory/registry.py`: new, `HypothesisRegistry`
+- `src/quant_system/advisory/journal.py`: truncation witness
+- `src/quant_system/advisory/errors.py`: `JOURNAL_TRUNCATED`, `JOURNAL_WITNESS_MISSING`
+- `src/quant_system/advisory/__init__.py`: exports
+- `scripts/run_hypothesis_session.py`: new CLI
+- `tests/test_advisory_registry.py`, `tests/test_hypothesis_session_runner.py`: new
+- `tests/test_advisory_journal.py`: 7 witness cases appended
+
 ## Stop point
 
-Record created; implementation starting.
+Complete and verified. Working tree carries the changes uncommitted.
 
 ## Next safe action
 
-Implement `src/quant_system/advisory/registry.py`.
+The registry reports an attempt count; nothing consumes it yet. A governed runner that backtests a
+hypothesis must call `assert_registered_for_backtest()` and feed `attempt_count()` into the
+deflated-Sharpe computation. That needs `analytics/multiplicity.py` and `modeling/**`, both claimed
+by other live records, so it is a separate task requiring their coordination.

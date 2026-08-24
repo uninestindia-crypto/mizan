@@ -57,7 +57,8 @@ def test_registering_spends_an_ordinal_and_says_so(
 
     out = capsys.readouterr().out
     assert "trial_ordinal: 1 (SPENT, irreversible)" in out
-    assert "must discount against 1" in out
+    assert "has spent 1 attempt." in out
+    assert "discount against that count" in out
     assert HypothesisRegistry(AdvisoryJournal(journal_path)).attempt_count() == 1
 
 
@@ -214,7 +215,7 @@ def test_status_reports_the_attempt_count(
     out = capsys.readouterr().out
     assert "trial ordinals spent: 1" in out
     assert "next ordinal would be: 2" in out
-    assert "must deflate against 1 attempt(s)" in out
+    assert "has spent 1 attempt." in out
 
 
 def test_status_on_an_empty_journal_writes_nothing(
@@ -223,3 +224,43 @@ def test_status_on_an_empty_journal_writes_nothing(
     assert main(["--journal", str(journal_path), "--status"]) == EXIT_OK
     assert "trial ordinals spent: 0" in capsys.readouterr().out
     assert not journal_path.exists()
+
+
+def test_the_deflation_note_reads_correctly_at_a_count_of_one(
+    journal_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """ "against 1, not against one" was the earlier wording, and it read as nonsense."""
+    main(_args(journal_path, "--register"))
+    out = capsys.readouterr().out
+    assert "not against a single trial" not in out
+    assert "has spent 1 attempt." in out
+
+
+def test_the_deflation_note_pluralises_beyond_one(
+    journal_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    main(_args(journal_path, "--register"))
+    main(
+        [
+            "--journal",
+            str(journal_path),
+            "--title",
+            "Second idea",
+            "--proposed-rule",
+            "Something else entirely.",
+            "--reasoning",
+            "Different reasoning.",
+            "--prompt",
+            "Another question.",
+            "--provider",
+            "openai",
+            "--model-id",
+            "gpt-nonexistent",
+            "--execution-mode",
+            "LIVE_MODEL",
+            "--register",
+        ]
+    )
+    out = capsys.readouterr().out
+    assert "has spent 2 attempts" in out
+    assert "discount against 2, not against a single trial" in out
