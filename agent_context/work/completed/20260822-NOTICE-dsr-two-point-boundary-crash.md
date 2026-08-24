@@ -1,7 +1,8 @@
 # NOTICE: untyped ValueError escapes governed evaluation on a two-point return series
 
-STATUS: NOTICE — for the owners of `src/quant_system/analytics/multiplicity.py` and
-`src/quant_system/modeling/validation.py`  
+STATUS: **REPAIRED at `ac47d7c` by another agent; independently verified here 2026-08-24.**
+Retained as the finding record. Originally a NOTICE for the owners of
+`src/quant_system/analytics/multiplicity.py` and `src/quant_system/modeling/validation.py`.  
 RAISED_BY: Claude Code — real-data training runner  
 RAISED_UTC: 2026-08-22T20:10:00Z  
 REVISION: `8045575`  
@@ -12,6 +13,32 @@ This is an additive notice. PROTOCOL §3 forbids editing another agent's record,
 `analytics/multiplicity.py` is claimed by `20260820-codex-slice4-ridge-training.md` while
 `modeling/validation.py` is claimed by that record and by
 `20260821-1048Z-claude-slice4-redteam-repair.md`. **Nothing was changed in either file.**
+
+## CLOSED — repaired and independently verified
+
+`ac47d7c fix(modeling): repair DSR two-point boundary`. I did not write that repair, so this
+verification is independent of it, though not a substitute for a Red Team pass.
+
+Both halves of the suggested direction landed. The guard now compares against the Pearson bound with
+a relative and absolute tolerance, and raises a typed
+`MultiplicityError(MultiplicityFailureCode.MOMENT_CONSTRAINT_INVALID)` instead of a bare
+`ValueError`.
+
+Verified against the exact cases this notice recorded:
+
+| Case | Before | Now | `kurt - bound` |
+|---|---|---|---|
+| 29×`0.0` + 1×`0.05` | **REJECTED** | ACCEPTED, DSR 0.228402 | `-7.105e-15` |
+| 62×`0.0` + 1×`0.0123456789` | accepted | ACCEPTED, DSR 0.245463 | `+7.105e-15` |
+| two-point p=0.10 | rejected per peer sweep | ACCEPTED, DSR 0.286697 | `+0.000e+00` |
+| two-point p=0.30 | — | ACCEPTED, DSR 0.292213 | `+0.000e+00` |
+| two-point p=0.50 | — | ACCEPTED, DSR 0.294801 | `+0.000e+00` |
+
+And the guard still does its actual job: `skewness=2.0, kurtosis=1.0` — four below the bound, a
+genuinely impossible pair — is refused with `MOMENT_CONSTRAINT_INVALID`. The tolerance admits the
+exact-tie class without admitting real inconsistency, which was the whole question.
+
+The original notice follows unchanged, as the record of what was found and why.
 
 ## What happens
 
