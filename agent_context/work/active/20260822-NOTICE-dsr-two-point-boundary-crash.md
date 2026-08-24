@@ -25,6 +25,39 @@ ValueError: kurtosis is inconsistent with the supplied skewness
 Guard: `analytics/multiplicity.py:92` — `if kurtosis < 1.0 + skewness**2: raise ValueError(...)`.
 Inputs: `modeling/validation.py:_return_moments` (population moments, `m3/m2**1.5` and `m4/m2**2`).
 
+## STRENGTHENED 2026-08-23 — this is an exact identity, not a near miss
+
+Corroborated and sharpened by `20260823-NOTICE-dsr-boundary-corroborated-second-record.md`
+(agent quant-system-0c), then re-verified independently here before amending.
+
+The original framing below said a two-point series "lands exactly on" the boundary and that float
+rounding decides. That understates it. **For any two-point distribution, `kurtosis - skewness**2 = 1`
+is an exact algebraic identity.** The bound `kurtosis >= 1 + skewness**2` holds for every
+distribution, with equality *if and only if* the distribution is two-point.
+
+Verified here across varying probability, values and sample size:
+
+| n | p(high) | low | high | skewness | kurtosis | kurt - skew² |
+|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 0.50 | 0.0 | 1.0 | 0.000000 | 1.000000 | **1.000000000000** |
+| 100 | 0.30 | -2.5 | 7.25 | 0.872872 | 1.761905 | **1.000000000000** |
+| 63 | 0.02 | 0.0 | 0.0123 | 7.747008 | 61.016129 | **1.000000000000** |
+| 40 | 0.33 | 5.0 | -3.0 | -0.747265 | 1.558405 | **1.000000000000** |
+| 1000 | 0.44 | 0.001 | -0.002 | -0.254025 | 1.064528 | **1.000000000000** |
+
+Three-point, for contrast: `kurt - skew² = 1.528679`, strictly greater.
+
+**Why this changes the repair.** `multiplicity.py:92` tests a *strict* inequality against an *exact
+tie*, for an entire legitimate class of input — not for a value that happens to land near a limit.
+A comparison tolerance is therefore not a workaround; it is the correct implementation of the
+constraint the guard is trying to express. The `-7.105e-15` / `+7.105e-15` measurements recorded
+below are exactly what that predicts, rather than the surprise they were originally written up as.
+
+**Scope discipline.** No later change made this reachable; it has been reachable since `6a17d5e`.
+Where downstream work raises the multiplicity count, that changes the *number of draws* against an
+untyped crash, not the failure mode, and not whether the deflation is reached. State it that way if
+citing this.
+
 ## Why the guard is reachable, and why it is a boundary problem
 
 For any real sample, `kurtosis >= skewness**2 + 1` holds mathematically, with **equality exactly
