@@ -155,7 +155,21 @@ def main(argv: list[str] | None = None) -> int:
     registry = HypothesisRegistry(journal)
 
     if args.status:
-        return _print_status(registry)
+        # Catching here reports and fails; it never substitutes a count. That distinction is the
+        # whole point: `run_governed_promotion.py` deliberately lets `AdvisoryError` propagate,
+        # because an unverifiable count must abort a promotion rather than deflate against a
+        # smaller number. This is a human-facing CLI, so a stack trace is a presentation failure —
+        # but the refusal must still be a refusal. Do not "recover" a partial count here.
+        try:
+            return _print_status(registry)
+        except AdvisoryError as exc:
+            print(f"REFUSED: {exc}", file=sys.stderr)
+            print(
+                "The attempt count cannot be trusted and is deliberately not reported. "
+                "An unverifiable count must never be read as zero.",
+                file=sys.stderr,
+            )
+            return EXIT_REFUSED
 
     _require(args, "title", "proposed_rule", "provider", "model_id", "execution_mode")
 

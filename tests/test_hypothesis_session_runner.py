@@ -264,3 +264,107 @@ def test_the_deflation_note_pluralises_beyond_one(
     out = capsys.readouterr().out
     assert "has spent 2 attempts" in out
     assert "discount against 2, not against a single trial" in out
+
+
+# --- an unverifiable journal refuses legibly, and reports no count ------------------------------
+
+
+def _truncate_tail(journal_path: Path) -> None:
+    lines = journal_path.read_text(encoding="utf-8").splitlines()
+    journal_path.write_text("".join(f"{line}\n" for line in lines[:-1]), encoding="utf-8")
+
+
+def test_status_refuses_a_truncated_journal_without_reporting_a_count(
+    journal_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A stack trace is a presentation failure; a recovered count would be a safety failure."""
+    main(_args(journal_path, "--register"))
+    main(
+        [
+            "--journal",
+            str(journal_path),
+            "--title",
+            "Second idea",
+            "--proposed-rule",
+            "Something else entirely.",
+            "--reasoning",
+            "Different reasoning.",
+            "--prompt",
+            "Another question.",
+            "--provider",
+            "openai",
+            "--model-id",
+            "gpt-nonexistent",
+            "--execution-mode",
+            "LIVE_MODEL",
+            "--register",
+        ]
+    )
+    capsys.readouterr()
+    _truncate_tail(journal_path)
+
+    assert main(["--journal", str(journal_path), "--status"]) == EXIT_REFUSED
+
+    captured = capsys.readouterr()
+    assert "REFUSED" in captured.err
+    assert "JOURNAL_TRUNCATED" in captured.err
+    assert "never be read as zero" in captured.err
+    # The load-bearing half: no count may be printed for a journal that cannot be verified.
+    assert "trial ordinals spent" not in captured.out
+    assert "next ordinal would be" not in captured.out
+
+
+def test_status_refuses_when_the_witness_is_missing(
+    journal_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    main(_args(journal_path, "--register"))
+    capsys.readouterr()
+    AdvisoryJournal(journal_path).witness_path.unlink()
+
+    assert main(["--journal", str(journal_path), "--status"]) == EXIT_REFUSED
+    captured = capsys.readouterr()
+    assert "JOURNAL_WITNESS_MISSING" in captured.err
+    assert "trial ordinals spent" not in captured.out
+
+
+def test_registering_onto_a_truncated_journal_still_refuses(
+    journal_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The recording path already refused; this pins that truncation reaches it too."""
+    main(_args(journal_path, "--register"))
+    main(
+        [
+            "--journal",
+            str(journal_path),
+            "--title",
+            "Second idea",
+            "--proposed-rule",
+            "Something else entirely.",
+            "--reasoning",
+            "Different reasoning.",
+            "--prompt",
+            "Another question.",
+            "--provider",
+            "openai",
+            "--model-id",
+            "gpt-nonexistent",
+            "--execution-mode",
+            "LIVE_MODEL",
+            "--register",
+        ]
+    )
+    capsys.readouterr()
+    _truncate_tail(journal_path)
+
+    assert main(_args(journal_path, "--register")) == EXIT_REFUSED
+    assert "JOURNAL_TRUNCATED" in capsys.readouterr().err
+
+
+def test_an_intact_journal_still_reports_normally(
+    journal_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Guards the guard: the refusal path must not have broken the ordinary one."""
+    main(_args(journal_path, "--register"))
+    capsys.readouterr()
+    assert main(["--journal", str(journal_path), "--status"]) == EXIT_OK
+    assert "trial ordinals spent: 1" in capsys.readouterr().out
