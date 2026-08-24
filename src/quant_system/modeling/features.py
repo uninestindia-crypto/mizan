@@ -21,10 +21,10 @@ from quant_system.modeling.authorities import (
 )
 from quant_system.modeling.errors import ModelingError, ModelingFailureCode
 from quant_system.modeling.rows import (
+    CURRENT_FEATURE_SCHEMA_ID,
+    CURRENT_FEATURE_SCHEMA_VERSION,
     FEATURE_NAMES_V1,
     FEATURE_ROW_SCHEMA,
-    FEATURE_SCHEMA_ID_V1,
-    FEATURE_SCHEMA_VERSION_V1,
     FeatureDatasetV1,
     FeatureRowV1,
     decimal_result,
@@ -59,8 +59,8 @@ def build_feature_dataset(
         "calendar_hash": calendar.reference.content_hash,
         "candidate_id": candidate_id,
         "corporate_action_authority_hash": corporate_authority.content_hash,
-        "feature_schema_id": FEATURE_SCHEMA_ID_V1,
-        "feature_schema_version": FEATURE_SCHEMA_VERSION_V1,
+        "feature_schema_id": CURRENT_FEATURE_SCHEMA_ID,
+        "feature_schema_version": CURRENT_FEATURE_SCHEMA_VERSION,
         "source_dataset_hash": manifest.manifest_hash,
         "source_dataset_id": manifest.dataset_id,
         "universe_authority_hash": universe.authority.content_hash,
@@ -76,6 +76,8 @@ def build_feature_dataset(
         corporate_action_authority_hash=corporate_authority.content_hash,
         universe_authority_hash=universe.authority.content_hash,
         rows=rows,
+        feature_schema_id=CURRENT_FEATURE_SCHEMA_ID,
+        feature_schema_version=CURRENT_FEATURE_SCHEMA_VERSION,
     )
 
 
@@ -231,7 +233,7 @@ def _build_feature_row(
     session = calendar.session_for_date(current.exchange_date)
     if session is None:
         raise AssertionError("calendar coverage must be validated before feature construction")
-    consumed = acquisition.records[: ordinal + 1]
+    consumed = canonical_feature_window(acquisition.records[: ordinal + 1])
     for record in consumed:
         if record.available_at > session.close_at:
             raise ModelingError(
@@ -243,8 +245,8 @@ def _build_feature_row(
     preprocessing_input_hash = canonical_sha256(
         {
             "decision_at": utc_text(session.close_at),
-            "feature_schema_id": FEATURE_SCHEMA_ID_V1,
-            "feature_schema_version": FEATURE_SCHEMA_VERSION_V1,
+            "feature_schema_id": CURRENT_FEATURE_SCHEMA_ID,
+            "feature_schema_version": CURRENT_FEATURE_SCHEMA_VERSION,
             "records": [record.to_canonical_dict() for record in consumed],
         }
     )
@@ -258,8 +260,8 @@ def _build_feature_row(
         decision_at=session.close_at,
         information_cutoff_at=max(record.available_at for record in consumed),
         universe_authority_hash=universe.authority.content_hash,
-        feature_schema_id=FEATURE_SCHEMA_ID_V1,
-        feature_schema_version=FEATURE_SCHEMA_VERSION_V1,
+        feature_schema_id=CURRENT_FEATURE_SCHEMA_ID,
+        feature_schema_version=CURRENT_FEATURE_SCHEMA_VERSION,
         features=features,
         preprocessing_input_hash=preprocessing_input_hash,
     )
@@ -274,9 +276,11 @@ def compute_feature_values(records: tuple[PointInTimeBar, ...]) -> dict[str, str
     ungoverned ridge to diverge from the governed one; do not do it again.
 
     ``records`` must be ordered oldest first and hold at least ``FEATURE_WARMUP_BARS_V1`` bars.
-    Availability filtering is the caller's responsibility: this function trusts the window it is
-    given and does not know the decision time.
+    Feature schema v2 always consumes the canonical trailing window, so retaining extra older bars
+    cannot alter Wilder indicator seeds. Availability filtering is the caller's responsibility:
+    this function trusts the records it is given and does not know the decision time.
     """
+    records = canonical_feature_window(records)
     closes = tuple(record.close for record in records)
     current = closes[-1]
     if current <= 0:
@@ -300,6 +304,18 @@ def compute_feature_values(records: tuple[PointInTimeBar, ...]) -> dict[str, str
             name: decimal_result(value)
             for name, value in zip(FEATURE_NAMES_V1, values, strict=True)
         }
+
+
+def canonical_feature_window(
+    records: tuple[PointInTimeBar, ...],
+) -> tuple[PointInTimeBar, ...]:
+    """Return the exact feature-schema v2 input window or reject insufficient history."""
+    if len(records) < FEATURE_WARMUP_BARS_V1:
+        raise ModelingError(
+            ModelingFailureCode.INSUFFICIENT_HISTORY,
+            f"feature schema requires at least {FEATURE_WARMUP_BARS_V1} bars",
+        )
+    return records[-FEATURE_WARMUP_BARS_V1:]
 
 
 def _return(current: Decimal, previous: Decimal) -> Decimal:

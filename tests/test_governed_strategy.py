@@ -22,6 +22,8 @@ from quant_system.execution.governed_strategy import (
     PromotedModelBundleV1,
 )
 from quant_system.modeling import (
+    CURRENT_FEATURE_SCHEMA_ID,
+    CURRENT_FEATURE_SCHEMA_VERSION,
     ModelCardV1,
     PromotionState,
     RidgeFittedStateV1,
@@ -103,6 +105,8 @@ def _bundle(
             fitted_state_hash=fitted.fitted_state_hash,
             preprocessing_state_hash=preprocessing.state_hash,
             score_threshold=score_threshold,
+            feature_schema_id=CURRENT_FEATURE_SCHEMA_ID,
+            feature_schema_version=CURRENT_FEATURE_SCHEMA_VERSION,
         ),
     )
 
@@ -287,6 +291,8 @@ def test_bundle_refuses_a_card_describing_a_different_candidate(journey: object)
                 fitted_state_hash=fitted.fitted_state_hash,
                 preprocessing_state_hash=preprocessing.state_hash,
                 score_threshold="0",
+                feature_schema_id=CURRENT_FEATURE_SCHEMA_ID,
+                feature_schema_version=CURRENT_FEATURE_SCHEMA_VERSION,
             ),
         )
 
@@ -312,6 +318,8 @@ def test_bundle_refuses_a_standardization_that_did_not_produce_the_fit(journey: 
                 fitted_state_hash=fitted.fitted_state_hash,
                 preprocessing_state_hash=other.state_hash,
                 score_threshold="0",
+                feature_schema_id=CURRENT_FEATURE_SCHEMA_ID,
+                feature_schema_version=CURRENT_FEATURE_SCHEMA_VERSION,
             ),
         )
 

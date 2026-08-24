@@ -99,13 +99,13 @@ def test_recorded_provider_replay_has_pinned_feature_and_label_hashes() -> None:
     assert (
         first_features.dataset_hash
         == (
-            "5c7639255b75e0b7c91ed40c02f1b5d29d540e740e457e3a9a7b7d80ef25480a"  # pragma: allowlist secret
+            "32ed8c5a6432ed698bc22ed06e7c2442d38505211ed6aa153b6d556f736cc2b4"  # pragma: allowlist secret - v2 feature schema
         )
     )
     assert (
         first_labels.dataset_hash
         == (
-            "2e65d19c0fc28304bf8b11d86975b82d38b52e317d4fe714046c44e6a5180ae2"  # pragma: allowlist secret
+            "65161d95e5556d7fcba8277550f926f6c95173137276ac72da797d1bdd7712ef"  # pragma: allowlist secret - v2 feature schema
         )
     )
 

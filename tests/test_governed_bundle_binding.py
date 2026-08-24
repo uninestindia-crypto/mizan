@@ -30,6 +30,10 @@ from quant_system.execution.governed_strategy import (
     PromotedModelBundleV1,
 )
 from quant_system.modeling import (
+    CURRENT_FEATURE_SCHEMA_ID,
+    CURRENT_FEATURE_SCHEMA_VERSION,
+    FEATURE_SCHEMA_ID_V1,
+    FEATURE_SCHEMA_VERSION_V1,
     ModelCardV1,
     PromotionState,
     compute_feature_values,
@@ -92,7 +96,12 @@ def _card(model_id: str, candidate_id: str = CANDIDATE) -> ModelCardV1:
     )
 
 
-def _identity(model_id: str, fitted: object, standardization: object, threshold: str):
+def _identity(
+    model_id: str,
+    fitted: object,
+    standardization: object,
+    threshold: str,
+) -> ModelEvidenceIdentityV1:
     return ModelEvidenceIdentityV1(
         model_id=model_id,
         candidate_id=CANDIDATE,
@@ -101,6 +110,8 @@ def _identity(model_id: str, fitted: object, standardization: object, threshold:
         fitted_state_hash=fitted.fitted_state_hash,  # type: ignore[attr-defined]
         preprocessing_state_hash=standardization.state_hash,  # type: ignore[attr-defined]
         score_threshold=threshold,
+        feature_schema_id=CURRENT_FEATURE_SCHEMA_ID,
+        feature_schema_version=CURRENT_FEATURE_SCHEMA_VERSION,
     )
 
 
@@ -140,6 +151,8 @@ def test_bundle_refuses_fitted_state_that_the_evidence_does_not_describe() -> No
         fitted_state_hash="f" * 64,  # a different model's fitted state
         preprocessing_state_hash=standardization.state_hash,
         score_threshold="0",
+        feature_schema_id=CURRENT_FEATURE_SCHEMA_ID,
+        feature_schema_version=CURRENT_FEATURE_SCHEMA_VERSION,
     )
 
     with pytest.raises(GovernedExecutionError, match="fitted state"):
@@ -196,6 +209,8 @@ def test_identity_is_derived_from_one_manifest_so_a_pairing_cannot_be_mixed() ->
         "model_id": "model_A",
         "candidate_id": CANDIDATE,
         "trial_id": "trial_uni_018",
+        "feature_schema_id": CURRENT_FEATURE_SCHEMA_ID,
+        "feature_schema_version": CURRENT_FEATURE_SCHEMA_VERSION,
         "fitted_state": {"fitted_state_hash": fitted.fitted_state_hash},
         "preprocessing": {"state_hash": standardization.state_hash},
     }
@@ -206,6 +221,50 @@ def test_identity_is_derived_from_one_manifest_so_a_pairing_cannot_be_mixed() ->
 
     assert identity.model_id == "model_A"
     assert identity.fitted_state_hash == fitted.fitted_state_hash
+
+
+def test_legacy_model_manifest_without_window_schema_fails_closed() -> None:
+    """Pre-repair fitted states must not be relabelled as canonical-window models."""
+    journey = governed_training_journey()
+    fitted, standardization = _fitted_pair(journey)
+    legacy_metadata = {
+        "model_id": "model_legacy",
+        "candidate_id": CANDIDATE,
+        "trial_id": "trial_legacy_001",
+        "fitted_state": {"fitted_state_hash": fitted.fitted_state_hash},
+        "preprocessing": {"state_hash": standardization.state_hash},
+    }
+
+    with pytest.raises(GovernedExecutionError, match="feature_schema_id"):
+        ModelEvidenceIdentityV1.from_manifest_metadata(
+            legacy_metadata, score_threshold="0", symbol=SYMBOL
+        )
+
+
+def test_expanding_window_v1_model_is_not_executable_as_v2() -> None:
+    journey = governed_training_journey()
+    fitted, standardization = _fitted_pair(journey)
+    identity = ModelEvidenceIdentityV1(
+        model_id="model_legacy",
+        candidate_id=CANDIDATE,
+        trial_id="trial_legacy_001",
+        symbol=SYMBOL,
+        fitted_state_hash=fitted.fitted_state_hash,
+        preprocessing_state_hash=standardization.state_hash,
+        score_threshold="0",
+        feature_schema_id=FEATURE_SCHEMA_ID_V1,
+        feature_schema_version=FEATURE_SCHEMA_VERSION_V1,
+    )
+
+    with pytest.raises(GovernedExecutionError, match="incompatible feature schema"):
+        PromotedModelBundleV1(
+            candidate_id=CANDIDATE,
+            model_card=_card("model_legacy"),
+            fitted=fitted,
+            standardization=standardization,
+            score_threshold="0",
+            evidence=identity,
+        )
 
 
 def test_real_evidence_loader_derives_the_bound_symbol_from_published_decisions(

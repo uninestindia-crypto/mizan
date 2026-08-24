@@ -19,7 +19,12 @@ from quant_system.modeling.persisted_trials import (
     require_next_persisted_trial,
     require_resumable_persisted_trial,
 )
-from quant_system.modeling.rows import FeatureDatasetV1, LabelDatasetV1
+from quant_system.modeling.rows import (
+    FeatureDatasetV1,
+    LabelDatasetV1,
+    require_feature_dataset_identity,
+    require_label_dataset_identity,
+)
 from quant_system.modeling.trials import (
     RidgeTrialStartV1,
     TrialOutcomeV1,
@@ -76,12 +81,39 @@ def draft_from_trial_outcome(outcome: TrialOutcomeV1) -> EvidenceDraft:
     )
 
 
-def draft_from_ridge_evaluation(evaluation: RidgeFoldEvaluationV1) -> EvidenceDraft:
+def draft_from_ridge_evaluation(
+    evaluation: RidgeFoldEvaluationV1,
+    *,
+    start: RidgeTrialStartV1,
+    feature_dataset: FeatureDatasetV1,
+    label_dataset: LabelDatasetV1,
+) -> EvidenceDraft:
+    """Bind one model publication to the exact trial and derived datasets that produced it."""
+    require_feature_dataset_identity(feature_dataset)
+    require_label_dataset_identity(label_dataset)
+    if (
+        evaluation.trial_id != start.trial_id
+        or evaluation.candidate_id != start.candidate_id
+        or feature_dataset.candidate_id != start.candidate_id
+        or label_dataset.candidate_id != start.candidate_id
+        or label_dataset.dataset_id != start.dataset_id
+        or label_dataset.dataset_hash != start.dataset_hash
+        or label_dataset.feature_dataset_id != feature_dataset.dataset_id
+        or label_dataset.feature_dataset_hash != feature_dataset.dataset_hash
+        or start.feature_schema_id != feature_dataset.feature_schema_id
+        or start.feature_schema_version != feature_dataset.feature_schema_version
+    ):
+        raise ModelingError(
+            ModelingFailureCode.TRAINING_INPUT_MISMATCH,
+            "model publication does not bind one trial, feature dataset, and label dataset",
+        )
     records = _evaluation_records(evaluation)
     metadata: dict[str, Any] = {
         "candidate_id": evaluation.candidate_id,
         "deflated_sharpe_ratio": evaluation.deflated_sharpe_ratio,
         "evaluation_hash": evaluation.evaluation_hash,
+        "feature_schema_id": start.feature_schema_id,
+        "feature_schema_version": start.feature_schema_version,
         "fitted_state": evaluation.fitted_state.to_canonical_dict(),
         "fold_spec_hash": evaluation.fold_spec_hash,
         "model_id": evaluation.model_id,
@@ -146,6 +178,14 @@ def run_persisted_ridge_trial(
             ModelingFailureCode.TRIAL_OUTCOME_INVALID,
             "terminal time must be timezone-aware and cannot precede the trial start",
         )
+    if (
+        start.feature_schema_id != feature_dataset.feature_schema_id
+        or start.feature_schema_version != feature_dataset.feature_schema_version
+    ):
+        raise ModelingError(
+            ModelingFailureCode.TRAINING_INPUT_MISMATCH,
+            "trial feature schema does not match the supplied feature dataset",
+        )
     start_commit = store.commit(
         draft_from_trial_start(start),
         operation_id=f"{operation_id}-start",
@@ -162,7 +202,12 @@ def run_persisted_ridge_trial(
             fold,
         )
         evaluation_commit = store.commit(
-            draft_from_ridge_evaluation(evaluation),
+            draft_from_ridge_evaluation(
+                evaluation,
+                start=start,
+                feature_dataset=feature_dataset,
+                label_dataset=label_dataset,
+            ),
             operation_id=f"{operation_id}-model",
         )
     except Exception as error:

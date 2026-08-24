@@ -25,7 +25,12 @@ from quant_system.execution.realtime_shadow import (
     RealtimeShadowConfig,
     RealtimeShadowRunner,
 )
-from quant_system.modeling import ModelCardV1, PromotionState
+from quant_system.modeling import (
+    CURRENT_FEATURE_SCHEMA_ID,
+    CURRENT_FEATURE_SCHEMA_VERSION,
+    ModelCardV1,
+    PromotionState,
+)
 from quant_system.modeling.features import FEATURE_WARMUP_BARS_V1
 from quant_system.strategies.base import BaseStrategy, MarketContext
 from tests.modeling_fixtures import SYMBOL, governed_acquisition, governed_calendar
@@ -64,6 +69,8 @@ def _bundle(score_threshold: str) -> PromotedModelBundleV1:
             fitted_state_hash=fitted.fitted_state_hash,
             preprocessing_state_hash=preprocessing.state_hash,
             score_threshold=score_threshold,
+            feature_schema_id=CURRENT_FEATURE_SCHEMA_ID,
+            feature_schema_version=CURRENT_FEATURE_SCHEMA_VERSION,
         ),
     )
 

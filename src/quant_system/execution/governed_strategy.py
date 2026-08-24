@@ -47,6 +47,8 @@ from typing import Any, Final
 from quant_system.core.domain import Side, Signal
 from quant_system.data.market_data import PointInTimeBar
 from quant_system.modeling import (
+    CURRENT_FEATURE_SCHEMA_ID,
+    CURRENT_FEATURE_SCHEMA_VERSION,
     FEATURE_NAMES_V1,
     ModelCardV1,
     PromotionState,
@@ -133,6 +135,8 @@ class ModelEvidenceIdentityV1:
     fitted_state_hash: str
     preprocessing_state_hash: str
     score_threshold: str
+    feature_schema_id: str
+    feature_schema_version: int
 
     @classmethod
     def from_manifest_metadata(
@@ -158,6 +162,8 @@ class ModelEvidenceIdentityV1:
                 fitted_state_hash=metadata["fitted_state"]["fitted_state_hash"],
                 preprocessing_state_hash=metadata["preprocessing"]["state_hash"],
                 score_threshold=score_threshold,
+                feature_schema_id=metadata["feature_schema_id"],
+                feature_schema_version=metadata["feature_schema_version"],
             )
         except (KeyError, TypeError) as error:
             raise GovernedExecutionError(
@@ -201,6 +207,16 @@ class PromotedModelBundleV1:
         if self.standardization.feature_names != FEATURE_NAMES_V1:
             raise GovernedExecutionError(
                 "standardization does not use the closed v1 feature family"
+            )
+        if (
+            self.evidence.feature_schema_id != CURRENT_FEATURE_SCHEMA_ID
+            or self.evidence.feature_schema_version != CURRENT_FEATURE_SCHEMA_VERSION
+        ):
+            raise GovernedExecutionError(
+                "model evidence uses an incompatible feature schema; governed execution requires "
+                f"{CURRENT_FEATURE_SCHEMA_ID} v{CURRENT_FEATURE_SCHEMA_VERSION}, found "
+                f"{self.evidence.feature_schema_id} v{self.evidence.feature_schema_version}. "
+                "The model must be retrained under the canonical-window contract"
             )
         if self.model_card.verdict not in {
             PromotionState.SHADOW,
@@ -303,6 +319,8 @@ class GovernedModelStrategy(BaseStrategy):
                 "abstain_band": abstain_band,
                 "model_card_hash": bundle.model_card.model_card_hash,
                 "model_id": bundle.model_id,
+                "feature_schema_id": bundle.evidence.feature_schema_id,
+                "feature_schema_version": bundle.evidence.feature_schema_version,
                 "score_threshold": bundle.score_threshold,
                 "strength_full_scale": strength_full_scale,
                 "surface": surface.value,
@@ -358,6 +376,8 @@ class GovernedModelStrategy(BaseStrategy):
                 "abstain_band": str(self._band),
                 "decision_at": decision_time.isoformat(),
                 "feature_values": dict(features),
+                "feature_schema_id": self.bundle.evidence.feature_schema_id,
+                "feature_schema_version": self.bundle.evidence.feature_schema_version,
                 "fitted_state_hash": self.bundle.fitted.fitted_state_hash,
                 "model_card_hash": self.bundle.model_card.model_card_hash,
                 "model_id": self.bundle.model_id,

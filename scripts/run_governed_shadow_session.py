@@ -160,7 +160,7 @@ def _card_from(metadata: dict[str, Any]) -> ModelCardV1:
 
 def _report_refusal(metadata: dict[str, Any], error: GovernedExecutionError) -> None:
     print("", flush=True)
-    print("REFUSED BY THE PROMOTION GATE", flush=True)
+    print("REFUSED BY GOVERNED EXECUTION", flush=True)
     print(f"  model_id            : {metadata['model_id']}", flush=True)
     print(f"  trial_id            : {metadata['trial_id']}", flush=True)
     print(f"  verdict in evidence : {metadata['verdict']}", flush=True)
@@ -169,8 +169,8 @@ def _report_refusal(metadata: dict[str, Any], error: GovernedExecutionError) -> 
     print(f"  refusal             : {error}", flush=True)
     print("", flush=True)
     print(
-        "This is the gate working, not a wiring defect. No session ran, and no promotion was\n"
-        "invented to make one run.",
+        "Governance failed closed. No session ran, and no artifact was relabelled or promoted to\n"
+        "make one run.",
         flush=True,
     )
 

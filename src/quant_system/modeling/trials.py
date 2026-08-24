@@ -12,9 +12,10 @@ from typing import Any
 from quant_system.data.market_data_evidence import canonical_sha256, decimal_text, utc_text
 from quant_system.modeling.errors import ModelingError, ModelingFailureCode
 from quant_system.modeling.rows import (
-    FEATURE_SCHEMA_ID_V1,
-    FEATURE_SCHEMA_VERSION_V1,
+    CURRENT_FEATURE_SCHEMA_ID,
+    CURRENT_FEATURE_SCHEMA_VERSION,
     LABEL_CONTRACT_VERSION_V1,
+    SUPPORTED_FEATURE_SCHEMAS,
 )
 
 MODEL_FAMILY_V1 = "RIDGE_CLASSIFIER"
@@ -55,8 +56,8 @@ class RidgeTrialStartV1:
     multiplicity_ordinal: int
     model_family: str = MODEL_FAMILY_V1
     model_contract_version: str = MODEL_CONTRACT_VERSION_V1
-    feature_schema_id: str = FEATURE_SCHEMA_ID_V1
-    feature_schema_version: int = FEATURE_SCHEMA_VERSION_V1
+    feature_schema_id: str = CURRENT_FEATURE_SCHEMA_ID
+    feature_schema_version: int = CURRENT_FEATURE_SCHEMA_VERSION
     label_contract_version: str = LABEL_CONTRACT_VERSION_V1
     parameter_hash: str = field(init=False)
     start_hash: str = field(init=False)
@@ -350,8 +351,8 @@ def _validate_trial_start_contract(start: RidgeTrialStartV1) -> None:
     if (
         start.model_family != MODEL_FAMILY_V1
         or start.model_contract_version != MODEL_CONTRACT_VERSION_V1
-        or start.feature_schema_id != FEATURE_SCHEMA_ID_V1
-        or start.feature_schema_version != FEATURE_SCHEMA_VERSION_V1
+        or (start.feature_schema_id, start.feature_schema_version)
+        not in SUPPORTED_FEATURE_SCHEMAS
         or start.label_contract_version != LABEL_CONTRACT_VERSION_V1
     ):
         raise ModelingError(ModelingFailureCode.TRIAL_INVALID, "trial contract version is invalid")

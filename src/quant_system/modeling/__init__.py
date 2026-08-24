@@ -10,7 +10,11 @@ from quant_system.modeling.evidence import (
     draft_from_feature_dataset,
     draft_from_label_dataset,
 )
-from quant_system.modeling.features import build_feature_dataset, compute_feature_values
+from quant_system.modeling.features import (
+    build_feature_dataset,
+    canonical_feature_window,
+    compute_feature_values,
+)
 from quant_system.modeling.folds import FoldSpecV1, PartitionedFoldV1
 from quant_system.modeling.holdout import (
     HoldoutEvaluationOutcomeV1,
@@ -56,10 +60,14 @@ from quant_system.modeling.ridge import (
     predict_ridge_scores,
 )
 from quant_system.modeling.rows import (
+    CURRENT_FEATURE_SCHEMA_ID,
+    CURRENT_FEATURE_SCHEMA_VERSION,
     EXECUTION_CONTRACT_VERSION_V1,
     FEATURE_NAMES_V1,
     FEATURE_SCHEMA_ID_V1,
+    FEATURE_SCHEMA_ID_V2,
     FEATURE_SCHEMA_VERSION_V1,
+    FEATURE_SCHEMA_VERSION_V2,
     LABEL_CONTRACT_VERSION_V1,
     LABEL_HORIZON_SESSIONS_V1,
     FeatureDatasetV1,
@@ -101,11 +109,15 @@ from quant_system.modeling.validation import (
 )
 
 __all__ = [
+    "CURRENT_FEATURE_SCHEMA_ID",
+    "CURRENT_FEATURE_SCHEMA_VERSION",
     "EXECUTION_CONTRACT_VERSION_V1",
     "ExchangeSessionV1",
     "FEATURE_NAMES_V1",
     "FEATURE_SCHEMA_ID_V1",
+    "FEATURE_SCHEMA_ID_V2",
     "FEATURE_SCHEMA_VERSION_V1",
+    "FEATURE_SCHEMA_VERSION_V2",
     "FeatureDatasetV1",
     "FeatureRowV1",
     "FoldDecisionV1",
@@ -152,6 +164,7 @@ __all__ = [
     "TrialRegistryV1",
     "TrialState",
     "build_feature_dataset",
+    "canonical_feature_window",
     "compute_feature_values",
     "build_label_dataset",
     "build_purged_fold",

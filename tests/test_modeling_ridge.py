@@ -41,24 +41,24 @@ def test_governed_ridge_fold_is_exactly_repeatable_with_pinned_hashes() -> None:
     assert first == second
     assert (
         first.evaluation_hash
-        == "69eff821d3edd726d709b522e25e02b7b17f90d29411c15adb34867dda4cc01c"  # pragma: allowlist secret - deterministic public test hash.
+        == "1f225af58a4e19d614e4c852e737a7a5616da48551e455aa28c9233abc5a21c7"  # pragma: allowlist secret - deterministic public v2 test hash.
     )
     assert (
         first.fitted_state.fitted_state_hash
         == (
-            "158bea8b60261760af6a3df9dbee132ce087dd9f374e765db0874578300a185f"  # pragma: allowlist secret - deterministic public test hash.
+            "78087712e9a889baceb87efb63fa5ed5c348099d6728125b2641a9901bc7f510"  # pragma: allowlist secret - deterministic public v2 test hash.
         )
     )
     assert (
         first.ridge_report.prediction_hash
         == (
-            "af2001a9aa94c4a25edb745eff88f5fe2f9f540c5989732aa5721fdf2f99e7ec"  # pragma: allowlist secret - deterministic public test hash.
+            "c69b93413edf9917fd0724e8e648cf79bd01d0d842f4e65eaf208e48ff2c7db6"  # pragma: allowlist secret - deterministic public v2 test hash.
         )
     )
     assert (
         first.ridge_report.metrics_hash
         == (
-            "320375e5c2dcdaedf8d5bc26d2d7ca7224557bc37da4f01adfb738e073af8a91"  # pragma: allowlist secret - deterministic public test hash.
+            "43e8d377ef1b5b3040558fd36791cadad705725061813e0e5bbff6c3db6810ae"  # pragma: allowlist secret - deterministic public v2 test hash.
         )
     )
 
@@ -83,8 +83,8 @@ def test_ridge_reports_uncalibrated_scores_and_all_required_baselines() -> None:
     assert {decision.score_kind for decision in evaluation.ridge_report.decisions} == {
         "UNCALIBRATED_SCORE"
     }
-    assert evaluation.ridge_report.metrics.accuracy == "0.875"
-    assert evaluation.ridge_report.metrics.trade_count == 7
+    assert evaluation.ridge_report.metrics.accuracy == "1"
+    assert evaluation.ridge_report.metrics.trade_count == 6
     assert evaluation.model_id.startswith("model_")
 
 

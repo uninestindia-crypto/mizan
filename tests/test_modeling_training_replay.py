@@ -45,9 +45,9 @@ def test_training_replay_is_byte_stable_across_independent_roots(tmp_path: Path)
     assert (
         _manifest_hashes(first)
         == (
-            "a37565d0ffdad10b158628f3889efee00a340bc915c7529ca082bde516b4f907",  # pragma: allowlist secret - deterministic public test hash.
-            "27e8e6b0bfa86e553bbfacf720fa164ae8c1b5fb3f5a018bfb15949c452decbb",  # pragma: allowlist secret - deterministic public test hash.
-            "4a5183af056a76552ed32aae6b7b590af5a3aa1b8ff21d22e8c94799eacf77b6",  # pragma: allowlist secret - deterministic public test hash.
+            "e3098db85bcd35dfb7798e2356e2ce0a6fda04b735a4783273c38b4391348cbb",  # pragma: allowlist secret - deterministic public v2 test hash.
+            "b12bfab7ef8a9fb1a5b96697a92292ff4aef5e2c4ee4c7e2257d4d1d8370912a",  # pragma: allowlist secret - deterministic public v2 test hash.
+            "21957e65d66b58e4c85de750f142b595a06e7a55386e73b356233d6194ce967f",  # pragma: allowlist secret - deterministic public v2 test hash.
         )
     )
     assert _published_files(first_root) == _published_files(second_root)

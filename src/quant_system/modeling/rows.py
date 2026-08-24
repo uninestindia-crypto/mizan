@@ -19,6 +19,16 @@ FEATURE_ROW_SCHEMA = "quantos.feature_row"
 LABEL_ROW_SCHEMA = "quantos.label_row"
 FEATURE_SCHEMA_ID_V1 = "quantos.ridge_technical_six"
 FEATURE_SCHEMA_VERSION_V1 = 1
+FEATURE_SCHEMA_ID_V2 = "quantos.ridge_technical_six"
+FEATURE_SCHEMA_VERSION_V2 = 2
+CURRENT_FEATURE_SCHEMA_ID = FEATURE_SCHEMA_ID_V2
+CURRENT_FEATURE_SCHEMA_VERSION = FEATURE_SCHEMA_VERSION_V2
+SUPPORTED_FEATURE_SCHEMAS = frozenset(
+    {
+        (FEATURE_SCHEMA_ID_V1, FEATURE_SCHEMA_VERSION_V1),
+        (FEATURE_SCHEMA_ID_V2, FEATURE_SCHEMA_VERSION_V2),
+    }
+)
 EXECUTION_CONTRACT_VERSION_V1 = "next-open-v1"
 LABEL_CONTRACT_VERSION_V1 = "next-open-net-return-v1"
 LABEL_HORIZON_SESSIONS_V1 = 2
@@ -144,10 +154,8 @@ class FeatureRowV1:
         _require_aware(self.information_cutoff_at, "information_cutoff_at")
         if self.information_cutoff_at > self.decision_at:
             raise ValueError("feature information cutoff cannot follow decision time")
-        if self.feature_schema_id != FEATURE_SCHEMA_ID_V1:
-            raise ValueError("unsupported feature schema")
-        if self.feature_schema_version != FEATURE_SCHEMA_VERSION_V1:
-            raise ValueError("unsupported feature schema version")
+        if (self.feature_schema_id, self.feature_schema_version) not in SUPPORTED_FEATURE_SCHEMAS:
+            raise ValueError("unsupported feature schema identity")
         if tuple(self.features) != FEATURE_NAMES_V1:
             raise ValueError("feature map must use the closed ordered v1 feature family")
         normalized = {
@@ -251,6 +259,12 @@ class FeatureDatasetV1:
     corporate_action_authority_hash: str
     universe_authority_hash: str
     rows: tuple[FeatureRowV1, ...]
+    feature_schema_id: str = CURRENT_FEATURE_SCHEMA_ID
+    feature_schema_version: int = CURRENT_FEATURE_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        if (self.feature_schema_id, self.feature_schema_version) not in SUPPORTED_FEATURE_SCHEMAS:
+            raise ValueError("unsupported feature dataset schema identity")
 
     def metadata_dict(self) -> dict[str, Any]:
         return {
@@ -259,8 +273,8 @@ class FeatureDatasetV1:
             "corporate_action_authority_hash": self.corporate_action_authority_hash,
             "dataset_hash": self.dataset_hash,
             "dataset_id": self.dataset_id,
-            "feature_schema_id": FEATURE_SCHEMA_ID_V1,
-            "feature_schema_version": FEATURE_SCHEMA_VERSION_V1,
+            "feature_schema_id": self.feature_schema_id,
+            "feature_schema_version": self.feature_schema_version,
             "source_dataset_hash": self.source_dataset_hash,
             "source_dataset_id": self.source_dataset_id,
             "universe_authority_hash": self.universe_authority_hash,
@@ -304,6 +318,15 @@ def require_feature_dataset_identity(  # craft-allow: deep-nesting - each row mu
         source_dataset_hash=dataset.source_dataset_hash,
     )
     for row in dataset.rows:
+        if (
+            row.feature_schema_id != dataset.feature_schema_id
+            or row.feature_schema_version != dataset.feature_schema_version
+        ):
+            raise ModelingError(
+                ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+                "feature row schema identity does not match its dataset",
+                offending_record_key=row.record_key,
+            )
         if row.universe_authority_hash != dataset.universe_authority_hash:
             raise ModelingError(
                 ModelingFailureCode.DATASET_INTEGRITY_INVALID,

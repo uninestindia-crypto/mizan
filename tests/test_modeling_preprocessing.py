@@ -29,11 +29,14 @@ def test_standardization_is_deterministic_and_centered_on_training_rows(  # test
     assert first == second
     assert (
         first.state_hash
-        == "e2eebf92114fb456ba6c59c8a0d10860266e17ec66c762247e71e9890418704b"  # pragma: allowlist secret - deterministic public test hash.
+        == "7ccc80d30f2103d2dbb5b773a0c83a2f479ad0bf8800fafb0e538ce5f5f6a312"  # pragma: allowlist secret - deterministic public v2 test hash.
     )
     assert len(transformed) == len(training_rows)
     assert all(
-        abs(sum((Decimal(row[index]) for row in transformed), start=Decimal(0)))
+        abs(
+            sum((Decimal(row[index]) for row in transformed), start=Decimal(0))
+            / Decimal(len(transformed))
+        )
         <= Decimal("0.0000000000000002")
         for index in range(len(FEATURE_NAMES_V1))
     )

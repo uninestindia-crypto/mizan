@@ -52,7 +52,12 @@ def test_forged_model_metrics_fail_closed_even_when_every_hash_is_rebound(
         journey.labels,
         journey.fold,
     )
-    honest = draft_from_ridge_evaluation(evaluation)
+    honest = draft_from_ridge_evaluation(
+        evaluation,
+        start=journey.start,
+        feature_dataset=journey.features,
+        label_dataset=journey.labels,
+    )
     forged = _forge_metrics(honest, sharpe_ratio="99", total_return="12.5")
 
     assert evaluation.strategy_reports[0].metrics.sharpe_ratio != "99"
@@ -88,7 +93,15 @@ def test_honest_model_evidence_still_loads_after_rederivation(tmp_path: Path) ->
     )
     store = _store(tmp_path)
     store.commit(draft_from_trial_start(journey.start), operation_id="op-start")
-    store.commit(draft_from_ridge_evaluation(evaluation), operation_id="op-model")
+    store.commit(
+        draft_from_ridge_evaluation(
+            evaluation,
+            start=journey.start,
+            feature_dataset=journey.features,
+            label_dataset=journey.labels,
+        ),
+        operation_id="op-model",
+    )
     store.commit(
         draft_from_trial_outcome(
             succeeded_outcome(
@@ -182,7 +195,15 @@ def test_undercounted_model_publish_no_longer_bricks_the_catalog(tmp_path: Path)
         journey.labels,
         journey.fold,
     )
-    store.commit(draft_from_ridge_evaluation(fabricated), operation_id="op-model")
+    store.commit(
+        draft_from_ridge_evaluation(
+            fabricated,
+            start=journey.start,
+            feature_dataset=journey.features,
+            label_dataset=journey.labels,
+        ),
+        operation_id="op-model",
+    )
     store.commit(
         draft_from_trial_outcome(
             succeeded_outcome(

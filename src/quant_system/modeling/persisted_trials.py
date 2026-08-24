@@ -13,6 +13,7 @@ from quant_system.modeling.metrics import (
     ALLOCATION_CONTRACT_V1,
     strategy_report_from_records,
 )
+from quant_system.modeling.rows import FEATURE_SCHEMA_ID_V1, FEATURE_SCHEMA_VERSION_V1
 from quant_system.modeling.trials import (
     RidgeTrialStartV1,
     TrialOutcomeV1,
@@ -33,7 +34,7 @@ _START_METADATA_KEYS = {
 }
 _RIDGE_STRATEGY = "RIDGE"
 _OUTCOME_METADATA_KEYS = {"outcome_hash", "start_hash", "trial_id"}
-_MODEL_METADATA_KEYS = {
+_MODEL_METADATA_KEYS_V1 = {
     "candidate_id",
     "deflated_sharpe_ratio",
     "evaluation_hash",
@@ -45,6 +46,10 @@ _MODEL_METADATA_KEYS = {
     "strategy_reports",
     "trial_id",
     "verdict",
+}
+_MODEL_METADATA_KEYS_V2 = _MODEL_METADATA_KEYS_V1 | {
+    "feature_schema_id",
+    "feature_schema_version",
 }
 
 
@@ -293,17 +298,30 @@ def _parse_model_link(
     manifest = evidence.manifest
     metadata = manifest.metadata
     try:
+        metadata_keys = set(metadata)
+        is_legacy = manifest.schema_version == 1 and metadata_keys == _MODEL_METADATA_KEYS_V1
+        is_current = manifest.schema_version == 1 and metadata_keys == _MODEL_METADATA_KEYS_V2
         if (
             manifest.schema_id != _MODEL_SCHEMA
-            or manifest.schema_version != 1
             or manifest.total_order != ("strategy_id", "decision_at", "symbol")
-            or set(metadata) != _MODEL_METADATA_KEYS
+            or not (is_legacy or is_current)
         ):
             raise ValueError("model manifest contract mismatch")
         trial_id = _text(metadata, "trial_id")
         evaluation_hash = _text(metadata, "evaluation_hash")
         model_id = _text(metadata, "model_id")
         start = starts_by_id[trial_id]
+        if is_legacy:
+            if (
+                start.feature_schema_id != FEATURE_SCHEMA_ID_V1
+                or start.feature_schema_version != FEATURE_SCHEMA_VERSION_V1
+            ):
+                raise ValueError("legacy model evidence cannot bind a current-schema trial")
+        elif (
+            _text(metadata, "feature_schema_id") != start.feature_schema_id
+            or _integer(metadata, "feature_schema_version") != start.feature_schema_version
+        ):
+            raise ValueError("model feature schema does not bind its trial")
         if (
             manifest.resource_id != model_id
             or model_id != f"model_{evaluation_hash[:24]}"
