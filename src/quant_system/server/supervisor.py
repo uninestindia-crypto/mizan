@@ -11,6 +11,8 @@ Provides:
 
 from __future__ import annotations
 
+import hashlib
+import json
 import multiprocessing as mp
 import os
 import threading
@@ -19,6 +21,8 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from enum import Enum
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -32,6 +36,13 @@ from quant_system.data.provenance import RuntimeDataSource, describe
 from quant_system.portfolio.optimization import PortfolioOptimizer
 from quant_system.risk.checks import RiskLimits
 from quant_system.risk.governor import PreTradeRiskGovernor
+from quant_system.server.data_sync import DataSyncTaskError, run_data_sync_task
+from quant_system.server.operation_journal import (
+    OperationJournal,
+    OperationJournalError,
+    OperationReceipt,
+    OperationReceiptConflict,
+)
 from quant_system.server.schemas import (
     FillDTO,
     FrontierPointDTO,
@@ -51,6 +62,14 @@ class OperationNotFoundError(Exception):
     """Raised when an operation ID is not found."""
 
 
+class IdempotencyConflictError(ValueError):
+    """Raised when one idempotency key is reused for a different intent."""
+
+
+class OperationRecoveryError(RuntimeError):
+    """Raised when durable operation identity cannot be trusted or persisted."""
+
+
 class WorkerCrashError(Exception):
     """Raised when a worker process crashes unexpectedly."""
 
@@ -60,6 +79,7 @@ class OperationRecord:
     operation_id: str
     operation_type: OperationType
     idempotency_key: str | None = None
+    request_fingerprint: str | None = None
     status: OperationStatus = OperationStatus.PENDING
     progress: float = 0.0
     stage: str = "INITIALIZING"
@@ -405,48 +425,6 @@ def _run_portfolio_optimize_task(
     }
 
 
-def _run_training_task(payload: dict[str, Any], cancel_event: Any, queue: Any) -> dict[str, Any]:
-    candidate_id = payload.get("candidate_id", "cand_ridge_v1")
-    l2_penalty = float(payload.get("l2_penalty", 1.0))
-    days = int(payload.get("days", 252))
-
-    queue.put(
-        {
-            "type": "PROGRESS",
-            "progress": 0.2,
-            "stage": "FITTING_STANDARDIZATION",
-            "timestamp": datetime.now(UTC).isoformat(),
-        }
-    )
-
-    time.sleep(0.1)
-    if cancel_event.is_set():
-        raise InterruptedError("Operation cancelled.")
-
-    queue.put(
-        {
-            "type": "PROGRESS",
-            "progress": 0.6,
-            "stage": "FITTING_RIDGE_MODEL",
-            "timestamp": datetime.now(UTC).isoformat(),
-        }
-    )
-
-    time.sleep(0.1)
-    if cancel_event.is_set():
-        raise InterruptedError("Operation cancelled.")
-
-    return {
-        "candidate_id": candidate_id,
-        "l2_penalty": l2_penalty,
-        "trained_sessions": days,
-        "verdict": "RESEARCH_ONLY",
-        "output_type": "UNCALIBRATED_SCORE",
-        "deflated_sharpe_probability": 0.854984141908,
-        "status": "COMPLETED",
-    }
-
-
 def _run_custom_task(payload: dict[str, Any], cancel_event: Any, queue: Any) -> dict[str, Any]:
     action = payload.get("action", "compute")
     duration = float(payload.get("duration", 1.0))
@@ -517,7 +495,9 @@ def _worker_process_entrypoint(
         elif op_type_val == OperationType.PORTFOLIO_OPTIMIZE.value:
             res = _run_portfolio_optimize_task(payload, cancel_event, queue)
         elif op_type_val == OperationType.TRAINING.value:
-            res = _run_training_task(payload, cancel_event, queue)
+            raise ValueError("Governed model training is not wired to this supervisor revision.")
+        elif op_type_val == OperationType.DATA_SYNC.value:
+            res = run_data_sync_task(payload, cancel_event, queue)
         elif op_type_val == OperationType.CUSTOM.value:
             res = _run_custom_task(payload, cancel_event, queue)
         else:
@@ -534,6 +514,16 @@ def _worker_process_entrypoint(
         queue.put(
             {
                 "type": "CANCELLED",
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+        )
+    except DataSyncTaskError as exc:
+        queue.put(
+            {
+                "type": "ERROR",
+                "error_code": exc.failure.code,
+                "error_message": str(exc),
+                "details": exc.failure.details,
                 "timestamp": datetime.now(UTC).isoformat(),
             }
         )
@@ -556,6 +546,89 @@ def _worker_process_entrypoint(
 # =====================================================================
 
 
+def _request_fingerprint(op_type: OperationType, payload: dict[str, Any]) -> str:
+    """Bind one idempotency key to one canonical operation intent."""
+    request_payload = {key: value for key, value in payload.items() if not key.startswith("_")}
+    canonical = json.dumps(
+        {"operation_type": op_type.value, "payload": request_payload},
+        allow_nan=False,
+        default=_json_value,
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode()
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def _json_value(value: object) -> str:
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, Enum):
+        return str(value.value)
+    if isinstance(value, Path):
+        return str(value)
+    raise TypeError(f"operation payload contains unsupported value type {type(value).__name__}")
+
+
+def _operation_journal(
+    operation_type: OperationType,
+    payload: dict[str, Any],
+    idempotency_key: str | None,
+) -> OperationJournal | None:
+    if operation_type is not OperationType.DATA_SYNC or idempotency_key is None:
+        return None
+    evidence_root = payload.get("_evidence_root")
+    if not isinstance(evidence_root, str) or not evidence_root:
+        raise OperationRecoveryError(
+            "A governed dataset operation requires an operator-selected evidence root."
+        )
+    return OperationJournal(Path(evidence_root))
+
+
+def _record_from_receipt(
+    receipt: OperationReceipt,
+    *,
+    idempotency_key: str,
+) -> OperationRecord:
+    return OperationRecord(
+        operation_id=receipt.operation_id,
+        operation_type=receipt.operation_type,
+        idempotency_key=idempotency_key,
+        request_fingerprint=receipt.request_fingerprint,
+        status=receipt.status,
+        progress=receipt.progress,
+        stage=receipt.stage,
+        created_at=receipt.created_at,
+        started_at=receipt.started_at,
+        completed_at=receipt.completed_at,
+        result=receipt.result,
+        error=receipt.error,
+        cancellation_requested=receipt.cancellation_requested,
+    )
+
+
+def _receipt_from_record(record: OperationRecord) -> OperationReceipt:
+    if record.idempotency_key is None or record.request_fingerprint is None:
+        raise OperationRecoveryError("A durable operation record is missing its request identity.")
+    return OperationReceipt(
+        operation_id=record.operation_id,
+        operation_type=record.operation_type,
+        idempotency_key_hash=hashlib.sha256(record.idempotency_key.encode("utf-8")).hexdigest(),
+        request_fingerprint=record.request_fingerprint,
+        status=record.status,
+        progress=record.progress,
+        stage=record.stage,
+        created_at=record.created_at,
+        started_at=record.started_at,
+        completed_at=record.completed_at,
+        result=record.result,
+        error=record.error,
+        cancellation_requested=record.cancellation_requested,
+    )
+
+
 class WorkerSupervisor:
     """Manages background worker process lifecycle, leases, heartbeats, and recovery."""
 
@@ -570,6 +643,7 @@ class WorkerSupervisor:
         self._lock = threading.RLock()
         self._operations: dict[str, OperationRecord] = {}
         self._idempotency_map: dict[str, str] = {}
+        self._operation_journals: dict[str, OperationJournal] = {}
 
         self._active_op_id: str | None = None
         self._active_process: mp.process.BaseProcess | None = None
@@ -589,13 +663,29 @@ class WorkerSupervisor:
 
         Enforces single-operation compute lease (AC-77) and idempotency key deduplication.
         """
+        fingerprint = _request_fingerprint(op_type, payload)
+        journal = _operation_journal(op_type, payload, idempotency_key)
         with self._lock:
             # 1. Check Idempotency Key
             if idempotency_key:
                 existing_op_id = self._idempotency_map.get(idempotency_key)
                 if existing_op_id and existing_op_id in self._operations:
                     self._drain_active_queue_locked()
-                    return self._operations[existing_op_id]
+                    existing = self._operations[existing_op_id]
+                    if existing.request_fingerprint != fingerprint:
+                        raise IdempotencyConflictError(
+                            "IDEMPOTENCY_KEY_REUSED: the key already identifies a different "
+                            "operation type or request payload"
+                        )
+                    return existing
+                durable = self._durable_replay_locked(
+                    journal=journal,
+                    idempotency_key=idempotency_key,
+                    operation_type=op_type,
+                    request_fingerprint=fingerprint,
+                )
+                if durable is not None:
+                    return durable
 
             # 2. Enforce Single-Operation Compute Lease (AC-77)
             self._drain_active_queue_locked()
@@ -611,32 +701,74 @@ class WorkerSupervisor:
                         "strict single-operation compute lease."
                     )
 
-            # 3. Create Operation Record
+            # 3. Claim durable identity and create the in-memory operation record.
             op_id = f"op-{uuid.uuid4().hex[:12]}"
+            created_at = datetime.now(UTC)
+            if idempotency_key and journal is not None:
+                try:
+                    receipt, created = journal.create(
+                        idempotency_key=idempotency_key,
+                        operation_id=op_id,
+                        operation_type=op_type,
+                        request_fingerprint=fingerprint,
+                        created_at=created_at,
+                    )
+                except OperationReceiptConflict as error:
+                    raise IdempotencyConflictError(
+                        "IDEMPOTENCY_KEY_REUSED: the key already identifies a different "
+                        "operation type or request payload"
+                    ) from error
+                except OperationJournalError as error:
+                    raise OperationRecoveryError(
+                        "Durable operation identity is unavailable; no worker was started."
+                    ) from error
+                if not created:
+                    return self._cache_durable_receipt_locked(
+                        receipt=receipt,
+                        journal=journal,
+                        idempotency_key=idempotency_key,
+                    )
             record = OperationRecord(
                 operation_id=op_id,
                 operation_type=op_type,
                 idempotency_key=idempotency_key,
+                request_fingerprint=fingerprint,
                 status=OperationStatus.PENDING,
                 progress=0.0,
                 stage="INITIALIZING",
-                created_at=datetime.now(UTC),
+                created_at=created_at,
             )
             self._operations[op_id] = record
             if idempotency_key:
                 self._idempotency_map[idempotency_key] = op_id
+            if journal is not None:
+                self._operation_journals[op_id] = journal
 
             # 4. Spawn Worker Process
             ctx = mp.get_context("spawn")
             queue = ctx.Queue()
             cancel_event = ctx.Event()
 
+            worker_payload = dict(payload)
+            worker_payload["_operation_id"] = op_id
             proc = ctx.Process(
                 target=_worker_process_entrypoint,
-                args=(op_type.value, payload, queue, cancel_event),
+                args=(op_type.value, worker_payload, queue, cancel_event),
                 daemon=True,
             )
-            proc.start()
+            try:
+                proc.start()
+            except BaseException:
+                record.status = OperationStatus.FAILED
+                record.stage = "FAILED"
+                record.completed_at = datetime.now(UTC)
+                record.error = {
+                    "code": "WORKER_START_FAILED",
+                    "message": "The governed worker process could not be started.",
+                    "details": {},
+                }
+                self._persist_operation_locked(record)
+                raise
 
             record.pid = proc.pid
             record.status = OperationStatus.RUNNING
@@ -648,6 +780,7 @@ class WorkerSupervisor:
             self._active_queue = queue
             self._active_cancel_event = cancel_event
 
+            self._persist_operation_locked(record)
             self._ensure_monitor_running_locked()
             return record
 
@@ -700,10 +833,19 @@ class WorkerSupervisor:
                     proc.join(timeout=0.5)
                     if proc.is_alive():
                         proc.kill()
+                self._drain_active_queue_locked()
+                if op.status in {
+                    OperationStatus.SUCCEEDED,
+                    OperationStatus.FAILED,
+                    OperationStatus.CANCELLED,
+                    OperationStatus.LOST,
+                }:
+                    return op
 
             op.status = OperationStatus.CANCELLED
             op.stage = "CANCELLED"
             op.completed_at = datetime.now(UTC)
+            self._persist_operation_locked(op)
 
             if op_id == self._active_op_id:
                 self._active_op_id = None
@@ -712,6 +854,79 @@ class WorkerSupervisor:
                 self._active_cancel_event = None
 
             return op
+
+    def _durable_replay_locked(
+        self,
+        *,
+        journal: OperationJournal | None,
+        idempotency_key: str,
+        operation_type: OperationType,
+        request_fingerprint: str,
+    ) -> OperationRecord | None:
+        if journal is None:
+            return None
+        try:
+            receipt = journal.lookup(idempotency_key)
+        except OperationJournalError as error:
+            raise OperationRecoveryError(
+                "Durable operation identity is unreadable; no worker was started."
+            ) from error
+        if receipt is None:
+            return None
+        if (
+            receipt.operation_type != operation_type
+            or receipt.request_fingerprint != request_fingerprint
+        ):
+            raise IdempotencyConflictError(
+                "IDEMPOTENCY_KEY_REUSED: the key already identifies a different operation type "
+                "or request payload"
+            )
+        return self._cache_durable_receipt_locked(
+            receipt=receipt,
+            journal=journal,
+            idempotency_key=idempotency_key,
+        )
+
+    def _cache_durable_receipt_locked(
+        self,
+        *,
+        receipt: OperationReceipt,
+        journal: OperationJournal,
+        idempotency_key: str,
+    ) -> OperationRecord:
+        if receipt.status in {OperationStatus.PENDING, OperationStatus.RUNNING}:
+            receipt = receipt.with_status(
+                status=OperationStatus.LOST,
+                stage="LOST",
+                completed_at=datetime.now(UTC),
+                error={
+                    "code": "SERVER_RESTARTED",
+                    "message": "The prior server stopped before recording a terminal outcome.",
+                    "details": {},
+                },
+            )
+            try:
+                journal.save(receipt)
+            except OperationJournalError as error:
+                raise OperationRecoveryError(
+                    "Interrupted durable operation state could not be recovered."
+                ) from error
+        record = _record_from_receipt(receipt, idempotency_key=idempotency_key)
+        self._operations[record.operation_id] = record
+        self._idempotency_map[idempotency_key] = record.operation_id
+        self._operation_journals[record.operation_id] = journal
+        return record
+
+    def _persist_operation_locked(self, operation: OperationRecord) -> None:
+        journal = self._operation_journals.get(operation.operation_id)
+        if journal is None or operation.idempotency_key is None:
+            return
+        try:
+            journal.save(_receipt_from_record(operation))
+        except OperationJournalError as error:
+            raise OperationRecoveryError(
+                "Durable operation state could not be updated safely."
+            ) from error
 
     def shutdown(self) -> None:
         """Gracefully shuts down supervisor, monitor thread, and any running workers."""
@@ -772,6 +987,7 @@ class WorkerSupervisor:
                 op.stage = "COMPLETED"
                 op.result = msg.get("result")
                 op.completed_at = now
+                self._persist_operation_locked(op)
                 self._active_op_id = None
                 self._active_process = None
                 self._active_queue = None
@@ -787,6 +1003,7 @@ class WorkerSupervisor:
                     "details": msg.get("details", {}),
                 }
                 op.completed_at = now
+                self._persist_operation_locked(op)
                 self._active_op_id = None
                 self._active_process = None
                 self._active_queue = None
@@ -797,6 +1014,7 @@ class WorkerSupervisor:
                 op.status = OperationStatus.CANCELLED
                 op.stage = "CANCELLED"
                 op.completed_at = now
+                self._persist_operation_locked(op)
                 self._active_op_id = None
                 self._active_process = None
                 self._active_queue = None
@@ -822,6 +1040,7 @@ class WorkerSupervisor:
                         "details": {"exitcode": proc.exitcode, "pid": proc.pid},
                     }
                 op.completed_at = now
+                self._persist_operation_locked(op)
                 self._active_op_id = None
                 self._active_process = None
                 self._active_queue = None
@@ -850,6 +1069,7 @@ class WorkerSupervisor:
                         "details": {"elapsed_seconds": elapsed_since_hb},
                     }
                     op.completed_at = now
+                    self._persist_operation_locked(op)
                     self._active_op_id = None
                     self._active_process = None
                     self._active_queue = None

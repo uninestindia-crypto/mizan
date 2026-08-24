@@ -1,6 +1,6 @@
 /**
  * QuantOS Desktop Web UI Application Controller v1.0.0
- * Handles Reactive State, Chart.js Visualizations, A11y Keyboard Navigation,
+ * Handles Reactive State, self-hosted Canvas visualizations, A11y Keyboard Navigation,
  * and REST API communication supporting the 7 Core User Journeys.
  */
 
@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initMonteCarlo();
   initRiskForm();
   initDiagnostics();
+  window.addEventListener("resize", scheduleChartRedraw);
 });
 
 // Toast notification helper
@@ -35,6 +36,68 @@ function showToast(message, duration = 3000) {
   setTimeout(() => {
     toast.style.display = "none";
   }, duration);
+}
+
+function apiErrorMessage(data, fallback) {
+  return data?.error?.message || data?.detail || data?.message || fallback;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function tableMessage(tbody, colspan, message) {
+  if (!tbody) return;
+  // sec-allow: markup-injection — message is HTML-escaped and colspan is an internal number.
+  tbody.innerHTML = `<tr><td colspan="${colspan}">${escapeHtml(message)}</td></tr>`;
+}
+
+async function getCsrfToken() {
+  const response = await fetch("/api/v1/csrf-token");
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(apiErrorMessage(data, "Couldn't start a secure session."));
+  }
+  return data.csrf_token;
+}
+
+async function mutationHeaders(idempotencyKey = null) {
+  const headers = {
+    "Content-Type": "application/json",
+    "X-CSRF-Token": await getCsrfToken(),
+  };
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+  return headers;
+}
+
+function newIdempotencyKey(prefix) {
+  return `${prefix}-${crypto.randomUUID()}`;
+}
+
+function cssToken(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+async function pollOperation(location, timeoutMs = 60000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const response = await fetch(location);
+    const operation = await response.json();
+    if (!response.ok) {
+      throw new Error(apiErrorMessage(operation, "Couldn't read operation status."));
+    }
+    if (operation.status === "SUCCEEDED") return operation;
+    if (["FAILED", "LOST", "CANCELLED"].includes(operation.status)) {
+      throw new Error(operation.error?.message || `Operation ended with ${operation.status}.`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error("The operation is still running. Refresh the dataset list in a moment.");
 }
 
 // Format currency in Indian Rupees (INR)
@@ -58,7 +121,7 @@ function initTheme() {
     const next = current === "dark" ? "light" : "dark";
     html.setAttribute("data-theme", next);
     localStorage.setItem("quantos-theme", next);
-    if (equityChartInstance) updateChartTheme();
+    if (equityChartInstance || mcChartInstance) updateChartTheme();
   });
 
   const saved = localStorage.getItem("quantos-theme");
@@ -90,6 +153,7 @@ function initTabs() {
     const panel = document.getElementById(targetId);
     if (panel) {
       panel.classList.add("active");
+      scheduleChartRedraw();
     }
 
     if (targetId === "tab-risk") loadRiskLimits();
@@ -128,70 +192,145 @@ function initIngestion() {
   const refreshBtn = document.getElementById("btn-refresh-manifests");
 
   if (ingestBtn) {
-    ingestBtn.addEventListener("click", async () => {
-      ingestBtn.disabled = true;
-      const originalText = ingestBtn.innerHTML;
-      ingestBtn.innerHTML = "<span>Acquiring & Verifying...</span>";
-
-      const payload = {
-        symbol: document.getElementById("ingest-symbol")?.value || "INFY",
-        start_date: document.getElementById("ingest-start-date")?.value || "2020-01-01",
-        end_date: document.getElementById("ingest-end-date")?.value || "2025-01-01",
-        source: document.getElementById("ingest-source-select")?.value || "SYNTHETIC",
-      };
-
-      try {
-        const res = await fetch("/api/data/ingest", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-
-        if (!res.ok) throw new Error(data.message || data.detail || "Ingestion failed");
-
-        showToast(data.message || "Data ingested and manifest verified.");
-        loadManifests();
-      } catch (err) {
-        showToast(`Ingestion error: ${err.message}`);
-      } finally {
-        ingestBtn.disabled = false;
-        ingestBtn.innerHTML = originalText;
-      }
-    });
+    ingestBtn.addEventListener("click", () => startDatasetAcquisition(ingestBtn));
   }
 
   if (refreshBtn) {
     refreshBtn.addEventListener("click", loadManifests);
   }
+  loadManifests();
+}
+
+async function startDatasetAcquisition(button) {
+  button.disabled = true;
+  const originalText = button.innerHTML;
+  // sec-allow: markup-injection — fixed server-owned loading markup contains no external data.
+  button.innerHTML = "<span>Acquiring & Verifying...</span>";
+  try {
+    const payload = datasetAcquisitionPayload();
+    const res = await fetch("/api/v1/datasets", {
+      method: "POST",
+      headers: await mutationHeaders(newIdempotencyKey("dataset")),
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(apiErrorMessage(data, "Couldn't start dataset acquisition."));
+    }
+    showToast("Dataset acquisition started. QuantOS will verify it before listing it.");
+    await pollOperation(res.headers.get("Location") || data.location);
+    showToast("Dataset acquired and verified.");
+    await loadManifests();
+  } catch (err) {
+    showToast(`Couldn't acquire the dataset. ${err.message}`, 8000);
+  } finally {
+    button.disabled = false;
+    // sec-allow: markup-injection — restores server-owned markup captured before the request.
+    button.innerHTML = originalText;
+  }
+}
+
+function datasetAcquisitionPayload() {
+  const instrumentSelect = document.getElementById("ingest-symbol");
+  const selectedInstrument = instrumentSelect?.selectedOptions?.[0];
+  return {
+    instrument_key: instrumentSelect?.value || "NSE_EQ|INE009A01021",
+    symbol: selectedInstrument?.dataset.symbol || "INFY",
+    from_date: document.getElementById("ingest-start-date")?.value || "2020-01-01",
+    to_date: document.getElementById("ingest-end-date")?.value || "2025-01-01",
+  };
 }
 
 async function loadManifests() {
+  const tbody = document.getElementById("manifests-tbody");
+  tableMessage(tbody, 7, "Reading verified dataset evidence…");
   try {
-    const res = await fetch("/api/data/manifests");
-    if (!res.ok) return;
+    const res = await fetch("/api/v1/datasets?limit=100");
     const data = await res.json();
-    const tbody = document.getElementById("manifests-tbody");
-    if (!tbody || !data.manifests) return;
-
-    tbody.innerHTML = data.manifests
-      .map(
-        (m) => `
-        <tr>
-          <td><code>${m.manifest_id}</code></td>
-          <td><strong>${m.symbol}</strong></td>
-          <td>${m.start_date} → ${m.end_date}</td>
-          <td>${m.bar_count.toLocaleString()}</td>
-          <td><code class="hash-pill" title="${m.checksum_sha256}">${m.checksum_sha256.slice(0, 8)}...${m.checksum_sha256.slice(-4)}</code></td>
-          <td><span class="badge badge-source">${m.provenance}</span></td>
-          <td><span class="badge badge-verified">${m.status}</span></td>
-        </tr>
-      `
-      )
-      .join("");
+    if (!res.ok) {
+      showManifestUnavailable(tbody, apiErrorMessage(data, "Couldn't load datasets."));
+      return;
+    }
+    if (!tbody) return;
+    if (!data.items?.length) {
+      showEmptyManifestCatalog(tbody);
+      return;
+    }
+    showManifestCatalog(tbody, data.items);
   } catch (err) {
-    console.error("Failed to load manifests:", err);
+    tableMessage(
+      tbody,
+      7,
+      "Couldn't load verified datasets. Check the server connection and retry."
+    );
   }
+}
+
+function showManifestUnavailable(tbody, message) {
+  document.getElementById("stat-manifest-status").textContent = "Unavailable";
+  document.getElementById("stat-manifest-bars").textContent = "—";
+  document.getElementById("stat-manifest-coverage").textContent = "—";
+  document.getElementById("stat-manifest-anomalies").textContent = "—";
+  tableMessage(tbody, 7, `${message} Configure the evidence root, then retry.`);
+}
+
+function showEmptyManifestCatalog(tbody) {
+  document.getElementById("stat-manifest-status").textContent = "Ready";
+  document.getElementById("stat-manifest-bars").textContent = "0";
+  document.getElementById("stat-manifest-coverage").textContent = "0";
+  document.getElementById("stat-manifest-anomalies").textContent = "—";
+  tableMessage(tbody, 7, "No verified datasets yet. Acquire one to create the first manifest.");
+}
+
+function showManifestCatalog(tbody, items) {
+  const totalBars = items.reduce((total, item) => total + Number(item.row_count), 0);
+  const latest = [...items]
+    .sort((left, right) => left.created_at.localeCompare(right.created_at))
+    .at(-1);
+  document.getElementById("stat-manifest-status").textContent = "✓ Verified";
+  document.getElementById("stat-manifest-bars").textContent = totalBars.toLocaleString("en-IN");
+  document.getElementById("stat-manifest-coverage").textContent = items.length;
+  document.getElementById("stat-manifest-anomalies").textContent = latest.provenance;
+  markManifestChecksVerified();
+  const log = document.getElementById("ingestion-log-stream");
+  if (log) {
+    const suffix = items.length === 1 ? "" : "s";
+    log.textContent = `${items.length} verified dataset manifest${suffix} loaded from evidence.`;
+  }
+  renderManifestRows(tbody, items);
+}
+
+function markManifestChecksVerified() {
+  ["chk-zero-lookahead", "chk-monotonic", "chk-ohlc-sanity", "chk-checksum-match"].forEach(
+    (id) => {
+      const item = document.getElementById(id);
+      item?.classList.add("verified");
+      const icon = item?.querySelector(".check-icon");
+      if (icon) icon.textContent = "✓";
+    }
+  );
+}
+
+function renderManifestRows(tbody, items) {
+  // sec-allow: markup-injection — every evidence string is escaped; other values are numeric.
+  tbody.innerHTML = items.map((item) => manifestRow(item)).join("");
+}
+
+function manifestRow(manifest) {
+  const contentHash = manifest.canonical_content_hash;
+  const escapedHash = escapeHtml(contentHash);
+  const shortHash = `${escapeHtml(contentHash.slice(0, 8))}…${escapeHtml(contentHash.slice(-4))}`;
+  return `
+    <tr>
+      <td><code>${escapeHtml(manifest.dataset_id)}</code></td>
+      <td><strong>${escapeHtml(manifest.symbol)}</strong></td>
+      <td>${escapeHtml(manifest.received_start)} → ${escapeHtml(manifest.received_end)}</td>
+      <td>${Number(manifest.row_count).toLocaleString("en-IN")}</td>
+      <td><code class="hash-pill" title="${escapedHash}">${shortHash}</code></td>
+      <td><span class="badge badge-source">${escapeHtml(manifest.provenance)}</span></td>
+      <td><span class="badge badge-verified">✓ ${escapeHtml(manifest.status)}</span></td>
+    </tr>
+  `;
 }
 
 // =============================================================================
@@ -203,6 +342,7 @@ function initFeatures() {
 
   btn.addEventListener("click", async () => {
     btn.disabled = true;
+    // sec-allow: markup-injection — fixed server-owned loading markup contains no external data.
     btn.innerHTML = "<span>Computing Features...</span>";
 
     const payload = {
@@ -214,11 +354,11 @@ function initFeatures() {
     try {
       const res = await fetch("/api/features/explore", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await mutationHeaders(newIdempotencyKey("features")),
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Feature extraction failed");
+      if (!res.ok) throw new Error(apiErrorMessage(data, "Couldn't read feature evidence."));
 
       document.getElementById("stat-feat-rows").textContent = data.total_rows.toLocaleString();
       document.getElementById("stat-feat-purged").textContent = data.purged_overlap_count;
@@ -226,6 +366,7 @@ function initFeatures() {
 
       const tbody = document.getElementById("features-tbody");
       if (tbody && data.rows) {
+        // sec-allow: markup-injection — strings are escaped and feature values are numeric.
         tbody.innerHTML = data.rows
           .map((r) => {
             const retCls = r.label_net_return >= 0 ? "positive" : "negative";
@@ -236,8 +377,8 @@ function initFeatures() {
 
             return `
               <tr>
-                <td>${r.timestamp}</td>
-                <td><strong>${r.symbol}</strong></td>
+                <td>${escapeHtml(r.timestamp)}</td>
+                <td><strong>${escapeHtml(r.symbol)}</strong></td>
                 <td>${r.features.ret_10d > 0 ? "+" : ""}${r.features.ret_10d.toFixed(4)}</td>
                 <td>${r.features.vol_20d.toFixed(4)}</td>
                 <td>${r.features.sma_dist_20d > 0 ? "+" : ""}${r.features.sma_dist_20d.toFixed(4)}</td>
@@ -256,6 +397,7 @@ function initFeatures() {
       showToast(`Error: ${err.message}`);
     } finally {
       btn.disabled = false;
+      // sec-allow: markup-injection — fixed server-owned button markup contains no external data.
       btn.innerHTML = "<span>Compute Governed Features</span>";
     }
   });
@@ -270,6 +412,7 @@ function initTraining() {
 
   btn.addEventListener("click", async () => {
     btn.disabled = true;
+    // sec-allow: markup-injection — fixed server-owned loading markup contains no external data.
     btn.innerHTML = "<span>Fitting Fold...</span>";
 
     const payload = {
@@ -282,11 +425,11 @@ function initTraining() {
     try {
       const res = await fetch("/api/training/governed-ridge", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await mutationHeaders(newIdempotencyKey("training")),
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Training failed");
+      if (!res.ok) throw new Error(apiErrorMessage(data, "Couldn't start governed training."));
 
       document.getElementById("stat-train-sharpe").textContent = data.candidate_metrics.sharpe_ratio.toFixed(2);
       document.getElementById("stat-train-dsr").textContent = data.deflated_sharpe.toFixed(3);
@@ -297,9 +440,10 @@ function initTraining() {
       // Update baselines table
       const bTable = document.getElementById("baselines-tbody");
       if (bTable && data.baselines) {
+        // sec-allow: markup-injection — model names are escaped and all metrics are numeric.
         bTable.innerHTML = `
           <tr class="highlight-row">
-            <td><strong>⭐ ${data.candidate_metrics.name}</strong></td>
+            <td><strong>⭐ ${escapeHtml(data.candidate_metrics.name)}</strong></td>
             <td class="positive">+${(data.candidate_metrics.annualized_return * 100).toFixed(1)}%</td>
             <td><strong>${data.candidate_metrics.sharpe_ratio.toFixed(2)}</strong></td>
             <td>${data.candidate_metrics.sortino_ratio.toFixed(2)}</td>
@@ -311,7 +455,7 @@ function initTraining() {
             .map(
               (b) => `
             <tr>
-              <td><code>${b.name}</code></td>
+              <td><code>${escapeHtml(b.name)}</code></td>
               <td>+${(b.annualized_return * 100).toFixed(1)}%</td>
               <td>${b.sharpe_ratio.toFixed(2)}</td>
               <td>${b.sortino_ratio.toFixed(2)}</td>
@@ -328,13 +472,14 @@ function initTraining() {
       // Update coefficients table
       const cTable = document.getElementById("coeffs-tbody");
       if (cTable && data.coefficients) {
+        // sec-allow: markup-injection — feature names and interpretations are HTML-escaped.
         cTable.innerHTML = data.coefficients
           .map(
             (c) => `
           <tr>
-            <td><code>${c.feature_name}</code></td>
+            <td><code>${escapeHtml(c.feature_name)}</code></td>
             <td><strong>${c.coefficient >= 0 ? "+" : ""}${c.coefficient.toFixed(4)}</strong></td>
-            <td>${c.interpretation}</td>
+            <td>${escapeHtml(c.interpretation)}</td>
           </tr>
         `
           )
@@ -346,6 +491,7 @@ function initTraining() {
       showToast(`Training error: ${err.message}`);
     } finally {
       btn.disabled = false;
+      // sec-allow: markup-injection — fixed server-owned button markup contains no external data.
       btn.innerHTML = "<span>Fit Governed Ridge Fold</span>";
     }
   });
@@ -382,6 +528,7 @@ function initHoldout() {
       }
 
       btn.disabled = true;
+      // sec-allow: markup-injection — fixed server-owned loading markup contains no external data.
       btn.innerHTML = "<span>Evaluating Stress Suite...</span>";
 
       const payload = {
@@ -393,11 +540,13 @@ function initHoldout() {
       try {
         const res = await fetch("/api/holdout/evaluate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: await mutationHeaders(newIdempotencyKey("holdout")),
           body: JSON.stringify(payload),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Holdout evaluation failed");
+        if (!res.ok) {
+          throw new Error(apiErrorMessage(data, "Couldn't evaluate the governed holdout."));
+        }
 
         lastModelCardMarkdown = data.model_card_markdown;
         document.getElementById("model-card-preview").textContent = data.model_card_markdown;
@@ -407,14 +556,15 @@ function initHoldout() {
         // Render gates
         const gTbody = document.getElementById("holdout-gates-tbody");
         if (gTbody && data.gates) {
+          // sec-allow: markup-injection — all gate strings are escaped; classes are allowlisted.
           gTbody.innerHTML = data.gates
             .map(
               (g) => `
             <tr>
-              <td><strong>${g.gate_name}</strong></td>
-              <td>${g.required_threshold}</td>
-              <td><strong>${g.observed_value}</strong></td>
-              <td><span class="badge ${g.status === "PASS" ? "badge-verified" : "badge-embargo"}">${g.status}</span></td>
+              <td><strong>${escapeHtml(g.gate_name)}</strong></td>
+              <td>${escapeHtml(g.required_threshold)}</td>
+              <td><strong>${escapeHtml(g.observed_value)}</strong></td>
+              <td><span class="badge ${g.status === "PASS" ? "badge-verified" : "badge-embargo"}">${escapeHtml(g.status)}</span></td>
             </tr>
           `
             )
@@ -424,15 +574,16 @@ function initHoldout() {
         // Render stress scenarios
         const sTbody = document.getElementById("stress-scenarios-tbody");
         if (sTbody && data.stress_scenarios) {
+          // sec-allow: markup-injection — scenario strings are escaped and metrics are numeric.
           sTbody.innerHTML = data.stress_scenarios
             .map(
               (s) => `
             <tr>
-              <td><strong>${s.scenario_name}</strong></td>
-              <td>${s.shock_description}</td>
+              <td><strong>${escapeHtml(s.scenario_name)}</strong></td>
+              <td>${escapeHtml(s.shock_description)}</td>
               <td class="negative">${(s.simulated_drawdown_pct * 100).toFixed(1)}%</td>
               <td>${s.recovery_days} Days</td>
-              <td><span class="badge badge-verified">${s.survival_status}</span></td>
+              <td><span class="badge badge-verified">${escapeHtml(s.survival_status)}</span></td>
             </tr>
           `
             )
@@ -444,6 +595,7 @@ function initHoldout() {
         showToast(`Holdout error: ${err.message}`);
       } finally {
         btn.disabled = false;
+        // sec-allow: markup-injection — fixed server-owned button markup contains no external data.
         btn.innerHTML = "<span>Evaluate Holdout & Stress Suite</span>";
       }
     });
@@ -474,6 +626,7 @@ function initBacktestForm() {
   if (runBtn) {
     runBtn.addEventListener("click", async () => {
       runBtn.disabled = true;
+      // sec-allow: markup-injection — fixed server-owned loading markup contains no external data.
       runBtn.innerHTML = "<span>Simulating Events...</span>";
 
       const payload = {
@@ -487,13 +640,13 @@ function initBacktestForm() {
       try {
         const res = await fetch("/api/backtest/run", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: await mutationHeaders(),
           body: JSON.stringify(payload),
         });
 
         if (!res.ok) {
           const err = await res.json();
-          throw new Error(err.detail || "Backtest failed");
+          throw new Error(apiErrorMessage(err, "Couldn't run the backtest."));
         }
 
         const data = await res.json();
@@ -521,6 +674,7 @@ function initBacktestForm() {
         showToast(`Error: ${err.message}`);
       } finally {
         runBtn.disabled = false;
+        // sec-allow: markup-injection — fixed server-owned SVG/button markup has no external data.
         runBtn.innerHTML = `
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
@@ -535,94 +689,127 @@ function initBacktestForm() {
 function renderEquityChart(curve) {
   const canvas = document.getElementById("equityChart");
   if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)";
-  const textColor = isDark ? "#86868B" : "#1D1D1F";
-
-  const labels = curve.map((s) => s.timestamp);
-  const data = curve.map((s) => s.total_equity);
-
-  if (equityChartInstance) {
-    equityChartInstance.destroy();
-  }
-
-  equityChartInstance = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: "Portfolio Total Equity (₹)",
-          data: data,
-          borderColor: "#0071E3",
-          backgroundColor: "rgba(0, 113, 227, 0.1)",
-          borderWidth: 2,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          tension: 0.1,
-          fill: true,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (context) => formatINR(context.raw),
-          },
-        },
+  equityChartInstance = {
+    canvas,
+    labels: curve.map((snapshot) => snapshot.timestamp),
+    datasets: [
+      {
+        colorToken: "--color-accent",
+        values: curve.map((snapshot) => Number(snapshot.total_equity)),
+        width: 2.5,
       },
-      scales: {
-        x: {
-          grid: { color: gridColor },
-          ticks: { color: textColor, maxTicksLimit: 8 },
-        },
-        y: {
-          grid: { color: gridColor },
-          ticks: {
-            color: textColor,
-            callback: (v) => `₹${(v / 1000).toFixed(0)}k`,
-          },
-        },
-      },
-    },
-  });
+    ],
+  };
+  drawLineChart(equityChartInstance);
 }
 
 function updateChartTheme() {
-  if (!equityChartInstance) return;
-  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)";
-  const textColor = isDark ? "#86868B" : "#1D1D1F";
+  if (equityChartInstance) drawLineChart(equityChartInstance);
+  if (mcChartInstance) drawLineChart(mcChartInstance);
+}
 
-  equityChartInstance.options.scales.x.grid.color = gridColor;
-  equityChartInstance.options.scales.x.ticks.color = textColor;
-  equityChartInstance.options.scales.y.grid.color = gridColor;
-  equityChartInstance.options.scales.y.ticks.color = textColor;
-  equityChartInstance.update();
+let chartRedrawFrame = null;
+
+function scheduleChartRedraw() {
+  if (chartRedrawFrame !== null) cancelAnimationFrame(chartRedrawFrame);
+  chartRedrawFrame = requestAnimationFrame(() => {
+    chartRedrawFrame = null;
+    updateChartTheme();
+  });
+}
+
+function drawLineChart(chart) {
+  const { canvas, datasets, labels } = chart;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  const width = Math.max(1, Math.floor(canvas.clientWidth || 640));
+  const height = Math.max(220, Math.floor(canvas.clientHeight || 280));
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(width * pixelRatio);
+  canvas.height = Math.floor(height * pixelRatio);
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  context.clearRect(0, 0, width, height);
+
+  const values = datasets.flatMap((dataset) => dataset.values).filter(Number.isFinite);
+  if (values.length === 0) return;
+  const observedMin = Math.min(...values);
+  const observedMax = Math.max(...values);
+  const observedRange = Math.max(observedMax - observedMin, Math.abs(observedMax) * 0.01, 1);
+  const minimum = observedMin - observedRange * 0.06;
+  const maximum = observedMax + observedRange * 0.06;
+  const bounds = { top: 16, right: 16, bottom: 28, left: 64 };
+  const plotWidth = width - bounds.left - bounds.right;
+  const plotHeight = height - bounds.top - bounds.bottom;
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)";
+  const textColor = cssToken("--color-text-secondary");
+
+  context.font = "11px system-ui, sans-serif";
+  context.fillStyle = textColor;
+  context.strokeStyle = gridColor;
+  context.lineWidth = 1;
+  for (let index = 0; index <= 4; index += 1) {
+    const ratio = index / 4;
+    const y = bounds.top + plotHeight * ratio;
+    context.beginPath();
+    context.moveTo(bounds.left, y);
+    context.lineTo(width - bounds.right, y);
+    context.stroke();
+    const value = maximum - (maximum - minimum) * ratio;
+    context.fillText(compactINR(value), 4, y + 4);
+  }
+
+  const firstLabel = labels[0] || "";
+  const lastLabel = labels[labels.length - 1] || "";
+  context.fillText(firstLabel, bounds.left, height - 6);
+  const lastWidth = context.measureText(lastLabel).width;
+  context.fillText(lastLabel, Math.max(bounds.left, width - bounds.right - lastWidth), height - 6);
+
+  datasets.forEach((dataset) => {
+    const series = dataset.values;
+    if (series.length === 0) return;
+    const denominator = Math.max(series.length - 1, 1);
+    const sampleStep = Math.max(1, Math.floor(series.length / Math.max(plotWidth * 2, 1)));
+    context.beginPath();
+    context.strokeStyle = cssToken(dataset.colorToken);
+    context.lineWidth = dataset.width;
+    series.forEach((value, index) => {
+      if (index % sampleStep !== 0 && index !== series.length - 1) return;
+      const x = bounds.left + (index / denominator) * plotWidth;
+      const y = bounds.top + ((maximum - value) / (maximum - minimum)) * plotHeight;
+      if (index === 0) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    });
+    context.stroke();
+  });
+}
+
+function compactINR(value) {
+  const magnitude = Math.abs(value);
+  if (magnitude >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
+  if (magnitude >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
+  if (magnitude >= 1000) return `₹${(value / 1000).toFixed(0)}k`;
+  return `₹${value.toFixed(0)}`;
 }
 
 function renderFillsTable(fills) {
   const tbody = document.getElementById("fills-tbody");
   if (!tbody) return;
   if (!fills || fills.length === 0) {
+    // sec-allow: markup-injection — fixed empty-state markup contains no external data.
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--color-text-secondary);">No trades triggered.</td></tr>`;
     return;
   }
 
+  // sec-allow: markup-injection — fill strings are escaped, classes allowlisted, values numeric.
   tbody.innerHTML = fills
     .map((f) => {
       const badgeClass = f.side === "BUY" ? "badge-buy" : "badge-sell";
       return `
       <tr>
-        <td>${f.timestamp}</td>
-        <td><strong>${f.symbol}</strong></td>
-        <td><span class="${badgeClass}">${f.side}</span></td>
+        <td>${escapeHtml(f.timestamp)}</td>
+        <td><strong>${escapeHtml(f.symbol)}</strong></td>
+        <td><span class="${badgeClass}">${escapeHtml(f.side)}</span></td>
         <td>${f.quantity}</td>
         <td>${formatINR(f.price)}</td>
         <td>${formatINR(f.fee)}</td>
@@ -640,68 +827,117 @@ function initShadow() {
   const pauseBtn = document.getElementById("btn-pause-shadow");
 
   if (startBtn) {
-    startBtn.addEventListener("click", async () => {
-      showToast("Shadow Monitor active (Read-Only 0 Broker Writes).");
-      loadShadowStatus();
-    });
+    startBtn.addEventListener("click", () => sendShadowCommand("start", startBtn));
   }
 
   if (pauseBtn) {
-    pauseBtn.addEventListener("click", () => {
-      showToast("Shadow Monitor stream paused.");
+    pauseBtn.addEventListener("click", () => sendShadowCommand("pause", pauseBtn));
+  }
+  loadShadowStatus();
+}
+
+async function sendShadowCommand(action, button) {
+  button.disabled = true;
+  try {
+    const speed = parseInt(document.getElementById("shadow-speed")?.value || "5", 10);
+    const response = await fetch("/api/shadow/control", {
+      method: "POST",
+      headers: await mutationHeaders(newIdempotencyKey(`shadow-${action}`)),
+      body: JSON.stringify({ action, speed_multiplier: speed }),
     });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(apiErrorMessage(data, "Couldn't control the shadow session."));
+    }
+    showToast(data.message || `Shadow session ${action} command accepted.`);
+    await loadShadowStatus();
+  } catch (err) {
+    showToast(`Couldn't ${action} the shadow session. ${err.message}`, 8000);
+  } finally {
+    button.disabled = false;
   }
 }
 
 async function loadShadowStatus() {
+  const tapeBody = document.getElementById("shadow-tape-tbody");
+  const decisionBody = document.getElementById("shadow-decisions-tbody");
   try {
     const res = await fetch("/api/shadow/status");
-    if (!res.ok) return;
     const data = await res.json();
-
-    document.getElementById("stat-shadow-quotes").textContent = data.quotes_processed.toLocaleString();
-    document.getElementById("stat-shadow-decisions").textContent = data.shadow_decisions_count;
-    document.getElementById("stat-shadow-latency").textContent = `${data.average_latency_ms} ms`;
-    document.getElementById("shadow-broker-orders").textContent = `${data.broker_orders_submitted} (ZERO)`;
-
-    const tapeBody = document.getElementById("shadow-tape-tbody");
-    if (tapeBody && data.recent_quotes) {
-      tapeBody.innerHTML = data.recent_quotes
-        .map(
-          (q) => `
-        <tr>
-          <td>${q.timestamp}</td>
-          <td><strong>${q.symbol}</strong></td>
-          <td>${formatINR(q.bid)}</td>
-          <td>${formatINR(q.ask)}</td>
-          <td>${formatINR(q.ltp)}</td>
-          <td>${q.volume.toLocaleString()}</td>
-          <td><span class="badge badge-verified">${q.latency_ms} ms</span></td>
-        </tr>
-      `
-        )
-        .join("");
+    if (!res.ok) {
+      showShadowUnavailable(
+        tapeBody,
+        decisionBody,
+        apiErrorMessage(data, "No shadow session is available.")
+      );
+      return;
     }
-
-    const decBody = document.getElementById("shadow-decisions-tbody");
-    if (decBody && data.recent_decisions) {
-      decBody.innerHTML = data.recent_decisions
-        .map(
-          (d) => `
-        <tr>
-          <td>${d.decision_time}</td>
-          <td><span class="badge-buy">${d.signal}</span></td>
-          <td><strong>${d.target_instrument}</strong></td>
-          <td>${formatINR(d.attributed_fill_price)}</td>
-          <td class="positive">+${formatINR(d.matured_pnl)}</td>
-        </tr>
-      `
-        )
-        .join("");
-    }
+    showShadowStatus(tapeBody, decisionBody, data);
   } catch (err) {
-    console.error("Shadow status load error:", err);
+    document.getElementById("stat-shadow-health").textContent = "Unavailable";
+    tableMessage(tapeBody, 7, "Couldn't load the shadow session. Check the server and retry.");
+    tableMessage(decisionBody, 5, "Couldn't load attributed decisions.");
   }
+}
+
+function showShadowUnavailable(tapeBody, decisionBody, message) {
+  document.getElementById("stat-shadow-quotes").textContent = "—";
+  document.getElementById("stat-shadow-decisions").textContent = "—";
+  document.getElementById("stat-shadow-latency").textContent = "—";
+  document.getElementById("stat-shadow-health").textContent = "Not configured";
+  document.getElementById("shadow-broker-orders").textContent = "0 (broker writes disabled)";
+  tableMessage(tapeBody, 7, `${message} Configure and start a session to view quotes.`);
+  tableMessage(decisionBody, 5, "No attributed shadow decisions yet.");
+}
+
+function showShadowStatus(tapeBody, decisionBody, data) {
+  document.getElementById("stat-shadow-quotes").textContent =
+    data.quotes_processed.toLocaleString("en-IN");
+  document.getElementById("stat-shadow-decisions").textContent = data.shadow_decisions_count;
+  document.getElementById("stat-shadow-latency").textContent = `${data.average_latency_ms} ms`;
+  document.getElementById("stat-shadow-health").textContent = data.stream_health;
+  document.getElementById("shadow-broker-orders").textContent =
+    `${data.broker_orders_submitted} (ZERO)`;
+  renderShadowQuotes(tapeBody, data.recent_quotes);
+  renderShadowDecisions(decisionBody, data.recent_decisions);
+}
+
+function renderShadowQuotes(tapeBody, quotes) {
+  if (!tapeBody || !quotes) return;
+  // sec-allow: markup-injection — quote strings are escaped and market values are numeric.
+  tapeBody.innerHTML = quotes.map((quote) => shadowQuoteRow(quote)).join("");
+}
+
+function shadowQuoteRow(quote) {
+  return `
+    <tr>
+      <td>${escapeHtml(quote.timestamp)}</td>
+      <td><strong>${escapeHtml(quote.symbol)}</strong></td>
+      <td>${formatINR(quote.bid)}</td>
+      <td>${formatINR(quote.ask)}</td>
+      <td>${formatINR(quote.ltp)}</td>
+      <td>${quote.volume.toLocaleString()}</td>
+      <td><span class="badge badge-verified">${quote.latency_ms} ms</span></td>
+    </tr>
+  `;
+}
+
+function renderShadowDecisions(decisionBody, decisions) {
+  if (!decisionBody || !decisions) return;
+  // sec-allow: markup-injection — decision strings are escaped and P&L values are numeric.
+  decisionBody.innerHTML = decisions.map((decision) => shadowDecisionRow(decision)).join("");
+}
+
+function shadowDecisionRow(decision) {
+  return `
+    <tr>
+      <td>${escapeHtml(decision.decision_time)}</td>
+      <td><span class="badge-buy">${escapeHtml(decision.signal)}</span></td>
+      <td><strong>${escapeHtml(decision.target_instrument)}</strong></td>
+      <td>${formatINR(decision.attributed_fill_price)}</td>
+      <td class="positive">+${formatINR(decision.matured_pnl)}</td>
+    </tr>
+  `;
 }
 
 // =============================================================================
@@ -725,16 +961,18 @@ function initPilot() {
 
         const res = await fetch("/api/paper-pilot/order", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: await mutationHeaders(newIdempotencyKey("paper-order")),
           body: JSON.stringify(payload),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Order failed");
+        if (!res.ok) {
+          throw new Error(apiErrorMessage(data, "Couldn't place the paper order."));
+        }
 
-        showToast(`Paper order ${data.order.order_id} submitted with idempotency token.`);
-        loadPilotStatus();
+        showToast(`Paper order ${data.order.order_id} recorded.`);
+        await loadPilotStatus();
       } catch (err) {
-        showToast(`Order error: ${err.message}`);
+        showToast(`Couldn't place the paper order. ${err.message}`, 8000);
       } finally {
         submitBtn.disabled = false;
       }
@@ -743,42 +981,97 @@ function initPilot() {
 
   if (haltBtn) {
     haltBtn.addEventListener("click", () => {
-      showToast("Emergency halt signaled. Open paper orders cancelled.");
+      showToast("No paper campaign control adapter is available yet. No orders were changed.", 8000);
     });
   }
+  loadPilotStatus();
 }
 
 async function loadPilotStatus() {
+  const positionBody = document.getElementById("pilot-positions-tbody");
+  const orderBody = document.getElementById("pilot-orders-tbody");
   try {
     const res = await fetch("/api/paper-pilot/campaign");
-    if (!res.ok) return;
     const data = await res.json();
-
-    document.getElementById("stat-pilot-equity").textContent = formatINR(data.current_equity);
-    document.getElementById("stat-pilot-unrealized").textContent = `${data.unrealized_pnl >= 0 ? "+" : ""}${formatINR(data.unrealized_pnl)}`;
-    document.getElementById("stat-pilot-realized").textContent = `${data.realized_pnl >= 0 ? "+" : ""}${formatINR(data.realized_pnl)}`;
-    document.getElementById("pilot-dd-buffer").textContent = `${data.drawdown_buffer_pct}% Remaining`;
-
-    const posBody = document.getElementById("pilot-positions-tbody");
-    if (posBody && data.active_positions) {
-      posBody.innerHTML = data.active_positions
-        .map(
-          (p) => `
-        <tr>
-          <td><strong>${p.symbol}</strong></td>
-          <td>${p.quantity}</td>
-          <td>${formatINR(p.average_entry)}</td>
-          <td>${formatINR(p.current_ltp)}</td>
-          <td class="${p.unrealized_pnl >= 0 ? "positive" : "negative"}">${p.unrealized_pnl >= 0 ? "+" : ""}${formatINR(p.unrealized_pnl)}</td>
-          <td>${p.portfolio_weight_pct.toFixed(1)}%</td>
-        </tr>
-      `
-        )
-        .join("");
+    if (!res.ok) {
+      showPilotUnavailable(
+        positionBody,
+        orderBody,
+        apiErrorMessage(data, "No paper campaign is available.")
+      );
+      return;
     }
+    showPilotStatus(positionBody, orderBody, data);
   } catch (err) {
-    console.error("Pilot status load error:", err);
+    tableMessage(positionBody, 6, "Couldn't load the paper campaign. Check the server and retry.");
+    tableMessage(orderBody, 7, "Couldn't load paper orders.");
   }
+}
+
+function showPilotUnavailable(positionBody, orderBody, message) {
+  document.getElementById("stat-pilot-equity").textContent = "—";
+  document.getElementById("stat-pilot-unrealized").textContent = "—";
+  document.getElementById("stat-pilot-realized").textContent = "—";
+  document.getElementById("stat-pilot-orders").textContent = "—";
+  document.getElementById("pilot-dd-buffer").textContent = "Not configured";
+  tableMessage(positionBody, 6, `${message} Configure a campaign to view positions.`);
+  tableMessage(orderBody, 7, "No paper orders yet.");
+}
+
+function showPilotStatus(positionBody, orderBody, data) {
+  document.getElementById("stat-pilot-equity").textContent = formatINR(data.current_equity);
+  document.getElementById("stat-pilot-unrealized").textContent = signedINR(data.unrealized_pnl);
+  document.getElementById("stat-pilot-realized").textContent = signedINR(data.realized_pnl);
+  document.getElementById("pilot-dd-buffer").textContent =
+    `${data.drawdown_buffer_pct}% Remaining`;
+  document.getElementById("stat-pilot-orders").textContent = data.order_ladder.length;
+  renderPilotPositions(positionBody, data.active_positions);
+  renderPilotOrders(orderBody, data.order_ladder);
+}
+
+function signedINR(value) {
+  return `${value >= 0 ? "+" : ""}${formatINR(value)}`;
+}
+
+function renderPilotPositions(positionBody, positions) {
+  if (!positionBody || !positions) return;
+  // sec-allow: markup-injection — symbols are escaped and position values are numeric.
+  positionBody.innerHTML = positions.map((position) => pilotPositionRow(position)).join("");
+}
+
+function pilotPositionRow(position) {
+  const pnlClass = position.unrealized_pnl >= 0 ? "positive" : "negative";
+  return `
+    <tr>
+      <td><strong>${escapeHtml(position.symbol)}</strong></td>
+      <td>${position.quantity}</td>
+      <td>${formatINR(position.average_entry)}</td>
+      <td>${formatINR(position.current_ltp)}</td>
+      <td class="${pnlClass}">${signedINR(position.unrealized_pnl)}</td>
+      <td>${position.portfolio_weight_pct.toFixed(1)}%</td>
+    </tr>
+  `;
+}
+
+function renderPilotOrders(orderBody, orders) {
+  if (!orderBody || !orders) return;
+  // sec-allow: markup-injection — order strings are escaped and price/quantity values numeric.
+  orderBody.innerHTML = orders.map((order) => pilotOrderRow(order)).join("");
+}
+
+function pilotOrderRow(order) {
+  const fillPrice = order.fill_price === null ? "—" : formatINR(order.fill_price);
+  return `
+    <tr>
+      <td><code>${escapeHtml(order.order_id)}</code></td>
+      <td><strong>${escapeHtml(order.symbol)}</strong></td>
+      <td>${escapeHtml(order.side)}</td>
+      <td>${order.filled_qty} / ${order.requested_qty}</td>
+      <td>${formatINR(order.limit_price)}</td>
+      <td>${fillPrice}</td>
+      <td>${escapeHtml(order.status)}</td>
+    </tr>
+  `;
 }
 
 // =============================================================================
@@ -799,7 +1092,7 @@ function initStraddleForm() {
     try {
       const res = await fetch("/api/straddle/simulate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await mutationHeaders(),
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -812,6 +1105,7 @@ function initStraddleForm() {
       const cg = data.call_greeks;
       const pg = data.put_greeks;
 
+      // sec-allow: markup-injection — this table contains closed option labels and numeric values.
       document.getElementById("greeks-tbody").innerHTML = `
         <tr>
           <td><span class="badge-buy">CALL</span></td>
@@ -874,7 +1168,7 @@ function initRiskForm() {
     try {
       await fetch("/api/risk/limits", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await mutationHeaders(),
         body: JSON.stringify(payload),
       });
       showToast("Risk Governor parameters updated.");
@@ -887,29 +1181,31 @@ function initRiskForm() {
 async function loadDiagnostics() {
   const container = document.getElementById("diag-container");
   if (!container) return;
+  // sec-allow: markup-injection — fixed loading markup contains no external data.
   container.innerHTML = `<p style="color:var(--color-text-secondary);">Executing self-check suite...</p>`;
 
   try {
     const res = await fetch("/api/diagnostics");
     const d = await res.json();
 
+    // sec-allow: markup-injection — diagnostic strings are escaped and counts are numeric.
     container.innerHTML = `
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding:12px; background:var(--color-bg-base); border-radius:8px;">
         <div>
           <strong style="font-size:16px;">Overall Engine Status:</strong>
-          <span style="color:var(--color-success); font-weight:700; margin-left:8px;">${d.status} (${d.checks_passed}/${d.total_checks} Checks Passed)</span>
+          <span style="color:var(--color-success); font-weight:700; margin-left:8px;">${escapeHtml(d.status)} (${Number(d.checks_passed)}/${Number(d.total_checks)} Checks Passed)</span>
         </div>
-        <span class="brand-badge">Version ${d.version}</span>
+        <span class="brand-badge">Version ${escapeHtml(d.version)}</span>
       </div>
 
       <div class="metrics-grid">
         <div class="stat-box">
           <div class="stat-label">Platform OS</div>
-          <div class="stat-value" style="font-size:14px;">${d.platform}</div>
+          <div class="stat-value" style="font-size:14px;">${escapeHtml(d.platform)}</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Python Runtime</div>
-          <div class="stat-value" style="font-size:14px;">Python ${d.python_version}</div>
+          <div class="stat-value" style="font-size:14px;">Python ${escapeHtml(d.python_version)}</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Ledger Double-Entry</div>
@@ -917,12 +1213,13 @@ async function loadDiagnostics() {
         </div>
         <div class="stat-box">
           <div class="stat-label">Loaded Strategies</div>
-          <div class="stat-value" style="font-size:14px;">${d.installed_strategies_count} Active</div>
+          <div class="stat-value" style="font-size:14px;">${Number(d.installed_strategies_count)} Active</div>
         </div>
       </div>
     `;
   } catch (err) {
-    container.innerHTML = `<p style="color:var(--color-danger);">Diagnostics error: ${err.message}</p>`;
+    // sec-allow: markup-injection — the caught message is HTML-escaped before interpolation.
+    container.innerHTML = `<p style="color:var(--color-danger);">Couldn't run diagnostics. ${escapeHtml(err.message)}</p>`;
   }
 }
 
@@ -949,7 +1246,7 @@ function initMonteCarlo() {
     try {
       const res = await fetch("/api/monte-carlo/run", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await mutationHeaders(),
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -973,64 +1270,29 @@ function initMonteCarlo() {
 function renderMonteCarloChart(data) {
   const canvas = document.getElementById("mcChart");
   if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)";
-  const textColor = isDark ? "#86868B" : "#1D1D1F";
-
-  const labels = Array.from({ length: data.percentile_50th.length }, (_, i) => `Day ${i}`);
-
-  if (mcChartInstance) {
-    mcChartInstance.destroy();
-  }
-
-  mcChartInstance = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: "95th Percentile",
-          data: data.percentile_95th,
-          borderColor: "#34C759",
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false,
-        },
-        {
-          label: "Median Path (50th)",
-          data: data.percentile_50th,
-          borderColor: "#0071E3",
-          borderWidth: 2.5,
-          pointRadius: 0,
-          fill: false,
-        },
-        {
-          label: "5th Percentile (Tail-Risk)",
-          data: data.percentile_5th,
-          borderColor: "#FF3B30",
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          grid: { color: gridColor },
-          ticks: { color: textColor, maxTicksLimit: 8 },
-        },
-        y: {
-          grid: { color: gridColor },
-          ticks: {
-            color: textColor,
-            callback: (v) => `₹${(v / 1000).toFixed(0)}k`,
-          },
-        },
+  mcChartInstance = {
+    canvas,
+    labels: Array.from(
+      { length: data.percentile_50th.length },
+      (_, index) => `Day ${index}`,
+    ),
+    datasets: [
+      {
+        colorToken: "--color-success",
+        values: data.percentile_95th.map(Number),
+        width: 1.5,
       },
-    },
-  });
+      {
+        colorToken: "--color-accent",
+        values: data.percentile_50th.map(Number),
+        width: 2.5,
+      },
+      {
+        colorToken: "--color-danger",
+        values: data.percentile_5th.map(Number),
+        width: 1.5,
+      },
+    ],
+  };
+  drawLineChart(mcChartInstance);
 }

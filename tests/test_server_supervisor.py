@@ -1,6 +1,8 @@
 """Tests for QuantOS Background Worker Supervisor and Process Lifecycle."""
 
+import queue
 import time
+from types import SimpleNamespace
 
 import pytest
 
@@ -8,6 +10,7 @@ from quant_system.server.schemas import OperationStatus, OperationType
 from quant_system.server.supervisor import (
     ConcurrentLimitError,
     OperationNotFoundError,
+    OperationRecord,
     WorkerSupervisor,
 )
 
@@ -91,6 +94,45 @@ def test_supervisor_cooperative_cancellation(supervisor_instance: WorkerSupervis
     # Verify that the compute lease is released and a new operation can run
     new_op = supervisor_instance.submit_operation(OperationType.CUSTOM, {"action": "compute"})
     assert new_op.status in (OperationStatus.PENDING, OperationStatus.RUNNING)
+
+
+def test_cancellation_preserves_a_worker_success_that_won_during_grace() -> None:
+    events: queue.Queue[dict[str, object]] = queue.Queue()
+
+    class SuccessOnJoinProcess:
+        pid = 1234
+        exitcode = 0
+
+        def __init__(self) -> None:
+            self.alive = True
+
+        def join(self, timeout: float) -> None:
+            assert timeout == 0.25
+            events.put({"type": "SUCCESS", "result": {"published": True}})
+            self.alive = False
+
+        def is_alive(self) -> bool:
+            return self.alive
+
+    supervisor = WorkerSupervisor(cancellation_grace_seconds=0.25)
+    operation = OperationRecord(
+        operation_id="op-123456789abc",
+        operation_type=OperationType.DATA_SYNC,
+        status=OperationStatus.RUNNING,
+    )
+    process = SuccessOnJoinProcess()
+    with supervisor._lock:
+        supervisor._operations[operation.operation_id] = operation
+        supervisor._active_op_id = operation.operation_id
+        supervisor._active_process = process  # type: ignore[assignment]
+        supervisor._active_queue = events
+        supervisor._active_cancel_event = SimpleNamespace(set=lambda: None)
+
+    result = supervisor.cancel_operation(operation.operation_id)
+
+    assert result.status == OperationStatus.SUCCEEDED
+    assert result.result == {"published": True}
+    assert result.cancellation_requested is True
 
 
 def test_supervisor_process_crash_recovery(supervisor_instance: WorkerSupervisor) -> None:

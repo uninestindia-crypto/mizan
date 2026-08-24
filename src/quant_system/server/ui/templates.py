@@ -77,7 +77,6 @@ def render_full_dashboard_html() -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QuantOS Desktop — Institutional Quant & Risk Engine v{__version__}</title>
   <link rel="stylesheet" href="/static/styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <!-- Skip link for keyboard accessibility -->
@@ -397,7 +396,6 @@ def render_standalone_journey_html(journey_id: str) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QuantOS Journey: {journey_id.capitalize()} — v{__version__}</title>
   <link rel="stylesheet" href="/static/styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>

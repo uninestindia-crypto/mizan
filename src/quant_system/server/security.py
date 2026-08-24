@@ -45,6 +45,8 @@ ALLOWED_ORIGIN_REGEX = re.compile(
     re.IGNORECASE,
 )
 
+REQUEST_ID_REGEX = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}")
+
 # Standard security headers
 SECURITY_HEADERS: dict[str, str] = {
     "X-Content-Type-Options": "nosniff",
@@ -77,6 +79,13 @@ def is_allowed_origin(origin: str | None) -> bool:
     if not origin:
         return True  # Non-browser / same-origin CLI request
     return bool(ALLOWED_ORIGIN_REGEX.match(origin.strip()))
+
+
+def trusted_request_id(candidate: str | None) -> str:
+    """Return a bounded safe correlation ID, replacing untrusted header values."""
+    if candidate is not None and REQUEST_ID_REGEX.fullmatch(candidate) is not None:
+        return candidate
+    return f"req-{uuid.uuid4().hex[:12]}"
 
 
 def format_error_response(
@@ -157,9 +166,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
         # 1. Generate or extract Request ID
-        request_id = request.headers.get("X-Request-ID")
-        if not request_id:
-            request_id = f"req-{uuid.uuid4().hex[:12]}"
+        request_id = trusted_request_id(request.headers.get("X-Request-ID"))
         request.state.request_id = request_id
 
         # 2. Strict Host Header Check (DNS Rebinding Defense)

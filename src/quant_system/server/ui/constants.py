@@ -21,9 +21,9 @@ JOURNEY_METADATA: list[dict[str, Any]] = [
         "description": "Point-in-time NSE equity data acquisition, SHA-256 manifest inspection, quality checks, and provenance verification.",
         "icon": "database",
         "route_path": f"/ui/journey/{JOURNEY_INGESTION_ID}",
-        "badge": "UPSTOX_V3 / SYNTHETIC",
+        "badge": "UPSTOX_V3",
         "data_test": "journey-ingestion",
-        "status": "ONLINE",
+        "status": "CONFIG_REQUIRED",
     },
     {
         "id": JOURNEY_FEATURES_ID,
@@ -32,9 +32,9 @@ JOURNEY_METADATA: list[dict[str, Any]] = [
         "description": "Governed 6-feature schema generation, decision-time alignment, next-open labels, net friction costs, and embargo enforcement.",
         "icon": "layers",
         "route_path": f"/ui/journey/{JOURNEY_FEATURES_ID}",
-        "badge": "GOVERNED_PIT",
+        "badge": "EVIDENCE_REQUIRED",
         "data_test": "journey-features",
-        "status": "ONLINE",
+        "status": "ADAPTER_PENDING",
     },
     {
         "id": JOURNEY_TRAINING_ID,
@@ -43,9 +43,9 @@ JOURNEY_METADATA: list[dict[str, Any]] = [
         "description": "Expanding walk-forward fold fitting, train-side standardization, multiplicity tracking, Deflated Sharpe, and comparison against 4 baselines.",
         "icon": "cpu",
         "route_path": f"/ui/journey/{JOURNEY_TRAINING_ID}",
-        "badge": "RESEARCH_ONLY",
+        "badge": "ADAPTER_PENDING",
         "data_test": "journey-training",
-        "status": "ONLINE",
+        "status": "ADAPTER_PENDING",
     },
     {
         "id": JOURNEY_HOLDOUT_ID,
@@ -56,7 +56,7 @@ JOURNEY_METADATA: list[dict[str, Any]] = [
         "route_path": f"/ui/journey/{JOURNEY_HOLDOUT_ID}",
         "badge": "SINGLE_USE_LOCK",
         "data_test": "journey-holdout",
-        "status": "ONLINE",
+        "status": "ADAPTER_PENDING",
     },
     {
         "id": JOURNEY_LEDGER_ID,
@@ -78,7 +78,7 @@ JOURNEY_METADATA: list[dict[str, Any]] = [
         "route_path": f"/ui/journey/{JOURNEY_SHADOW_ID}",
         "badge": "READ_ONLY",
         "data_test": "journey-shadow",
-        "status": "ONLINE",
+        "status": "NOT_CONFIGURED",
     },
     {
         "id": JOURNEY_PILOT_ID,
@@ -89,7 +89,7 @@ JOURNEY_METADATA: list[dict[str, Any]] = [
         "route_path": f"/ui/journey/{JOURNEY_PILOT_ID}",
         "badge": "PAPER_SIM",
         "data_test": "journey-pilot",
-        "status": "ONLINE",
+        "status": "NOT_CONFIGURED",
     },
 ]
 
