@@ -1,6 +1,6 @@
-# Active work: ten-year real-data NIFTY 50 schema-v2 training campaign
+# Retired work: ten-year real-data NIFTY 50 schema-v2 training campaign
 
-STATUS: ACTIVE_COST_PROXY_AND_CACHE_IMPLEMENTATION
+STATUS: RETIRED_RESEARCH_ONLY
 OWNER: Codex — governed real-data training campaign
 TOOL: Codex
 STARTED_UTC: 2026-08-24T12:16:05Z
@@ -16,8 +16,8 @@ corporate-action documents, and no synthetic or generated market data.
 
 ## Owned paths
 
-- `agent_context/work/active/20260824-1216Z-codex-nifty50-ten-year-v2-training.md` (this file)
-- `agent_context/work/completed/20260824-1216Z-codex-nifty50-ten-year-v2-training.md`
+- `agent_context/work/active/20260824-1216Z-codex-nifty50-ten-year-v2-training.md` (initial visible claim, now retired)
+- `agent_context/work/completed/20260824-1216Z-codex-nifty50-ten-year-v2-training.md` (this file)
 - `agent_context/handoffs/20260824-nifty50-ten-year-v2-training.md` (new, only if work remains)
 - `tmp/training-runs/nifty50-v2-10y-20260824/**`
 - `tmp/real-training-evidence-v2-nifty50-20160822-20260821/**`
@@ -80,16 +80,15 @@ Read-only inputs:
    pre-GST indirect-tax rule.
 3. DONE — implemented the user-authorized, explicitly identified research-cost proxy and immutable
    persistent acquisition cache; proved real miss/write and provider-free verified hit behavior.
-4. IN PROGRESS — the first 50-name run reconciled successfully but its Git revision predates the
-   uncommitted delivery runner. Commit the runner, rerun all 50 from cache into the source-bound
-   store, then reconcile every constituent/trial and final-count deflation again.
-5. PENDING — run repository claim/layout audits, record exact commands/raw outcomes, retire or hand
-   off this record, and commit only the owned coordination artifacts if appropriate.
+4. DONE — reran all 50 from verified cache into a fresh source-bound store and reconciled every
+   model, trial, ordinal, schema, result, source revision, and final-count deflation.
+5. DONE — repository claim/layout audits exited 0; exact commands and raw paths recorded; this
+   record retired; only owned tracked paths are staged for the final coordination commit.
 
 ## Current step
 
-Commit the tested modular runner so trial source identity covers its implementation, then execute
-the final 50-name campaign entirely from verified cache into the fresh source-bound EvidenceStore.
+No work remains in scope. The durable market cache and source-bound research evidence are preserved
+under the claimed ignored runtime roots; no provider extraction is needed for an identical rerun.
 
 ## Decision rationale
 
@@ -127,7 +126,7 @@ and reused on rerun without credentials or raw HTTP payloads in the cache.
 | Equity-delivery cost coverage probe | GAP CONFIRMED | 2016 lacks exchange, stamp, and GST/service-tax equivalents; 2017-04 lacks stamp and GST/service-tax; 2017-07 through 2020-06 lacks stamp; all six components first coexist on 2020-07-01 |
 | User continuation | AUTHORIZED | Retain at least ten years and persist acquired real data so reruns reuse verified local evidence instead of repeating Upstox extraction |
 | Failing-first cache/proxy test | EXPECTED FAILURE | `uv run pytest -q tests/test_cached_nifty50_campaign.py -x` failed on the asserted missing durable runner before implementation |
-| Focused cache/proxy tests | 5 PASSED | Verified exact EvidenceStore round-trip, cache-hit provider bypass, corruption refusal, full-universe subset authority, and proxy boundary behavior |
+| Focused cache/proxy tests | 5/5 | Verified exact EvidenceStore round-trip, cache-hit provider bypass, corruption refusal, full-universe subset authority, and proxy boundary behavior |
 | Focused Ruff check | CLEAN | `uv run ruff check scripts/run_cached_nifty50_ridge_campaign.py tests/test_cached_nifty50_campaign.py` |
 | Focused mypy invocation | TOOLING BOUNDARY | Failed on repository package/import configuration and pre-existing imported-runner `Any` errors; no runner-specific diagnostic was isolated by that invocation |
 | Runner CLI smoke | EXIT 0 | `uv run python scripts/run_cached_nifty50_ridge_campaign.py --help` |
@@ -136,17 +135,48 @@ and reused on rerun without credentials or raw HTTP payloads in the cache.
 | First 50-name campaign | EXIT 0, REHEARSAL ONLY | 50 `SUCCEEDED`; 21 positive Sharpes; median `-0.2278`; mean `-0.6834`; best/worst `+3.2207/-5.2615`; best final-count DSR `0.217695`; source revision still `3d003e7`, which does not include the uncommitted runner |
 | Cache reconciliation | VERIFIED | 100 dataset resources: 50 discovery + 50 governed, exact two per symbol; 50 readable NSE corporate-action files; 19,652,184 cache bytes |
 | Rehearsal model reconciliation | VERIFIED | 50 models + 50 trial starts + 50 `SUCCEEDED` outcomes; ordinals exactly 1..50; schema `quantos.ridge_technical_six` v2; 615,569 evidence bytes |
-| Governed range reconciliation | ACCEPTED/COMPLETE | All 50; deterministic `REVERSE_ORDER` repair recorded for provider-descending responses; five later listings have real shorter histories: ETERNAL 1,261, HDFCLIFE 2,170, JIOFIN 746, MAXHEALTH 1,490, SBILIFE 2,201 bars |
-| Relevant regression slice | 122 PASSED | Cache, dataset evidence, Upstox acquisition, features, labels, trials, replay, and campaign deflation |
+| Governed range reconciliation | 50/50 VERIFIED | Deterministic `REVERSE_ORDER` repair recorded for provider-descending responses; five later listings have real shorter histories: ETERNAL 1,261, HDFCLIFE 2,170, JIOFIN 746, MAXHEALTH 1,490, SBILIFE 2,201 bars |
+| Relevant regression slice | 122/122 | Cache, dataset evidence, Upstox acquisition, features, labels, trials, replay, and campaign deflation |
 | Code/Test Craft checkers | CLEAN | Modularized the original delivery script into four focused files; both repository structural checkers now report clean |
 | Post-refactor cache-hit canary | EXIT 0 | ADANIENT again produced identical metrics from `CACHE_HIT/CACHE_HIT`; no market or authority re-download |
 | First post-commit source-bound attempt | STOPPED BY OWNER | Reached 12 source-bound models with only cache hits, then was interrupted because the original lookup verified all 100 datasets twice per symbol; partial atomic evidence preserved and not used as final |
-| Indexed catalog regression slice | 123 PASSED | Added one-scan verified acquisition catalog coverage; prior 122 relevant tests remain green |
+| Indexed catalog regression slice | 123/123 | Added one-scan verified acquisition catalog coverage; prior 122 relevant tests remain green |
 | Indexed cache canary | EXIT 0 | One initial full-catalog verification followed by ADANIENT `CACHE_HIT/CACHE_HIT`; identical metrics; no provider call |
+| Delivery source commits | COMMITTED | `54ff557` runner/cache/proxy/test; `5a7185a` one-scan verified catalog optimization |
+| Final source-bound v2 campaign | EXIT 0 | 50/50 `SUCCEEDED`; every acquisition and corporate-action access was a verified cache hit; raw exit code 0 |
+| Final artifact reconciliation | VERIFIED | 50 models, 50 starts, 50 outcomes, ordinals 1..50, 50 schema-v2 bindings, 50 `RESEARCH_ONLY` verdicts, and source revision `5a7185aadf528a856beb13532264a560b99f44bb` on every start |
+| Final aggregate | RESEARCH RESULT | 21/50 positive Sharpes; median `-0.2278`; mean `-0.6834`; best/worst `+3.2207/-5.2615`; best final-count DSR `0.217695263874` against gate `0.95` |
+| Final result replay | EXACT MATCH | All 50 per-symbol result rows matched the earlier rehearsal byte-for-value after excluding summary metadata/root fields |
+| Mandatory claim audit | EXIT 0 | `scripts/audit-agent-claims.ps1` found every registered workspace visibly claimed and every workspace claim resolvable |
+| Mandatory disk audit | EXIT 0 | `scripts/audit-disk-layout.ps1` found only canonical QuantOS roots and buckets |
+
+## Exact final command and raw evidence
+
+```powershell
+uv run python scripts/run_cached_nifty50_ridge_campaign.py `
+  --universe-csv tmp/nse-authorities/nifty50-20260824/ind_nifty50list-20260824.csv `
+  --from-date 2016-08-22 `
+  --to-date 2026-08-21 `
+  --cache-root data/evidence/market-cache/nifty50-current-20160822-20260821 `
+  --evidence-root data/evidence/models/nifty50-current-20160822-20260821-schema-v2-source-bound-v2 `
+  --summary-file data/evidence/training-runs/nifty50-current-20160822-20260821-schema-v2/source-bound-v2-full-summary.json `
+  --corporate-actions-dir data/evidence/market-cache/nifty50-current-20160822-20260821/corporate-actions `
+  --start-ordinal 1 `
+  --sleep-seconds 0
+```
+
+- Raw stdout: `data/evidence/training-runs/nifty50-current-20160822-20260821-schema-v2/source-bound-v2-full.stdout.log`
+  - SHA-256 `1978b402e02b03c440f88b9b0a5f650fea8d65e3d11dfc34bba220ae6cb54fb9`
+- Machine summary: `data/evidence/training-runs/nifty50-current-20160822-20260821-schema-v2/source-bound-v2-full-summary.json`
+  - SHA-256 `6c877192627301250b5d74f998484232d60189384fd8d802eaef7b9318f957a0`
+- Final EvidenceStore: `data/evidence/models/nifty50-current-20160822-20260821-schema-v2-source-bound-v2/`
+  - 615,590 bytes; all 150 trial/model resources independently opened and verified.
+- Durable market cache: `data/evidence/market-cache/nifty50-current-20160822-20260821/`
+  - 19,652,184 bytes; 100 verified dataset resources plus 50 readable NSE corporate-action files.
 
 ## Files changed
 
-- This active work record only.
+- This retired work record.
 - New `scripts/run_cached_nifty50_ridge_campaign.py`.
 - New `scripts/cached_nifty50_evidence.py`.
 - New `scripts/cached_nifty50_costs.py`.
@@ -158,7 +188,7 @@ and reused on rerun without credentials or raw HTTP payloads in the cache.
 - Raw canary output at `tmp/training-runs/nifty50-v2-10y-20260824/canary-adani-ent.stdout.log`.
 - Real NSE ADANIENT corporate-action response under the claimed temporary corporate-action root.
 
-## Blockers and conflicts
+## Limitations and conflicts
 
 - Broad historical modeling claims remain active; all existing modeling, evidence, and runner
   source is read-only. Only the newly claimed delivery runner and focused test file may be edited.
@@ -173,12 +203,13 @@ and reused on rerun without credentials or raw HTTP payloads in the cache.
 ## Stop point
 
 The durable cache contains both real acquisition layers for all 50 symbols and all 50 NSE
-corporate-action responses. The first full campaign and three canaries remain preserved, but the
-first full store is explicitly a rehearsal because its recorded Git revision does not include the
-then-uncommitted runner. No promotion, certification, holdout, or deployment action was taken.
+corporate-action responses. The final source-bound v2 store contains 50 research models and exact
+trial evidence at revision `5a7185a`. Earlier rehearsal/canary/partial stores remain preserved and
+are not the reported final store. No promotion, final-holdout, shadow/paper/live, or broker action
+was taken.
 
 ## Next safe action
 
-Stage and commit only the claimed runner/support/test/decision/work-record files. Then use the now
-source-bound revision to rerun ordinals 1..50 from verified cache into the new source-bound store,
-reconcile it, audit claims/layout, retire this record, commit the final record, and push.
+Use the source-bound v2 EvidenceStore and machine summary for research review. Any future historical
+index claim requires point-in-time constituent membership and authoritative pre-2020 cost inputs;
+do not promote or deploy these static-current-member, research-proxy results.
