@@ -377,6 +377,52 @@ single-instrument). That is a modelling-contract change, not a feature change.
 
 Record: `agent_context/work/completed/20260824-claude-alternative-feature-screens.md`.
 
+### Cross-sectional screen — the first positive point estimate, and it is not a result
+
+The one frame never varied across 101 governed trials and three screens: model each name alone,
+long-or-flat on its own score. A cross-sectional design ranks names against each other on the same
+date, cancelling the market factor. Screened, pre-declared, both holds reported. **Not governed
+evidence** — no store written, no ordinal spent.
+
+| Hold | Construction | Mean net | t | Sharpe | Rebalances |
+|---:|---|---:|---:|---:|---:|
+| 2 | long top 10 | -0.000868 | -1.09 | -0.70 | 307 |
+| 2 | long-short (diagnostic) | -0.003505 | **-5.68** | -3.64 | 307 |
+| 21 | **long top 10** | **+0.009365** | **+1.18** | **+0.76** | **29** |
+| 21 | long-short (diagnostic) | +0.007606 | +1.04 | +0.67 | 29 |
+
+At a monthly horizon this is the first positive point estimate in the whole line of work. It is
+**not** a result, for three reasons stated together so it cannot be quoted as one:
+
+- **Not significant.** t = 1.18 on 29 rebalances. Reaching t = 2.0 at the same effect size needs
+  about 83 — roughly **4.5 more years** of non-overlapping periods than the ten-year cache holds. No
+  re-slicing of this data creates the missing years.
+- **The strongest number in the grid says it loses.** Hold-2 long-short is t = **-5.68**, five times
+  more significant than the hold-21 positive. Reading the +0.76 while ignoring that is cherry-picking
+  by horizon.
+- **The sign flips with horizon**, which is the signature of noise rather than a stable effect.
+
+**The asymmetry being refused:** the prior record stopped after three negative screens and argued
+stopping was disciplined. That argument does not expire because a result finally came out positive.
+Stopping on negatives and continuing on a positive is precisely how false positives are manufactured
+— the same mechanism as "iterate until satisfied" in a better hat.
+
+This does **not** justify building a multi-instrument governed dataset contract
+(`modeling/labels.py:135` binds each feature row to one acquisition manifest, so the change reaches
+the dataset, label, fold and evidence-identity paths). The case for that work would rest on a t
+of 1.18.
+
+What it does change is the ranking of untried directions: every single-name variation is flatly
+negative, while the cross-sectional frame at a monthly horizon is merely **inconclusive**. If another
+attempt is wanted, this is the direction with the least bad evidence — and the correct next step is
+**more independent data**, a different universe or market or a genuine out-of-sample period, not more
+looks at these ten years.
+
+Search accounting: six pre-declared configurations have now been screened against this cached data
+outside the governed store. All recorded so a future campaign can price the search that preceded it.
+
+Record: `agent_context/work/completed/20260824-claude-cross-sectional-screen.md`.
+
 ### The second calculation path is closed (`85ff535`)
 
 `strategies/ml_equity.py` defines `RollingRidgeClassifier` — a ridge with no purging, no
