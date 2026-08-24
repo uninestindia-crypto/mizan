@@ -61,6 +61,24 @@ distribution being tested.
 This is a stronger statement than either original notice made, and stronger than any single list.
 It also means no list of firing `p` values should be treated as canonical — including mine.
 
+**The counts in the table above are not exempt from that.** They are illustrations of variation,
+not measurements to cite. `quant-system-61` reimplemented this experiment independently and got
+different figures for every row except mathematical equality — including a bit-identical count of
+8/99 where mine was 39/99, a fivefold disagreement produced by nothing but summation order inside
+the moment calculation. Their number was withdrawn for that reason, and mine would not survive the
+same test either.
+
+Cite only what has survived independent reimplementation by two authors:
+
+- moments mathematically equal in **99 of 99** cases;
+- the firing sets differ substantially between constructions;
+- the proportion sits near **one third**;
+- **the mechanism**: rejection was decided by float residue in the arithmetic path, not by any
+  property of the distribution under test.
+
+Nothing finer than that is stable, and a reader who reruns any specific count and gets a different
+answer should conclude the record was over-specified rather than that the finding is wrong.
+
 ## 2. The Blocker is repaired
 
 `ac47d7c fix(modeling): repair DSR two-point boundary` landed after both notices were filed. It
