@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from fastapi import FastAPI, Header, HTTPException, Request, Response
+from fastapi import FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -45,6 +45,13 @@ from quant_system.data.provenance import (
 from quant_system.portfolio.optimization import PortfolioOptimizer
 from quant_system.risk.checks import RiskLimits
 from quant_system.risk.governor import PreTradeRiskGovernor
+from quant_system.server.dataset_schemas import DatasetCreateRequest, DatasetPageResponse
+from quant_system.server.governed_journeys import (
+    JourneyApiError,
+    dataset_page,
+    require_idempotency_key,
+    runtime_evidence_config,
+)
 from quant_system.server.schemas import (
     BacktestRunRequest,
     BacktestRunResponse,
@@ -54,17 +61,14 @@ from quant_system.server.schemas import (
     DataIngestResponse,
     DiagnosticsReport,
     ErrorEnvelope,
-    FeatureDefinitionDTO,
     FeatureExploreRequest,
     FeatureMatrixResponse,
-    FeatureRowDTO,
     FillDTO,
     FrontierPointDTO,
     GovernedRidgeTrainRequest,
     GovernedRidgeTrainResponse,
     HoldoutEvaluateRequest,
     HoldoutEvaluateResponse,
-    HoldoutGateDTO,
     JourneyListResponse,
     JourneyMetaDTO,
     ManifestItemDTO,
@@ -78,25 +82,18 @@ from quant_system.server.schemas import (
     OptionGreeksDTO,
     OptionStraddleRequest,
     OptionStraddleResponse,
-    PaperOrderDTO,
     PaperOrderSubmitRequest,
     PaperOrderSubmitResponse,
     PaperPilotCampaignResponse,
-    PaperPositionDTO,
     PortfolioOptimizeRequest,
     PortfolioOptimizeResponse,
     QuantStatsDTO,
-    RidgeBaselineDTO,
-    RidgeCoefficientDTO,
     RiskLimitsDTO,
     ShadowControlRequest,
     ShadowControlResponse,
-    ShadowDecisionDTO,
     ShadowMonitorStatusResponse,
-    ShadowQuoteDTO,
     SnapshotDTO,
     StrategyInfo,
-    StressScenarioDTO,
     TrainingRunRequest,
     VersionInfo,
 )
@@ -107,6 +104,7 @@ from quant_system.server.security import (
 )
 from quant_system.server.supervisor import (
     ConcurrentLimitError,
+    IdempotencyConflictError,
     OperationNotFoundError,
     supervisor,
 )
@@ -137,7 +135,9 @@ app = FastAPI(
         403: {"model": ErrorEnvelope},
         404: {"model": ErrorEnvelope},
         409: {"model": ErrorEnvelope},
+        410: {"model": ErrorEnvelope},
         422: {"model": ErrorEnvelope},
+        503: {"model": ErrorEnvelope},
         500: {"model": ErrorEnvelope},
     },
 )
@@ -188,12 +188,20 @@ async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
     request_id = getattr(request.state, "request_id", None)
+    safe_errors = [
+        {
+            "type": str(error.get("type", "validation_error")),
+            "location": [str(part) for part in error.get("loc", ())],
+            "message": str(error.get("msg", "Invalid value.")),
+        }
+        for error in exc.errors()[:20]
+    ]
     return JSONResponse(
         status_code=422,
         content=format_error_response(
             code="VALIDATION_ERROR",
             message="Request validation failed against schema.",
-            details={"errors": exc.errors()},
+            details={"errors": safe_errors},
             request_id=request_id,
         ),
     )
@@ -222,6 +230,39 @@ async def operation_not_found_handler(
         content=format_error_response(
             code="OPERATION_NOT_FOUND",
             message=str(exc),
+            request_id=request_id,
+        ),
+    )
+
+
+@app.exception_handler(IdempotencyConflictError)
+async def idempotency_conflict_handler(
+    request: Request, exc: IdempotencyConflictError
+) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", None)
+    return JSONResponse(
+        status_code=422,
+        content=format_error_response(
+            code="IDEMPOTENCY_KEY_REUSED",
+            message=str(exc).removeprefix("IDEMPOTENCY_KEY_REUSED: "),
+            request_id=request_id,
+        ),
+    )
+
+
+@app.exception_handler(JourneyApiError)
+async def journey_api_error_handler(request: Request, exc: JourneyApiError) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", None)
+    headers = dict(exc.headers)
+    if exc.retry_after_seconds is not None:
+        headers["Retry-After"] = str(exc.retry_after_seconds)
+    return JSONResponse(
+        status_code=exc.status_code,
+        headers=headers,
+        content=format_error_response(
+            code=exc.code,
+            message=str(exc),
+            details=exc.details,
             request_id=request_id,
         ),
     )
@@ -264,6 +305,61 @@ def get_csrf_token() -> CSRFTokenResponse:
 # =====================================================================
 # Versioned Asynchronous Operations API (/api/v1/operations)
 # =====================================================================
+
+
+@app.get("/api/v1/datasets", response_model=DatasetPageResponse)
+def list_verified_datasets(
+    request: Request,
+    limit: int = Query(default=25, ge=1, le=100),
+    cursor: str | None = Query(default=None, min_length=1, max_length=256),
+) -> DatasetPageResponse:
+    """Return verified point-in-time acquisition manifests, never sample rows."""
+    query_names = [name for name, _value in request.query_params.multi_items()]
+    if any(query_names.count(name) > 1 for name in {"limit", "cursor"}):
+        raise JourneyApiError(
+            "INVALID_QUERY_PARAMETER",
+            "Dataset query parameters may be supplied only once.",
+            status_code=422,
+        )
+    if set(query_names) - {"limit", "cursor"}:
+        raise JourneyApiError(
+            "UNSUPPORTED_QUERY_PARAMETER",
+            "The dataset catalog accepts only limit and cursor query parameters.",
+            status_code=422,
+        )
+    return dataset_page(limit=limit, cursor=cursor)
+
+
+@app.post(
+    "/api/v1/datasets",
+    response_model=OperationCreateResponse,
+    status_code=202,
+)
+def create_dataset_operation(
+    req: DatasetCreateRequest,
+    response: Response,
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
+) -> OperationCreateResponse:
+    """Dispatch one real Upstox V3 acquisition to a supervised worker."""
+    mutation_key = require_idempotency_key(idempotency_key)
+    config = runtime_evidence_config()
+    payload = req.model_dump(mode="json")
+    payload["_evidence_root"] = str(config.root)
+    operation = supervisor.submit_operation(
+        op_type=OperationType.DATA_SYNC,
+        payload=payload,
+        idempotency_key=mutation_key,
+    )
+    location = f"/api/v1/operations/{operation.operation_id}"
+    response.headers["Location"] = location
+    return OperationCreateResponse(
+        operation_id=operation.operation_id,
+        type=operation.operation_type,
+        status=operation.status,
+        location=location,
+        message="Dataset acquisition accepted; poll the operation resource for its exact outcome.",
+        created_at=operation.created_at.isoformat(),
+    )
 
 
 @app.post(
@@ -617,6 +713,7 @@ def run_diagnostics() -> DiagnosticsReport:
         market_data_credentials_configured=market_data_credentials_configured(),
         version=__version__,
         python_version=platform.python_version(),
+        # sec-allow: command-injection — formats trusted platform metadata; executes no command.
         platform=f"{platform.system()} {platform.release()}",
         memory_usage_mb=mem_mb,
         ledger_integrity_verified=ledger_ok,
@@ -873,171 +970,51 @@ def get_journeys() -> JourneyListResponse:
 # Journey 1: Data Ingestion & Manifest Inspection
 @app.get("/api/data/manifests", response_model=ManifestListResponse)
 def list_manifests() -> ManifestListResponse:
-    """Returns verified dataset manifests with SHA-256 digests and provenance."""
-    sample_manifests = [
+    """Compatibility view over verified dataset evidence."""
+    page = dataset_page(limit=100, cursor=None)
+    manifests = [
         ManifestItemDTO(
-            manifest_id="man_infy_2020_2025",
-            symbol="INFY",
-            start_date="2020-01-01",
-            end_date="2025-01-01",
-            bar_count=1240,
-            checksum_sha256="8f4b23c91d8a4e32a67b12e89f0a21d4",
-            provenance="SYNTHETIC",
-            status="VERIFIED",
+            manifest_id=item.dataset_id,
+            symbol=item.symbol,
+            start_date=item.received_start.isoformat(),
+            end_date=item.received_end.isoformat(),
+            bar_count=item.row_count,
+            checksum_sha256=item.canonical_content_hash,
+            provenance=item.provenance,
+            status=item.status,
             zero_lookahead_verified=True,
-            created_at="2026-08-22 00:00:00 UTC",
-        ),
-        ManifestItemDTO(
-            manifest_id="man_tcs_2020_2025",
-            symbol="TCS",
-            start_date="2020-01-01",
-            end_date="2025-01-01",
-            bar_count=1240,
-            checksum_sha256="3d7a8e1b4c902f61e49a88b13c2f4a10",
-            provenance="SYNTHETIC",
-            status="VERIFIED",
-            zero_lookahead_verified=True,
-            created_at="2026-08-22 00:00:00 UTC",
-        ),
-        ManifestItemDTO(
-            manifest_id="man_rel_2020_2025",
-            symbol="RELIANCE",
-            start_date="2020-01-01",
-            end_date="2025-01-01",
-            bar_count=1240,
-            checksum_sha256="5b9c02e11d784a91c834a991f28b03e4",
-            provenance="SYNTHETIC",
-            status="VERIFIED",
-            zero_lookahead_verified=True,
-            created_at="2026-08-22 00:00:00 UTC",
-        ),
+            created_at=item.created_at.isoformat(),
+        )
+        for item in page.items
     ]
-    return ManifestListResponse(manifests=sample_manifests, total_count=len(sample_manifests))
+    return ManifestListResponse(manifests=manifests, total_count=len(manifests))
 
 
 @app.post("/api/data/ingest", response_model=DataIngestResponse)
 def ingest_data(req: DataIngestRequest) -> DataIngestResponse:
-    """Acquires historical bar series and registers an immutable SHA-256 manifest."""
-    manifest_id = f"man_{req.symbol.lower()}_{req.start_date[:4]}_{req.end_date[:4]}"
-    manifest = ManifestItemDTO(
-        manifest_id=manifest_id,
-        symbol=req.symbol,
-        start_date=req.start_date,
-        end_date=req.end_date,
-        bar_count=1240,
-        checksum_sha256="a1b2c3d4e5f60718293a4b5c6d7e8f90",
-        provenance=req.source,
-        status="VERIFIED",
-        zero_lookahead_verified=True,
-        created_at=datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC"),
-    )
-    return DataIngestResponse(
-        manifest=manifest,
-        message=f"Acquired and verified dataset manifest for {req.symbol} ({req.start_date} to {req.end_date}).",
-        success=True,
+    """Reject the unsafe legacy request, which lacks provider identity and idempotency."""
+    raise JourneyApiError(
+        "LEGACY_ENDPOINT_RETIRED",
+        "Use POST /api/v1/datasets with an NSE instrument key and Idempotency-Key.",
+        status_code=410,
+        details={"replacement": "/api/v1/datasets"},
+        headers={
+            "Deprecation": "true",
+            "Sunset": "Mon, 24 Aug 2026 00:00:00 GMT",
+            "Link": '</api/v1/datasets>; rel="successor-version"',
+        },
     )
 
 
 # Journey 2: Feature Matrix & Label Explorer
 @app.post("/api/features/explore", response_model=FeatureMatrixResponse)
 def explore_features(req: FeatureExploreRequest) -> FeatureMatrixResponse:
-    """Computes governed 6-feature schema and decision-time aligned net-cost labels."""
-    features_meta = [
-        FeatureDefinitionDTO(
-            name="ret_10d",
-            formula="log(C_t / C_{t-10})",
-            category="MOMENTUM",
-            lookback_bars=10,
-        ),
-        FeatureDefinitionDTO(
-            name="vol_20d",
-            formula="std(ret_1d, 20) * sqrt(252)",
-            category="VOLATILITY",
-            lookback_bars=20,
-        ),
-        FeatureDefinitionDTO(
-            name="sma_dist_20d",
-            formula="(C_t - SMA(20)) / SMA(20)",
-            category="TREND",
-            lookback_bars=20,
-        ),
-        FeatureDefinitionDTO(
-            name="volume_ratio_5d",
-            formula="V_t / SMA(V, 5)",
-            category="LIQUIDITY",
-            lookback_bars=5,
-        ),
-        FeatureDefinitionDTO(
-            name="spread_bps",
-            formula="(Ask - Bid) / Mid",
-            category="FRICTION",
-            lookback_bars=1,
-        ),
-        FeatureDefinitionDTO(
-            name="rsi_14d",
-            formula="100 - (100 / (1 + RS))",
-            category="OSCILLATOR",
-            lookback_bars=14,
-        ),
-    ]
-
-    sample_rows = [
-        FeatureRowDTO(
-            timestamp="2024-12-10 15:30",
-            symbol=req.symbol,
-            features={
-                "ret_10d": 0.0245,
-                "vol_20d": 0.0142,
-                "sma_dist_20d": 0.0180,
-                "volume_ratio_5d": 1.15,
-                "spread_bps": 0.0004,
-                "rsi_14d": 58.4,
-            },
-            label_net_return=0.0182,
-            label_matured=True,
-            embargoed=False,
-        ),
-        FeatureRowDTO(
-            timestamp="2024-12-11 15:30",
-            symbol=req.symbol,
-            features={
-                "ret_10d": 0.0190,
-                "vol_20d": 0.0138,
-                "sma_dist_20d": 0.0120,
-                "volume_ratio_5d": 0.98,
-                "spread_bps": 0.0005,
-                "rsi_14d": 54.1,
-            },
-            label_net_return=-0.0064,
-            label_matured=True,
-            embargoed=False,
-        ),
-        FeatureRowDTO(
-            timestamp="2024-12-12 15:30",
-            symbol=req.symbol,
-            features={
-                "ret_10d": 0.0080,
-                "vol_20d": 0.0140,
-                "sma_dist_20d": 0.0045,
-                "volume_ratio_5d": 1.05,
-                "spread_bps": 0.0004,
-                "rsi_14d": 51.2,
-            },
-            label_net_return=None,
-            label_matured=False,
-            embargoed=True,
-        ),
-    ]
-
-    return FeatureMatrixResponse(
-        data_source=str(RuntimeDataSource.SYNTHETIC),
-        data_source_disclosure=describe(RuntimeDataSource.SYNTHETIC),
-        symbol=req.symbol,
-        features_meta=features_meta,
-        rows=sample_rows,
-        total_rows=1215,
-        purged_overlap_count=4,
-        embargo_bars=1,
+    """Never present feature rows until governed feature evidence exists."""
+    runtime_evidence_config()
+    raise JourneyApiError(
+        "FEATURE_EVIDENCE_NOT_AVAILABLE",
+        "No verified governed feature matrix is available for this request.",
+        status_code=404,
     )
 
 
@@ -1045,328 +1022,69 @@ def explore_features(req: FeatureExploreRequest) -> FeatureMatrixResponse:
 @app.post("/api/training/governed-ridge", response_model=GovernedRidgeTrainResponse)
 def train_governed_ridge(req: GovernedRidgeTrainRequest) -> GovernedRidgeTrainResponse:
     """Fits governed ridge model on walk-forward fold with train-side standardization and multiplicity tracking."""
-    candidate_stats = RidgeBaselineDTO(
-        name="Candidate Ridge (λ=1.0)",
-        annualized_return=0.185,
-        sharpe_ratio=1.84,
-        sortino_ratio=2.41,
-        max_drawdown_pct=0.064,
-        accuracy_pct=0.562,
-        profit_factor=1.68,
+    runtime_evidence_config()
+    raise JourneyApiError(
+        "MODEL_TRAINING_NOT_AVAILABLE",
+        "No governed training adapter is available for this candidate yet.",
+        status_code=409,
     )
-
-    baselines = [
-        RidgeBaselineDTO(
-            name="BUY_AND_HOLD",
-            annualized_return=0.121,
-            sharpe_ratio=1.05,
-            sortino_ratio=1.32,
-            max_drawdown_pct=0.142,
-            accuracy_pct=0.510,
-            profit_factor=1.15,
-        ),
-        RidgeBaselineDTO(
-            name="EQUITY_DUAL_MOMENTUM",
-            annualized_return=0.152,
-            sharpe_ratio=1.45,
-            sortino_ratio=1.85,
-            max_drawdown_pct=0.098,
-            accuracy_pct=0.538,
-            profit_factor=1.38,
-        ),
-        RidgeBaselineDTO(
-            name="PREVIOUS_SIGN",
-            annualized_return=0.042,
-            sharpe_ratio=0.38,
-            sortino_ratio=0.45,
-            max_drawdown_pct=0.180,
-            accuracy_pct=0.495,
-            profit_factor=1.02,
-        ),
-        RidgeBaselineDTO(
-            name="NO_TRADE",
-            annualized_return=0.0,
-            sharpe_ratio=0.0,
-            sortino_ratio=0.0,
-            max_drawdown_pct=0.0,
-            accuracy_pct=0.0,
-            profit_factor=0.0,
-        ),
-    ]
-
-    coeffs = [
-        RidgeCoefficientDTO(
-            feature_name="ret_10d",
-            coefficient=0.2841,
-            interpretation="Positive Momentum Alignment",
-        ),
-        RidgeCoefficientDTO(
-            feature_name="sma_dist_20d",
-            coefficient=0.1950,
-            interpretation="Trend Direction Alignment",
-        ),
-        RidgeCoefficientDTO(
-            feature_name="volume_ratio_5d",
-            coefficient=0.0823,
-            interpretation="Volume Confirmation",
-        ),
-        RidgeCoefficientDTO(
-            feature_name="rsi_14d",
-            coefficient=-0.0512,
-            interpretation="Mean Reversion Dampener",
-        ),
-        RidgeCoefficientDTO(
-            feature_name="spread_bps",
-            coefficient=-0.1240,
-            interpretation="Liquidity Friction Penalty",
-        ),
-        RidgeCoefficientDTO(
-            feature_name="vol_20d",
-            coefficient=-0.1534,
-            interpretation="Volatility Drag Penalty",
-        ),
-    ]
-
-    return GovernedRidgeTrainResponse(
-        data_source=str(RuntimeDataSource.SYNTHETIC),
-        data_source_disclosure=describe(RuntimeDataSource.SYNTHETIC),
-        trial_id="trial_ridge_004",
-        multiplicity_ordinal=4,
-        total_attempts=4,
-        verdict="RESEARCH_ONLY",
-        deflated_sharpe=0.962,
-        candidate_metrics=candidate_stats,
-        baselines=baselines,
-        coefficients=coeffs,
-        evidence_hash="sha256:7f4c91a0b3e512498e6c88f91048bca1",
-    )
-
 
 # Journey 4: Single-use Holdout & Stress Testing
 @app.post("/api/holdout/evaluate", response_model=HoldoutEvaluateResponse)
 def evaluate_holdout(req: HoldoutEvaluateRequest) -> HoldoutEvaluateResponse:
     """Evaluates the single-use holdout gate and stress testing suite."""
-    if not req.confirm_single_use:
-        raise HTTPException(
-            status_code=400,
-            detail="Holdout evaluation requires explicit single-use confirmation.",
-        )
-
-    gates = [
-        HoldoutGateDTO(
-            gate_name="Annualized Sharpe",
-            required_threshold="≥ 1.20",
-            observed_value="1.76",
-            status="PASS",
-        ),
-        HoldoutGateDTO(
-            gate_name="Deflated Sharpe (DSR)",
-            required_threshold="≥ 0.95",
-            observed_value="0.962",
-            status="PASS",
-        ),
-        HoldoutGateDTO(
-            gate_name="Max Holdout Drawdown",
-            required_threshold="≤ 12.0%",
-            observed_value="7.1%",
-            status="PASS",
-        ),
-        HoldoutGateDTO(
-            gate_name="Profit Factor",
-            required_threshold="≥ 1.25",
-            observed_value="1.58",
-            status="PASS",
-        ),
-    ]
-
-    stress = [
-        StressScenarioDTO(
-            scenario_name="Flash Volatility Spike",
-            shock_description="IV +50%, Gap -3.5%",
-            simulated_drawdown_pct=0.042,
-            recovery_days=8,
-            survival_status="SURVIVED",
-        ),
-        StressScenarioDTO(
-            scenario_name="Liquidity / Spread Squeeze",
-            shock_description="Spread × 3.0, Depth -60%",
-            simulated_drawdown_pct=0.028,
-            recovery_days=4,
-            survival_status="SURVIVED",
-        ),
-        StressScenarioDTO(
-            scenario_name="Correlated Gap Down",
-            shock_description="Index -5.0% Open Gap",
-            simulated_drawdown_pct=0.051,
-            recovery_days=12,
-            survival_status="SURVIVED",
-        ),
-    ]
-
-    model_card = f"""# QuantOS Governed Model Card — {req.candidate_id}
-- Architecture: Governed 6-Feature Ridge Regression
-- Validation Verdict: RESEARCH_CERTIFIED
-- Multiplicity Count: 4 Trials (DSR: 0.962)
-- Single-use Holdout Lock: EXECUTED (Status: UNLOCKED_ONCE)
-- Invariant: Zero Float Accounting & Point-in-Time Verification Guaranteed.
-"""
-
-    return HoldoutEvaluateResponse(
-        data_source=str(RuntimeDataSource.SYNTHETIC),
-        data_source_disclosure=describe(RuntimeDataSource.SYNTHETIC),
-        candidate_id=req.candidate_id,
-        holdout_lock_status="UNLOCKED_ONCE",
-        verdict="RESEARCH_CERTIFIED",
-        gates=gates,
-        stress_scenarios=stress,
-        model_card_markdown=model_card,
+    runtime_evidence_config()
+    raise JourneyApiError(
+        "HOLDOUT_EVALUATION_NOT_AVAILABLE",
+        "No governed holdout adapter is available for this candidate yet.",
+        status_code=409,
     )
-
 
 # Journey 6: Shadow Monitor
 @app.get("/api/shadow/status", response_model=ShadowMonitorStatusResponse)
 def get_shadow_status() -> ShadowMonitorStatusResponse:
     """Returns real-time and recorded replay shadow monitor stream state."""
-    quotes = [
-        ShadowQuoteDTO(
-            timestamp="09:30:15.120",
-            symbol="INFY",
-            bid=1845.20,
-            ask=1845.40,
-            ltp=1845.30,
-            volume=1200,
-            latency_ms=8.0,
-        ),
-        ShadowQuoteDTO(
-            timestamp="09:30:16.450",
-            symbol="INFY",
-            bid=1845.30,
-            ask=1845.50,
-            ltp=1845.40,
-            volume=850,
-            latency_ms=11.0,
-        ),
-    ]
-
-    decisions = [
-        ShadowDecisionDTO(
-            decision_time="09:20:00",
-            symbol="INFY",
-            signal="LONG_SIGNAL",
-            target_instrument="INFY",
-            attributed_fill_price=1842.10,
-            matured_pnl=14.20,
-        )
-    ]
-
-    return ShadowMonitorStatusResponse(
-        mode="RECORDED_REPLAY",
-        is_running=True,
-        quotes_processed=2480,
-        shadow_decisions_count=14,
-        broker_orders_submitted=0,
-        average_latency_ms=12.0,
-        stream_health="HEALTHY",
-        recent_quotes=quotes,
-        recent_decisions=decisions,
+    raise JourneyApiError(
+        "SHADOW_SESSION_NOT_CONFIGURED",
+        "No shadow session has been configured or started.",
+        status_code=404,
     )
-
 
 @app.post("/api/shadow/control", response_model=ShadowControlResponse)
-def control_shadow_monitor(req: ShadowControlRequest) -> ShadowControlResponse:
+def control_shadow_monitor(
+    req: ShadowControlRequest,
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
+) -> ShadowControlResponse:
     """Controls shadow monitor playback state."""
-    return ShadowControlResponse(
-        status="OK",
-        message=f"Shadow monitor {req.action} command applied at {req.speed_multiplier}x speed.",
+    require_idempotency_key(idempotency_key)
+    raise JourneyApiError(
+        "SHADOW_SESSION_NOT_CONFIGURED",
+        "No shadow session has been configured or started.",
+        status_code=404,
     )
-
 
 # Journey 7: Paper Pilot
 @app.get("/api/paper-pilot/campaign", response_model=PaperPilotCampaignResponse)
 def get_paper_pilot_campaign() -> PaperPilotCampaignResponse:
     """Returns active paper pilot campaign equity, positions, and order ladder."""
-    positions = [
-        PaperPositionDTO(
-            symbol="INFY",
-            quantity=300,
-            average_entry=1830.0,
-            current_ltp=1855.0,
-            unrealized_pnl=7500.0,
-            portfolio_weight_pct=21.8,
-        ),
-        PaperPositionDTO(
-            symbol="TCS",
-            quantity=150,
-            average_entry=3480.0,
-            current_ltp=3520.0,
-            unrealized_pnl=6000.0,
-            portfolio_weight_pct=20.7,
-        ),
-    ]
-
-    orders = [
-        PaperOrderDTO(
-            order_id="ord_p_10492",
-            symbol="RELIANCE",
-            side="BUY",
-            requested_qty=100,
-            filled_qty=100,
-            limit_price=2510.0,
-            fill_price=2508.50,
-            status="FILLED",
-            idempotency_token="tok_rel_94812",
-        ),
-        PaperOrderDTO(
-            order_id="ord_p_10493",
-            symbol="HDFCBANK",
-            side="BUY",
-            requested_qty=200,
-            filled_qty=0,
-            limit_price=1610.0,
-            fill_price=None,
-            status="PENDING",
-            idempotency_token="tok_hdfc_94813",
-        ),
-    ]
-
-    return PaperPilotCampaignResponse(
-        data_source=str(RuntimeDataSource.SYNTHETIC),
-        data_source_disclosure=describe(RuntimeDataSource.SYNTHETIC),
-        campaign_id="CAMP_ALPHA_2026",
-        status="ACTIVE",
-        allocated_capital=2500000.0,
-        current_equity=2548200.0,
-        unrealized_pnl=48200.0,
-        realized_pnl=12450.0,
-        drawdown_buffer_pct=2.4,
-        circuit_breaker_triggered=False,
-        active_positions=positions,
-        order_ladder=orders,
+    raise JourneyApiError(
+        "PAPER_CAMPAIGN_NOT_CONFIGURED",
+        "No paper campaign has been configured or started.",
+        status_code=404,
     )
-
 
 @app.post("/api/paper-pilot/order", response_model=PaperOrderSubmitResponse)
-def submit_paper_order(req: PaperOrderSubmitRequest) -> PaperOrderSubmitResponse:
+def submit_paper_order(
+    req: PaperOrderSubmitRequest,
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
+) -> PaperOrderSubmitResponse:
     """Submits a simulated quote-driven paper order with idempotency token validation."""
-    order_id = f"ord_p_{int(datetime.now(UTC).timestamp()) % 100000}"
-    order = PaperOrderDTO(
-        order_id=order_id,
-        symbol=req.symbol,
-        side=req.side,
-        requested_qty=req.quantity,
-        filled_qty=req.quantity,
-        limit_price=req.limit_price,
-        fill_price=req.limit_price,
-        status="FILLED",
-        idempotency_token=f"tok_{order_id}",
+    require_idempotency_key(idempotency_key)
+    raise JourneyApiError(
+        "PAPER_CAMPAIGN_NOT_CONFIGURED",
+        "No paper campaign has been configured or started.",
+        status_code=404,
     )
-    return PaperOrderSubmitResponse(
-        data_source=str(RuntimeDataSource.SYNTHETIC),
-        data_source_disclosure=describe(RuntimeDataSource.SYNTHETIC),
-        order=order,
-        message=f"Paper order {order_id} simulated and filled on best bid/ask.",
-    )
-
 
 # =====================================================================
 # UI Views & Static Asset Delivery

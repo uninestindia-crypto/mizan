@@ -11,6 +11,8 @@ Provides:
 
 from __future__ import annotations
 
+import hashlib
+import json
 import multiprocessing as mp
 import os
 import threading
@@ -19,6 +21,8 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from enum import Enum
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -32,6 +36,7 @@ from quant_system.data.provenance import RuntimeDataSource, describe
 from quant_system.portfolio.optimization import PortfolioOptimizer
 from quant_system.risk.checks import RiskLimits
 from quant_system.risk.governor import PreTradeRiskGovernor
+from quant_system.server.data_sync import DataSyncTaskError, run_data_sync_task
 from quant_system.server.schemas import (
     FillDTO,
     FrontierPointDTO,
@@ -51,6 +56,10 @@ class OperationNotFoundError(Exception):
     """Raised when an operation ID is not found."""
 
 
+class IdempotencyConflictError(ValueError):
+    """Raised when one idempotency key is reused for a different intent."""
+
+
 class WorkerCrashError(Exception):
     """Raised when a worker process crashes unexpectedly."""
 
@@ -60,6 +69,7 @@ class OperationRecord:
     operation_id: str
     operation_type: OperationType
     idempotency_key: str | None = None
+    request_fingerprint: str | None = None
     status: OperationStatus = OperationStatus.PENDING
     progress: float = 0.0
     stage: str = "INITIALIZING"
@@ -518,6 +528,8 @@ def _worker_process_entrypoint(
             res = _run_portfolio_optimize_task(payload, cancel_event, queue)
         elif op_type_val == OperationType.TRAINING.value:
             res = _run_training_task(payload, cancel_event, queue)
+        elif op_type_val == OperationType.DATA_SYNC.value:
+            res = run_data_sync_task(payload, cancel_event, queue)
         elif op_type_val == OperationType.CUSTOM.value:
             res = _run_custom_task(payload, cancel_event, queue)
         else:
@@ -534,6 +546,16 @@ def _worker_process_entrypoint(
         queue.put(
             {
                 "type": "CANCELLED",
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+        )
+    except DataSyncTaskError as exc:
+        queue.put(
+            {
+                "type": "ERROR",
+                "error_code": exc.failure.code,
+                "error_message": str(exc),
+                "details": exc.failure.details,
                 "timestamp": datetime.now(UTC).isoformat(),
             }
         )
@@ -554,6 +576,31 @@ def _worker_process_entrypoint(
 # =====================================================================
 # Worker Supervisor Class
 # =====================================================================
+
+
+def _request_fingerprint(op_type: OperationType, payload: dict[str, Any]) -> str:
+    """Bind one idempotency key to one canonical operation intent."""
+    canonical = json.dumps(
+        {"operation_type": op_type.value, "payload": payload},
+        allow_nan=False,
+        default=_json_value,
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode()
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def _json_value(value: object) -> str:
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, Enum):
+        return str(value.value)
+    if isinstance(value, Path):
+        return str(value)
+    raise TypeError(f"operation payload contains unsupported value type {type(value).__name__}")
 
 
 class WorkerSupervisor:
@@ -589,13 +636,20 @@ class WorkerSupervisor:
 
         Enforces single-operation compute lease (AC-77) and idempotency key deduplication.
         """
+        fingerprint = _request_fingerprint(op_type, payload)
         with self._lock:
             # 1. Check Idempotency Key
             if idempotency_key:
                 existing_op_id = self._idempotency_map.get(idempotency_key)
                 if existing_op_id and existing_op_id in self._operations:
                     self._drain_active_queue_locked()
-                    return self._operations[existing_op_id]
+                    existing = self._operations[existing_op_id]
+                    if existing.request_fingerprint != fingerprint:
+                        raise IdempotencyConflictError(
+                            "IDEMPOTENCY_KEY_REUSED: the key already identifies a different "
+                            "operation type or request payload"
+                        )
+                    return existing
 
             # 2. Enforce Single-Operation Compute Lease (AC-77)
             self._drain_active_queue_locked()
@@ -617,6 +671,7 @@ class WorkerSupervisor:
                 operation_id=op_id,
                 operation_type=op_type,
                 idempotency_key=idempotency_key,
+                request_fingerprint=fingerprint,
                 status=OperationStatus.PENDING,
                 progress=0.0,
                 stage="INITIALIZING",
@@ -631,9 +686,11 @@ class WorkerSupervisor:
             queue = ctx.Queue()
             cancel_event = ctx.Event()
 
+            worker_payload = dict(payload)
+            worker_payload["_operation_id"] = op_id
             proc = ctx.Process(
                 target=_worker_process_entrypoint,
-                args=(op_type.value, payload, queue, cancel_event),
+                args=(op_type.value, worker_payload, queue, cancel_event),
                 daemon=True,
             )
             proc.start()

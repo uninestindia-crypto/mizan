@@ -12,7 +12,7 @@ def render_ingestion_component() -> str:
           <h1 class="journey-title">Data Ingestion & Manifest Inspection</h1>
           <p class="journey-subtitle">Point-in-time NSE equity data acquisition, SHA-256 manifest inspection, and data quality provenance.</p>
         </div>
-        <span class="badge badge-source" id="ingestion-source-badge">UPSTOX_V3 / SYNTHETIC</span>
+        <span class="badge badge-source" id="ingestion-source-badge">Upstox V3 read-only</span>
       </div>
 
       <div class="grid-2col">
@@ -27,11 +27,11 @@ def render_ingestion_component() -> str:
                 <div class="form-group">
                   <label class="form-label" for="ingest-symbol">NSE Equity Symbol</label>
                   <select id="ingest-symbol" class="form-select" aria-describedby="ingest-symbol-hint">
-                    <option value="INFY" selected>INFY (Infosys Ltd)</option>
-                    <option value="TCS">TCS (Tata Consultancy Services)</option>
-                    <option value="RELIANCE">RELIANCE (Reliance Industries)</option>
-                    <option value="HDFCBANK">HDFCBANK (HDFC Bank Ltd)</option>
-                    <option value="ICICIBANK">ICICIBANK (ICICI Bank Ltd)</option>
+                    <option value="NSE_EQ|INE009A01021" data-symbol="INFY" selected>INFY (Infosys Ltd)</option>
+                    <option value="NSE_EQ|INE467B01029" data-symbol="TCS">TCS (Tata Consultancy Services)</option>
+                    <option value="NSE_EQ|INE002A01018" data-symbol="RELIANCE">RELIANCE (Reliance Industries)</option>
+                    <option value="NSE_EQ|INE040A01034" data-symbol="HDFCBANK">HDFCBANK (HDFC Bank Ltd)</option>
+                    <option value="NSE_EQ|INE090A01021" data-symbol="ICICIBANK">ICICIBANK (ICICI Bank Ltd)</option>
                   </select>
                   <span id="ingest-symbol-hint" class="form-hint">Governed NSE Cash Market Universe</span>
                 </div>
@@ -47,12 +47,11 @@ def render_ingestion_component() -> str:
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label" for="ingest-source-select">Data Source Mode</label>
-                  <select id="ingest-source-select" class="form-select">
-                    <option value="SYNTHETIC" selected>Synthetic Deterministic Generator</option>
-                    <option value="HISTORICAL_RECORDED">Historical Recorded Data Store</option>
-                    <option value="UPSTOX_V3">Upstox V3 API (Read-Only Token)</option>
+                  <label class="form-label" for="ingest-source-select">Data provider</label>
+                  <select id="ingest-source-select" class="form-select" disabled aria-describedby="ingest-source-hint">
+                    <option value="UPSTOX_V3" selected>Upstox V3 API (read-only token)</option>
                   </select>
+                  <span id="ingest-source-hint" class="form-hint">Configure the provider token and evidence root on the server.</span>
                 </div>
 
                 <button type="button" id="btn-ingest-data" class="btn-primary" aria-label="Acquire Data & Generate Manifest">
@@ -61,7 +60,7 @@ def render_ingestion_component() -> str:
                     <polyline points="7 10 12 15 17 10"></polyline>
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                   </svg>
-                  <span>Acquire & Verify Manifest</span>
+                  <span>Acquire dataset</span>
                 </button>
               </fieldset>
             </form>
@@ -70,21 +69,21 @@ def render_ingestion_component() -> str:
           <div class="card">
             <h2 class="card-title">Quality Invariant Gates</h2>
             <ul class="checklist" id="ingestion-quality-checklist" aria-label="Ingestion Quality Gates">
-              <li class="check-item verified" id="chk-zero-lookahead">
-                <span class="check-icon" aria-hidden="true">✓</span>
-                <span>Zero Lookahead Timestamp Alignment</span>
+              <li class="check-item" id="chk-zero-lookahead">
+                <span class="check-icon" aria-hidden="true">—</span>
+                <span>Timestamp alignment checked after acquisition</span>
               </li>
-              <li class="check-item verified" id="chk-monotonic">
-                <span class="check-icon" aria-hidden="true">✓</span>
-                <span>Strict Calendar Monotonicity</span>
+              <li class="check-item" id="chk-monotonic">
+                <span class="check-icon" aria-hidden="true">—</span>
+                <span>Calendar monotonicity checked after acquisition</span>
               </li>
-              <li class="check-item verified" id="chk-ohlc-sanity">
-                <span class="check-icon" aria-hidden="true">✓</span>
-                <span>OHLC Price Sanity (H ≥ L, O/C in bounds)</span>
+              <li class="check-item" id="chk-ohlc-sanity">
+                <span class="check-icon" aria-hidden="true">—</span>
+                <span>OHLC price sanity checked after acquisition</span>
               </li>
-              <li class="check-item verified" id="chk-checksum-match">
-                <span class="check-icon" aria-hidden="true">✓</span>
-                <span>SHA-256 Immutability Hash Verified</span>
+              <li class="check-item" id="chk-checksum-match">
+                <span class="check-icon" aria-hidden="true">—</span>
+                <span>SHA-256 integrity checked on verified readback</span>
               </li>
             </ul>
           </div>
@@ -95,20 +94,20 @@ def render_ingestion_component() -> str:
           <!-- Metrics Overview -->
           <div class="metrics-grid" role="region" aria-label="Ingestion Overview Metrics">
             <div class="stat-box">
-              <div class="stat-label">Manifest Status</div>
-              <div class="stat-value positive" id="stat-manifest-status">VERIFIED</div>
+              <div class="stat-label">Catalog state</div>
+              <div class="stat-value" id="stat-manifest-status">Not loaded</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Total Verified Bars</div>
-              <div class="stat-value" id="stat-manifest-bars">1,240</div>
+              <div class="stat-value" id="stat-manifest-bars">—</div>
             </div>
             <div class="stat-box">
-              <div class="stat-label">Calendar Coverage</div>
-              <div class="stat-value" id="stat-manifest-coverage">100.0%</div>
+              <div class="stat-label">Verified datasets</div>
+              <div class="stat-value" id="stat-manifest-coverage">—</div>
             </div>
             <div class="stat-box">
-              <div class="stat-label">Anomalies Detected</div>
-              <div class="stat-value" id="stat-manifest-anomalies">0</div>
+              <div class="stat-label">Latest provenance</div>
+              <div class="stat-value" id="stat-manifest-anomalies">—</div>
             </div>
           </div>
 
@@ -135,22 +134,7 @@ def render_ingestion_component() -> str:
                 </thead>
                 <tbody id="manifests-tbody">
                   <tr>
-                    <td><code>man_infy_2020_2025</code></td>
-                    <td><strong>INFY</strong></td>
-                    <td>2020-01-01 → 2025-01-01</td>
-                    <td>1,240</td>
-                    <td><code class="hash-pill" title="8f4b23c91d8a4e32">8f4b23...4e32</code></td>
-                    <td><span class="badge badge-source">SYNTHETIC</span></td>
-                    <td><span class="badge badge-verified">VERIFIED</span></td>
-                  </tr>
-                  <tr>
-                    <td><code>man_tcs_2020_2025</code></td>
-                    <td><strong>TCS</strong></td>
-                    <td>2020-01-01 → 2025-01-01</td>
-                    <td>1,240</td>
-                    <td><code class="hash-pill" title="3d7a8e1b4c902f61">3d7a8e...2f61</code></td>
-                    <td><span class="badge badge-source">SYNTHETIC</span></td>
-                    <td><span class="badge badge-verified">VERIFIED</span></td>
+                    <td colspan="7">Reading verified dataset evidence…</td>
                   </tr>
                 </tbody>
               </table>
@@ -161,8 +145,7 @@ def render_ingestion_component() -> str:
           <div class="card">
             <h2 class="card-title">Point-in-Time Audit Trail</h2>
             <div class="log-stream" id="ingestion-log-stream" role="log" aria-live="polite">
-              <div class="log-entry"><span class="log-time">[2026-08-22 00:00:01]</span> <span class="log-info">[INFO]</span> Initialized Point-in-Time Ingestion Engine v1.0.0.</div>
-              <div class="log-entry"><span class="log-time">[2026-08-22 00:00:02]</span> <span class="log-success">[SUCCESS]</span> Zero-lookahead timestamp contract enforced. Upstox read-only broker invariant ACTIVE.</div>
+              <div class="log-entry"><span class="log-info">[Ready]</span> Acquire a dataset to create immutable point-in-time evidence.</div>
             </div>
           </div>
         </div>
@@ -180,7 +163,7 @@ def render_features_component() -> str:
           <h1 class="journey-title">Feature Matrix & Label Explorer</h1>
           <p class="journey-subtitle">Point-in-time 6-feature governed schema, decision-time alignment, net friction labels, and embargo purge explorer.</p>
         </div>
-        <span class="badge badge-source">GOVERNED_PIT</span>
+        <span class="badge badge-source">Evidence required</span>
       </div>
 
       <div class="grid-2col">
@@ -216,9 +199,12 @@ def render_features_component() -> str:
                   <input type="number" id="feat-embargo-bars" class="form-input" value="1" min="1" max="10">
                 </div>
 
-                <button type="button" id="btn-calc-features" class="btn-primary" aria-label="Extract Features & Compute Labels">
+                <button type="button" id="btn-calc-features" class="btn-primary" aria-label="Extract Features & Compute Labels" disabled aria-describedby="features-adapter-hint">
                   <span>Compute Governed Features</span>
                 </button>
+                <p class="form-hint" id="features-adapter-hint">
+                  Feature computation becomes available after the immutable feature-evidence adapter lands.
+                </p>
               </fieldset>
             </form>
           </div>
@@ -240,25 +226,25 @@ def render_features_component() -> str:
           <div class="metrics-grid" role="region" aria-label="Feature Matrix Summary">
             <div class="stat-box">
               <div class="stat-label">Total Matrix Rows</div>
-              <div class="stat-value" id="stat-feat-rows">1,215</div>
+              <div class="stat-value" id="stat-feat-rows">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Purged Overlap Rows</div>
-              <div class="stat-value" id="stat-feat-purged">4</div>
+              <div class="stat-value" id="stat-feat-purged">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Embargoed Bars</div>
-              <div class="stat-value" id="stat-feat-embargoed">1</div>
+              <div class="stat-value" id="stat-feat-embargoed">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Feature Variance Sanity</div>
-              <div class="stat-value positive" id="stat-feat-variance">PASSED</div>
+              <div class="stat-value" id="stat-feat-variance">Not evaluated</div>
             </div>
           </div>
 
           <!-- Feature & Label Table -->
           <div class="card">
-            <h2 class="card-title">Feature Matrix Sample (Decision-Time Aligned)</h2>
+            <h2 class="card-title">Verified feature matrix</h2>
             <div class="table-wrapper">
               <table class="data-table" id="features-table" aria-label="Feature Matrix Table">
                 <thead>
@@ -276,37 +262,7 @@ def render_features_component() -> str:
                 </thead>
                 <tbody id="features-tbody">
                   <tr>
-                    <td>2024-12-10 15:30</td>
-                    <td><strong>INFY</strong></td>
-                    <td>+0.0245</td>
-                    <td>0.0142</td>
-                    <td>+0.0180</td>
-                    <td>1.15</td>
-                    <td>0.0004</td>
-                    <td class="positive">+0.0182</td>
-                    <td><span class="badge badge-verified">MATURED</span></td>
-                  </tr>
-                  <tr>
-                    <td>2024-12-11 15:30</td>
-                    <td><strong>INFY</strong></td>
-                    <td>+0.0190</td>
-                    <td>0.0138</td>
-                    <td>+0.0120</td>
-                    <td>0.98</td>
-                    <td>0.0005</td>
-                    <td class="negative">-0.0064</td>
-                    <td><span class="badge badge-verified">MATURED</span></td>
-                  </tr>
-                  <tr>
-                    <td>2024-12-12 15:30</td>
-                    <td><strong>INFY</strong></td>
-                    <td>+0.0080</td>
-                    <td>0.0140</td>
-                    <td>+0.0045</td>
-                    <td>1.05</td>
-                    <td>0.0004</td>
-                    <td>--</td>
-                    <td><span class="badge badge-embargo">EMBARGOED</span></td>
+                    <td colspan="9">No verified feature matrix is available yet. Build one from governed dataset evidence before exploring rows.</td>
                   </tr>
                 </tbody>
               </table>
@@ -332,7 +288,7 @@ def render_training_component() -> str:
           <h1 class="journey-title">Governed Ridge Training & Baseline Comparison</h1>
           <p class="journey-subtitle">Expanding walk-forward fold fit, train-side standardization, multiplicity tracking, and 4-baseline comparative metrics.</p>
         </div>
-        <span class="badge badge-source">RESEARCH_ONLY</span>
+        <span class="badge badge-source">Adapter pending</span>
       </div>
 
       <div class="grid-2col">
@@ -360,12 +316,15 @@ def render_training_component() -> str:
                   </select>
                 </div>
 
-                <button type="button" id="btn-train-ridge" class="btn-primary" aria-label="Fit Governed Ridge Fold">
+                <button type="button" id="btn-train-ridge" class="btn-primary" aria-label="Fit Governed Ridge Fold" disabled aria-describedby="training-adapter-hint">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <polygon points="5 3 19 12 5 21 5 3"></polygon>
                   </svg>
                   <span>Fit Governed Ridge Fold</span>
                 </button>
+                <p class="form-hint" id="training-adapter-hint">
+                  Training becomes available after the feature contract is independently certified.
+                </p>
               </fieldset>
             </form>
           </div>
@@ -374,8 +333,8 @@ def render_training_component() -> str:
             <h2 class="card-title">Multiplicity & Deflation State</h2>
             <div class="multiplicity-card">
               <div class="stat-label">Attempt Multiplicity Ordinal</div>
-              <div class="stat-value" id="train-multiplicity-ordinal">#4</div>
-              <p class="form-hint" style="margin-top:6px;">Derived from immutable evidence catalog. Every trial increments multiplicity.</p>
+              <div class="stat-value" id="train-multiplicity-ordinal">—</div>
+              <p class="form-hint" style="margin-top:6px;">Shown only after an immutable model trial is recorded.</p>
             </div>
           </div>
         </aside>
@@ -384,19 +343,19 @@ def render_training_component() -> str:
           <div class="metrics-grid" role="region" aria-label="Candidate Model Metrics">
             <div class="stat-box">
               <div class="stat-label">Candidate Sharpe</div>
-              <div class="stat-value positive" id="stat-train-sharpe">1.84</div>
+              <div class="stat-value" id="stat-train-sharpe">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Deflated Sharpe Ratio (DSR)</div>
-              <div class="stat-value" id="stat-train-dsr">0.962</div>
+              <div class="stat-value" id="stat-train-dsr">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Max Fold Drawdown</div>
-              <div class="stat-value" id="stat-train-max-dd">-6.4%</div>
+              <div class="stat-value" id="stat-train-max-dd">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Research Verdict</div>
-              <div class="stat-value" id="stat-train-verdict">RESEARCH_ONLY</div>
+              <div class="stat-value" id="stat-train-verdict">Not trained</div>
             </div>
           </div>
 
@@ -417,50 +376,8 @@ def render_training_component() -> str:
                   </tr>
                 </thead>
                 <tbody id="baselines-tbody">
-                  <tr class="highlight-row">
-                    <td><strong>⭐ Candidate Ridge (λ=1.0)</strong></td>
-                    <td class="positive">+18.5%</td>
-                    <td><strong>1.84</strong></td>
-                    <td>2.41</td>
-                    <td>-6.4%</td>
-                    <td>56.2%</td>
-                    <td>1.68</td>
-                  </tr>
                   <tr>
-                    <td><code>BUY_AND_HOLD</code></td>
-                    <td>+12.1%</td>
-                    <td>1.05</td>
-                    <td>1.32</td>
-                    <td>-14.2%</td>
-                    <td>51.0%</td>
-                    <td>1.15</td>
-                  </tr>
-                  <tr>
-                    <td><code>EQUITY_DUAL_MOMENTUM</code></td>
-                    <td>+15.2%</td>
-                    <td>1.45</td>
-                    <td>1.85</td>
-                    <td>-9.8%</td>
-                    <td>53.8%</td>
-                    <td>1.38</td>
-                  </tr>
-                  <tr>
-                    <td><code>PREVIOUS_SIGN</code></td>
-                    <td>+4.2%</td>
-                    <td>0.38</td>
-                    <td>0.45</td>
-                    <td>-18.0%</td>
-                    <td>49.5%</td>
-                    <td>1.02</td>
-                  </tr>
-                  <tr>
-                    <td><code>NO_TRADE</code></td>
-                    <td>0.0%</td>
-                    <td>0.00</td>
-                    <td>0.00</td>
-                    <td>0.0%</td>
-                    <td>--</td>
-                    <td>0.00</td>
+                    <td colspan="7">No governed model trial is available. Metrics appear only after the training adapter records immutable evidence.</td>
                   </tr>
                 </tbody>
               </table>
@@ -480,12 +397,7 @@ def render_training_component() -> str:
                   </tr>
                 </thead>
                 <tbody id="coeffs-tbody">
-                  <tr><td><code>ret_10d</code></td><td><strong>+0.2841</strong></td><td>Positive Momentum</td></tr>
-                  <tr><td><code>sma_dist_20d</code></td><td><strong>+0.1950</strong></td><td>Trend Alignment</td></tr>
-                  <tr><td><code>volume_ratio_5d</code></td><td><strong>+0.0823</strong></td><td>Volume Confirmation</td></tr>
-                  <tr><td><code>rsi_14d</code></td><td><strong>-0.0512</strong></td><td>Mean Reversion Dampener</td></tr>
-                  <tr><td><code>spread_bps</code></td><td><strong>-0.1240</strong></td><td>Liquidity Friction Penalty</td></tr>
-                  <tr><td><code>vol_20d</code></td><td><strong>-0.1534</strong></td><td>Volatility Drag Penalty</td></tr>
+                  <tr><td colspan="3">No learned coefficients are available.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -505,7 +417,7 @@ def render_holdout_component() -> str:
           <h1 class="journey-title">Single-use Holdout & Stress Testing Tearsheet</h1>
           <p class="journey-subtitle">Strict single-use holdout evaluation gate, tail-risk CVaR analysis, macroeconomic stress scenarios, and model card certification.</p>
         </div>
-        <span class="badge badge-holdout" id="holdout-lock-badge">🔒 SINGLE-USE LOCKED</span>
+        <span class="badge badge-holdout" id="holdout-lock-badge">🔒 Not evaluated</span>
       </div>
 
       <div class="grid-2col">
@@ -531,9 +443,12 @@ def render_holdout_component() -> str:
                   <label for="holdout-confirm-check" class="form-checkbox-label">I acknowledge this holdout dataset can be evaluated exactly once.</label>
                 </div>
 
-                <button type="button" id="btn-unlock-holdout" class="btn-primary" style="background-color: var(--color-warning);" aria-label="Unlock Single-Use Holdout & Run Stress Tests">
+                <button type="button" id="btn-unlock-holdout" class="btn-primary" style="background-color: var(--color-warning);" aria-label="Unlock Single-Use Holdout & Run Stress Tests" disabled aria-describedby="holdout-adapter-hint">
                   <span>Evaluate Holdout & Stress Suite</span>
                 </button>
+                <p class="form-hint" id="holdout-adapter-hint">
+                  Holdout remains locked until a governed candidate and persisted single-use adapter exist.
+                </p>
               </fieldset>
             </form>
           </div>
@@ -542,8 +457,8 @@ def render_holdout_component() -> str:
             <h2 class="card-title">Certification Status</h2>
             <div class="cert-status-box">
               <div class="stat-label">Model Promotion Status</div>
-              <div class="stat-value positive" id="holdout-verdict">RESEARCH_CERTIFIED</div>
-              <p class="form-hint" style="margin-top:6px;">Final holdout unlocked once. Re-evaluation attempts fail closed.</p>
+              <div class="stat-value" id="holdout-verdict">Not evaluated</div>
+              <p class="form-hint" style="margin-top:6px;">No holdout is consumed until a governed adapter records the single-use evaluation.</p>
             </div>
           </div>
         </aside>
@@ -564,28 +479,7 @@ def render_holdout_component() -> str:
                 </thead>
                 <tbody id="holdout-gates-tbody">
                   <tr>
-                    <td><strong>Annualized Sharpe</strong></td>
-                    <td>≥ 1.20</td>
-                    <td><strong>1.76</strong></td>
-                    <td><span class="badge badge-verified">PASS</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Deflated Sharpe (DSR)</strong></td>
-                    <td>≥ 0.95</td>
-                    <td><strong>0.962</strong></td>
-                    <td><span class="badge badge-verified">PASS</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Max Holdout Drawdown</strong></td>
-                    <td>≤ 12.0%</td>
-                    <td><strong>7.1%</strong></td>
-                    <td><span class="badge badge-verified">PASS</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Profit Factor</strong></td>
-                    <td>≥ 1.25</td>
-                    <td><strong>1.58</strong></td>
-                    <td><span class="badge badge-verified">PASS</span></td>
+                    <td colspan="4">No single-use holdout result is available. No gate has passed or failed.</td>
                   </tr>
                 </tbody>
               </table>
@@ -608,25 +502,7 @@ def render_holdout_component() -> str:
                 </thead>
                 <tbody id="stress-scenarios-tbody">
                   <tr>
-                    <td><strong>Flash Volatility Spike</strong></td>
-                    <td>IV +50%, Gap -3.5%</td>
-                    <td class="negative">-4.2%</td>
-                    <td>8 Days</td>
-                    <td><span class="badge badge-verified">SURVIVED</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Liquidity / Spread Squeeze</strong></td>
-                    <td>Spread × 3.0, Depth -60%</td>
-                    <td class="negative">-2.8%</td>
-                    <td>4 Days</td>
-                    <td><span class="badge badge-verified">SURVIVED</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Correlated Gap Down</strong></td>
-                    <td>Index -5.0% Open Gap</td>
-                    <td class="negative">-5.1%</td>
-                    <td>12 Days</td>
-                    <td><span class="badge badge-verified">SURVIVED</span></td>
+                    <td colspan="5">No stress evidence is available for this candidate.</td>
                   </tr>
                 </tbody>
               </table>
@@ -637,15 +513,12 @@ def render_holdout_component() -> str:
           <div class="card">
             <div class="card-title">
               <h2>Governed Model Card Tearsheet</h2>
-              <button type="button" id="btn-export-model-card" class="btn-secondary" aria-label="Download Model Card Tearsheet">
+              <button type="button" id="btn-export-model-card" class="btn-secondary" aria-label="Download Model Card Tearsheet" disabled aria-describedby="model-card-preview">
                 Download Model Card (.MD)
               </button>
             </div>
             <div class="code-preview" id="model-card-preview" tabindex="0" role="region" aria-label="Model Card Markdown Preview">
-# QuantOS Governed Model Card — Cand_Ridge_v1_Opt
-- Architecture: Governed 6-Feature Ridge Regression
-- Validation Verdict: RESEARCH_CERTIFIED
-- Invariant: Zero Float Accounting & Point-in-Time Holdout Guarantee
+No governed model card is available. Evaluate a real candidate through the single-use holdout adapter first.
             </div>
           </div>
         </div>
@@ -663,7 +536,7 @@ def render_ledger_component() -> str:
           <h1 class="journey-title">Ledger & Backtest P&L Tearsheet</h1>
           <p class="journey-subtitle">Decimal double-entry accounting reconciliation, zero lookahead backtest execution, and exact transaction friction breakdown.</p>
         </div>
-        <span class="badge badge-verified">DECIMAL_EXACT RECONCILED</span>
+        <span class="badge badge-source">Ready to simulate</span>
       </div>
 
       <div class="grid-2col">
@@ -712,8 +585,8 @@ def render_ledger_component() -> str:
             <h2 class="card-title">Decimal Ledger Invariant</h2>
             <div class="ledger-audit-box">
               <div class="stat-label">Double-Entry Balance Check</div>
-              <div class="stat-value positive" id="ledger-reconcile-badge">100% PAIR RECONCILED</div>
-              <p class="form-hint" style="margin-top:6px;">Assets = Liabilities + Equity (0 float rounding variance).</p>
+              <div class="stat-value" id="ledger-reconcile-badge">Not run</div>
+              <p class="form-hint" style="margin-top:6px;">Reconciliation appears after a completed Decimal-ledger backtest.</p>
             </div>
           </div>
         </aside>
@@ -722,27 +595,27 @@ def render_ledger_component() -> str:
           <div class="metrics-grid" role="region" aria-label="Backtest Key Performance Stats">
             <div class="stat-box">
               <div class="stat-label">Total Return</div>
-              <div class="stat-value positive" id="stat-total-return">+14.82%</div>
+              <div class="stat-value" id="stat-total-return">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Sharpe Ratio</div>
-              <div class="stat-value" id="stat-sharpe">1.72</div>
+              <div class="stat-value" id="stat-sharpe">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Max Drawdown</div>
-              <div class="stat-value" id="stat-max-dd">-5.21%</div>
+              <div class="stat-value" id="stat-max-dd">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Win Rate</div>
-              <div class="stat-value" id="stat-win-rate">58.3%</div>
+              <div class="stat-value" id="stat-win-rate">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Total Trades</div>
-              <div class="stat-value" id="stat-total-trades">48</div>
+              <div class="stat-value" id="stat-total-trades">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Total Friction Paid</div>
-              <div class="stat-value" id="stat-friction">₹3,412.50</div>
+              <div class="stat-value" id="stat-friction">—</div>
             </div>
           </div>
 
@@ -776,20 +649,7 @@ def render_ledger_component() -> str:
                 </thead>
                 <tbody id="fills-tbody">
                   <tr>
-                    <td>2024-11-04 09:15</td>
-                    <td><strong>INFY</strong></td>
-                    <td><span class="badge-buy">BUY</span></td>
-                    <td>150</td>
-                    <td>₹1,820.50</td>
-                    <td>₹68.20</td>
-                  </tr>
-                  <tr>
-                    <td>2024-11-18 09:15</td>
-                    <td><strong>INFY</strong></td>
-                    <td><span class="badge-sell">SELL</span></td>
-                    <td>150</td>
-                    <td>₹1,895.00</td>
-                    <td>₹71.05</td>
+                    <td colspan="6">Run a backtest to generate a reconciled fill log.</td>
                   </tr>
                 </tbody>
               </table>
@@ -810,7 +670,7 @@ def render_shadow_component() -> str:
           <h1 class="journey-title">Real-Time / Replay Shadow Monitor</h1>
           <p class="journey-subtitle">Read-only live quote feed and recorded shadow replay with strictly zero broker order write submissions.</p>
         </div>
-        <span class="badge badge-source" id="shadow-mode-badge">RECORDED_REPLAY</span>
+        <span class="badge badge-source" id="shadow-mode-badge">No session</span>
       </div>
 
       <div class="grid-2col">
@@ -847,13 +707,16 @@ def render_shadow_component() -> str:
                 </div>
 
                 <div class="button-group">
-                  <button type="button" id="btn-start-shadow" class="btn-primary" aria-label="Start Shadow Stream">
+                  <button type="button" id="btn-start-shadow" class="btn-primary" aria-label="Start Shadow Stream" disabled aria-describedby="shadow-control-hint">
                     <span>Start Shadow Monitor</span>
                   </button>
-                  <button type="button" id="btn-pause-shadow" class="btn-secondary" aria-label="Pause Stream">
+                  <button type="button" id="btn-pause-shadow" class="btn-secondary" aria-label="Pause Stream" disabled aria-describedby="shadow-control-hint">
                     <span>Pause</span>
                   </button>
                 </div>
+                <p class="form-hint" id="shadow-control-hint">
+                  Configure a persisted read-only shadow session before starting or pausing replay.
+                </p>
               </fieldset>
             </form>
           </div>
@@ -862,7 +725,7 @@ def render_shadow_component() -> str:
             <h2 class="card-title">Broker Order Safety Guarantee</h2>
             <div class="safety-box">
               <div class="stat-label">Broker Orders Submitted</div>
-              <div class="stat-value" id="shadow-broker-orders" style="color:var(--color-success);">0 (ZERO)</div>
+              <div class="stat-value" id="shadow-broker-orders">0 (broker writes disabled)</div>
               <p class="form-hint" style="margin-top:6px;">Hard architectural invariant: Read-only pipeline has no broker write capabilities.</p>
             </div>
           </div>
@@ -872,19 +735,19 @@ def render_shadow_component() -> str:
           <div class="metrics-grid" role="region" aria-label="Shadow Session Stats">
             <div class="stat-box">
               <div class="stat-label">Quotes Processed</div>
-              <div class="stat-value" id="stat-shadow-quotes">2,480</div>
+              <div class="stat-value" id="stat-shadow-quotes">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Shadow Decisions</div>
-              <div class="stat-value" id="stat-shadow-decisions">14</div>
+              <div class="stat-value" id="stat-shadow-decisions">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Feed Latency</div>
-              <div class="stat-value positive" id="stat-shadow-latency">12 ms</div>
+              <div class="stat-value" id="stat-shadow-latency">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Stream Health</div>
-              <div class="stat-value positive" id="stat-shadow-health">HEALTHY</div>
+              <div class="stat-value" id="stat-shadow-health">Not configured</div>
             </div>
           </div>
 
@@ -906,22 +769,7 @@ def render_shadow_component() -> str:
                 </thead>
                 <tbody id="shadow-tape-tbody">
                   <tr>
-                    <td>09:30:15.120</td>
-                    <td><strong>INFY</strong></td>
-                    <td>₹1,845.20</td>
-                    <td>₹1,845.40</td>
-                    <td>₹1,845.30</td>
-                    <td>1,200</td>
-                    <td><span class="badge badge-verified">8 ms</span></td>
-                  </tr>
-                  <tr>
-                    <td>09:30:16.450</td>
-                    <td><strong>INFY</strong></td>
-                    <td>₹1,845.30</td>
-                    <td>₹1,845.50</td>
-                    <td>₹1,845.40</td>
-                    <td>850</td>
-                    <td><span class="badge badge-verified">11 ms</span></td>
+                    <td colspan="7">No shadow session is configured. Start requires a persisted read-only session adapter.</td>
                   </tr>
                 </tbody>
               </table>
@@ -944,11 +792,7 @@ def render_shadow_component() -> str:
                 </thead>
                 <tbody id="shadow-decisions-tbody">
                   <tr>
-                    <td>09:20:00</td>
-                    <td><span class="badge-buy">LONG_SIGNAL</span></td>
-                    <td><strong>INFY</strong></td>
-                    <td>₹1,842.10</td>
-                    <td class="positive">+₹14.20</td>
+                    <td colspan="5">No attributed shadow decisions yet.</td>
                   </tr>
                 </tbody>
               </table>
@@ -969,7 +813,7 @@ def render_pilot_component() -> str:
           <h1 class="journey-title">Paper Pilot Campaign Dashboard</h1>
           <p class="journey-subtitle">Quote-driven paper trading pilot with bid/ask depth, adverse slippage simulation, and idempotent campaign ledger.</p>
         </div>
-        <span class="badge badge-source">PAPER_PILOT ACTIVE</span>
+        <span class="badge badge-source">No campaign</span>
       </div>
 
       <div class="grid-2col">
@@ -982,30 +826,30 @@ def render_pilot_component() -> str:
 
                 <div class="form-group">
                   <label class="form-label" for="pilot-campaign-select">Active Campaign</label>
-                  <select id="pilot-campaign-select" class="form-select">
-                    <option value="CAMP_ALPHA_2026" selected>CAMP_ALPHA_2026 (Momentum Equity)</option>
-                    <option value="CAMP_STRADDLE_V2">CAMP_STRADDLE_V2 (Options Pilot)</option>
+                  <select id="pilot-campaign-select" class="form-select" disabled aria-describedby="pilot-control-hint">
+                    <option value="" selected>No campaign configured</option>
                   </select>
                 </div>
 
                 <div class="form-group">
                   <label class="form-label" for="pilot-alloc-capital">Allocated Capital (₹)</label>
-                  <input type="number" id="pilot-alloc-capital" class="form-input" value="2500000" step="100000">
+                  <input type="number" id="pilot-alloc-capital" class="form-input" placeholder="Not configured" step="100000" disabled>
                 </div>
 
                 <div class="form-group">
                   <label class="form-label" for="pilot-max-dd-limit">Emergency Drawdown Stop (%)</label>
-                  <input type="number" id="pilot-max-dd-limit" class="form-input" value="3.0" step="0.5">
+                  <input type="number" id="pilot-max-dd-limit" class="form-input" placeholder="Not configured" step="0.5" disabled>
                 </div>
 
                 <div class="button-group">
-                  <button type="button" id="btn-submit-pilot-order" class="btn-primary" aria-label="Simulate Paper Order">
-                    <span>Submit Simulated Order</span>
+                  <button type="button" id="btn-submit-pilot-order" class="btn-primary" aria-label="Place Paper Order" disabled aria-describedby="pilot-control-hint">
+                    <span>Place paper order</span>
                   </button>
-                  <button type="button" id="btn-halt-campaign" class="btn-danger" aria-label="Halt Campaign">
-                    <span>Emergency Halt</span>
+                  <button type="button" id="btn-halt-campaign" class="btn-danger" aria-label="Halt Campaign" disabled aria-describedby="pilot-control-hint">
+                    <span>Halt campaign</span>
                   </button>
                 </div>
+                <p class="form-hint" id="pilot-control-hint">Configure a persisted paper campaign before placing or halting orders.</p>
               </fieldset>
             </form>
           </div>
@@ -1014,8 +858,8 @@ def render_pilot_component() -> str:
             <h2 class="card-title">Campaign Risk Health</h2>
             <div class="risk-meter-box">
               <div class="stat-label">Current Drawdown Buffer</div>
-              <div class="stat-value positive" id="pilot-dd-buffer">2.4% Remaining</div>
-              <p class="form-hint" style="margin-top:6px;">Circuit breaker triggers automatic position flattening at 3.0% daily DD.</p>
+              <div class="stat-value" id="pilot-dd-buffer">Not configured</div>
+              <p class="form-hint" style="margin-top:6px;">The drawdown buffer appears after campaign evidence is available.</p>
             </div>
           </div>
         </aside>
@@ -1024,19 +868,19 @@ def render_pilot_component() -> str:
           <div class="metrics-grid" role="region" aria-label="Paper Pilot Performance Metrics">
             <div class="stat-box">
               <div class="stat-label">Campaign Equity</div>
-              <div class="stat-value" id="stat-pilot-equity">₹2,548,200</div>
+              <div class="stat-value" id="stat-pilot-equity">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Unrealized P&L</div>
-              <div class="stat-value positive" id="stat-pilot-unrealized">+₹48,200</div>
+              <div class="stat-value" id="stat-pilot-unrealized">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Realized P&L</div>
-              <div class="stat-value positive" id="stat-pilot-realized">+₹12,450</div>
+              <div class="stat-value" id="stat-pilot-realized">—</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Active Orders</div>
-              <div class="stat-value" id="stat-pilot-orders">2 Pending</div>
+              <div class="stat-value" id="stat-pilot-orders">—</div>
             </div>
           </div>
 
@@ -1057,20 +901,7 @@ def render_pilot_component() -> str:
                 </thead>
                 <tbody id="pilot-positions-tbody">
                   <tr>
-                    <td><strong>INFY</strong></td>
-                    <td>300</td>
-                    <td>₹1,830.00</td>
-                    <td>₹1,855.00</td>
-                    <td class="positive">+₹7,500.00</td>
-                    <td>21.8%</td>
-                  </tr>
-                  <tr>
-                    <td><strong>TCS</strong></td>
-                    <td>150</td>
-                    <td>₹3,480.00</td>
-                    <td>₹3,520.00</td>
-                    <td class="positive">+₹6,000.00</td>
-                    <td>20.7%</td>
+                    <td colspan="6">No paper campaign is configured. Positions appear only from persisted paper state.</td>
                   </tr>
                 </tbody>
               </table>
@@ -1095,22 +926,7 @@ def render_pilot_component() -> str:
                 </thead>
                 <tbody id="pilot-orders-tbody">
                   <tr>
-                    <td><code>ord_p_10492</code></td>
-                    <td><strong>RELIANCE</strong></td>
-                    <td><span class="badge-buy">BUY</span></td>
-                    <td>100 / 100</td>
-                    <td>₹2,510.00</td>
-                    <td>₹2,508.50</td>
-                    <td><span class="badge badge-verified">FILLED</span></td>
-                  </tr>
-                  <tr>
-                    <td><code>ord_p_10493</code></td>
-                    <td><strong>HDFCBANK</strong></td>
-                    <td><span class="badge-buy">BUY</span></td>
-                    <td>0 / 200</td>
-                    <td>₹1,610.00</td>
-                    <td>--</td>
-                    <td><span class="badge badge-source">PENDING</span></td>
+                    <td colspan="7">No paper orders yet.</td>
                   </tr>
                 </tbody>
               </table>

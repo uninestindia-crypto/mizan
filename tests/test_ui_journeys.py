@@ -17,6 +17,7 @@ import re
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx import Response
 
 from quant_system import __version__
 from quant_system.data.provenance import RuntimeDataSource
@@ -24,6 +25,12 @@ from quant_system.server.app import app
 from quant_system.server.ui.constants import (
     VALID_JOURNEY_IDS,
 )
+
+_EVIDENCE_ROOT_ENV = "QUANTOS_EVIDENCE_ROOT"
+
+
+def _error_code(response: Response) -> str:
+    return str(response.json()["error"]["code"])
 
 
 @pytest.fixture
@@ -183,7 +190,11 @@ def test_invalid_journey_route_returns_accessible_404(client: TestClient) -> Non
 # =============================================================================
 
 
-def test_journey_1_ingestion_dom_and_api(client: TestClient, auth_headers: dict[str, str]) -> None:
+def test_journey_1_ingestion_dom_and_api(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # 1. DOM Check
     res = client.get("/ui/journey/ingestion")
     html = res.text
@@ -197,19 +208,17 @@ def test_journey_1_ingestion_dom_and_api(client: TestClient, auth_headers: dict[
     assert 'id="manifests-table"' in html
     assert 'id="chk-zero-lookahead"' in html
     assert 'id="chk-checksum-match"' in html
+    assert "man_infy_2020_2025" not in html
+    assert "Synthetic Deterministic Generator" not in html
 
-    # 2. Manifests List API
+    monkeypatch.delenv(_EVIDENCE_ROOT_ENV, raising=False)
+
+    # 2. Manifests list requires operator configuration.
     man_res = client.get("/api/data/manifests")
-    assert man_res.status_code == 200
-    manifests = man_res.json()["manifests"]
-    assert len(manifests) >= 3
-    for m in manifests:
-        assert "manifest_id" in m
-        assert "checksum_sha256" in m
-        assert m["zero_lookahead_verified"] is True
-        assert m["status"] == "VERIFIED"
+    assert man_res.status_code == 503
+    assert _error_code(man_res) == "EVIDENCE_ROOT_NOT_CONFIGURED"
 
-    # 3. Data Ingestion API
+    # 3. The unsafe legacy mutation is retired instead of inventing a manifest.
     ingest_payload = {
         "symbol": "INFY",
         "start_date": "2020-01-01",
@@ -217,11 +226,8 @@ def test_journey_1_ingestion_dom_and_api(client: TestClient, auth_headers: dict[
         "source": "SYNTHETIC",
     }
     ingest_res = client.post("/api/data/ingest", json=ingest_payload, headers=auth_headers)
-    assert ingest_res.status_code == 200
-    data = ingest_res.json()
-    assert data["success"] is True
-    assert data["manifest"]["symbol"] == "INFY"
-    assert data["manifest"]["zero_lookahead_verified"] is True
+    assert ingest_res.status_code == 410
+    assert _error_code(ingest_res) == "LEGACY_ENDPOINT_RETIRED"
 
 
 # =============================================================================
@@ -229,7 +235,11 @@ def test_journey_1_ingestion_dom_and_api(client: TestClient, auth_headers: dict[
 # =============================================================================
 
 
-def test_journey_2_features_dom_and_api(client: TestClient, auth_headers: dict[str, str]) -> None:
+def test_journey_2_features_dom_and_api(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # 1. DOM Check
     res = client.get("/ui/journey/features")
     html = res.text
@@ -239,32 +249,20 @@ def test_journey_2_features_dom_and_api(client: TestClient, auth_headers: dict[s
     assert 'id="feat-horizon-bars"' in html
     assert 'id="feat-friction-bps"' in html
     assert 'id="btn-calc-features"' in html
+    assert 'aria-label="Extract Features & Compute Labels" disabled' in html
     assert 'id="features-table"' in html
     assert "ret_10d" in html
     assert "vol_20d" in html
     assert "sma_dist_20d" in html
+    assert "+0.0245" not in html
 
-    # 2. Feature Explore API
+    monkeypatch.delenv(_EVIDENCE_ROOT_ENV, raising=False)
+
+    # 2. Feature exploration fails closed without governed evidence.
     payload = {"symbol": "INFY", "horizon_days": 5, "label_friction_bps": 5.0}
     exp_res = client.post("/api/features/explore", json=payload, headers=auth_headers)
-    assert exp_res.status_code == 200
-    data = exp_res.json()
-    assert data["symbol"] == "INFY"
-    assert len(data["features_meta"]) == 6
-    assert data["purged_overlap_count"] == 4
-    assert data["embargo_bars"] == 1
-    assert len(data["rows"]) > 0
-
-    # Ensure required 6-feature names exist
-    feature_names = {f["name"] for f in data["features_meta"]}
-    assert feature_names == {
-        "ret_10d",
-        "vol_20d",
-        "sma_dist_20d",
-        "volume_ratio_5d",
-        "spread_bps",
-        "rsi_14d",
-    }
+    assert exp_res.status_code == 503
+    assert _error_code(exp_res) == "EVIDENCE_ROOT_NOT_CONFIGURED"
 
 
 # =============================================================================
@@ -273,7 +271,9 @@ def test_journey_2_features_dom_and_api(client: TestClient, auth_headers: dict[s
 
 
 def test_journey_3_ridge_training_dom_and_api(
-    client: TestClient, auth_headers: dict[str, str]
+    client: TestClient,
+    auth_headers: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # 1. DOM Check
     res = client.get("/ui/journey/training")
@@ -284,11 +284,16 @@ def test_journey_3_ridge_training_dom_and_api(
     assert 'id="train-score-thresh"' in html
     assert 'id="train-fold-type"' in html
     assert 'id="btn-train-ridge"' in html
+    assert 'aria-label="Fit Governed Ridge Fold" disabled' in html
     assert 'id="baselines-table"' in html
     assert 'id="coeffs-table"' in html
     assert 'id="train-multiplicity-ordinal"' in html
+    assert "+18.5%" not in html
+    assert "0.962" not in html
 
-    # 2. Governed Ridge Train API
+    monkeypatch.delenv(_EVIDENCE_ROOT_ENV, raising=False)
+
+    # 2. Training cannot invent a trial without an evidence adapter.
     payload = {
         "candidate_id": "cand_ridge_v1",
         "l2_penalty": 1.0,
@@ -296,23 +301,8 @@ def test_journey_3_ridge_training_dom_and_api(
         "symbols": ["INFY", "TCS", "RELIANCE"],
     }
     train_res = client.post("/api/training/governed-ridge", json=payload, headers=auth_headers)
-    assert train_res.status_code == 200
-    data = train_res.json()
-    assert data["verdict"] == "RESEARCH_ONLY"
-    assert data["multiplicity_ordinal"] == 4
-    assert data["deflated_sharpe"] == 0.962
-    assert "candidate_metrics" in data
-    assert len(data["baselines"]) == 4
-
-    # Baseline names
-    baseline_names = {b["name"] for b in data["baselines"]}
-    assert baseline_names == {
-        "BUY_AND_HOLD",
-        "EQUITY_DUAL_MOMENTUM",
-        "PREVIOUS_SIGN",
-        "NO_TRADE",
-    }
-    assert len(data["coefficients"]) == 6
+    assert train_res.status_code == 503
+    assert _error_code(train_res) == "EVIDENCE_ROOT_NOT_CONFIGURED"
 
 
 # =============================================================================
@@ -320,7 +310,11 @@ def test_journey_3_ridge_training_dom_and_api(
 # =============================================================================
 
 
-def test_journey_4_holdout_dom_and_api(client: TestClient, auth_headers: dict[str, str]) -> None:
+def test_journey_4_holdout_dom_and_api(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # 1. DOM Check
     res = client.get("/ui/journey/holdout")
     html = res.text
@@ -330,36 +324,35 @@ def test_journey_4_holdout_dom_and_api(client: TestClient, auth_headers: dict[st
     assert 'id="holdout-token"' in html
     assert 'id="holdout-confirm-check"' in html
     assert 'id="btn-unlock-holdout"' in html
+    assert 'aria-label="Unlock Single-Use Holdout & Run Stress Tests" disabled' in html
     assert 'id="holdout-gates-table"' in html
     assert 'id="stress-scenarios-table"' in html
     assert 'id="model-card-preview"' in html
     assert 'id="btn-export-model-card"' in html
+    assert "RESEARCH_CERTIFIED" not in html
+    assert ">PASS<" not in html
 
-    # 2. Holdout Evaluate API - Without confirmation -> 400
+    monkeypatch.delenv(_EVIDENCE_ROOT_ENV, raising=False)
+
+    # 2. No request consumes or passes a holdout without governed evidence.
     unconfirmed = {
         "candidate_id": "cand_ridge_v1_opt",
         "unlock_token": "HOLD_123",
         "confirm_single_use": False,
     }
     fail_res = client.post("/api/holdout/evaluate", json=unconfirmed, headers=auth_headers)
-    assert fail_res.status_code == 400
+    assert fail_res.status_code == 503
+    assert _error_code(fail_res) == "EVIDENCE_ROOT_NOT_CONFIGURED"
 
-    # 3. Holdout Evaluate API - Confirmed single use -> 200
+    # 3. Confirmation does not fabricate a successful evaluation.
     confirmed = {
         "candidate_id": "cand_ridge_v1_opt",
         "unlock_token": "HOLD_123",
         "confirm_single_use": True,
     }
     eval_res = client.post("/api/holdout/evaluate", json=confirmed, headers=auth_headers)
-    assert eval_res.status_code == 200
-    data = eval_res.json()
-    assert data["holdout_lock_status"] == "UNLOCKED_ONCE"
-    assert data["verdict"] == "RESEARCH_CERTIFIED"
-    assert len(data["gates"]) == 4
-    assert all(g["status"] == "PASS" for g in data["gates"])
-    assert len(data["stress_scenarios"]) == 3
-    assert all(s["survival_status"] == "SURVIVED" for s in data["stress_scenarios"])
-    assert "# QuantOS Governed Model Card" in data["model_card_markdown"]
+    assert eval_res.status_code == 503
+    assert _error_code(eval_res) == "EVIDENCE_ROOT_NOT_CONFIGURED"
 
 
 # =============================================================================
@@ -420,27 +413,28 @@ def test_journey_6_shadow_monitor_dom_and_api(
     assert 'id="shadow-speed"' in html
     assert 'id="btn-start-shadow"' in html
     assert 'id="btn-pause-shadow"' in html
+    assert 'id="btn-start-shadow" class="btn-primary" aria-label="Start Shadow Stream" disabled' in html
+    assert 'id="btn-pause-shadow" class="btn-secondary" aria-label="Pause Stream" disabled' in html
+    assert "Configure a persisted read-only shadow session" in html
     assert 'id="shadow-broker-orders"' in html
     assert 'id="shadow-tape-table"' in html
     assert 'id="shadow-decisions-table"' in html
+    assert "2,480" not in html
+    assert "09:30:15.120" not in html
 
-    # 2. Shadow Status API (Zero Broker Orders Invariant)
+    # 2. No session means no fabricated quotes or decisions.
     status_res = client.get("/api/shadow/status")
-    assert status_res.status_code == 200
-    data = status_res.json()
-    assert data["broker_orders_submitted"] == 0
-    assert data["mode"] == "RECORDED_REPLAY"
-    assert data["stream_health"] == "HEALTHY"
-    assert len(data["recent_quotes"]) > 0
+    assert status_res.status_code == 404
+    assert _error_code(status_res) == "SHADOW_SESSION_NOT_CONFIGURED"
 
-    # 3. Shadow Control API
+    # 3. Shadow control requires idempotency and still fails closed without a session.
     ctrl_res = client.post(
         "/api/shadow/control",
         json={"action": "start", "speed_multiplier": 5},
         headers=auth_headers,
     )
-    assert ctrl_res.status_code == 200
-    assert ctrl_res.json()["status"] == "OK"
+    assert ctrl_res.status_code == 422
+    assert _error_code(ctrl_res) == "IDEMPOTENCY_KEY_REQUIRED"
 
 
 # =============================================================================
@@ -464,17 +458,16 @@ def test_journey_7_paper_pilot_dom_and_api(
     assert 'id="pilot-positions-table"' in html
     assert 'id="pilot-orders-table"' in html
     assert 'id="pilot-dd-buffer"' in html
+    assert "2,548,200" not in html
+    assert "ord_p_10492" not in html
+    assert 'id="btn-submit-pilot-order" class="btn-primary" aria-label="Place Paper Order" disabled' in html
 
-    # 2. Paper Pilot Campaign Status API
+    # 2. No campaign means no fabricated positions or P&L.
     camp_res = client.get("/api/paper-pilot/campaign")
-    assert camp_res.status_code == 200
-    data = camp_res.json()
-    assert data["campaign_id"] == "CAMP_ALPHA_2026"
-    assert data["status"] == "ACTIVE"
-    assert len(data["active_positions"]) == 2
-    assert len(data["order_ladder"]) == 2
+    assert camp_res.status_code == 404
+    assert _error_code(camp_res) == "PAPER_CAMPAIGN_NOT_CONFIGURED"
 
-    # 3. Paper Order Submission API with Idempotency Token
+    # 3. Paper order mutation requires an idempotency key.
     order_payload = {
         "campaign_id": "CAMP_ALPHA_2026",
         "symbol": "INFY",
@@ -483,11 +476,8 @@ def test_journey_7_paper_pilot_dom_and_api(
         "limit_price": 1840.0,
     }
     ord_res = client.post("/api/paper-pilot/order", json=order_payload, headers=auth_headers)
-    assert ord_res.status_code == 200
-    ord_data = ord_res.json()
-    assert ord_data["order"]["symbol"] == "INFY"
-    assert ord_data["order"]["status"] == "FILLED"
-    assert "tok_" in ord_data["order"]["idempotency_token"]
+    assert ord_res.status_code == 422
+    assert _error_code(ord_res) == "IDEMPOTENCY_KEY_REQUIRED"
 
 
 # =============================================================================
@@ -528,10 +518,14 @@ def test_zero_live_broker_orders_contract_across_all_journeys(client: TestClient
     assert diag_res.status_code == 200
     assert diag_res.json()["market_data_source"] == str(RuntimeDataSource.SYNTHETIC)
 
-    # 2. Shadow monitor check
+    # 2. No shadow session exists, so no route can report broker activity.
     shadow_res = client.get("/api/shadow/status")
-    assert shadow_res.status_code == 200
-    assert shadow_res.json()["broker_orders_submitted"] == 0
+    assert shadow_res.status_code == 404
+    assert _error_code(shadow_res) == "SHADOW_SESSION_NOT_CONFIGURED"
+
+    paper_res = client.get("/api/paper-pilot/campaign")
+    assert paper_res.status_code == 404
+    assert _error_code(paper_res) == "PAPER_CAMPAIGN_NOT_CONFIGURED"
 
     # 3. Version info check
     ver_res = client.get("/api/version")

@@ -108,6 +108,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -118,6 +119,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 0 0 auto;
 }
 
 .brand-logo {
@@ -146,6 +148,20 @@ body {
   background-color: var(--color-bg-secondary);
   padding: 4px;
   border-radius: var(--radius-md);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+}
+
+.nav-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.nav-tabs::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: var(--radius-pill);
 }
 
 .tab-btn {
@@ -178,6 +194,28 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 1350px) {
+  .navbar {
+    height: auto;
+    min-height: 64px;
+    flex-wrap: wrap;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .nav-tabs {
+    order: 3;
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .tab-btn {
+    flex: 0 0 104px;
+  }
 }
 
 .status-pill {
@@ -243,9 +281,13 @@ body {
   gap: 24px;
 }
 
+.grid-2col > * {
+  min-width: 0;
+}
+
 @media (max-width: 960px) {
   .grid-2col {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -349,6 +391,13 @@ body {
 
 .btn-secondary:hover {
   background-color: var(--color-border);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 /* ==========================================================================
@@ -774,4 +823,3 @@ body {
   display: none;
   z-index: 999;
 }
-
