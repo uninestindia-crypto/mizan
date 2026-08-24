@@ -1,0 +1,805 @@
+{
+  "total_symbols_processed": 200,
+  "summary": {
+    "TVSMOTOR": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_TVSMOTOR.json"
+    },
+    "SML100CASE": {
+      "bars": 233,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SML100CASE.json"
+    },
+    "AIAENG": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_AIAENG.json"
+    },
+    "DMCC": {
+      "bars": 1172,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DMCC.json"
+    },
+    "DUCOL": {
+      "bars": 846,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DUCOL.json"
+    },
+    "SMARTLINK": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SMARTLINK.json"
+    },
+    "GROWWLIQID": {
+      "bars": 472,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GROWWLIQID.json"
+    },
+    "NIACL": {
+      "bars": 2174,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_NIACL.json"
+    },
+    "DCI": {
+      "bars": 1153,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DCI.json"
+    },
+    "KNAGRI": {
+      "bars": 1089,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_KNAGRI.json"
+    },
+    "BALAJEE": {
+      "bars": 482,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_BALAJEE.json"
+    },
+    "GUJTHEM": {
+      "bars": 367,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GUJTHEM.json"
+    },
+    "NIFTYADD": {
+      "bars": 1151,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_NIFTYADD.json"
+    },
+    "AUSOMENT": {
+      "bars": 2465,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_AUSOMENT.json"
+    },
+    "WENDT": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_WENDT.json"
+    },
+    "ALBERTDAVD": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ALBERTDAVD.json"
+    },
+    "DIVGIITTS": {
+      "bars": 853,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DIVGIITTS.json"
+    },
+    "SUNPHARMA": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SUNPHARMA.json"
+    },
+    "DHANBANK": {
+      "bars": 2450,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DHANBANK.json"
+    },
+    "ITDC": {
+      "bars": 2388,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ITDC.json"
+    },
+    "POWERMECH": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_POWERMECH.json"
+    },
+    "NIFTYQLITY": {
+      "bars": 993,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_NIFTYQLITY.json"
+    },
+    "SETL": {
+      "bars": 399,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SETL.json"
+    },
+    "LODHA": {
+      "bars": 1327,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_LODHA.json"
+    },
+    "TVTODAY": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_TVTODAY.json"
+    },
+    "ALLTIME": {
+      "bars": 252,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ALLTIME.json"
+    },
+    "ASTRAMICRO": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ASTRAMICRO.json"
+    },
+    "HINDCON": {
+      "bars": 1569,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_HINDCON.json"
+    },
+    "MNC": {
+      "bars": 997,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_MNC.json"
+    },
+    "QFIL": {
+      "bars": 499,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_QFIL.json"
+    },
+    "TOP15IETF": {
+      "bars": 283,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_TOP15IETF.json"
+    },
+    "KIMS": {
+      "bars": 1279,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_KIMS.json"
+    },
+    "KALPATARU": {
+      "bars": 284,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_KALPATARU.json"
+    },
+    "STYL": {
+      "bars": 221,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_STYL.json"
+    },
+    "GTECJAINX": {
+      "bars": 1538,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GTECJAINX.json"
+    },
+    "IKS": {
+      "bars": 415,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_IKS.json"
+    },
+    "TIRUMALCHM": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_TIRUMALCHM.json"
+    },
+    "FINIETF": {
+      "bars": 925,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_FINIETF.json"
+    },
+    "PPLPHARMA": {
+      "bars": 953,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_PPLPHARMA.json"
+    },
+    "PDMJEPAPER": {
+      "bars": 2477,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_PDMJEPAPER.json"
+    },
+    "TIIL": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_TIIL.json"
+    },
+    "BANKADD": {
+      "bars": 898,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_BANKADD.json"
+    },
+    "SENORES": {
+      "bars": 409,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SENORES.json"
+    },
+    "EMSLIMITED": {
+      "bars": 724,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_EMSLIMITED.json"
+    },
+    "SATKARTAR": {
+      "bars": 391,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SATKARTAR.json"
+    },
+    "OCCLLTD": {
+      "bars": 450,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_OCCLLTD.json"
+    },
+    "ONWARDTEC": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ONWARDTEC.json"
+    },
+    "BANG": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_BANG.json"
+    },
+    "DIXON": {
+      "bars": 2211,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DIXON.json"
+    },
+    "UNIENTER": {
+      "bars": 2475,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_UNIENTER.json"
+    },
+    "DUGLOBAL": {
+      "bars": 1109,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DUGLOBAL.json"
+    },
+    "STLTECH": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_STLTECH.json"
+    },
+    "HPTL": {
+      "bars": 273,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_HPTL.json"
+    },
+    "SAHANA": {
+      "bars": 789,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SAHANA.json"
+    },
+    "PFC": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_PFC.json"
+    },
+    "ROYALARC": {
+      "bars": 249,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ROYALARC.json"
+    },
+    "MALUPAPER": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_MALUPAPER.json"
+    },
+    "WELSPUNLIV": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_WELSPUNLIV.json"
+    },
+    "PCCL": {
+      "bars": 531,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_PCCL.json"
+    },
+    "JLHL": {
+      "bars": 726,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_JLHL.json"
+    },
+    "LANDSMILL": {
+      "bars": 2474,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_LANDSMILL.json"
+    },
+    "MRF": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_MRF.json"
+    },
+    "BFSI": {
+      "bars": 1252,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_BFSI.json"
+    },
+    "INFOBEAN": {
+      "bars": 2164,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_INFOBEAN.json"
+    },
+    "XCHANGING": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_XCHANGING.json"
+    },
+    "SBIETFQLTY": {
+      "bars": 1905,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SBIETFQLTY.json"
+    },
+    "MORARJEE": {
+      "bars": 2281,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_MORARJEE.json"
+    },
+    "BAJAJHLDNG": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_BAJAJHLDNG.json"
+    },
+    "CHEMBONDCH": {
+      "bars": 268,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_CHEMBONDCH.json"
+    },
+    "ABSLBANETF": {
+      "bars": 1678,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ABSLBANETF.json"
+    },
+    "READYMIX": {
+      "bars": 353,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_READYMIX.json"
+    },
+    "NETWEB": {
+      "bars": 762,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_NETWEB.json"
+    },
+    "INDIAMART": {
+      "bars": 1770,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_INDIAMART.json"
+    },
+    "MANORG": {
+      "bars": 1192,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_MANORG.json"
+    },
+    "CENTENKA": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_CENTENKA.json"
+    },
+    "SHRIRAMPPS": {
+      "bars": 1160,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SHRIRAMPPS.json"
+    },
+    "TAPIFRUIT": {
+      "bars": 640,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_TAPIFRUIT.json"
+    },
+    "CANARYS": {
+      "bars": 709,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_CANARYS.json"
+    },
+    "EKC": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_EKC.json"
+    },
+    "SUPREMEIND": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SUPREMEIND.json"
+    },
+    "DBCORP": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DBCORP.json"
+    },
+    "ARKADE": {
+      "bars": 474,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ARKADE.json"
+    },
+    "HILTON": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_HILTON.json"
+    },
+    "GUJENERGY": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GUJENERGY.json"
+    },
+    "SHARDAMOTR": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SHARDAMOTR.json"
+    },
+    "MEP": {
+      "bars": 2415,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_MEP.json"
+    },
+    "ASIANTILES": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ASIANTILES.json"
+    },
+    "IRISDOREME": {
+      "bars": 1484,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_IRISDOREME.json"
+    },
+    "RETAIL": {
+      "bars": 535,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_RETAIL.json"
+    },
+    "SILLYMONKS": {
+      "bars": 1807,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SILLYMONKS.json"
+    },
+    "DPWIRES": {
+      "bars": 1848,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DPWIRES.json"
+    },
+    "AMRUTANJAN": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_AMRUTANJAN.json"
+    },
+    "OLIL": {
+      "bars": 676,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_OLIL.json"
+    },
+    "DATAMATICS": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DATAMATICS.json"
+    },
+    "WEL": {
+      "bars": 1356,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_WEL.json"
+    },
+    "WALCHANNAG": {
+      "bars": 2466,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_WALCHANNAG.json"
+    },
+    "VEEDOL": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_VEEDOL.json"
+    },
+    "AJANTPHARM": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_AJANTPHARM.json"
+    },
+    "SEPC": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SEPC.json"
+    },
+    "METROPOLIS": {
+      "bars": 1823,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_METROPOLIS.json"
+    },
+    "NELCO": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_NELCO.json"
+    },
+    "GILT5YBEES": {
+      "bars": 1329,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GILT5YBEES.json"
+    },
+    "KILITCH": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_KILITCH.json"
+    },
+    "GLENMARK": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GLENMARK.json"
+    },
+    "GODAVARIB": {
+      "bars": 450,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GODAVARIB.json"
+    },
+    "MOPSE": {
+      "bars": 299,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_MOPSE.json"
+    },
+    "SUPRIYA": {
+      "bars": 1154,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SUPRIYA.json"
+    },
+    "GROWWSLVR": {
+      "bars": 311,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GROWWSLVR.json"
+    },
+    "GLOBALE": {
+      "bars": 494,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GLOBALE.json"
+    },
+    "DENTA": {
+      "bars": 387,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DENTA.json"
+    },
+    "SUNTECK": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SUNTECK.json"
+    },
+    "BBOX": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_BBOX.json"
+    },
+    "VIPULLTD": {
+      "bars": 2471,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_VIPULLTD.json"
+    },
+    "NTPCGREEN": {
+      "bars": 431,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_NTPCGREEN.json"
+    },
+    "MYMUDRA": {
+      "bars": 466,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_MYMUDRA.json"
+    },
+    "LAL": {
+      "bars": 836,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_LAL.json"
+    },
+    "VAISHALI": {
+      "bars": 1949,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_VAISHALI.json"
+    },
+    "GLOBUSSPR": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GLOBUSSPR.json"
+    },
+    "TATAGOLD": {
+      "bars": 644,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_TATAGOLD.json"
+    },
+    "NESTLEIND": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_NESTLEIND.json"
+    },
+    "AMANTA": {
+      "bars": 236,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_AMANTA.json"
+    },
+    "MSUMI": {
+      "bars": 1093,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_MSUMI.json"
+    },
+    "ZTECH": {
+      "bars": 550,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ZTECH.json"
+    },
+    "SPORTKING": {
+      "bars": 991,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SPORTKING.json"
+    },
+    "MUTHOOTCAP": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_MUTHOOTCAP.json"
+    },
+    "RAYMONDREL": {
+      "bars": 284,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_RAYMONDREL.json"
+    },
+    "MOTOGENFIN": {
+      "bars": 2425,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_MOTOGENFIN.json"
+    },
+    "VOLTAMP": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_VOLTAMP.json"
+    },
+    "GREENPANEL": {
+      "bars": 1698,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GREENPANEL.json"
+    },
+    "DRCSYSTEMS": {
+      "bars": 1483,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DRCSYSTEMS.json"
+    },
+    "GOLDCASE": {
+      "bars": 613,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GOLDCASE.json"
+    },
+    "CAMLINFINE": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_CAMLINFINE.json"
+    },
+    "ADANIENT": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ADANIENT.json"
+    },
+    "MOTOUR": {
+      "bars": 297,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_MOTOUR.json"
+    },
+    "DICIND": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DICIND.json"
+    },
+    "AMBUJACEM": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_AMBUJACEM.json"
+    },
+    "HOMEFIRST": {
+      "bars": 1466,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_HOMEFIRST.json"
+    },
+    "AADHARHFC": {
+      "bars": 565,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_AADHARHFC.json"
+    },
+    "AARVI": {
+      "bars": 1887,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_AARVI.json"
+    },
+    "TROM": {
+      "bars": 499,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_TROM.json"
+    },
+    "CHAMUNDA": {
+      "bars": 357,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_CHAMUNDA.json"
+    },
+    "SPARC": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SPARC.json"
+    },
+    "SJLOGISTIC": {
+      "bars": 664,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SJLOGISTIC.json"
+    },
+    "RANEHOLDIN": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_RANEHOLDIN.json"
+    },
+    "SCPL": {
+      "bars": 931,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SCPL.json"
+    },
+    "UNIONGOLD": {
+      "bars": 369,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_UNIONGOLD.json"
+    },
+    "AISL": {
+      "bars": 1441,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_AISL.json"
+    },
+    "GANESHCP": {
+      "bars": 222,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GANESHCP.json"
+    },
+    "RUBFILA": {
+      "bars": 506,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_RUBFILA.json"
+    },
+    "JINDALSTEL": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_JINDALSTEL.json"
+    },
+    "DYCL": {
+      "bars": 1009,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DYCL.json"
+    },
+    "AKG": {
+      "bars": 1631,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_AKG.json"
+    },
+    "BAIDFIN": {
+      "bars": 888,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_BAIDFIN.json"
+    },
+    "ARIHANTACA": {
+      "bars": 713,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ARIHANTACA.json"
+    },
+    "SETFNIF50": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SETFNIF50.json"
+    },
+    "CUMMINSIND": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_CUMMINSIND.json"
+    },
+    "VIYASH": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_VIYASH.json"
+    },
+    "ADVANIHOTR": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ADVANIHOTR.json"
+    },
+    "AUROIMPEX": {
+      "bars": 742,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_AUROIMPEX.json"
+    },
+    "INOXINDIA": {
+      "bars": 662,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_INOXINDIA.json"
+    },
+    "ODIGMA": {
+      "bars": 421,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ODIGMA.json"
+    },
+    "LICI": {
+      "bars": 1060,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_LICI.json"
+    },
+    "SICALLOG": {
+      "bars": 587,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SICALLOG.json"
+    },
+    "3IINFOLTD": {
+      "bars": 1199,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_3IINFOLTD.json"
+    },
+    "HCLTECH": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_HCLTECH.json"
+    },
+    "RTL": {
+      "bars": 225,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_RTL.json"
+    },
+    "DESTINY": {
+      "bars": 783,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DESTINY.json"
+    },
+    "SUNDARMFIN": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SUNDARMFIN.json"
+    },
+    "BIKAJI": {
+      "bars": 935,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_BIKAJI.json"
+    },
+    "INDOSTAR": {
+      "bars": 2046,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_INDOSTAR.json"
+    },
+    "JASH": {
+      "bars": 2236,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_JASH.json"
+    },
+    "IOLCP": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_IOLCP.json"
+    },
+    "MODEFENCE": {
+      "bars": 494,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_MODEFENCE.json"
+    },
+    "DLINKINDIA": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_DLINKINDIA.json"
+    },
+    "SETFGOLD": {
+      "bars": 2475,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SETFGOLD.json"
+    },
+    "GREENCHEF": {
+      "bars": 760,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GREENCHEF.json"
+    },
+    "SHAKTIPUMP": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SHAKTIPUMP.json"
+    },
+    "SHREEKARNI": {
+      "bars": 592,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SHREEKARNI.json"
+    },
+    "GSTL": {
+      "bars": 957,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GSTL.json"
+    },
+    "SMLMAH": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SMLMAH.json"
+    },
+    "BAJAJCON": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_BAJAJCON.json"
+    },
+    "ASAHISONG": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ASAHISONG.json"
+    },
+    "GEOJITFSL": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GEOJITFSL.json"
+    },
+    "ANUHPHR": {
+      "bars": 414,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ANUHPHR.json"
+    },
+    "PVTBANIETF": {
+      "bars": 1742,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_PVTBANIETF.json"
+    },
+    "TMPV": {
+      "bars": 2476,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_TMPV.json"
+    },
+    "EXICOM": {
+      "bars": 610,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_EXICOM.json"
+    },
+    "SILVER1": {
+      "bars": 913,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SILVER1.json"
+    },
+    "HEALTHIETF": {
+      "bars": 1303,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_HEALTHIETF.json"
+    },
+    "GRSE": {
+      "bars": 1949,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GRSE.json"
+    },
+    "GEMAROMA": {
+      "bars": 245,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_GEMAROMA.json"
+    },
+    "SUPREMEINF": {
+      "bars": 2290,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SUPREMEINF.json"
+    },
+    "USASEEDS": {
+      "bars": 823,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_USASEEDS.json"
+    },
+    "SAHAJSOLAR": {
+      "bars": 520,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_SAHAJSOLAR.json"
+    },
+    "FINKURVE": {
+      "bars": 220,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_FINKURVE.json"
+    },
+    "ZIMLAB": {
+      "bars": 928,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_ZIMLAB.json"
+    },
+    "HEXT": {
+      "bars": 371,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_HEXT.json"
+    },
+    "360ONE": {
+      "bars": 1718,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_360ONE.json"
+    },
+    "KOHINOOR": {
+      "bars": 2139,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_KOHINOOR.json"
+    },
+    "JAYNECOIND": {
+      "bars": 2432,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\nse-delivery-20160822-20260821\\delivery_accumulation_JAYNECOIND.json"
+    }
+  }
+}

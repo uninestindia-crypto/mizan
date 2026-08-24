@@ -1,0 +1,6092 @@
+{
+  "symbol": "OLIL",
+  "instrument_key": "NSE_EQ|INE0OPS01011",
+  "bars_count": 676,
+  "records": [
+    {
+      "date": "2023-10-11",
+      "close": 133.0,
+      "volume": 356400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -356400.0,
+      "cumulative_money_flow": -356400.0,
+      "intraday_intensity": -356400.0
+    },
+    {
+      "date": "2023-10-12",
+      "close": 126.35,
+      "volume": 4800,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -356400.0,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-10-13",
+      "close": 120.05,
+      "volume": 3600,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -356400.0,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-10-16",
+      "close": 114.05,
+      "volume": 4800,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -356400.0,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-10-17",
+      "close": 108.35,
+      "volume": 6000,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -356400.0,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-10-18",
+      "close": 102.95,
+      "volume": 33600,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -356400.0,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-10-19",
+      "close": 97.8,
+      "volume": 16800,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -356400.0,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-10-20",
+      "close": 102.65,
+      "volume": 248400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 248400.0,
+      "cumulative_money_flow": -108000.0,
+      "intraday_intensity": 248400.0
+    },
+    {
+      "date": "2023-10-23",
+      "close": 97.55,
+      "volume": 33600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -33600.0,
+      "cumulative_money_flow": -141600.0,
+      "intraday_intensity": -33600.0
+    },
+    {
+      "date": "2023-10-25",
+      "close": 92.7,
+      "volume": 56400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -56400.0,
+      "cumulative_money_flow": -198000.0,
+      "intraday_intensity": -56400.0
+    },
+    {
+      "date": "2023-10-26",
+      "close": 83.45,
+      "volume": 44400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -44400.0,
+      "cumulative_money_flow": -242400.0,
+      "intraday_intensity": -44400.0
+    },
+    {
+      "date": "2023-10-27",
+      "close": 81.0,
+      "volume": 109200,
+      "money_flow_multiplier": -0.169,
+      "money_flow_volume": -18456.34,
+      "cumulative_money_flow": -260856.34,
+      "intraday_intensity": -18456.34
+    },
+    {
+      "date": "2023-10-30",
+      "close": 73.2,
+      "volume": 44400,
+      "money_flow_multiplier": -0.8537,
+      "money_flow_volume": -37902.44,
+      "cumulative_money_flow": -298758.78,
+      "intraday_intensity": -37902.44
+    },
+    {
+      "date": "2023-10-31",
+      "close": 74.0,
+      "volume": 16800,
+      "money_flow_multiplier": 0.4706,
+      "money_flow_volume": 7905.88,
+      "cumulative_money_flow": -290852.89,
+      "intraday_intensity": 7905.88
+    },
+    {
+      "date": "2023-11-01",
+      "close": 71.8,
+      "volume": 31200,
+      "money_flow_multiplier": -0.7479,
+      "money_flow_volume": -23334.45,
+      "cumulative_money_flow": -314187.35,
+      "intraday_intensity": -23334.45
+    },
+    {
+      "date": "2023-11-02",
+      "close": 73.0,
+      "volume": 3600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 3600.0,
+      "cumulative_money_flow": -310587.35,
+      "intraday_intensity": 3600.0
+    },
+    {
+      "date": "2023-11-03",
+      "close": 73.05,
+      "volume": 4800,
+      "money_flow_multiplier": 0.3125,
+      "money_flow_volume": 1500.0,
+      "cumulative_money_flow": -309087.35,
+      "intraday_intensity": 1500.0
+    },
+    {
+      "date": "2023-11-06",
+      "close": 73.3,
+      "volume": 9600,
+      "money_flow_multiplier": -0.8667,
+      "money_flow_volume": -8320.0,
+      "cumulative_money_flow": -317407.35,
+      "intraday_intensity": -8320.0
+    },
+    {
+      "date": "2023-11-07",
+      "close": 71.8,
+      "volume": 9600,
+      "money_flow_multiplier": -0.9231,
+      "money_flow_volume": -8861.54,
+      "cumulative_money_flow": -326268.89,
+      "intraday_intensity": -8861.54
+    },
+    {
+      "date": "2023-11-08",
+      "close": 72.0,
+      "volume": 8400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 8400.0,
+      "cumulative_money_flow": -317868.89,
+      "intraday_intensity": 8400.0
+    },
+    {
+      "date": "2023-11-09",
+      "close": 68.4,
+      "volume": 14400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -14400.0,
+      "cumulative_money_flow": -332268.89,
+      "intraday_intensity": -14400.0
+    },
+    {
+      "date": "2023-11-10",
+      "close": 66.1,
+      "volume": 30000,
+      "money_flow_multiplier": -0.2,
+      "money_flow_volume": -6000.0,
+      "cumulative_money_flow": -338268.89,
+      "intraday_intensity": -6000.0
+    },
+    {
+      "date": "2023-11-12",
+      "close": 66.1,
+      "volume": 2400,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -338268.89,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-11-13",
+      "close": 69.4,
+      "volume": 8400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 8400.0,
+      "cumulative_money_flow": -329868.89,
+      "intraday_intensity": 8400.0
+    },
+    {
+      "date": "2023-11-15",
+      "close": 72.85,
+      "volume": 3600,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -329868.89,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-11-16",
+      "close": 76.45,
+      "volume": 3600,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -329868.89,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-11-17",
+      "close": 80.25,
+      "volume": 45600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 45600.0,
+      "cumulative_money_flow": -284268.89,
+      "intraday_intensity": 45600.0
+    },
+    {
+      "date": "2023-11-20",
+      "close": 83.0,
+      "volume": 39600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 39600.0,
+      "cumulative_money_flow": -244668.89,
+      "intraday_intensity": 39600.0
+    },
+    {
+      "date": "2023-11-21",
+      "close": 80.1,
+      "volume": 6000,
+      "money_flow_multiplier": -0.0286,
+      "money_flow_volume": -171.43,
+      "cumulative_money_flow": -244840.32,
+      "intraday_intensity": -171.43
+    },
+    {
+      "date": "2023-11-22",
+      "close": 76.15,
+      "volume": 3600,
+      "money_flow_multiplier": -0.8889,
+      "money_flow_volume": -3200.0,
+      "cumulative_money_flow": -248040.32,
+      "intraday_intensity": -3200.0
+    },
+    {
+      "date": "2023-11-23",
+      "close": 72.4,
+      "volume": 9600,
+      "money_flow_multiplier": -0.9394,
+      "money_flow_volume": -9018.18,
+      "cumulative_money_flow": -257058.5,
+      "intraday_intensity": -9018.18
+    },
+    {
+      "date": "2023-11-24",
+      "close": 72.4,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -257058.5,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-11-28",
+      "close": 70.55,
+      "volume": 7200,
+      "money_flow_multiplier": -0.6087,
+      "money_flow_volume": -4382.61,
+      "cumulative_money_flow": -261441.11,
+      "intraday_intensity": -4382.61
+    },
+    {
+      "date": "2023-11-29",
+      "close": 72.0,
+      "volume": 10800,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 10800.0,
+      "cumulative_money_flow": -250641.11,
+      "intraday_intensity": 10800.0
+    },
+    {
+      "date": "2023-11-30",
+      "close": 72.4,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -250641.11,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-12-01",
+      "close": 74.0,
+      "volume": 4800,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 4800.0,
+      "cumulative_money_flow": -245841.11,
+      "intraday_intensity": 4800.0
+    },
+    {
+      "date": "2023-12-04",
+      "close": 71.0,
+      "volume": 6000,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -245841.11,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-12-05",
+      "close": 70.5,
+      "volume": 7200,
+      "money_flow_multiplier": -0.6571,
+      "money_flow_volume": -4731.43,
+      "cumulative_money_flow": -250572.53,
+      "intraday_intensity": -4731.43
+    },
+    {
+      "date": "2023-12-06",
+      "close": 68.55,
+      "volume": 9600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -9600.0,
+      "cumulative_money_flow": -260172.53,
+      "intraday_intensity": -9600.0
+    },
+    {
+      "date": "2023-12-07",
+      "close": 68.35,
+      "volume": 7200,
+      "money_flow_multiplier": 0.92,
+      "money_flow_volume": 6624.0,
+      "cumulative_money_flow": -253548.53,
+      "intraday_intensity": 6624.0
+    },
+    {
+      "date": "2023-12-11",
+      "close": 66.45,
+      "volume": 4800,
+      "money_flow_multiplier": 0.913,
+      "money_flow_volume": 4382.61,
+      "cumulative_money_flow": -249165.93,
+      "intraday_intensity": 4382.61
+    },
+    {
+      "date": "2023-12-12",
+      "close": 65.5,
+      "volume": 6000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 6000.0,
+      "cumulative_money_flow": -243165.93,
+      "intraday_intensity": 6000.0
+    },
+    {
+      "date": "2023-12-13",
+      "close": 65.5,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -243165.93,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-12-14",
+      "close": 67.85,
+      "volume": 3600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 3600.0,
+      "cumulative_money_flow": -239565.93,
+      "intraday_intensity": 3600.0
+    },
+    {
+      "date": "2023-12-15",
+      "close": 65.2,
+      "volume": 6000,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -6000.0,
+      "cumulative_money_flow": -245565.93,
+      "intraday_intensity": -6000.0
+    },
+    {
+      "date": "2023-12-18",
+      "close": 65.0,
+      "volume": 3600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -3600.0,
+      "cumulative_money_flow": -249165.93,
+      "intraday_intensity": -3600.0
+    },
+    {
+      "date": "2023-12-19",
+      "close": 71.5,
+      "volume": 22800,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 22800.0,
+      "cumulative_money_flow": -226365.93,
+      "intraday_intensity": 22800.0
+    },
+    {
+      "date": "2023-12-20",
+      "close": 65.75,
+      "volume": 20400,
+      "money_flow_multiplier": -0.9181,
+      "money_flow_volume": -18729.82,
+      "cumulative_money_flow": -245095.75,
+      "intraday_intensity": -18729.82
+    },
+    {
+      "date": "2023-12-21",
+      "close": 67.8,
+      "volume": 7200,
+      "money_flow_multiplier": 0.907,
+      "money_flow_volume": 6530.23,
+      "cumulative_money_flow": -238565.52,
+      "intraday_intensity": 6530.23
+    },
+    {
+      "date": "2023-12-22",
+      "close": 68.0,
+      "volume": 2400,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -238565.52,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-12-26",
+      "close": 71.35,
+      "volume": 4800,
+      "money_flow_multiplier": 0.88,
+      "money_flow_volume": 4224.0,
+      "cumulative_money_flow": -234341.52,
+      "intraday_intensity": 4224.0
+    },
+    {
+      "date": "2023-12-27",
+      "close": 68.5,
+      "volume": 3600,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -234341.52,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2023-12-28",
+      "close": 66.2,
+      "volume": 3600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 3600.0,
+      "cumulative_money_flow": -230741.52,
+      "intraday_intensity": 3600.0
+    },
+    {
+      "date": "2023-12-29",
+      "close": 66.2,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -230741.52,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-01-01",
+      "close": 66.4,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": -228341.52,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2024-01-02",
+      "close": 66.5,
+      "volume": 6000,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -6000.0,
+      "cumulative_money_flow": -234341.52,
+      "intraday_intensity": -6000.0
+    },
+    {
+      "date": "2024-01-03",
+      "close": 67.9,
+      "volume": 4800,
+      "money_flow_multiplier": 0.2667,
+      "money_flow_volume": 1280.0,
+      "cumulative_money_flow": -233061.52,
+      "intraday_intensity": 1280.0
+    },
+    {
+      "date": "2024-01-04",
+      "close": 68.0,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -233061.52,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-01-05",
+      "close": 70.35,
+      "volume": 12000,
+      "money_flow_multiplier": 0.8,
+      "money_flow_volume": 9600.0,
+      "cumulative_money_flow": -223461.52,
+      "intraday_intensity": 9600.0
+    },
+    {
+      "date": "2024-01-08",
+      "close": 77.35,
+      "volume": 50400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 50400.0,
+      "cumulative_money_flow": -173061.52,
+      "intraday_intensity": 50400.0
+    },
+    {
+      "date": "2024-01-09",
+      "close": 82.05,
+      "volume": 66000,
+      "money_flow_multiplier": 0.1489,
+      "money_flow_volume": 9829.79,
+      "cumulative_money_flow": -163231.73,
+      "intraday_intensity": 9829.79
+    },
+    {
+      "date": "2024-01-10",
+      "close": 78.35,
+      "volume": 3600,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -163231.73,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-01-11",
+      "close": 81.85,
+      "volume": 2400,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -163231.73,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-01-12",
+      "close": 84.5,
+      "volume": 158400,
+      "money_flow_multiplier": -0.375,
+      "money_flow_volume": -59400.0,
+      "cumulative_money_flow": -222631.73,
+      "intraday_intensity": -59400.0
+    },
+    {
+      "date": "2024-01-15",
+      "close": 85.6,
+      "volume": 18000,
+      "money_flow_multiplier": 0.1712,
+      "money_flow_volume": 3081.08,
+      "cumulative_money_flow": -219550.65,
+      "intraday_intensity": 3081.08
+    },
+    {
+      "date": "2024-01-16",
+      "close": 82.6,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": -217150.65,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2024-01-17",
+      "close": 79.1,
+      "volume": 4800,
+      "money_flow_multiplier": -0.9487,
+      "money_flow_volume": -4553.85,
+      "cumulative_money_flow": -221704.5,
+      "intraday_intensity": -4553.85
+    },
+    {
+      "date": "2024-01-18",
+      "close": 79.5,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": -219304.5,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2024-01-19",
+      "close": 78.1,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -219304.5,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-01-20",
+      "close": 76.55,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": -221704.5,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2024-01-23",
+      "close": 76.0,
+      "volume": 2400,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -221704.5,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-01-24",
+      "close": 76.0,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -221704.5,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-01-25",
+      "close": 74.0,
+      "volume": 3600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -3600.0,
+      "cumulative_money_flow": -225304.5,
+      "intraday_intensity": -3600.0
+    },
+    {
+      "date": "2024-01-29",
+      "close": 75.5,
+      "volume": 4800,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 4800.0,
+      "cumulative_money_flow": -220504.5,
+      "intraday_intensity": 4800.0
+    },
+    {
+      "date": "2024-01-31",
+      "close": 75.2,
+      "volume": 6000,
+      "money_flow_multiplier": -0.2,
+      "money_flow_volume": -1200.0,
+      "cumulative_money_flow": -221704.5,
+      "intraday_intensity": -1200.0
+    },
+    {
+      "date": "2024-02-01",
+      "close": 82.5,
+      "volume": 15600,
+      "money_flow_multiplier": 0.9626,
+      "money_flow_volume": 15016.82,
+      "cumulative_money_flow": -206687.67,
+      "intraday_intensity": 15016.82
+    },
+    {
+      "date": "2024-02-02",
+      "close": 82.65,
+      "volume": 18000,
+      "money_flow_multiplier": 0.963,
+      "money_flow_volume": 17333.33,
+      "cumulative_money_flow": -189354.34,
+      "intraday_intensity": 17333.33
+    },
+    {
+      "date": "2024-02-05",
+      "close": 82.35,
+      "volume": 9600,
+      "money_flow_multiplier": 0.8378,
+      "money_flow_volume": 8043.24,
+      "cumulative_money_flow": -181311.1,
+      "intraday_intensity": 8043.24
+    },
+    {
+      "date": "2024-02-06",
+      "close": 78.65,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -181311.1,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-02-07",
+      "close": 82.15,
+      "volume": 12000,
+      "money_flow_multiplier": 0.32,
+      "money_flow_volume": 3840.0,
+      "cumulative_money_flow": -177471.1,
+      "intraday_intensity": 3840.0
+    },
+    {
+      "date": "2024-02-08",
+      "close": 86.0,
+      "volume": 24000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 24000.0,
+      "cumulative_money_flow": -153471.1,
+      "intraday_intensity": 24000.0
+    },
+    {
+      "date": "2024-02-09",
+      "close": 89.55,
+      "volume": 40800,
+      "money_flow_multiplier": 0.2476,
+      "money_flow_volume": 10102.86,
+      "cumulative_money_flow": -143368.24,
+      "intraday_intensity": 10102.86
+    },
+    {
+      "date": "2024-02-12",
+      "close": 85.35,
+      "volume": 36000,
+      "money_flow_multiplier": -0.9728,
+      "money_flow_volume": -35019.07,
+      "cumulative_money_flow": -178387.31,
+      "intraday_intensity": -35019.07
+    },
+    {
+      "date": "2024-02-13",
+      "close": 82.05,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -178387.31,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-02-15",
+      "close": 81.1,
+      "volume": 3600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -3600.0,
+      "cumulative_money_flow": -181987.31,
+      "intraday_intensity": -3600.0
+    },
+    {
+      "date": "2024-02-16",
+      "close": 78.6,
+      "volume": 3600,
+      "money_flow_multiplier": -0.8667,
+      "money_flow_volume": -3120.0,
+      "cumulative_money_flow": -185107.31,
+      "intraday_intensity": -3120.0
+    },
+    {
+      "date": "2024-02-19",
+      "close": 82.0,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -185107.31,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-02-20",
+      "close": 79.0,
+      "volume": 7200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -185107.31,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-02-21",
+      "close": 80.25,
+      "volume": 8400,
+      "money_flow_multiplier": -0.6667,
+      "money_flow_volume": -5600.0,
+      "cumulative_money_flow": -190707.31,
+      "intraday_intensity": -5600.0
+    },
+    {
+      "date": "2024-02-22",
+      "close": 80.25,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -190707.31,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-02-23",
+      "close": 80.0,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -190707.31,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-02-26",
+      "close": 83.65,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -190707.31,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-02-28",
+      "close": 79.9,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -190707.31,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-02-29",
+      "close": 78.5,
+      "volume": 6000,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -190707.31,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-03-02",
+      "close": 75.2,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -190707.31,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-03-04",
+      "close": 77.5,
+      "volume": 18000,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -18000.0,
+      "cumulative_money_flow": -208707.31,
+      "intraday_intensity": -18000.0
+    },
+    {
+      "date": "2024-03-05",
+      "close": 75.0,
+      "volume": 14400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 14400.0,
+      "cumulative_money_flow": -194307.31,
+      "intraday_intensity": 14400.0
+    },
+    {
+      "date": "2024-03-06",
+      "close": 75.35,
+      "volume": 4800,
+      "money_flow_multiplier": 0.3158,
+      "money_flow_volume": 1515.79,
+      "cumulative_money_flow": -192791.52,
+      "intraday_intensity": 1515.79
+    },
+    {
+      "date": "2024-03-11",
+      "close": 72.9,
+      "volume": 8400,
+      "money_flow_multiplier": 0.6,
+      "money_flow_volume": 5040.0,
+      "cumulative_money_flow": -187751.52,
+      "intraday_intensity": 5040.0
+    },
+    {
+      "date": "2024-03-12",
+      "close": 70.0,
+      "volume": 7200,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -7200.0,
+      "cumulative_money_flow": -194951.52,
+      "intraday_intensity": -7200.0
+    },
+    {
+      "date": "2024-03-13",
+      "close": 65.05,
+      "volume": 4800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -4800.0,
+      "cumulative_money_flow": -199751.52,
+      "intraday_intensity": -4800.0
+    },
+    {
+      "date": "2024-03-14",
+      "close": 67.0,
+      "volume": 6000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 6000.0,
+      "cumulative_money_flow": -193751.52,
+      "intraday_intensity": 6000.0
+    },
+    {
+      "date": "2024-03-15",
+      "close": 68.15,
+      "volume": 4800,
+      "money_flow_multiplier": 0.2,
+      "money_flow_volume": 960.0,
+      "cumulative_money_flow": -192791.52,
+      "intraday_intensity": 960.0
+    },
+    {
+      "date": "2024-03-18",
+      "close": 72.35,
+      "volume": 13200,
+      "money_flow_multiplier": 0.1545,
+      "money_flow_volume": 2040.0,
+      "cumulative_money_flow": -190751.52,
+      "intraday_intensity": 2040.0
+    },
+    {
+      "date": "2024-03-19",
+      "close": 69.1,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -190751.52,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-03-20",
+      "close": 67.0,
+      "volume": 3600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -3600.0,
+      "cumulative_money_flow": -194351.52,
+      "intraday_intensity": -3600.0
+    },
+    {
+      "date": "2024-03-21",
+      "close": 75.4,
+      "volume": 16800,
+      "money_flow_multiplier": 0.4802,
+      "money_flow_volume": 8066.96,
+      "cumulative_money_flow": -186284.56,
+      "intraday_intensity": 8066.96
+    },
+    {
+      "date": "2024-03-22",
+      "close": 72.1,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": -188684.56,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2024-03-26",
+      "close": 66.75,
+      "volume": 25200,
+      "money_flow_multiplier": -0.7647,
+      "money_flow_volume": -19270.59,
+      "cumulative_money_flow": -207955.15,
+      "intraday_intensity": -19270.59
+    },
+    {
+      "date": "2024-03-27",
+      "close": 66.25,
+      "volume": 9600,
+      "money_flow_multiplier": -0.9375,
+      "money_flow_volume": -9000.0,
+      "cumulative_money_flow": -216955.15,
+      "intraday_intensity": -9000.0
+    },
+    {
+      "date": "2024-03-28",
+      "close": 65.0,
+      "volume": 16800,
+      "money_flow_multiplier": 0.3058,
+      "money_flow_volume": 5137.19,
+      "cumulative_money_flow": -211817.96,
+      "intraday_intensity": 5137.19
+    },
+    {
+      "date": "2024-04-02",
+      "close": 64.0,
+      "volume": 4800,
+      "money_flow_multiplier": 0.3929,
+      "money_flow_volume": 1885.71,
+      "cumulative_money_flow": -209932.25,
+      "intraday_intensity": 1885.71
+    },
+    {
+      "date": "2024-04-03",
+      "close": 68.0,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": -207532.25,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2024-04-09",
+      "close": 68.95,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -207532.25,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-04-12",
+      "close": 68.0,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": -205132.25,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2024-04-18",
+      "close": 70.0,
+      "volume": 3600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 3600.0,
+      "cumulative_money_flow": -201532.25,
+      "intraday_intensity": 3600.0
+    },
+    {
+      "date": "2024-04-22",
+      "close": 66.85,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": -203932.25,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2024-04-23",
+      "close": 66.5,
+      "volume": 6000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 6000.0,
+      "cumulative_money_flow": -197932.25,
+      "intraday_intensity": 6000.0
+    },
+    {
+      "date": "2024-04-24",
+      "close": 70.95,
+      "volume": 4800,
+      "money_flow_multiplier": -0.0333,
+      "money_flow_volume": -160.0,
+      "cumulative_money_flow": -198092.25,
+      "intraday_intensity": -160.0
+    },
+    {
+      "date": "2024-04-25",
+      "close": 70.0,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": -200492.25,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2024-04-29",
+      "close": 71.1,
+      "volume": 40800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -40800.0,
+      "cumulative_money_flow": -241292.25,
+      "intraday_intensity": -40800.0
+    },
+    {
+      "date": "2024-04-30",
+      "close": 72.0,
+      "volume": 12000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 12000.0,
+      "cumulative_money_flow": -229292.25,
+      "intraday_intensity": 12000.0
+    },
+    {
+      "date": "2024-05-02",
+      "close": 68.75,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -229292.25,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-05-03",
+      "close": 69.2,
+      "volume": 4800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -4800.0,
+      "cumulative_money_flow": -234092.25,
+      "intraday_intensity": -4800.0
+    },
+    {
+      "date": "2024-05-07",
+      "close": 68.0,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": -231692.25,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2024-05-08",
+      "close": 68.0,
+      "volume": 4800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -4800.0,
+      "cumulative_money_flow": -236492.25,
+      "intraday_intensity": -4800.0
+    },
+    {
+      "date": "2024-05-09",
+      "close": 71.0,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -236492.25,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-05-10",
+      "close": 71.0,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": -238892.25,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2024-05-18",
+      "close": 68.0,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -238892.25,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-05-21",
+      "close": 65.5,
+      "volume": 4800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -4800.0,
+      "cumulative_money_flow": -243692.25,
+      "intraday_intensity": -4800.0
+    },
+    {
+      "date": "2024-05-23",
+      "close": 67.75,
+      "volume": 6000,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -6000.0,
+      "cumulative_money_flow": -249692.25,
+      "intraday_intensity": -6000.0
+    },
+    {
+      "date": "2024-05-27",
+      "close": 64.7,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -249692.25,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-05-30",
+      "close": 64.5,
+      "volume": 3600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -3600.0,
+      "cumulative_money_flow": -253292.25,
+      "intraday_intensity": -3600.0
+    },
+    {
+      "date": "2024-05-31",
+      "close": 62.5,
+      "volume": 2400,
+      "money_flow_multiplier": -0.0526,
+      "money_flow_volume": -126.32,
+      "cumulative_money_flow": -253418.56,
+      "intraday_intensity": -126.32
+    },
+    {
+      "date": "2024-06-03",
+      "close": 64.4,
+      "volume": 12000,
+      "money_flow_multiplier": 0.4017,
+      "money_flow_volume": 4820.51,
+      "cumulative_money_flow": -248598.05,
+      "intraday_intensity": 4820.51
+    },
+    {
+      "date": "2024-06-04",
+      "close": 62.05,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": -246198.05,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2024-06-06",
+      "close": 60.15,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -246198.05,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-06-07",
+      "close": 60.15,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -246198.05,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-06-10",
+      "close": 62.85,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -246198.05,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-06-12",
+      "close": 61.05,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": -248598.05,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2024-06-13",
+      "close": 61.25,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -248598.05,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-06-14",
+      "close": 62.0,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": -246198.05,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2024-06-18",
+      "close": 64.8,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": -243798.05,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2024-06-19",
+      "close": 63.0,
+      "volume": 3600,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -243798.05,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-06-20",
+      "close": 63.0,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -243798.05,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-06-21",
+      "close": 63.0,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": -243798.05,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-06-24",
+      "close": 63.05,
+      "volume": 4800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -4800.0,
+      "cumulative_money_flow": -248598.05,
+      "intraday_intensity": -4800.0
+    },
+    {
+      "date": "2024-06-27",
+      "close": 62.0,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": -250998.05,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2024-06-28",
+      "close": 74.4,
+      "volume": 36000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 36000.0,
+      "cumulative_money_flow": -214998.05,
+      "intraday_intensity": 36000.0
+    },
+    {
+      "date": "2024-07-01",
+      "close": 84.25,
+      "volume": 121200,
+      "money_flow_multiplier": 0.0366,
+      "money_flow_volume": 4434.15,
+      "cumulative_money_flow": -210563.9,
+      "intraday_intensity": 4434.15
+    },
+    {
+      "date": "2024-07-02",
+      "close": 86.0,
+      "volume": 74400,
+      "money_flow_multiplier": 0.7484,
+      "money_flow_volume": 55683.02,
+      "cumulative_money_flow": -154880.88,
+      "intraday_intensity": 55683.02
+    },
+    {
+      "date": "2024-07-03",
+      "close": 82.2,
+      "volume": 19200,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -19200.0,
+      "cumulative_money_flow": -174080.88,
+      "intraday_intensity": -19200.0
+    },
+    {
+      "date": "2024-07-04",
+      "close": 83.5,
+      "volume": 49200,
+      "money_flow_multiplier": 0.6364,
+      "money_flow_volume": 31309.09,
+      "cumulative_money_flow": -142771.79,
+      "intraday_intensity": 31309.09
+    },
+    {
+      "date": "2024-07-05",
+      "close": 79.8,
+      "volume": 20400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -20400.0,
+      "cumulative_money_flow": -163171.79,
+      "intraday_intensity": -20400.0
+    },
+    {
+      "date": "2024-07-08",
+      "close": 83.25,
+      "volume": 75600,
+      "money_flow_multiplier": 0.4615,
+      "money_flow_volume": 34892.31,
+      "cumulative_money_flow": -128279.49,
+      "intraday_intensity": 34892.31
+    },
+    {
+      "date": "2024-07-09",
+      "close": 99.9,
+      "volume": 168000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 168000.0,
+      "cumulative_money_flow": 39720.51,
+      "intraday_intensity": 168000.0
+    },
+    {
+      "date": "2024-07-10",
+      "close": 119.85,
+      "volume": 208800,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 208800.0,
+      "cumulative_money_flow": 248520.51,
+      "intraday_intensity": 208800.0
+    },
+    {
+      "date": "2024-07-11",
+      "close": 118.1,
+      "volume": 148800,
+      "money_flow_multiplier": -0.2494,
+      "money_flow_volume": -37108.15,
+      "cumulative_money_flow": 211412.37,
+      "intraday_intensity": -37108.15
+    },
+    {
+      "date": "2024-07-12",
+      "close": 116.55,
+      "volume": 51600,
+      "money_flow_multiplier": 0.2737,
+      "money_flow_volume": 14122.11,
+      "cumulative_money_flow": 225534.47,
+      "intraday_intensity": 14122.11
+    },
+    {
+      "date": "2024-07-15",
+      "close": 109.75,
+      "volume": 33600,
+      "money_flow_multiplier": -0.85,
+      "money_flow_volume": -28560.0,
+      "cumulative_money_flow": 196974.47,
+      "intraday_intensity": -28560.0
+    },
+    {
+      "date": "2024-07-16",
+      "close": 104.3,
+      "volume": 19200,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -19200.0,
+      "cumulative_money_flow": 177774.47,
+      "intraday_intensity": -19200.0
+    },
+    {
+      "date": "2024-07-18",
+      "close": 99.1,
+      "volume": 3600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -3600.0,
+      "cumulative_money_flow": 174174.47,
+      "intraday_intensity": -3600.0
+    },
+    {
+      "date": "2024-07-19",
+      "close": 94.15,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": 171774.47,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2024-07-22",
+      "close": 94.15,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 171774.47,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-07-23",
+      "close": 89.45,
+      "volume": 3600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -3600.0,
+      "cumulative_money_flow": 168174.47,
+      "intraday_intensity": -3600.0
+    },
+    {
+      "date": "2024-07-24",
+      "close": 93.9,
+      "volume": 7200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 7200.0,
+      "cumulative_money_flow": 175374.47,
+      "intraday_intensity": 7200.0
+    },
+    {
+      "date": "2024-07-25",
+      "close": 93.9,
+      "volume": 2400,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 175374.47,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-07-29",
+      "close": 91.05,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": 177774.47,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2024-07-30",
+      "close": 86.5,
+      "volume": 12000,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -12000.0,
+      "cumulative_money_flow": 165774.47,
+      "intraday_intensity": -12000.0
+    },
+    {
+      "date": "2024-07-31",
+      "close": 89.95,
+      "volume": 3600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 3600.0,
+      "cumulative_money_flow": 169374.47,
+      "intraday_intensity": 3600.0
+    },
+    {
+      "date": "2024-08-01",
+      "close": 92.9,
+      "volume": 3600,
+      "money_flow_multiplier": 0.2881,
+      "money_flow_volume": 1037.29,
+      "cumulative_money_flow": 170411.76,
+      "intraday_intensity": 1037.29
+    },
+    {
+      "date": "2024-08-02",
+      "close": 88.25,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": 168011.76,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2024-08-05",
+      "close": 84.25,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 168011.76,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-08-06",
+      "close": 84.25,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 168011.76,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-08-07",
+      "close": 84.5,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 168011.76,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-08-08",
+      "close": 85.9,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 168011.76,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-08-09",
+      "close": 86.4,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 168011.76,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-08-12",
+      "close": 84.6,
+      "volume": 3600,
+      "money_flow_multiplier": -0.5,
+      "money_flow_volume": -1800.0,
+      "cumulative_money_flow": 166211.76,
+      "intraday_intensity": -1800.0
+    },
+    {
+      "date": "2024-08-13",
+      "close": 88.35,
+      "volume": 4800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -4800.0,
+      "cumulative_money_flow": 161411.76,
+      "intraday_intensity": -4800.0
+    },
+    {
+      "date": "2024-08-14",
+      "close": 88.35,
+      "volume": 4800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -4800.0,
+      "cumulative_money_flow": 156611.76,
+      "intraday_intensity": -4800.0
+    },
+    {
+      "date": "2024-08-16",
+      "close": 90.5,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 156611.76,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-08-19",
+      "close": 86.0,
+      "volume": 4800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -4800.0,
+      "cumulative_money_flow": 151811.76,
+      "intraday_intensity": -4800.0
+    },
+    {
+      "date": "2024-08-20",
+      "close": 82.15,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 151811.76,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-08-21",
+      "close": 80.2,
+      "volume": 6000,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -6000.0,
+      "cumulative_money_flow": 145811.76,
+      "intraday_intensity": -6000.0
+    },
+    {
+      "date": "2024-08-22",
+      "close": 81.1,
+      "volume": 8400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -8400.0,
+      "cumulative_money_flow": 137411.76,
+      "intraday_intensity": -8400.0
+    },
+    {
+      "date": "2024-08-26",
+      "close": 82.05,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": 135011.76,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2024-08-27",
+      "close": 81.0,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 135011.76,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-08-28",
+      "close": 81.0,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 135011.76,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-08-29",
+      "close": 81.0,
+      "volume": 3600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 3600.0,
+      "cumulative_money_flow": 138611.76,
+      "intraday_intensity": 3600.0
+    },
+    {
+      "date": "2024-08-30",
+      "close": 79.0,
+      "volume": 3600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -3600.0,
+      "cumulative_money_flow": 135011.76,
+      "intraday_intensity": -3600.0
+    },
+    {
+      "date": "2024-09-02",
+      "close": 75.45,
+      "volume": 9600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -9600.0,
+      "cumulative_money_flow": 125411.76,
+      "intraday_intensity": -9600.0
+    },
+    {
+      "date": "2024-09-03",
+      "close": 72.7,
+      "volume": 4800,
+      "money_flow_multiplier": 0.5385,
+      "money_flow_volume": 2584.62,
+      "cumulative_money_flow": 127996.37,
+      "intraday_intensity": 2584.62
+    },
+    {
+      "date": "2024-09-04",
+      "close": 73.0,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 127996.37,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-09-05",
+      "close": 75.7,
+      "volume": 10800,
+      "money_flow_multiplier": 0.3333,
+      "money_flow_volume": 3600.0,
+      "cumulative_money_flow": 131596.37,
+      "intraday_intensity": 3600.0
+    },
+    {
+      "date": "2024-09-06",
+      "close": 76.05,
+      "volume": 9600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -9600.0,
+      "cumulative_money_flow": 121996.37,
+      "intraday_intensity": -9600.0
+    },
+    {
+      "date": "2024-09-12",
+      "close": 79.85,
+      "volume": 13200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 13200.0,
+      "cumulative_money_flow": 135196.37,
+      "intraday_intensity": 13200.0
+    },
+    {
+      "date": "2024-09-13",
+      "close": 83.4,
+      "volume": 7200,
+      "money_flow_multiplier": 0.4286,
+      "money_flow_volume": 3085.71,
+      "cumulative_money_flow": 138282.09,
+      "intraday_intensity": 3085.71
+    },
+    {
+      "date": "2024-09-16",
+      "close": 86.95,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": 135882.09,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2024-09-17",
+      "close": 82.6,
+      "volume": 12000,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -12000.0,
+      "cumulative_money_flow": 123882.09,
+      "intraday_intensity": -12000.0
+    },
+    {
+      "date": "2024-09-18",
+      "close": 79.0,
+      "volume": 3600,
+      "money_flow_multiplier": -0.9459,
+      "money_flow_volume": -3405.41,
+      "cumulative_money_flow": 120476.68,
+      "intraday_intensity": -3405.41
+    },
+    {
+      "date": "2024-09-19",
+      "close": 78.85,
+      "volume": 4800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -4800.0,
+      "cumulative_money_flow": 115676.68,
+      "intraday_intensity": -4800.0
+    },
+    {
+      "date": "2024-09-20",
+      "close": 76.0,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 115676.68,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-09-23",
+      "close": 77.0,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": 118076.68,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2024-09-24",
+      "close": 77.0,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": 120476.68,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2024-09-25",
+      "close": 74.0,
+      "volume": 7200,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -7200.0,
+      "cumulative_money_flow": 113276.68,
+      "intraday_intensity": -7200.0
+    },
+    {
+      "date": "2024-09-26",
+      "close": 72.25,
+      "volume": 15600,
+      "money_flow_multiplier": -0.75,
+      "money_flow_volume": -11700.0,
+      "cumulative_money_flow": 101576.68,
+      "intraday_intensity": -11700.0
+    },
+    {
+      "date": "2024-09-27",
+      "close": 72.6,
+      "volume": 20400,
+      "money_flow_multiplier": -0.0642,
+      "money_flow_volume": -1310.09,
+      "cumulative_money_flow": 100266.59,
+      "intraday_intensity": -1310.09
+    },
+    {
+      "date": "2024-09-30",
+      "close": 73.5,
+      "volume": 8400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 8400.0,
+      "cumulative_money_flow": 108666.59,
+      "intraday_intensity": 8400.0
+    },
+    {
+      "date": "2024-10-01",
+      "close": 77.15,
+      "volume": 7200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 7200.0,
+      "cumulative_money_flow": 115866.59,
+      "intraday_intensity": 7200.0
+    },
+    {
+      "date": "2024-10-03",
+      "close": 81.0,
+      "volume": 2400,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 115866.59,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-10-04",
+      "close": 84.5,
+      "volume": 6000,
+      "money_flow_multiplier": 0.7722,
+      "money_flow_volume": 4632.91,
+      "cumulative_money_flow": 120499.5,
+      "intraday_intensity": 4632.91
+    },
+    {
+      "date": "2024-10-07",
+      "close": 80.3,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": 118099.5,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2024-10-08",
+      "close": 83.5,
+      "volume": 10800,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 10800.0,
+      "cumulative_money_flow": 128899.5,
+      "intraday_intensity": 10800.0
+    },
+    {
+      "date": "2024-10-09",
+      "close": 81.2,
+      "volume": 3600,
+      "money_flow_multiplier": -0.5,
+      "money_flow_volume": -1800.0,
+      "cumulative_money_flow": 127099.5,
+      "intraday_intensity": -1800.0
+    },
+    {
+      "date": "2024-10-10",
+      "close": 81.2,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 127099.5,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-10-11",
+      "close": 85.1,
+      "volume": 10800,
+      "money_flow_multiplier": 0.8929,
+      "money_flow_volume": 9642.86,
+      "cumulative_money_flow": 136742.36,
+      "intraday_intensity": 9642.86
+    },
+    {
+      "date": "2024-10-14",
+      "close": 88.4,
+      "volume": 22800,
+      "money_flow_multiplier": 0.7654,
+      "money_flow_volume": 17451.85,
+      "cumulative_money_flow": 154194.21,
+      "intraday_intensity": 17451.85
+    },
+    {
+      "date": "2024-10-15",
+      "close": 86.5,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": 151794.21,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2024-10-17",
+      "close": 86.5,
+      "volume": 6000,
+      "money_flow_multiplier": 0.6429,
+      "money_flow_volume": 3857.14,
+      "cumulative_money_flow": 155651.35,
+      "intraday_intensity": 3857.14
+    },
+    {
+      "date": "2024-10-18",
+      "close": 90.7,
+      "volume": 28800,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 28800.0,
+      "cumulative_money_flow": 184451.35,
+      "intraday_intensity": 28800.0
+    },
+    {
+      "date": "2024-10-21",
+      "close": 92.45,
+      "volume": 55200,
+      "money_flow_multiplier": 0.0208,
+      "money_flow_volume": 1150.0,
+      "cumulative_money_flow": 185601.35,
+      "intraday_intensity": 1150.0
+    },
+    {
+      "date": "2024-10-22",
+      "close": 91.5,
+      "volume": 56400,
+      "money_flow_multiplier": 0.759,
+      "money_flow_volume": 42809.64,
+      "cumulative_money_flow": 228410.99,
+      "intraday_intensity": 42809.64
+    },
+    {
+      "date": "2024-10-23",
+      "close": 89.9,
+      "volume": 45600,
+      "money_flow_multiplier": -0.913,
+      "money_flow_volume": -41634.78,
+      "cumulative_money_flow": 186776.21,
+      "intraday_intensity": -41634.78
+    },
+    {
+      "date": "2024-10-24",
+      "close": 91.95,
+      "volume": 62400,
+      "money_flow_multiplier": -0.3667,
+      "money_flow_volume": -22880.0,
+      "cumulative_money_flow": 163896.21,
+      "intraday_intensity": -22880.0
+    },
+    {
+      "date": "2024-10-25",
+      "close": 92.3,
+      "volume": 19200,
+      "money_flow_multiplier": 0.4887,
+      "money_flow_volume": 9383.46,
+      "cumulative_money_flow": 173279.67,
+      "intraday_intensity": 9383.46
+    },
+    {
+      "date": "2024-10-28",
+      "close": 91.35,
+      "volume": 33600,
+      "money_flow_multiplier": -0.25,
+      "money_flow_volume": -8400.0,
+      "cumulative_money_flow": 164879.67,
+      "intraday_intensity": -8400.0
+    },
+    {
+      "date": "2024-10-29",
+      "close": 95.85,
+      "volume": 106800,
+      "money_flow_multiplier": 0.9833,
+      "money_flow_volume": 105020.0,
+      "cumulative_money_flow": 269899.67,
+      "intraday_intensity": 105020.0
+    },
+    {
+      "date": "2024-10-30",
+      "close": 100.6,
+      "volume": 78000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 78000.0,
+      "cumulative_money_flow": 347899.67,
+      "intraday_intensity": 78000.0
+    },
+    {
+      "date": "2024-10-31",
+      "close": 97.9,
+      "volume": 31200,
+      "money_flow_multiplier": -0.8545,
+      "money_flow_volume": -26661.82,
+      "cumulative_money_flow": 321237.85,
+      "intraday_intensity": -26661.82
+    },
+    {
+      "date": "2024-11-01",
+      "close": 100.0,
+      "volume": 16800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -16800.0,
+      "cumulative_money_flow": 304437.85,
+      "intraday_intensity": -16800.0
+    },
+    {
+      "date": "2024-11-04",
+      "close": 100.65,
+      "volume": 74400,
+      "money_flow_multiplier": 0.4581,
+      "money_flow_volume": 34080.0,
+      "cumulative_money_flow": 338517.85,
+      "intraday_intensity": 34080.0
+    },
+    {
+      "date": "2024-11-05",
+      "close": 99.85,
+      "volume": 99600,
+      "money_flow_multiplier": -0.0253,
+      "money_flow_volume": -2521.52,
+      "cumulative_money_flow": 335996.33,
+      "intraday_intensity": -2521.52
+    },
+    {
+      "date": "2024-11-06",
+      "close": 100.85,
+      "volume": 16800,
+      "money_flow_multiplier": 0.9551,
+      "money_flow_volume": 16044.94,
+      "cumulative_money_flow": 352041.28,
+      "intraday_intensity": 16044.94
+    },
+    {
+      "date": "2024-11-07",
+      "close": 97.2,
+      "volume": 13200,
+      "money_flow_multiplier": -0.6,
+      "money_flow_volume": -7920.0,
+      "cumulative_money_flow": 344121.28,
+      "intraday_intensity": -7920.0
+    },
+    {
+      "date": "2024-11-08",
+      "close": 95.8,
+      "volume": 13200,
+      "money_flow_multiplier": 0.84,
+      "money_flow_volume": 11088.0,
+      "cumulative_money_flow": 355209.28,
+      "intraday_intensity": 11088.0
+    },
+    {
+      "date": "2024-11-11",
+      "close": 97.1,
+      "volume": 37200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 37200.0,
+      "cumulative_money_flow": 392409.28,
+      "intraday_intensity": 37200.0
+    },
+    {
+      "date": "2024-11-12",
+      "close": 98.05,
+      "volume": 3600,
+      "money_flow_multiplier": 0.8627,
+      "money_flow_volume": 3105.88,
+      "cumulative_money_flow": 395515.16,
+      "intraday_intensity": 3105.88
+    },
+    {
+      "date": "2024-11-13",
+      "close": 98.9,
+      "volume": 31200,
+      "money_flow_multiplier": 0.56,
+      "money_flow_volume": 17472.0,
+      "cumulative_money_flow": 412987.16,
+      "intraday_intensity": 17472.0
+    },
+    {
+      "date": "2024-11-14",
+      "close": 99.65,
+      "volume": 43200,
+      "money_flow_multiplier": 0.3684,
+      "money_flow_volume": 15915.79,
+      "cumulative_money_flow": 428902.95,
+      "intraday_intensity": 15915.79
+    },
+    {
+      "date": "2024-11-18",
+      "close": 100.0,
+      "volume": 10800,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 428902.95,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-11-19",
+      "close": 99.2,
+      "volume": 30000,
+      "money_flow_multiplier": 0.4915,
+      "money_flow_volume": 14745.76,
+      "cumulative_money_flow": 443648.71,
+      "intraday_intensity": 14745.76
+    },
+    {
+      "date": "2024-11-21",
+      "close": 96.9,
+      "volume": 13200,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -13200.0,
+      "cumulative_money_flow": 430448.71,
+      "intraday_intensity": -13200.0
+    },
+    {
+      "date": "2024-11-22",
+      "close": 100.75,
+      "volume": 60000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 60000.0,
+      "cumulative_money_flow": 490448.71,
+      "intraday_intensity": 60000.0
+    },
+    {
+      "date": "2024-11-25",
+      "close": 99.9,
+      "volume": 70800,
+      "money_flow_multiplier": -0.9394,
+      "money_flow_volume": -66509.09,
+      "cumulative_money_flow": 423939.62,
+      "intraday_intensity": -66509.09
+    },
+    {
+      "date": "2024-11-26",
+      "close": 99.8,
+      "volume": 72000,
+      "money_flow_multiplier": -0.122,
+      "money_flow_volume": -8780.49,
+      "cumulative_money_flow": 415159.13,
+      "intraday_intensity": -8780.49
+    },
+    {
+      "date": "2024-11-27",
+      "close": 95.2,
+      "volume": 8400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -8400.0,
+      "cumulative_money_flow": 406759.13,
+      "intraday_intensity": -8400.0
+    },
+    {
+      "date": "2024-11-28",
+      "close": 98.95,
+      "volume": 72000,
+      "money_flow_multiplier": 0.7556,
+      "money_flow_volume": 54400.0,
+      "cumulative_money_flow": 461159.13,
+      "intraday_intensity": 54400.0
+    },
+    {
+      "date": "2024-11-29",
+      "close": 100.15,
+      "volume": 86400,
+      "money_flow_multiplier": 0.9619,
+      "money_flow_volume": 83108.57,
+      "cumulative_money_flow": 544267.7,
+      "intraday_intensity": 83108.57
+    },
+    {
+      "date": "2024-12-02",
+      "close": 99.45,
+      "volume": 2400,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 544267.7,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2024-12-03",
+      "close": 97.0,
+      "volume": 72000,
+      "money_flow_multiplier": -0.3023,
+      "money_flow_volume": -21767.44,
+      "cumulative_money_flow": 522500.26,
+      "intraday_intensity": -21767.44
+    },
+    {
+      "date": "2024-12-04",
+      "close": 97.2,
+      "volume": 56400,
+      "money_flow_multiplier": -0.1429,
+      "money_flow_volume": -8057.14,
+      "cumulative_money_flow": 514443.12,
+      "intraday_intensity": -8057.14
+    },
+    {
+      "date": "2024-12-05",
+      "close": 98.7,
+      "volume": 84000,
+      "money_flow_multiplier": 0.8814,
+      "money_flow_volume": 74033.9,
+      "cumulative_money_flow": 588477.02,
+      "intraday_intensity": 74033.9
+    },
+    {
+      "date": "2024-12-06",
+      "close": 101.95,
+      "volume": 52800,
+      "money_flow_multiplier": 0.678,
+      "money_flow_volume": 35796.61,
+      "cumulative_money_flow": 624273.63,
+      "intraday_intensity": 35796.61
+    },
+    {
+      "date": "2024-12-09",
+      "close": 100.9,
+      "volume": 88800,
+      "money_flow_multiplier": 0.1356,
+      "money_flow_volume": 12040.68,
+      "cumulative_money_flow": 636314.3,
+      "intraday_intensity": 12040.68
+    },
+    {
+      "date": "2024-12-10",
+      "close": 95.2,
+      "volume": 54000,
+      "money_flow_multiplier": -0.9333,
+      "money_flow_volume": -50400.0,
+      "cumulative_money_flow": 585914.3,
+      "intraday_intensity": -50400.0
+    },
+    {
+      "date": "2024-12-11",
+      "close": 100.0,
+      "volume": 88800,
+      "money_flow_multiplier": 0.2308,
+      "money_flow_volume": 20492.31,
+      "cumulative_money_flow": 606406.61,
+      "intraday_intensity": 20492.31
+    },
+    {
+      "date": "2024-12-12",
+      "close": 100.8,
+      "volume": 73200,
+      "money_flow_multiplier": 0.5143,
+      "money_flow_volume": 37645.71,
+      "cumulative_money_flow": 644052.33,
+      "intraday_intensity": 37645.71
+    },
+    {
+      "date": "2024-12-13",
+      "close": 101.9,
+      "volume": 64800,
+      "money_flow_multiplier": 0.9596,
+      "money_flow_volume": 62181.82,
+      "cumulative_money_flow": 706234.15,
+      "intraday_intensity": 62181.82
+    },
+    {
+      "date": "2024-12-16",
+      "close": 97.45,
+      "volume": 90000,
+      "money_flow_multiplier": 0.0889,
+      "money_flow_volume": 8000.0,
+      "cumulative_money_flow": 714234.15,
+      "intraday_intensity": 8000.0
+    },
+    {
+      "date": "2024-12-17",
+      "close": 98.8,
+      "volume": 93600,
+      "money_flow_multiplier": 0.1406,
+      "money_flow_volume": 13162.5,
+      "cumulative_money_flow": 727396.65,
+      "intraday_intensity": 13162.5
+    },
+    {
+      "date": "2024-12-18",
+      "close": 98.4,
+      "volume": 99600,
+      "money_flow_multiplier": -0.7714,
+      "money_flow_volume": -76834.29,
+      "cumulative_money_flow": 650562.36,
+      "intraday_intensity": -76834.29
+    },
+    {
+      "date": "2024-12-19",
+      "close": 99.25,
+      "volume": 118800,
+      "money_flow_multiplier": -0.2188,
+      "money_flow_volume": -25987.5,
+      "cumulative_money_flow": 624574.86,
+      "intraday_intensity": -25987.5
+    },
+    {
+      "date": "2024-12-20",
+      "close": 99.75,
+      "volume": 186000,
+      "money_flow_multiplier": -0.4894,
+      "money_flow_volume": -91021.28,
+      "cumulative_money_flow": 533553.58,
+      "intraday_intensity": -91021.28
+    },
+    {
+      "date": "2024-12-23",
+      "close": 106.35,
+      "volume": 212400,
+      "money_flow_multiplier": 0.4249,
+      "money_flow_volume": 90247.21,
+      "cumulative_money_flow": 623800.79,
+      "intraday_intensity": 90247.21
+    },
+    {
+      "date": "2024-12-24",
+      "close": 112.45,
+      "volume": 75600,
+      "money_flow_multiplier": 0.8408,
+      "money_flow_volume": 63561.78,
+      "cumulative_money_flow": 687362.58,
+      "intraday_intensity": 63561.78
+    },
+    {
+      "date": "2024-12-26",
+      "close": 105.3,
+      "volume": 25200,
+      "money_flow_multiplier": -0.88,
+      "money_flow_volume": -22176.0,
+      "cumulative_money_flow": 665186.58,
+      "intraday_intensity": -22176.0
+    },
+    {
+      "date": "2024-12-27",
+      "close": 111.55,
+      "volume": 238800,
+      "money_flow_multiplier": 0.7636,
+      "money_flow_volume": 182356.36,
+      "cumulative_money_flow": 847542.94,
+      "intraday_intensity": 182356.36
+    },
+    {
+      "date": "2024-12-30",
+      "close": 112.2,
+      "volume": 114000,
+      "money_flow_multiplier": 0.8413,
+      "money_flow_volume": 95904.76,
+      "cumulative_money_flow": 943447.7,
+      "intraday_intensity": 95904.76
+    },
+    {
+      "date": "2024-12-31",
+      "close": 104.9,
+      "volume": 117600,
+      "money_flow_multiplier": -0.616,
+      "money_flow_volume": -72441.6,
+      "cumulative_money_flow": 871006.1,
+      "intraday_intensity": -72441.6
+    },
+    {
+      "date": "2025-01-01",
+      "close": 107.45,
+      "volume": 72000,
+      "money_flow_multiplier": 0.5625,
+      "money_flow_volume": 40500.0,
+      "cumulative_money_flow": 911506.1,
+      "intraday_intensity": 40500.0
+    },
+    {
+      "date": "2025-01-02",
+      "close": 105.8,
+      "volume": 26400,
+      "money_flow_multiplier": -0.7736,
+      "money_flow_volume": -20422.64,
+      "cumulative_money_flow": 891083.46,
+      "intraday_intensity": -20422.64
+    },
+    {
+      "date": "2025-01-03",
+      "close": 107.0,
+      "volume": 142800,
+      "money_flow_multiplier": 0.0229,
+      "money_flow_volume": 3270.23,
+      "cumulative_money_flow": 894353.69,
+      "intraday_intensity": 3270.23
+    },
+    {
+      "date": "2025-01-06",
+      "close": 108.9,
+      "volume": 18000,
+      "money_flow_multiplier": -0.913,
+      "money_flow_volume": -16434.78,
+      "cumulative_money_flow": 877918.91,
+      "intraday_intensity": -16434.78
+    },
+    {
+      "date": "2025-01-07",
+      "close": 105.05,
+      "volume": 51600,
+      "money_flow_multiplier": -0.7593,
+      "money_flow_volume": -39177.78,
+      "cumulative_money_flow": 838741.13,
+      "intraday_intensity": -39177.78
+    },
+    {
+      "date": "2025-01-08",
+      "close": 108.0,
+      "volume": 12000,
+      "money_flow_multiplier": 0.2941,
+      "money_flow_volume": 3529.41,
+      "cumulative_money_flow": 842270.54,
+      "intraday_intensity": 3529.41
+    },
+    {
+      "date": "2025-01-09",
+      "close": 105.7,
+      "volume": 56400,
+      "money_flow_multiplier": -0.5775,
+      "money_flow_volume": -32569.01,
+      "cumulative_money_flow": 809701.53,
+      "intraday_intensity": -32569.01
+    },
+    {
+      "date": "2025-01-10",
+      "close": 105.0,
+      "volume": 19200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 809701.53,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2025-01-13",
+      "close": 106.1,
+      "volume": 10800,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 10800.0,
+      "cumulative_money_flow": 820501.53,
+      "intraday_intensity": 10800.0
+    },
+    {
+      "date": "2025-01-14",
+      "close": 106.6,
+      "volume": 9600,
+      "money_flow_multiplier": 0.8246,
+      "money_flow_volume": 7915.79,
+      "cumulative_money_flow": 828417.32,
+      "intraday_intensity": 7915.79
+    },
+    {
+      "date": "2025-01-15",
+      "close": 108.1,
+      "volume": 22800,
+      "money_flow_multiplier": 0.2195,
+      "money_flow_volume": 5004.88,
+      "cumulative_money_flow": 833422.19,
+      "intraday_intensity": 5004.88
+    },
+    {
+      "date": "2025-01-16",
+      "close": 108.05,
+      "volume": 54000,
+      "money_flow_multiplier": 0.4353,
+      "money_flow_volume": 23505.88,
+      "cumulative_money_flow": 856928.08,
+      "intraday_intensity": 23505.88
+    },
+    {
+      "date": "2025-01-17",
+      "close": 115.35,
+      "volume": 51600,
+      "money_flow_multiplier": 0.6515,
+      "money_flow_volume": 33618.18,
+      "cumulative_money_flow": 890546.26,
+      "intraday_intensity": 33618.18
+    },
+    {
+      "date": "2025-01-20",
+      "close": 124.95,
+      "volume": 60000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 60000.0,
+      "cumulative_money_flow": 950546.26,
+      "intraday_intensity": 60000.0
+    },
+    {
+      "date": "2025-01-21",
+      "close": 121.3,
+      "volume": 9600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -9600.0,
+      "cumulative_money_flow": 940946.26,
+      "intraday_intensity": -9600.0
+    },
+    {
+      "date": "2025-01-22",
+      "close": 122.05,
+      "volume": 56400,
+      "money_flow_multiplier": -0.2535,
+      "money_flow_volume": -14294.93,
+      "cumulative_money_flow": 926651.33,
+      "intraday_intensity": -14294.93
+    },
+    {
+      "date": "2025-01-23",
+      "close": 129.9,
+      "volume": 45600,
+      "money_flow_multiplier": 0.9798,
+      "money_flow_volume": 44678.79,
+      "cumulative_money_flow": 971330.12,
+      "intraday_intensity": 44678.79
+    },
+    {
+      "date": "2025-01-24",
+      "close": 125.45,
+      "volume": 58800,
+      "money_flow_multiplier": -0.7214,
+      "money_flow_volume": -42417.91,
+      "cumulative_money_flow": 928912.21,
+      "intraday_intensity": -42417.91
+    },
+    {
+      "date": "2025-01-27",
+      "close": 125.0,
+      "volume": 18000,
+      "money_flow_multiplier": 0.2,
+      "money_flow_volume": 3600.0,
+      "cumulative_money_flow": 932512.21,
+      "intraday_intensity": 3600.0
+    },
+    {
+      "date": "2025-01-28",
+      "close": 120.9,
+      "volume": 97200,
+      "money_flow_multiplier": -0.9213,
+      "money_flow_volume": -89546.46,
+      "cumulative_money_flow": 842965.75,
+      "intraday_intensity": -89546.46
+    },
+    {
+      "date": "2025-01-29",
+      "close": 124.4,
+      "volume": 80400,
+      "money_flow_multiplier": 0.76,
+      "money_flow_volume": 61104.0,
+      "cumulative_money_flow": 904069.75,
+      "intraday_intensity": 61104.0
+    },
+    {
+      "date": "2025-01-30",
+      "close": 120.0,
+      "volume": 139200,
+      "money_flow_multiplier": -0.9608,
+      "money_flow_volume": -133741.18,
+      "cumulative_money_flow": 770328.57,
+      "intraday_intensity": -133741.18
+    },
+    {
+      "date": "2025-01-31",
+      "close": 119.35,
+      "volume": 21600,
+      "money_flow_multiplier": 0.35,
+      "money_flow_volume": 7560.0,
+      "cumulative_money_flow": 777888.57,
+      "intraday_intensity": 7560.0
+    },
+    {
+      "date": "2025-02-01",
+      "close": 120.0,
+      "volume": 9600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 9600.0,
+      "cumulative_money_flow": 787488.57,
+      "intraday_intensity": 9600.0
+    },
+    {
+      "date": "2025-02-03",
+      "close": 119.9,
+      "volume": 16800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -16800.0,
+      "cumulative_money_flow": 770688.57,
+      "intraday_intensity": -16800.0
+    },
+    {
+      "date": "2025-02-04",
+      "close": 119.95,
+      "volume": 36000,
+      "money_flow_multiplier": 0.3333,
+      "money_flow_volume": 12000.0,
+      "cumulative_money_flow": 782688.57,
+      "intraday_intensity": 12000.0
+    },
+    {
+      "date": "2025-02-05",
+      "close": 120.0,
+      "volume": 27600,
+      "money_flow_multiplier": -0.5,
+      "money_flow_volume": -13800.0,
+      "cumulative_money_flow": 768888.57,
+      "intraday_intensity": -13800.0
+    },
+    {
+      "date": "2025-02-06",
+      "close": 118.1,
+      "volume": 80400,
+      "money_flow_multiplier": -0.7273,
+      "money_flow_volume": -58472.73,
+      "cumulative_money_flow": 710415.84,
+      "intraday_intensity": -58472.73
+    },
+    {
+      "date": "2025-02-07",
+      "close": 119.4,
+      "volume": 69600,
+      "money_flow_multiplier": -0.2,
+      "money_flow_volume": -13920.0,
+      "cumulative_money_flow": 696495.84,
+      "intraday_intensity": -13920.0
+    },
+    {
+      "date": "2025-02-10",
+      "close": 119.7,
+      "volume": 48000,
+      "money_flow_multiplier": 0.7143,
+      "money_flow_volume": 34285.71,
+      "cumulative_money_flow": 730781.56,
+      "intraday_intensity": 34285.71
+    },
+    {
+      "date": "2025-02-11",
+      "close": 119.9,
+      "volume": 42000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 42000.0,
+      "cumulative_money_flow": 772781.56,
+      "intraday_intensity": 42000.0
+    },
+    {
+      "date": "2025-02-12",
+      "close": 109.65,
+      "volume": 715200,
+      "money_flow_multiplier": 0.0526,
+      "money_flow_volume": 37642.11,
+      "cumulative_money_flow": 810423.66,
+      "intraday_intensity": 37642.11
+    },
+    {
+      "date": "2025-02-13",
+      "close": 108.7,
+      "volume": 36000,
+      "money_flow_multiplier": -0.5517,
+      "money_flow_volume": -19862.07,
+      "cumulative_money_flow": 790561.6,
+      "intraday_intensity": -19862.07
+    },
+    {
+      "date": "2025-02-14",
+      "close": 113.7,
+      "volume": 49200,
+      "money_flow_multiplier": -0.4502,
+      "money_flow_volume": -22151.66,
+      "cumulative_money_flow": 768409.94,
+      "intraday_intensity": -22151.66
+    },
+    {
+      "date": "2025-02-17",
+      "close": 123.6,
+      "volume": 60000,
+      "money_flow_multiplier": 0.7143,
+      "money_flow_volume": 42857.14,
+      "cumulative_money_flow": 811267.08,
+      "intraday_intensity": 42857.14
+    },
+    {
+      "date": "2025-02-18",
+      "close": 141.8,
+      "volume": 151200,
+      "money_flow_multiplier": 0.7217,
+      "money_flow_volume": 109126.96,
+      "cumulative_money_flow": 920394.04,
+      "intraday_intensity": 109126.96
+    },
+    {
+      "date": "2025-02-19",
+      "close": 139.15,
+      "volume": 55200,
+      "money_flow_multiplier": -0.6441,
+      "money_flow_volume": -35552.54,
+      "cumulative_money_flow": 884841.49,
+      "intraday_intensity": -35552.54
+    },
+    {
+      "date": "2025-02-20",
+      "close": 133.5,
+      "volume": 21600,
+      "money_flow_multiplier": -0.5261,
+      "money_flow_volume": -11364.46,
+      "cumulative_money_flow": 873477.03,
+      "intraday_intensity": -11364.46
+    },
+    {
+      "date": "2025-02-21",
+      "close": 125.35,
+      "volume": 25200,
+      "money_flow_multiplier": -0.9016,
+      "money_flow_volume": -22721.31,
+      "cumulative_money_flow": 850755.72,
+      "intraday_intensity": -22721.31
+    },
+    {
+      "date": "2025-02-24",
+      "close": 123.5,
+      "volume": 26400,
+      "money_flow_multiplier": -0.85,
+      "money_flow_volume": -22440.0,
+      "cumulative_money_flow": 828315.72,
+      "intraday_intensity": -22440.0
+    },
+    {
+      "date": "2025-02-25",
+      "close": 140.8,
+      "volume": 54000,
+      "money_flow_multiplier": 0.7217,
+      "money_flow_volume": 38973.91,
+      "cumulative_money_flow": 867289.64,
+      "intraday_intensity": 38973.91
+    },
+    {
+      "date": "2025-02-27",
+      "close": 136.0,
+      "volume": 8400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -8400.0,
+      "cumulative_money_flow": 858889.64,
+      "intraday_intensity": -8400.0
+    },
+    {
+      "date": "2025-02-28",
+      "close": 140.95,
+      "volume": 134400,
+      "money_flow_multiplier": 0.895,
+      "money_flow_volume": 120288.0,
+      "cumulative_money_flow": 979177.64,
+      "intraday_intensity": 120288.0
+    },
+    {
+      "date": "2025-03-03",
+      "close": 138.75,
+      "volume": 22800,
+      "money_flow_multiplier": -0.7368,
+      "money_flow_volume": -16800.0,
+      "cumulative_money_flow": 962377.64,
+      "intraday_intensity": -16800.0
+    },
+    {
+      "date": "2025-03-04",
+      "close": 153.3,
+      "volume": 51600,
+      "money_flow_multiplier": 0.937,
+      "money_flow_volume": 48349.61,
+      "cumulative_money_flow": 1010727.24,
+      "intraday_intensity": 48349.61
+    },
+    {
+      "date": "2025-03-05",
+      "close": 166.35,
+      "volume": 57600,
+      "money_flow_multiplier": 0.3722,
+      "money_flow_volume": 21440.0,
+      "cumulative_money_flow": 1032167.24,
+      "intraday_intensity": 21440.0
+    },
+    {
+      "date": "2025-03-06",
+      "close": 160.4,
+      "volume": 34800,
+      "money_flow_multiplier": -0.6889,
+      "money_flow_volume": -23973.33,
+      "cumulative_money_flow": 1008193.91,
+      "intraday_intensity": -23973.33
+    },
+    {
+      "date": "2025-03-07",
+      "close": 159.35,
+      "volume": 31200,
+      "money_flow_multiplier": 0.5932,
+      "money_flow_volume": 18508.47,
+      "cumulative_money_flow": 1026702.38,
+      "intraday_intensity": 18508.47
+    },
+    {
+      "date": "2025-03-10",
+      "close": 167.2,
+      "volume": 196800,
+      "money_flow_multiplier": 0.9843,
+      "money_flow_volume": 193700.79,
+      "cumulative_money_flow": 1220403.17,
+      "intraday_intensity": 193700.79
+    },
+    {
+      "date": "2025-03-11",
+      "close": 162.6,
+      "volume": 19200,
+      "money_flow_multiplier": -0.8667,
+      "money_flow_volume": -16640.0,
+      "cumulative_money_flow": 1203763.17,
+      "intraday_intensity": -16640.0
+    },
+    {
+      "date": "2025-03-12",
+      "close": 162.35,
+      "volume": 19200,
+      "money_flow_multiplier": 0.3375,
+      "money_flow_volume": 6480.0,
+      "cumulative_money_flow": 1210243.17,
+      "intraday_intensity": 6480.0
+    },
+    {
+      "date": "2025-03-13",
+      "close": 154.95,
+      "volume": 13200,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -13200.0,
+      "cumulative_money_flow": 1197043.17,
+      "intraday_intensity": -13200.0
+    },
+    {
+      "date": "2025-03-17",
+      "close": 154.45,
+      "volume": 10800,
+      "money_flow_multiplier": -0.957,
+      "money_flow_volume": -10335.48,
+      "cumulative_money_flow": 1186707.69,
+      "intraday_intensity": -10335.48
+    },
+    {
+      "date": "2025-03-18",
+      "close": 157.85,
+      "volume": 25200,
+      "money_flow_multiplier": 0.1683,
+      "money_flow_volume": 4241.58,
+      "cumulative_money_flow": 1190949.27,
+      "intraday_intensity": 4241.58
+    },
+    {
+      "date": "2025-03-19",
+      "close": 160.8,
+      "volume": 2400,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 1190949.27,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2025-03-20",
+      "close": 153.25,
+      "volume": 28800,
+      "money_flow_multiplier": -0.9737,
+      "money_flow_volume": -28042.11,
+      "cumulative_money_flow": 1162907.17,
+      "intraday_intensity": -28042.11
+    },
+    {
+      "date": "2025-03-21",
+      "close": 157.45,
+      "volume": 162000,
+      "money_flow_multiplier": 0.709,
+      "money_flow_volume": 114850.75,
+      "cumulative_money_flow": 1277757.91,
+      "intraday_intensity": 114850.75
+    },
+    {
+      "date": "2025-03-24",
+      "close": 151.9,
+      "volume": 34800,
+      "money_flow_multiplier": -0.7231,
+      "money_flow_volume": -25163.08,
+      "cumulative_money_flow": 1252594.83,
+      "intraday_intensity": -25163.08
+    },
+    {
+      "date": "2025-03-25",
+      "close": 153.8,
+      "volume": 72000,
+      "money_flow_multiplier": 0.453,
+      "money_flow_volume": 32615.38,
+      "cumulative_money_flow": 1285210.22,
+      "intraday_intensity": 32615.38
+    },
+    {
+      "date": "2025-03-26",
+      "close": 152.65,
+      "volume": 14400,
+      "money_flow_multiplier": 0.1494,
+      "money_flow_volume": 2151.72,
+      "cumulative_money_flow": 1287361.94,
+      "intraday_intensity": 2151.72
+    },
+    {
+      "date": "2025-03-27",
+      "close": 148.1,
+      "volume": 84000,
+      "money_flow_multiplier": 0.5472,
+      "money_flow_volume": 45962.26,
+      "cumulative_money_flow": 1333324.21,
+      "intraday_intensity": 45962.26
+    },
+    {
+      "date": "2025-03-28",
+      "close": 144.45,
+      "volume": 82800,
+      "money_flow_multiplier": -0.9139,
+      "money_flow_volume": -75668.9,
+      "cumulative_money_flow": 1257655.31,
+      "intraday_intensity": -75668.9
+    },
+    {
+      "date": "2025-04-01",
+      "close": 149.95,
+      "volume": 3600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -3600.0,
+      "cumulative_money_flow": 1254055.31,
+      "intraday_intensity": -3600.0
+    },
+    {
+      "date": "2025-04-02",
+      "close": 154.4,
+      "volume": 44400,
+      "money_flow_multiplier": 0.85,
+      "money_flow_volume": 37740.0,
+      "cumulative_money_flow": 1291795.31,
+      "intraday_intensity": 37740.0
+    },
+    {
+      "date": "2025-04-03",
+      "close": 150.8,
+      "volume": 87600,
+      "money_flow_multiplier": -0.2329,
+      "money_flow_volume": -20400.0,
+      "cumulative_money_flow": 1271395.31,
+      "intraday_intensity": -20400.0
+    },
+    {
+      "date": "2025-04-04",
+      "close": 157.5,
+      "volume": 87600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 87600.0,
+      "cumulative_money_flow": 1358995.31,
+      "intraday_intensity": 87600.0
+    },
+    {
+      "date": "2025-04-07",
+      "close": 159.85,
+      "volume": 80400,
+      "money_flow_multiplier": 0.9899,
+      "money_flow_volume": 79591.96,
+      "cumulative_money_flow": 1438587.27,
+      "intraday_intensity": 79591.96
+    },
+    {
+      "date": "2025-04-08",
+      "close": 161.6,
+      "volume": 261600,
+      "money_flow_multiplier": 0.9397,
+      "money_flow_volume": 245825.13,
+      "cumulative_money_flow": 1684412.39,
+      "intraday_intensity": 245825.13
+    },
+    {
+      "date": "2025-04-09",
+      "close": 154.35,
+      "volume": 34800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -34800.0,
+      "cumulative_money_flow": 1649612.39,
+      "intraday_intensity": -34800.0
+    },
+    {
+      "date": "2025-04-11",
+      "close": 161.15,
+      "volume": 91200,
+      "money_flow_multiplier": 0.8964,
+      "money_flow_volume": 81749.22,
+      "cumulative_money_flow": 1731361.62,
+      "intraday_intensity": 81749.22
+    },
+    {
+      "date": "2025-04-15",
+      "close": 164.95,
+      "volume": 121200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 121200.0,
+      "cumulative_money_flow": 1852561.62,
+      "intraday_intensity": 121200.0
+    },
+    {
+      "date": "2025-04-16",
+      "close": 164.75,
+      "volume": 56400,
+      "money_flow_multiplier": 0.9571,
+      "money_flow_volume": 53982.86,
+      "cumulative_money_flow": 1906544.47,
+      "intraday_intensity": 53982.86
+    },
+    {
+      "date": "2025-04-17",
+      "close": 168.0,
+      "volume": 18000,
+      "money_flow_multiplier": 0.8391,
+      "money_flow_volume": 15103.45,
+      "cumulative_money_flow": 1921647.92,
+      "intraday_intensity": 15103.45
+    },
+    {
+      "date": "2025-04-21",
+      "close": 168.5,
+      "volume": 49200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 49200.0,
+      "cumulative_money_flow": 1970847.92,
+      "intraday_intensity": 49200.0
+    },
+    {
+      "date": "2025-04-22",
+      "close": 169.5,
+      "volume": 56400,
+      "money_flow_multiplier": -0.1309,
+      "money_flow_volume": -7382.2,
+      "cumulative_money_flow": 1963465.72,
+      "intraday_intensity": -7382.2
+    },
+    {
+      "date": "2025-04-23",
+      "close": 166.25,
+      "volume": 25200,
+      "money_flow_multiplier": -0.087,
+      "money_flow_volume": -2191.3,
+      "cumulative_money_flow": 1961274.42,
+      "intraday_intensity": -2191.3
+    },
+    {
+      "date": "2025-04-24",
+      "close": 174.0,
+      "volume": 34800,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 34800.0,
+      "cumulative_money_flow": 1996074.42,
+      "intraday_intensity": 34800.0
+    },
+    {
+      "date": "2025-04-25",
+      "close": 170.15,
+      "volume": 10800,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 10800.0,
+      "cumulative_money_flow": 2006874.42,
+      "intraday_intensity": 10800.0
+    },
+    {
+      "date": "2025-04-28",
+      "close": 171.0,
+      "volume": 34800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -34800.0,
+      "cumulative_money_flow": 1972074.42,
+      "intraday_intensity": -34800.0
+    },
+    {
+      "date": "2025-04-29",
+      "close": 176.2,
+      "volume": 52800,
+      "money_flow_multiplier": 0.5472,
+      "money_flow_volume": 28890.57,
+      "cumulative_money_flow": 2000964.98,
+      "intraday_intensity": 28890.57
+    },
+    {
+      "date": "2025-04-30",
+      "close": 176.95,
+      "volume": 22800,
+      "money_flow_multiplier": 0.9667,
+      "money_flow_volume": 22040.0,
+      "cumulative_money_flow": 2023004.98,
+      "intraday_intensity": 22040.0
+    },
+    {
+      "date": "2025-05-02",
+      "close": 169.9,
+      "volume": 103200,
+      "money_flow_multiplier": -0.6364,
+      "money_flow_volume": -65672.73,
+      "cumulative_money_flow": 1957332.26,
+      "intraday_intensity": -65672.73
+    },
+    {
+      "date": "2025-05-05",
+      "close": 164.0,
+      "volume": 168000,
+      "money_flow_multiplier": -0.9835,
+      "money_flow_volume": -165223.14,
+      "cumulative_money_flow": 1792109.12,
+      "intraday_intensity": -165223.14
+    },
+    {
+      "date": "2025-05-06",
+      "close": 162.6,
+      "volume": 138000,
+      "money_flow_multiplier": -0.7647,
+      "money_flow_volume": -105529.41,
+      "cumulative_money_flow": 1686579.7,
+      "intraday_intensity": -105529.41
+    },
+    {
+      "date": "2025-05-07",
+      "close": 162.8,
+      "volume": 136800,
+      "money_flow_multiplier": -0.875,
+      "money_flow_volume": -119700.0,
+      "cumulative_money_flow": 1566879.7,
+      "intraday_intensity": -119700.0
+    },
+    {
+      "date": "2025-05-08",
+      "close": 159.0,
+      "volume": 86400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -86400.0,
+      "cumulative_money_flow": 1480479.7,
+      "intraday_intensity": -86400.0
+    },
+    {
+      "date": "2025-05-09",
+      "close": 163.85,
+      "volume": 22800,
+      "money_flow_multiplier": 0.252,
+      "money_flow_volume": 5746.34,
+      "cumulative_money_flow": 1486226.05,
+      "intraday_intensity": 5746.34
+    },
+    {
+      "date": "2025-05-12",
+      "close": 168.9,
+      "volume": 8400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 8400.0,
+      "cumulative_money_flow": 1494626.05,
+      "intraday_intensity": 8400.0
+    },
+    {
+      "date": "2025-05-13",
+      "close": 168.0,
+      "volume": 61200,
+      "money_flow_multiplier": -0.44,
+      "money_flow_volume": -26928.0,
+      "cumulative_money_flow": 1467698.05,
+      "intraday_intensity": -26928.0
+    },
+    {
+      "date": "2025-05-14",
+      "close": 168.0,
+      "volume": 40800,
+      "money_flow_multiplier": -0.6,
+      "money_flow_volume": -24480.0,
+      "cumulative_money_flow": 1443218.05,
+      "intraday_intensity": -24480.0
+    },
+    {
+      "date": "2025-05-15",
+      "close": 171.0,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": 1445618.05,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2025-05-16",
+      "close": 173.0,
+      "volume": 25200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 25200.0,
+      "cumulative_money_flow": 1470818.05,
+      "intraday_intensity": 25200.0
+    },
+    {
+      "date": "2025-05-19",
+      "close": 167.7,
+      "volume": 58800,
+      "money_flow_multiplier": -0.7746,
+      "money_flow_volume": -45549.3,
+      "cumulative_money_flow": 1425268.75,
+      "intraday_intensity": -45549.3
+    },
+    {
+      "date": "2025-05-20",
+      "close": 167.65,
+      "volume": 27600,
+      "money_flow_multiplier": -0.1412,
+      "money_flow_volume": -3896.47,
+      "cumulative_money_flow": 1421372.28,
+      "intraday_intensity": -3896.47
+    },
+    {
+      "date": "2025-05-21",
+      "close": 166.1,
+      "volume": 67200,
+      "money_flow_multiplier": -0.4364,
+      "money_flow_volume": -29323.64,
+      "cumulative_money_flow": 1392048.64,
+      "intraday_intensity": -29323.64
+    },
+    {
+      "date": "2025-05-22",
+      "close": 169.8,
+      "volume": 30000,
+      "money_flow_multiplier": 0.9608,
+      "money_flow_volume": 28823.53,
+      "cumulative_money_flow": 1420872.17,
+      "intraday_intensity": 28823.53
+    },
+    {
+      "date": "2025-05-23",
+      "close": 178.05,
+      "volume": 92400,
+      "money_flow_multiplier": 0.9532,
+      "money_flow_volume": 88077.19,
+      "cumulative_money_flow": 1508949.37,
+      "intraday_intensity": 88077.19
+    },
+    {
+      "date": "2025-05-26",
+      "close": 176.55,
+      "volume": 40800,
+      "money_flow_multiplier": -0.4538,
+      "money_flow_volume": -18516.92,
+      "cumulative_money_flow": 1490432.44,
+      "intraday_intensity": -18516.92
+    },
+    {
+      "date": "2025-05-27",
+      "close": 180.75,
+      "volume": 49200,
+      "money_flow_multiplier": 0.9424,
+      "money_flow_volume": 46368.35,
+      "cumulative_money_flow": 1536800.79,
+      "intraday_intensity": 46368.35
+    },
+    {
+      "date": "2025-05-28",
+      "close": 181.0,
+      "volume": 1200,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 1536800.79,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2025-05-29",
+      "close": 184.8,
+      "volume": 10800,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 10800.0,
+      "cumulative_money_flow": 1547600.79,
+      "intraday_intensity": 10800.0
+    },
+    {
+      "date": "2025-05-30",
+      "close": 188.0,
+      "volume": 61200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 61200.0,
+      "cumulative_money_flow": 1608800.79,
+      "intraday_intensity": 61200.0
+    },
+    {
+      "date": "2025-06-02",
+      "close": 185.0,
+      "volume": 36000,
+      "money_flow_multiplier": -0.5217,
+      "money_flow_volume": -18782.61,
+      "cumulative_money_flow": 1590018.18,
+      "intraday_intensity": -18782.61
+    },
+    {
+      "date": "2025-06-03",
+      "close": 183.0,
+      "volume": 6000,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -6000.0,
+      "cumulative_money_flow": 1584018.18,
+      "intraday_intensity": -6000.0
+    },
+    {
+      "date": "2025-06-04",
+      "close": 183.35,
+      "volume": 21600,
+      "money_flow_multiplier": -0.3,
+      "money_flow_volume": -6480.0,
+      "cumulative_money_flow": 1577538.18,
+      "intraday_intensity": -6480.0
+    },
+    {
+      "date": "2025-06-05",
+      "close": 183.7,
+      "volume": 20400,
+      "money_flow_multiplier": 0.5,
+      "money_flow_volume": 10200.0,
+      "cumulative_money_flow": 1587738.18,
+      "intraday_intensity": 10200.0
+    },
+    {
+      "date": "2025-06-06",
+      "close": 181.7,
+      "volume": 34800,
+      "money_flow_multiplier": -0.2,
+      "money_flow_volume": -6960.0,
+      "cumulative_money_flow": 1580778.18,
+      "intraday_intensity": -6960.0
+    },
+    {
+      "date": "2025-06-09",
+      "close": 181.9,
+      "volume": 27600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -27600.0,
+      "cumulative_money_flow": 1553178.18,
+      "intraday_intensity": -27600.0
+    },
+    {
+      "date": "2025-06-10",
+      "close": 186.3,
+      "volume": 58800,
+      "money_flow_multiplier": 0.5091,
+      "money_flow_volume": 29934.55,
+      "cumulative_money_flow": 1583112.72,
+      "intraday_intensity": 29934.55
+    },
+    {
+      "date": "2025-06-11",
+      "close": 187.9,
+      "volume": 34800,
+      "money_flow_multiplier": 0.963,
+      "money_flow_volume": 33511.11,
+      "cumulative_money_flow": 1616623.84,
+      "intraday_intensity": 33511.11
+    },
+    {
+      "date": "2025-06-12",
+      "close": 188.0,
+      "volume": 25200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 25200.0,
+      "cumulative_money_flow": 1641823.84,
+      "intraday_intensity": 25200.0
+    },
+    {
+      "date": "2025-06-13",
+      "close": 190.05,
+      "volume": 22800,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 22800.0,
+      "cumulative_money_flow": 1664623.84,
+      "intraday_intensity": 22800.0
+    },
+    {
+      "date": "2025-06-16",
+      "close": 189.95,
+      "volume": 20400,
+      "money_flow_multiplier": 0.6833,
+      "money_flow_volume": 13940.0,
+      "cumulative_money_flow": 1678563.84,
+      "intraday_intensity": 13940.0
+    },
+    {
+      "date": "2025-06-17",
+      "close": 190.0,
+      "volume": 34800,
+      "money_flow_multiplier": 0.6774,
+      "money_flow_volume": 23574.19,
+      "cumulative_money_flow": 1702138.03,
+      "intraday_intensity": 23574.19
+    },
+    {
+      "date": "2025-06-18",
+      "close": 190.9,
+      "volume": 20400,
+      "money_flow_multiplier": -0.76,
+      "money_flow_volume": -15504.0,
+      "cumulative_money_flow": 1686634.03,
+      "intraday_intensity": -15504.0
+    },
+    {
+      "date": "2025-06-19",
+      "close": 192.45,
+      "volume": 14400,
+      "money_flow_multiplier": -0.0282,
+      "money_flow_volume": -406.78,
+      "cumulative_money_flow": 1686227.25,
+      "intraday_intensity": -406.78
+    },
+    {
+      "date": "2025-06-20",
+      "close": 194.7,
+      "volume": 60000,
+      "money_flow_multiplier": 0.7524,
+      "money_flow_volume": 45142.86,
+      "cumulative_money_flow": 1731370.11,
+      "intraday_intensity": 45142.86
+    },
+    {
+      "date": "2025-06-23",
+      "close": 194.6,
+      "volume": 136800,
+      "money_flow_multiplier": -0.1951,
+      "money_flow_volume": -26692.68,
+      "cumulative_money_flow": 1704677.42,
+      "intraday_intensity": -26692.68
+    },
+    {
+      "date": "2025-06-24",
+      "close": 189.0,
+      "volume": 73200,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -73200.0,
+      "cumulative_money_flow": 1631477.42,
+      "intraday_intensity": -73200.0
+    },
+    {
+      "date": "2025-06-25",
+      "close": 194.1,
+      "volume": 63600,
+      "money_flow_multiplier": 0.2615,
+      "money_flow_volume": 16633.85,
+      "cumulative_money_flow": 1648111.27,
+      "intraday_intensity": 16633.85
+    },
+    {
+      "date": "2025-06-26",
+      "close": 199.55,
+      "volume": 54000,
+      "money_flow_multiplier": 0.9906,
+      "money_flow_volume": 53490.57,
+      "cumulative_money_flow": 1701601.84,
+      "intraday_intensity": 53490.57
+    },
+    {
+      "date": "2025-06-27",
+      "close": 203.1,
+      "volume": 87600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 87600.0,
+      "cumulative_money_flow": 1789201.84,
+      "intraday_intensity": 87600.0
+    },
+    {
+      "date": "2025-06-30",
+      "close": 198.85,
+      "volume": 24000,
+      "money_flow_multiplier": 0.1413,
+      "money_flow_volume": 3391.3,
+      "cumulative_money_flow": 1792593.14,
+      "intraday_intensity": 3391.3
+    },
+    {
+      "date": "2025-07-01",
+      "close": 204.2,
+      "volume": 81600,
+      "money_flow_multiplier": 0.92,
+      "money_flow_volume": 75072.0,
+      "cumulative_money_flow": 1867665.14,
+      "intraday_intensity": 75072.0
+    },
+    {
+      "date": "2025-07-02",
+      "close": 204.55,
+      "volume": 12000,
+      "money_flow_multiplier": 0.8438,
+      "money_flow_volume": 10125.0,
+      "cumulative_money_flow": 1877790.14,
+      "intraday_intensity": 10125.0
+    },
+    {
+      "date": "2025-07-03",
+      "close": 205.9,
+      "volume": 62400,
+      "money_flow_multiplier": 0.4667,
+      "money_flow_volume": 29120.0,
+      "cumulative_money_flow": 1906910.14,
+      "intraday_intensity": 29120.0
+    },
+    {
+      "date": "2025-07-04",
+      "close": 205.35,
+      "volume": 33600,
+      "money_flow_multiplier": 0.8608,
+      "money_flow_volume": 28921.52,
+      "cumulative_money_flow": 1935831.66,
+      "intraday_intensity": 28921.52
+    },
+    {
+      "date": "2025-07-07",
+      "close": 205.65,
+      "volume": 62400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 62400.0,
+      "cumulative_money_flow": 1998231.66,
+      "intraday_intensity": 62400.0
+    },
+    {
+      "date": "2025-07-08",
+      "close": 202.95,
+      "volume": 19200,
+      "money_flow_multiplier": 0.5783,
+      "money_flow_volume": 11103.61,
+      "cumulative_money_flow": 2009335.27,
+      "intraday_intensity": 11103.61
+    },
+    {
+      "date": "2025-07-09",
+      "close": 203.8,
+      "volume": 19200,
+      "money_flow_multiplier": 0.75,
+      "money_flow_volume": 14400.0,
+      "cumulative_money_flow": 2023735.27,
+      "intraday_intensity": 14400.0
+    },
+    {
+      "date": "2025-07-10",
+      "close": 205.25,
+      "volume": 39600,
+      "money_flow_multiplier": -0.375,
+      "money_flow_volume": -14850.0,
+      "cumulative_money_flow": 2008885.27,
+      "intraday_intensity": -14850.0
+    },
+    {
+      "date": "2025-07-11",
+      "close": 203.95,
+      "volume": 32400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 32400.0,
+      "cumulative_money_flow": 2041285.27,
+      "intraday_intensity": 32400.0
+    },
+    {
+      "date": "2025-07-14",
+      "close": 203.0,
+      "volume": 33600,
+      "money_flow_multiplier": 0.9162,
+      "money_flow_volume": 30783.23,
+      "cumulative_money_flow": 2072068.51,
+      "intraday_intensity": 30783.23
+    },
+    {
+      "date": "2025-07-15",
+      "close": 203.7,
+      "volume": 33600,
+      "money_flow_multiplier": 0.9882,
+      "money_flow_volume": 33204.71,
+      "cumulative_money_flow": 2105273.21,
+      "intraday_intensity": 33204.71
+    },
+    {
+      "date": "2025-07-16",
+      "close": 205.5,
+      "volume": 52800,
+      "money_flow_multiplier": 0.0185,
+      "money_flow_volume": 977.78,
+      "cumulative_money_flow": 2106250.99,
+      "intraday_intensity": 977.78
+    },
+    {
+      "date": "2025-07-17",
+      "close": 205.55,
+      "volume": 52800,
+      "money_flow_multiplier": 0.3981,
+      "money_flow_volume": 21022.22,
+      "cumulative_money_flow": 2127273.21,
+      "intraday_intensity": 21022.22
+    },
+    {
+      "date": "2025-07-18",
+      "close": 208.9,
+      "volume": 38400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 38400.0,
+      "cumulative_money_flow": 2165673.21,
+      "intraday_intensity": 38400.0
+    },
+    {
+      "date": "2025-07-21",
+      "close": 208.95,
+      "volume": 68400,
+      "money_flow_multiplier": 0.4798,
+      "money_flow_volume": 32816.18,
+      "cumulative_money_flow": 2198489.4,
+      "intraday_intensity": 32816.18
+    },
+    {
+      "date": "2025-07-22",
+      "close": 209.95,
+      "volume": 90000,
+      "money_flow_multiplier": 0.9833,
+      "money_flow_volume": 88500.0,
+      "cumulative_money_flow": 2286989.4,
+      "intraday_intensity": 88500.0
+    },
+    {
+      "date": "2025-07-23",
+      "close": 211.6,
+      "volume": 90000,
+      "money_flow_multiplier": 0.7705,
+      "money_flow_volume": 69344.26,
+      "cumulative_money_flow": 2356333.66,
+      "intraday_intensity": 69344.26
+    },
+    {
+      "date": "2025-07-24",
+      "close": 212.6,
+      "volume": 79200,
+      "money_flow_multiplier": 0.6429,
+      "money_flow_volume": 50914.29,
+      "cumulative_money_flow": 2407247.95,
+      "intraday_intensity": 50914.29
+    },
+    {
+      "date": "2025-07-25",
+      "close": 213.95,
+      "volume": 52800,
+      "money_flow_multiplier": 0.3167,
+      "money_flow_volume": 16720.0,
+      "cumulative_money_flow": 2423967.95,
+      "intraday_intensity": 16720.0
+    },
+    {
+      "date": "2025-07-28",
+      "close": 211.4,
+      "volume": 63600,
+      "money_flow_multiplier": -0.6267,
+      "money_flow_volume": -39856.0,
+      "cumulative_money_flow": 2384111.95,
+      "intraday_intensity": -39856.0
+    },
+    {
+      "date": "2025-07-29",
+      "close": 219.0,
+      "volume": 45600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 45600.0,
+      "cumulative_money_flow": 2429711.95,
+      "intraday_intensity": 45600.0
+    },
+    {
+      "date": "2025-07-30",
+      "close": 220.0,
+      "volume": 52800,
+      "money_flow_multiplier": 0.6,
+      "money_flow_volume": 31680.0,
+      "cumulative_money_flow": 2461391.95,
+      "intraday_intensity": 31680.0
+    },
+    {
+      "date": "2025-07-31",
+      "close": 213.95,
+      "volume": 46800,
+      "money_flow_multiplier": -0.2685,
+      "money_flow_volume": -12566.67,
+      "cumulative_money_flow": 2448825.28,
+      "intraday_intensity": -12566.67
+    },
+    {
+      "date": "2025-08-01",
+      "close": 221.7,
+      "volume": 25200,
+      "money_flow_multiplier": 0.7557,
+      "money_flow_volume": 19044.27,
+      "cumulative_money_flow": 2467869.55,
+      "intraday_intensity": 19044.27
+    },
+    {
+      "date": "2025-08-04",
+      "close": 222.6,
+      "volume": 15600,
+      "money_flow_multiplier": -0.5484,
+      "money_flow_volume": -8554.84,
+      "cumulative_money_flow": 2459314.72,
+      "intraday_intensity": -8554.84
+    },
+    {
+      "date": "2025-08-05",
+      "close": 222.2,
+      "volume": 38400,
+      "money_flow_multiplier": 0.5556,
+      "money_flow_volume": 21333.33,
+      "cumulative_money_flow": 2480648.05,
+      "intraday_intensity": 21333.33
+    },
+    {
+      "date": "2025-08-06",
+      "close": 220.0,
+      "volume": 31200,
+      "money_flow_multiplier": 0.3277,
+      "money_flow_volume": 10222.98,
+      "cumulative_money_flow": 2490871.03,
+      "intraday_intensity": 10222.98
+    },
+    {
+      "date": "2025-08-07",
+      "close": 228.55,
+      "volume": 44400,
+      "money_flow_multiplier": 0.1463,
+      "money_flow_volume": 6497.56,
+      "cumulative_money_flow": 2497368.59,
+      "intraday_intensity": 6497.56
+    },
+    {
+      "date": "2025-08-08",
+      "close": 232.65,
+      "volume": 60000,
+      "money_flow_multiplier": 0.6028,
+      "money_flow_volume": 36170.21,
+      "cumulative_money_flow": 2533538.8,
+      "intraday_intensity": 36170.21
+    },
+    {
+      "date": "2025-08-11",
+      "close": 229.6,
+      "volume": 50400,
+      "money_flow_multiplier": -0.104,
+      "money_flow_volume": -5241.6,
+      "cumulative_money_flow": 2528297.2,
+      "intraday_intensity": -5241.6
+    },
+    {
+      "date": "2025-08-12",
+      "close": 235.35,
+      "volume": 36000,
+      "money_flow_multiplier": 0.6962,
+      "money_flow_volume": 25063.29,
+      "cumulative_money_flow": 2553360.49,
+      "intraday_intensity": 25063.29
+    },
+    {
+      "date": "2025-08-13",
+      "close": 236.1,
+      "volume": 54000,
+      "money_flow_multiplier": 0.525,
+      "money_flow_volume": 28350.0,
+      "cumulative_money_flow": 2581710.49,
+      "intraday_intensity": 28350.0
+    },
+    {
+      "date": "2025-08-14",
+      "close": 237.35,
+      "volume": 49200,
+      "money_flow_multiplier": 0.2933,
+      "money_flow_volume": 14432.0,
+      "cumulative_money_flow": 2596142.49,
+      "intraday_intensity": 14432.0
+    },
+    {
+      "date": "2025-08-18",
+      "close": 239.65,
+      "volume": 25200,
+      "money_flow_multiplier": 0.8993,
+      "money_flow_volume": 22661.87,
+      "cumulative_money_flow": 2618804.36,
+      "intraday_intensity": 22661.87
+    },
+    {
+      "date": "2025-08-19",
+      "close": 250.55,
+      "volume": 49200,
+      "money_flow_multiplier": 0.9308,
+      "money_flow_volume": 45793.85,
+      "cumulative_money_flow": 2664598.21,
+      "intraday_intensity": 45793.85
+    },
+    {
+      "date": "2025-08-20",
+      "close": 248.75,
+      "volume": 14400,
+      "money_flow_multiplier": -0.0317,
+      "money_flow_volume": -457.14,
+      "cumulative_money_flow": 2664141.07,
+      "intraday_intensity": -457.14
+    },
+    {
+      "date": "2025-08-21",
+      "close": 249.35,
+      "volume": 16800,
+      "money_flow_multiplier": 0.74,
+      "money_flow_volume": 12432.0,
+      "cumulative_money_flow": 2676573.07,
+      "intraday_intensity": 12432.0
+    },
+    {
+      "date": "2025-08-22",
+      "close": 251.45,
+      "volume": 27600,
+      "money_flow_multiplier": 0.9825,
+      "money_flow_volume": 27115.79,
+      "cumulative_money_flow": 2703688.86,
+      "intraday_intensity": 27115.79
+    },
+    {
+      "date": "2025-08-25",
+      "close": 249.95,
+      "volume": 14400,
+      "money_flow_multiplier": 0.2532,
+      "money_flow_volume": 3645.57,
+      "cumulative_money_flow": 2707334.43,
+      "intraday_intensity": 3645.57
+    },
+    {
+      "date": "2025-08-26",
+      "close": 230.35,
+      "volume": 56400,
+      "money_flow_multiplier": -0.765,
+      "money_flow_volume": -43146.0,
+      "cumulative_money_flow": 2664188.43,
+      "intraday_intensity": -43146.0
+    },
+    {
+      "date": "2025-08-28",
+      "close": 223.15,
+      "volume": 34800,
+      "money_flow_multiplier": -0.54,
+      "money_flow_volume": -18792.0,
+      "cumulative_money_flow": 2645396.43,
+      "intraday_intensity": -18792.0
+    },
+    {
+      "date": "2025-08-29",
+      "close": 230.0,
+      "volume": 6000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 6000.0,
+      "cumulative_money_flow": 2651396.43,
+      "intraday_intensity": 6000.0
+    },
+    {
+      "date": "2025-09-01",
+      "close": 223.15,
+      "volume": 25200,
+      "money_flow_multiplier": -0.5592,
+      "money_flow_volume": -14092.11,
+      "cumulative_money_flow": 2637304.32,
+      "intraday_intensity": -14092.11
+    },
+    {
+      "date": "2025-09-02",
+      "close": 237.2,
+      "volume": 61200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 61200.0,
+      "cumulative_money_flow": 2698504.32,
+      "intraday_intensity": 61200.0
+    },
+    {
+      "date": "2025-09-03",
+      "close": 232.0,
+      "volume": 7200,
+      "money_flow_multiplier": -0.0244,
+      "money_flow_volume": -175.61,
+      "cumulative_money_flow": 2698328.71,
+      "intraday_intensity": -175.61
+    },
+    {
+      "date": "2025-09-04",
+      "close": 240.0,
+      "volume": 18000,
+      "money_flow_multiplier": -0.9091,
+      "money_flow_volume": -16363.64,
+      "cumulative_money_flow": 2681965.07,
+      "intraday_intensity": -16363.64
+    },
+    {
+      "date": "2025-09-05",
+      "close": 247.9,
+      "volume": 2400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2400.0,
+      "cumulative_money_flow": 2679565.07,
+      "intraday_intensity": -2400.0
+    },
+    {
+      "date": "2025-09-08",
+      "close": 251.3,
+      "volume": 37200,
+      "money_flow_multiplier": 0.7452,
+      "money_flow_volume": 27720.46,
+      "cumulative_money_flow": 2707285.54,
+      "intraday_intensity": 27720.46
+    },
+    {
+      "date": "2025-09-09",
+      "close": 257.4,
+      "volume": 14400,
+      "money_flow_multiplier": 0.9474,
+      "money_flow_volume": 13642.11,
+      "cumulative_money_flow": 2720927.64,
+      "intraday_intensity": 13642.11
+    },
+    {
+      "date": "2025-09-10",
+      "close": 255.0,
+      "volume": 10800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -10800.0,
+      "cumulative_money_flow": 2710127.64,
+      "intraday_intensity": -10800.0
+    },
+    {
+      "date": "2025-09-11",
+      "close": 255.95,
+      "volume": 9600,
+      "money_flow_multiplier": 0.6122,
+      "money_flow_volume": 5877.55,
+      "cumulative_money_flow": 2716005.19,
+      "intraday_intensity": 5877.55
+    },
+    {
+      "date": "2025-09-12",
+      "close": 257.8,
+      "volume": 32400,
+      "money_flow_multiplier": -0.7143,
+      "money_flow_volume": -23142.86,
+      "cumulative_money_flow": 2692862.34,
+      "intraday_intensity": -23142.86
+    },
+    {
+      "date": "2025-09-15",
+      "close": 253.95,
+      "volume": 30000,
+      "money_flow_multiplier": 0.422,
+      "money_flow_volume": 12660.55,
+      "cumulative_money_flow": 2705522.89,
+      "intraday_intensity": 12660.55
+    },
+    {
+      "date": "2025-09-16",
+      "close": 262.2,
+      "volume": 80400,
+      "money_flow_multiplier": 0.62,
+      "money_flow_volume": 49848.0,
+      "cumulative_money_flow": 2755370.89,
+      "intraday_intensity": 49848.0
+    },
+    {
+      "date": "2025-09-17",
+      "close": 263.9,
+      "volume": 31200,
+      "money_flow_multiplier": 0.8667,
+      "money_flow_volume": 27040.0,
+      "cumulative_money_flow": 2782410.89,
+      "intraday_intensity": 27040.0
+    },
+    {
+      "date": "2025-09-18",
+      "close": 267.85,
+      "volume": 48000,
+      "money_flow_multiplier": 0.6526,
+      "money_flow_volume": 31326.32,
+      "cumulative_money_flow": 2813737.2,
+      "intraday_intensity": 31326.32
+    },
+    {
+      "date": "2025-09-19",
+      "close": 273.0,
+      "volume": 8400,
+      "money_flow_multiplier": -0.3,
+      "money_flow_volume": -2520.0,
+      "cumulative_money_flow": 2811217.2,
+      "intraday_intensity": -2520.0
+    },
+    {
+      "date": "2025-09-22",
+      "close": 273.5,
+      "volume": 9600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 9600.0,
+      "cumulative_money_flow": 2820817.2,
+      "intraday_intensity": 9600.0
+    },
+    {
+      "date": "2025-09-23",
+      "close": 275.15,
+      "volume": 44400,
+      "money_flow_multiplier": 0.8447,
+      "money_flow_volume": 37506.85,
+      "cumulative_money_flow": 2858324.05,
+      "intraday_intensity": 37506.85
+    },
+    {
+      "date": "2025-09-24",
+      "close": 274.9,
+      "volume": 27600,
+      "money_flow_multiplier": 0.96,
+      "money_flow_volume": 26496.0,
+      "cumulative_money_flow": 2884820.05,
+      "intraday_intensity": 26496.0
+    },
+    {
+      "date": "2025-09-25",
+      "close": 277.45,
+      "volume": 6000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 6000.0,
+      "cumulative_money_flow": 2890820.05,
+      "intraday_intensity": 6000.0
+    },
+    {
+      "date": "2025-09-26",
+      "close": 270.05,
+      "volume": 19200,
+      "money_flow_multiplier": 0.1824,
+      "money_flow_volume": 3501.18,
+      "cumulative_money_flow": 2894321.23,
+      "intraday_intensity": 3501.18
+    },
+    {
+      "date": "2025-09-29",
+      "close": 279.0,
+      "volume": 45600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 45600.0,
+      "cumulative_money_flow": 2939921.23,
+      "intraday_intensity": 45600.0
+    },
+    {
+      "date": "2025-09-30",
+      "close": 276.8,
+      "volume": 40800,
+      "money_flow_multiplier": 0.3882,
+      "money_flow_volume": 15840.0,
+      "cumulative_money_flow": 2955761.23,
+      "intraday_intensity": 15840.0
+    },
+    {
+      "date": "2025-10-01",
+      "close": 268.25,
+      "volume": 2400,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 2955761.23,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2025-10-03",
+      "close": 277.85,
+      "volume": 9600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 9600.0,
+      "cumulative_money_flow": 2965361.23,
+      "intraday_intensity": 9600.0
+    },
+    {
+      "date": "2025-10-06",
+      "close": 263.0,
+      "volume": 8400,
+      "money_flow_multiplier": 0.0741,
+      "money_flow_volume": 622.22,
+      "cumulative_money_flow": 2965983.45,
+      "intraday_intensity": 622.22
+    },
+    {
+      "date": "2025-10-07",
+      "close": 276.1,
+      "volume": 45600,
+      "money_flow_multiplier": 0.4612,
+      "money_flow_volume": 21030.14,
+      "cumulative_money_flow": 2987013.59,
+      "intraday_intensity": 21030.14
+    },
+    {
+      "date": "2025-10-08",
+      "close": 279.7,
+      "volume": 44400,
+      "money_flow_multiplier": 0.4941,
+      "money_flow_volume": 21938.82,
+      "cumulative_money_flow": 3008952.41,
+      "intraday_intensity": 21938.82
+    },
+    {
+      "date": "2025-10-09",
+      "close": 276.95,
+      "volume": 16800,
+      "money_flow_multiplier": -0.0521,
+      "money_flow_volume": -875.0,
+      "cumulative_money_flow": 3008077.41,
+      "intraday_intensity": -875.0
+    },
+    {
+      "date": "2025-10-10",
+      "close": 290.3,
+      "volume": 37200,
+      "money_flow_multiplier": 0.9024,
+      "money_flow_volume": 33570.73,
+      "cumulative_money_flow": 3041648.14,
+      "intraday_intensity": 33570.73
+    },
+    {
+      "date": "2025-10-13",
+      "close": 294.9,
+      "volume": 2400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2400.0,
+      "cumulative_money_flow": 3044048.14,
+      "intraday_intensity": 2400.0
+    },
+    {
+      "date": "2025-10-14",
+      "close": 286.0,
+      "volume": 16800,
+      "money_flow_multiplier": -0.2955,
+      "money_flow_volume": -4965.18,
+      "cumulative_money_flow": 3039082.96,
+      "intraday_intensity": -4965.18
+    },
+    {
+      "date": "2025-10-15",
+      "close": 290.6,
+      "volume": 15600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -15600.0,
+      "cumulative_money_flow": 3023482.96,
+      "intraday_intensity": -15600.0
+    },
+    {
+      "date": "2025-10-16",
+      "close": 286.6,
+      "volume": 14400,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -14400.0,
+      "cumulative_money_flow": 3009082.96,
+      "intraday_intensity": -14400.0
+    },
+    {
+      "date": "2025-10-17",
+      "close": 278.65,
+      "volume": 14400,
+      "money_flow_multiplier": -0.6627,
+      "money_flow_volume": -9542.17,
+      "cumulative_money_flow": 2999540.79,
+      "intraday_intensity": -9542.17
+    },
+    {
+      "date": "2025-10-20",
+      "close": 280.05,
+      "volume": 4800,
+      "money_flow_multiplier": -0.6479,
+      "money_flow_volume": -3109.86,
+      "cumulative_money_flow": 2996430.93,
+      "intraday_intensity": -3109.86
+    },
+    {
+      "date": "2025-10-21",
+      "close": 296.85,
+      "volume": 19200,
+      "money_flow_multiplier": 0.3762,
+      "money_flow_volume": 7223.76,
+      "cumulative_money_flow": 3003654.7,
+      "intraday_intensity": 7223.76
+    },
+    {
+      "date": "2025-10-23",
+      "close": 291.0,
+      "volume": 8400,
+      "money_flow_multiplier": -0.7753,
+      "money_flow_volume": -6512.36,
+      "cumulative_money_flow": 2997142.34,
+      "intraday_intensity": -6512.36
+    },
+    {
+      "date": "2025-10-24",
+      "close": 285.5,
+      "volume": 6000,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -6000.0,
+      "cumulative_money_flow": 2991142.34,
+      "intraday_intensity": -6000.0
+    },
+    {
+      "date": "2025-10-27",
+      "close": 280.8,
+      "volume": 19200,
+      "money_flow_multiplier": -0.4118,
+      "money_flow_volume": -7905.88,
+      "cumulative_money_flow": 2983236.45,
+      "intraday_intensity": -7905.88
+    },
+    {
+      "date": "2025-10-28",
+      "close": 280.65,
+      "volume": 19200,
+      "money_flow_multiplier": -0.2857,
+      "money_flow_volume": -5485.71,
+      "cumulative_money_flow": 2977750.74,
+      "intraday_intensity": -5485.71
+    },
+    {
+      "date": "2025-10-29",
+      "close": 281.55,
+      "volume": 7200,
+      "money_flow_multiplier": -0.1667,
+      "money_flow_volume": -1200.0,
+      "cumulative_money_flow": 2976550.74,
+      "intraday_intensity": -1200.0
+    },
+    {
+      "date": "2025-10-30",
+      "close": 281.95,
+      "volume": 7200,
+      "money_flow_multiplier": 0.5556,
+      "money_flow_volume": 4000.0,
+      "cumulative_money_flow": 2980550.74,
+      "intraday_intensity": 4000.0
+    },
+    {
+      "date": "2025-10-31",
+      "close": 290.0,
+      "volume": 10400,
+      "money_flow_multiplier": -0.2105,
+      "money_flow_volume": -2189.47,
+      "cumulative_money_flow": 2978361.27,
+      "intraday_intensity": -2189.47
+    },
+    {
+      "date": "2025-11-03",
+      "close": 280.35,
+      "volume": 39600,
+      "money_flow_multiplier": -0.9056,
+      "money_flow_volume": -35860.94,
+      "cumulative_money_flow": 2942500.32,
+      "intraday_intensity": -35860.94
+    },
+    {
+      "date": "2025-11-04",
+      "close": 280.25,
+      "volume": 25200,
+      "money_flow_multiplier": -0.9184,
+      "money_flow_volume": -23142.86,
+      "cumulative_money_flow": 2919357.46,
+      "intraday_intensity": -23142.86
+    },
+    {
+      "date": "2025-11-06",
+      "close": 289.85,
+      "volume": 1600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 1600.0,
+      "cumulative_money_flow": 2920957.46,
+      "intraday_intensity": 1600.0
+    },
+    {
+      "date": "2025-11-07",
+      "close": 284.95,
+      "volume": 11200,
+      "money_flow_multiplier": -0.3947,
+      "money_flow_volume": -4421.05,
+      "cumulative_money_flow": 2916536.41,
+      "intraday_intensity": -4421.05
+    },
+    {
+      "date": "2025-11-10",
+      "close": 280.6,
+      "volume": 19600,
+      "money_flow_multiplier": -0.76,
+      "money_flow_volume": -14896.0,
+      "cumulative_money_flow": 2901640.41,
+      "intraday_intensity": -14896.0
+    },
+    {
+      "date": "2025-11-11",
+      "close": 299.8,
+      "volume": 24000,
+      "money_flow_multiplier": 0.252,
+      "money_flow_volume": 6048.78,
+      "cumulative_money_flow": 2907689.19,
+      "intraday_intensity": 6048.78
+    },
+    {
+      "date": "2025-11-12",
+      "close": 339.1,
+      "volume": 100000,
+      "money_flow_multiplier": 0.4416,
+      "money_flow_volume": 44161.55,
+      "cumulative_money_flow": 2951850.74,
+      "intraday_intensity": 44161.55
+    },
+    {
+      "date": "2025-11-13",
+      "close": 335.45,
+      "volume": 15600,
+      "money_flow_multiplier": 0.4982,
+      "money_flow_volume": 7772.04,
+      "cumulative_money_flow": 2959622.78,
+      "intraday_intensity": 7772.04
+    },
+    {
+      "date": "2025-11-14",
+      "close": 328.7,
+      "volume": 10000,
+      "money_flow_multiplier": -0.8471,
+      "money_flow_volume": -8470.59,
+      "cumulative_money_flow": 2951152.19,
+      "intraday_intensity": -8470.59
+    },
+    {
+      "date": "2025-11-17",
+      "close": 324.9,
+      "volume": 58800,
+      "money_flow_multiplier": -0.8636,
+      "money_flow_volume": -50781.82,
+      "cumulative_money_flow": 2900370.37,
+      "intraday_intensity": -50781.82
+    },
+    {
+      "date": "2025-11-18",
+      "close": 325.8,
+      "volume": 30800,
+      "money_flow_multiplier": -0.28,
+      "money_flow_volume": -8624.0,
+      "cumulative_money_flow": 2891746.37,
+      "intraday_intensity": -8624.0
+    },
+    {
+      "date": "2025-11-19",
+      "close": 332.95,
+      "volume": 4400,
+      "money_flow_multiplier": -0.9583,
+      "money_flow_volume": -4216.67,
+      "cumulative_money_flow": 2887529.71,
+      "intraday_intensity": -4216.67
+    },
+    {
+      "date": "2025-11-20",
+      "close": 325.25,
+      "volume": 29600,
+      "money_flow_multiplier": -0.9612,
+      "money_flow_volume": -28452.08,
+      "cumulative_money_flow": 2859077.63,
+      "intraday_intensity": -28452.08
+    },
+    {
+      "date": "2025-11-21",
+      "close": 327.8,
+      "volume": 8800,
+      "money_flow_multiplier": -0.6835,
+      "money_flow_volume": -6014.39,
+      "cumulative_money_flow": 2853063.24,
+      "intraday_intensity": -6014.39
+    },
+    {
+      "date": "2025-11-24",
+      "close": 320.0,
+      "volume": 23200,
+      "money_flow_multiplier": -0.9747,
+      "money_flow_volume": -22612.66,
+      "cumulative_money_flow": 2830450.58,
+      "intraday_intensity": -22612.66
+    },
+    {
+      "date": "2025-11-25",
+      "close": 320.0,
+      "volume": 29600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -29600.0,
+      "cumulative_money_flow": 2800850.58,
+      "intraday_intensity": -29600.0
+    },
+    {
+      "date": "2025-11-26",
+      "close": 321.5,
+      "volume": 19200,
+      "money_flow_multiplier": -0.2195,
+      "money_flow_volume": -4214.63,
+      "cumulative_money_flow": 2796635.95,
+      "intraday_intensity": -4214.63
+    },
+    {
+      "date": "2025-11-27",
+      "close": 321.1,
+      "volume": 26800,
+      "money_flow_multiplier": -0.4143,
+      "money_flow_volume": -11102.86,
+      "cumulative_money_flow": 2785533.09,
+      "intraday_intensity": -11102.86
+    },
+    {
+      "date": "2025-11-28",
+      "close": 324.05,
+      "volume": 26400,
+      "money_flow_multiplier": 0.7654,
+      "money_flow_volume": 20207.41,
+      "cumulative_money_flow": 2805740.5,
+      "intraday_intensity": 20207.41
+    },
+    {
+      "date": "2025-12-01",
+      "close": 324.8,
+      "volume": 25600,
+      "money_flow_multiplier": 0.9579,
+      "money_flow_volume": 24522.11,
+      "cumulative_money_flow": 2830262.6,
+      "intraday_intensity": 24522.11
+    },
+    {
+      "date": "2025-12-02",
+      "close": 326.0,
+      "volume": 11600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -11600.0,
+      "cumulative_money_flow": 2818662.6,
+      "intraday_intensity": -11600.0
+    },
+    {
+      "date": "2025-12-03",
+      "close": 321.15,
+      "volume": 8000,
+      "money_flow_multiplier": -0.9786,
+      "money_flow_volume": -7828.57,
+      "cumulative_money_flow": 2810834.03,
+      "intraday_intensity": -7828.57
+    },
+    {
+      "date": "2025-12-04",
+      "close": 313.85,
+      "volume": 28400,
+      "money_flow_multiplier": -0.3906,
+      "money_flow_volume": -11093.75,
+      "cumulative_money_flow": 2799740.28,
+      "intraday_intensity": -11093.75
+    },
+    {
+      "date": "2025-12-05",
+      "close": 320.35,
+      "volume": 66400,
+      "money_flow_multiplier": 0.7343,
+      "money_flow_volume": 48756.57,
+      "cumulative_money_flow": 2848496.85,
+      "intraday_intensity": 48756.57
+    },
+    {
+      "date": "2025-12-08",
+      "close": 320.55,
+      "volume": 47600,
+      "money_flow_multiplier": 0.3256,
+      "money_flow_volume": 15497.67,
+      "cumulative_money_flow": 2863994.53,
+      "intraday_intensity": 15497.67
+    },
+    {
+      "date": "2025-12-09",
+      "close": 314.7,
+      "volume": 8000,
+      "money_flow_multiplier": 0.7,
+      "money_flow_volume": 5600.0,
+      "cumulative_money_flow": 2869594.53,
+      "intraday_intensity": 5600.0
+    },
+    {
+      "date": "2025-12-10",
+      "close": 313.15,
+      "volume": 11200,
+      "money_flow_multiplier": -0.9,
+      "money_flow_volume": -10080.0,
+      "cumulative_money_flow": 2859514.53,
+      "intraday_intensity": -10080.0
+    },
+    {
+      "date": "2025-12-11",
+      "close": 313.0,
+      "volume": 1600,
+      "money_flow_multiplier": 0.3333,
+      "money_flow_volume": 533.33,
+      "cumulative_money_flow": 2860047.86,
+      "intraday_intensity": 533.33
+    },
+    {
+      "date": "2025-12-12",
+      "close": 300.5,
+      "volume": 53200,
+      "money_flow_multiplier": -0.9375,
+      "money_flow_volume": -49875.0,
+      "cumulative_money_flow": 2810172.86,
+      "intraday_intensity": -49875.0
+    },
+    {
+      "date": "2025-12-15",
+      "close": 310.0,
+      "volume": 30800,
+      "money_flow_multiplier": 0.7143,
+      "money_flow_volume": 22000.0,
+      "cumulative_money_flow": 2832172.86,
+      "intraday_intensity": 22000.0
+    },
+    {
+      "date": "2025-12-16",
+      "close": 303.8,
+      "volume": 33600,
+      "money_flow_multiplier": -0.5667,
+      "money_flow_volume": -19040.0,
+      "cumulative_money_flow": 2813132.86,
+      "intraday_intensity": -19040.0
+    },
+    {
+      "date": "2025-12-17",
+      "close": 315.7,
+      "volume": 31200,
+      "money_flow_multiplier": 0.1738,
+      "money_flow_volume": 5422.67,
+      "cumulative_money_flow": 2818555.53,
+      "intraday_intensity": 5422.67
+    },
+    {
+      "date": "2025-12-18",
+      "close": 318.7,
+      "volume": 11600,
+      "money_flow_multiplier": 0.5446,
+      "money_flow_volume": 6316.83,
+      "cumulative_money_flow": 2824872.36,
+      "intraday_intensity": 6316.83
+    },
+    {
+      "date": "2025-12-19",
+      "close": 307.55,
+      "volume": 17600,
+      "money_flow_multiplier": -0.6433,
+      "money_flow_volume": -11322.29,
+      "cumulative_money_flow": 2813550.07,
+      "intraday_intensity": -11322.29
+    },
+    {
+      "date": "2025-12-22",
+      "close": 303.0,
+      "volume": 6800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -6800.0,
+      "cumulative_money_flow": 2806750.07,
+      "intraday_intensity": -6800.0
+    },
+    {
+      "date": "2025-12-23",
+      "close": 304.75,
+      "volume": 15200,
+      "money_flow_multiplier": -0.2086,
+      "money_flow_volume": -3171.22,
+      "cumulative_money_flow": 2803578.85,
+      "intraday_intensity": -3171.22
+    },
+    {
+      "date": "2025-12-24",
+      "close": 329.65,
+      "volume": 32800,
+      "money_flow_multiplier": 0.8,
+      "money_flow_volume": 26240.0,
+      "cumulative_money_flow": 2829818.85,
+      "intraday_intensity": 26240.0
+    },
+    {
+      "date": "2025-12-26",
+      "close": 325.8,
+      "volume": 6800,
+      "money_flow_multiplier": 0.9704,
+      "money_flow_volume": 6598.52,
+      "cumulative_money_flow": 2836417.37,
+      "intraday_intensity": 6598.52
+    },
+    {
+      "date": "2025-12-29",
+      "close": 317.2,
+      "volume": 25200,
+      "money_flow_multiplier": 0.1536,
+      "money_flow_volume": 3870.85,
+      "cumulative_money_flow": 2840288.21,
+      "intraday_intensity": 3870.85
+    },
+    {
+      "date": "2025-12-30",
+      "close": 310.0,
+      "volume": 19600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -19600.0,
+      "cumulative_money_flow": 2820688.21,
+      "intraday_intensity": -19600.0
+    },
+    {
+      "date": "2025-12-31",
+      "close": 310.0,
+      "volume": 4000,
+      "money_flow_multiplier": -0.6581,
+      "money_flow_volume": -2632.48,
+      "cumulative_money_flow": 2818055.73,
+      "intraday_intensity": -2632.48
+    },
+    {
+      "date": "2026-01-01",
+      "close": 303.9,
+      "volume": 5600,
+      "money_flow_multiplier": -0.3871,
+      "money_flow_volume": -2167.74,
+      "cumulative_money_flow": 2815887.99,
+      "intraday_intensity": -2167.74
+    },
+    {
+      "date": "2026-01-02",
+      "close": 305.7,
+      "volume": 48800,
+      "money_flow_multiplier": 0.0549,
+      "money_flow_volume": 2681.32,
+      "cumulative_money_flow": 2818569.31,
+      "intraday_intensity": 2681.32
+    },
+    {
+      "date": "2026-01-05",
+      "close": 309.05,
+      "volume": 12000,
+      "money_flow_multiplier": 0.7803,
+      "money_flow_volume": 9364.16,
+      "cumulative_money_flow": 2827933.47,
+      "intraday_intensity": 9364.16
+    },
+    {
+      "date": "2026-01-06",
+      "close": 312.5,
+      "volume": 12400,
+      "money_flow_multiplier": 0.8507,
+      "money_flow_volume": 10549.25,
+      "cumulative_money_flow": 2838482.73,
+      "intraday_intensity": 10549.25
+    },
+    {
+      "date": "2026-01-07",
+      "close": 310.6,
+      "volume": 4000,
+      "money_flow_multiplier": 0.5971,
+      "money_flow_volume": 2388.49,
+      "cumulative_money_flow": 2840871.22,
+      "intraday_intensity": 2388.49
+    },
+    {
+      "date": "2026-01-08",
+      "close": 306.15,
+      "volume": 5600,
+      "money_flow_multiplier": -0.7451,
+      "money_flow_volume": -4172.55,
+      "cumulative_money_flow": 2836698.67,
+      "intraday_intensity": -4172.55
+    },
+    {
+      "date": "2026-01-09",
+      "close": 310.0,
+      "volume": 11200,
+      "money_flow_multiplier": 0.3333,
+      "money_flow_volume": 3733.33,
+      "cumulative_money_flow": 2840432.0,
+      "intraday_intensity": 3733.33
+    },
+    {
+      "date": "2026-01-12",
+      "close": 301.65,
+      "volume": 5200,
+      "money_flow_multiplier": -0.1951,
+      "money_flow_volume": -1014.63,
+      "cumulative_money_flow": 2839417.37,
+      "intraday_intensity": -1014.63
+    },
+    {
+      "date": "2026-01-13",
+      "close": 301.15,
+      "volume": 11600,
+      "money_flow_multiplier": -0.1412,
+      "money_flow_volume": -1637.65,
+      "cumulative_money_flow": 2837779.72,
+      "intraday_intensity": -1637.65
+    },
+    {
+      "date": "2026-01-14",
+      "close": 319.9,
+      "volume": 29200,
+      "money_flow_multiplier": 0.5429,
+      "money_flow_volume": 15851.43,
+      "cumulative_money_flow": 2853631.15,
+      "intraday_intensity": 15851.43
+    },
+    {
+      "date": "2026-01-16",
+      "close": 307.75,
+      "volume": 2000,
+      "money_flow_multiplier": -0.6038,
+      "money_flow_volume": -1207.55,
+      "cumulative_money_flow": 2852423.6,
+      "intraday_intensity": -1207.55
+    },
+    {
+      "date": "2026-01-19",
+      "close": 304.4,
+      "volume": 6800,
+      "money_flow_multiplier": -0.3165,
+      "money_flow_volume": -2151.9,
+      "cumulative_money_flow": 2850271.7,
+      "intraday_intensity": -2151.9
+    },
+    {
+      "date": "2026-01-20",
+      "close": 303.0,
+      "volume": 15600,
+      "money_flow_multiplier": 0.1299,
+      "money_flow_volume": 2027.12,
+      "cumulative_money_flow": 2852298.82,
+      "intraday_intensity": 2027.12
+    },
+    {
+      "date": "2026-01-21",
+      "close": 302.35,
+      "volume": 10800,
+      "money_flow_multiplier": -0.5868,
+      "money_flow_volume": -6337.19,
+      "cumulative_money_flow": 2845961.63,
+      "intraday_intensity": -6337.19
+    },
+    {
+      "date": "2026-01-22",
+      "close": 301.65,
+      "volume": 34400,
+      "money_flow_multiplier": -0.7542,
+      "money_flow_volume": -25945.76,
+      "cumulative_money_flow": 2820015.87,
+      "intraday_intensity": -25945.76
+    },
+    {
+      "date": "2026-01-23",
+      "close": 303.5,
+      "volume": 7600,
+      "money_flow_multiplier": -0.443,
+      "money_flow_volume": -3367.09,
+      "cumulative_money_flow": 2816648.78,
+      "intraday_intensity": -3367.09
+    },
+    {
+      "date": "2026-01-27",
+      "close": 300.35,
+      "volume": 68800,
+      "money_flow_multiplier": 0.1203,
+      "money_flow_volume": 8273.42,
+      "cumulative_money_flow": 2824922.2,
+      "intraday_intensity": 8273.42
+    },
+    {
+      "date": "2026-01-28",
+      "close": 300.8,
+      "volume": 40000,
+      "money_flow_multiplier": -0.8776,
+      "money_flow_volume": -35102.04,
+      "cumulative_money_flow": 2789820.16,
+      "intraday_intensity": -35102.04
+    },
+    {
+      "date": "2026-01-29",
+      "close": 304.35,
+      "volume": 4000,
+      "money_flow_multiplier": -0.0408,
+      "money_flow_volume": -163.27,
+      "cumulative_money_flow": 2789656.89,
+      "intraday_intensity": -163.27
+    },
+    {
+      "date": "2026-01-30",
+      "close": 301.9,
+      "volume": 33600,
+      "money_flow_multiplier": -0.6053,
+      "money_flow_volume": -20336.84,
+      "cumulative_money_flow": 2769320.05,
+      "intraday_intensity": -20336.84
+    },
+    {
+      "date": "2026-02-01",
+      "close": 300.45,
+      "volume": 38800,
+      "money_flow_multiplier": -0.9496,
+      "money_flow_volume": -36846.04,
+      "cumulative_money_flow": 2732474.01,
+      "intraday_intensity": -36846.04
+    },
+    {
+      "date": "2026-02-02",
+      "close": 297.6,
+      "volume": 43600,
+      "money_flow_multiplier": 0.078,
+      "money_flow_volume": 3401.42,
+      "cumulative_money_flow": 2735875.42,
+      "intraday_intensity": 3401.42
+    },
+    {
+      "date": "2026-02-03",
+      "close": 290.7,
+      "volume": 29200,
+      "money_flow_multiplier": -0.008,
+      "money_flow_volume": -233.6,
+      "cumulative_money_flow": 2735641.82,
+      "intraday_intensity": -233.6
+    },
+    {
+      "date": "2026-02-04",
+      "close": 282.95,
+      "volume": 34800,
+      "money_flow_multiplier": -0.0741,
+      "money_flow_volume": -2577.78,
+      "cumulative_money_flow": 2733064.05,
+      "intraday_intensity": -2577.78
+    },
+    {
+      "date": "2026-02-05",
+      "close": 288.0,
+      "volume": 12400,
+      "money_flow_multiplier": 0.2079,
+      "money_flow_volume": 2578.22,
+      "cumulative_money_flow": 2735642.26,
+      "intraday_intensity": 2578.22
+    },
+    {
+      "date": "2026-02-06",
+      "close": 304.5,
+      "volume": 40400,
+      "money_flow_multiplier": 0.9524,
+      "money_flow_volume": 38476.19,
+      "cumulative_money_flow": 2774118.45,
+      "intraday_intensity": 38476.19
+    },
+    {
+      "date": "2026-02-09",
+      "close": 293.5,
+      "volume": 6000,
+      "money_flow_multiplier": -0.6047,
+      "money_flow_volume": -3628.46,
+      "cumulative_money_flow": 2770490.0,
+      "intraday_intensity": -3628.46
+    },
+    {
+      "date": "2026-02-10",
+      "close": 295.4,
+      "volume": 4000,
+      "money_flow_multiplier": -0.3901,
+      "money_flow_volume": -1560.54,
+      "cumulative_money_flow": 2768929.46,
+      "intraday_intensity": -1560.54
+    },
+    {
+      "date": "2026-02-11",
+      "close": 286.1,
+      "volume": 54800,
+      "money_flow_multiplier": -0.1351,
+      "money_flow_volume": -7405.41,
+      "cumulative_money_flow": 2761524.05,
+      "intraday_intensity": -7405.41
+    },
+    {
+      "date": "2026-02-12",
+      "close": 287.05,
+      "volume": 39600,
+      "money_flow_multiplier": 0.175,
+      "money_flow_volume": 6930.0,
+      "cumulative_money_flow": 2768454.05,
+      "intraday_intensity": 6930.0
+    },
+    {
+      "date": "2026-02-13",
+      "close": 282.1,
+      "volume": 52000,
+      "money_flow_multiplier": -0.7838,
+      "money_flow_volume": -40756.76,
+      "cumulative_money_flow": 2727697.3,
+      "intraday_intensity": -40756.76
+    },
+    {
+      "date": "2026-02-16",
+      "close": 289.65,
+      "volume": 5600,
+      "money_flow_multiplier": 0.563,
+      "money_flow_volume": 3152.94,
+      "cumulative_money_flow": 2730850.24,
+      "intraday_intensity": 3152.94
+    },
+    {
+      "date": "2026-02-17",
+      "close": 290.0,
+      "volume": 29600,
+      "money_flow_multiplier": -0.1111,
+      "money_flow_volume": -3288.89,
+      "cumulative_money_flow": 2727561.35,
+      "intraday_intensity": -3288.89
+    },
+    {
+      "date": "2026-02-18",
+      "close": 298.7,
+      "volume": 22000,
+      "money_flow_multiplier": 0.7863,
+      "money_flow_volume": 17297.71,
+      "cumulative_money_flow": 2744859.06,
+      "intraday_intensity": 17297.71
+    },
+    {
+      "date": "2026-02-19",
+      "close": 290.0,
+      "volume": 34000,
+      "money_flow_multiplier": -0.6657,
+      "money_flow_volume": -22635.1,
+      "cumulative_money_flow": 2722223.96,
+      "intraday_intensity": -22635.1
+    },
+    {
+      "date": "2026-02-20",
+      "close": 290.1,
+      "volume": 30400,
+      "money_flow_multiplier": -0.3545,
+      "money_flow_volume": -10776.72,
+      "cumulative_money_flow": 2711447.24,
+      "intraday_intensity": -10776.72
+    },
+    {
+      "date": "2026-02-23",
+      "close": 298.55,
+      "volume": 42000,
+      "money_flow_multiplier": -0.1978,
+      "money_flow_volume": -8307.69,
+      "cumulative_money_flow": 2703139.55,
+      "intraday_intensity": -8307.69
+    },
+    {
+      "date": "2026-02-24",
+      "close": 293.2,
+      "volume": 16000,
+      "money_flow_multiplier": -0.7746,
+      "money_flow_volume": -12394.37,
+      "cumulative_money_flow": 2690745.18,
+      "intraday_intensity": -12394.37
+    },
+    {
+      "date": "2026-02-25",
+      "close": 300.0,
+      "volume": 14800,
+      "money_flow_multiplier": 0.3043,
+      "money_flow_volume": 4504.35,
+      "cumulative_money_flow": 2695249.53,
+      "intraday_intensity": 4504.35
+    },
+    {
+      "date": "2026-02-26",
+      "close": 301.0,
+      "volume": 1200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 1200.0,
+      "cumulative_money_flow": 2696449.53,
+      "intraday_intensity": 1200.0
+    },
+    {
+      "date": "2026-02-27",
+      "close": 300.25,
+      "volume": 7600,
+      "money_flow_multiplier": 0.6804,
+      "money_flow_volume": 5170.78,
+      "cumulative_money_flow": 2701620.31,
+      "intraday_intensity": 5170.78
+    },
+    {
+      "date": "2026-03-02",
+      "close": 281.95,
+      "volume": 82400,
+      "money_flow_multiplier": -0.834,
+      "money_flow_volume": -68725.11,
+      "cumulative_money_flow": 2632895.2,
+      "intraday_intensity": -68725.11
+    },
+    {
+      "date": "2026-03-04",
+      "close": 292.9,
+      "volume": 60400,
+      "money_flow_multiplier": 0.9846,
+      "money_flow_volume": 59470.77,
+      "cumulative_money_flow": 2692365.97,
+      "intraday_intensity": 59470.77
+    },
+    {
+      "date": "2026-03-05",
+      "close": 317.5,
+      "volume": 49600,
+      "money_flow_multiplier": 0.9623,
+      "money_flow_volume": 47731.83,
+      "cumulative_money_flow": 2740097.8,
+      "intraday_intensity": 47731.83
+    },
+    {
+      "date": "2026-03-06",
+      "close": 315.15,
+      "volume": 50000,
+      "money_flow_multiplier": 0.4211,
+      "money_flow_volume": 21052.63,
+      "cumulative_money_flow": 2761150.43,
+      "intraday_intensity": 21052.63
+    },
+    {
+      "date": "2026-03-09",
+      "close": 308.2,
+      "volume": 53200,
+      "money_flow_multiplier": -0.2952,
+      "money_flow_volume": -15706.67,
+      "cumulative_money_flow": 2745443.76,
+      "intraday_intensity": -15706.67
+    },
+    {
+      "date": "2026-03-10",
+      "close": 312.1,
+      "volume": 25200,
+      "money_flow_multiplier": -0.2201,
+      "money_flow_volume": -5545.95,
+      "cumulative_money_flow": 2739897.81,
+      "intraday_intensity": -5545.95
+    },
+    {
+      "date": "2026-03-11",
+      "close": 303.55,
+      "volume": 23200,
+      "money_flow_multiplier": -0.5176,
+      "money_flow_volume": -12009.41,
+      "cumulative_money_flow": 2727888.4,
+      "intraday_intensity": -12009.41
+    },
+    {
+      "date": "2026-03-12",
+      "close": 310.95,
+      "volume": 24800,
+      "money_flow_multiplier": 0.5176,
+      "money_flow_volume": 12837.65,
+      "cumulative_money_flow": 2740726.05,
+      "intraday_intensity": 12837.65
+    },
+    {
+      "date": "2026-03-13",
+      "close": 316.75,
+      "volume": 48000,
+      "money_flow_multiplier": 0.6525,
+      "money_flow_volume": 31322.03,
+      "cumulative_money_flow": 2772048.08,
+      "intraday_intensity": 31322.03
+    },
+    {
+      "date": "2026-03-16",
+      "close": 305.55,
+      "volume": 13200,
+      "money_flow_multiplier": -0.4538,
+      "money_flow_volume": -5990.77,
+      "cumulative_money_flow": 2766057.31,
+      "intraday_intensity": -5990.77
+    },
+    {
+      "date": "2026-03-17",
+      "close": 318.95,
+      "volume": 28400,
+      "money_flow_multiplier": 0.809,
+      "money_flow_volume": 22976.88,
+      "cumulative_money_flow": 2789034.2,
+      "intraday_intensity": 22976.88
+    },
+    {
+      "date": "2026-03-18",
+      "close": 327.95,
+      "volume": 36400,
+      "money_flow_multiplier": 0.8632,
+      "money_flow_volume": 31420.2,
+      "cumulative_money_flow": 2820454.39,
+      "intraday_intensity": 31420.2
+    },
+    {
+      "date": "2026-03-19",
+      "close": 313.85,
+      "volume": 159600,
+      "money_flow_multiplier": -0.6632,
+      "money_flow_volume": -105845.83,
+      "cumulative_money_flow": 2714608.56,
+      "intraday_intensity": -105845.83
+    },
+    {
+      "date": "2026-03-20",
+      "close": 319.9,
+      "volume": 28000,
+      "money_flow_multiplier": 0.9259,
+      "money_flow_volume": 25925.93,
+      "cumulative_money_flow": 2740534.49,
+      "intraday_intensity": 25925.93
+    },
+    {
+      "date": "2026-03-23",
+      "close": 319.15,
+      "volume": 118400,
+      "money_flow_multiplier": -0.0388,
+      "money_flow_volume": -4589.15,
+      "cumulative_money_flow": 2735945.34,
+      "intraday_intensity": -4589.15
+    },
+    {
+      "date": "2026-03-24",
+      "close": 317.3,
+      "volume": 76400,
+      "money_flow_multiplier": -0.6316,
+      "money_flow_volume": -48252.63,
+      "cumulative_money_flow": 2687692.71,
+      "intraday_intensity": -48252.63
+    },
+    {
+      "date": "2026-03-25",
+      "close": 318.0,
+      "volume": 346000,
+      "money_flow_multiplier": -0.1739,
+      "money_flow_volume": -60173.91,
+      "cumulative_money_flow": 2627518.79,
+      "intraday_intensity": -60173.91
+    },
+    {
+      "date": "2026-03-27",
+      "close": 315.25,
+      "volume": 129200,
+      "money_flow_multiplier": -0.8194,
+      "money_flow_volume": -105860.65,
+      "cumulative_money_flow": 2521658.15,
+      "intraday_intensity": -105860.65
+    },
+    {
+      "date": "2026-03-30",
+      "close": 306.5,
+      "volume": 4400,
+      "money_flow_multiplier": -0.8913,
+      "money_flow_volume": -3921.74,
+      "cumulative_money_flow": 2517736.41,
+      "intraday_intensity": -3921.74
+    },
+    {
+      "date": "2026-04-01",
+      "close": 315.0,
+      "volume": 29600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -29600.0,
+      "cumulative_money_flow": 2488136.41,
+      "intraday_intensity": -29600.0
+    },
+    {
+      "date": "2026-04-02",
+      "close": 307.75,
+      "volume": 34000,
+      "money_flow_multiplier": 0.0265,
+      "money_flow_volume": 900.66,
+      "cumulative_money_flow": 2489037.07,
+      "intraday_intensity": 900.66
+    },
+    {
+      "date": "2026-04-06",
+      "close": 320.15,
+      "volume": 149600,
+      "money_flow_multiplier": 0.9333,
+      "money_flow_volume": 139626.67,
+      "cumulative_money_flow": 2628663.74,
+      "intraday_intensity": 139626.67
+    },
+    {
+      "date": "2026-04-07",
+      "close": 320.5,
+      "volume": 37600,
+      "money_flow_multiplier": -0.5,
+      "money_flow_volume": -18800.0,
+      "cumulative_money_flow": 2609863.74,
+      "intraday_intensity": -18800.0
+    },
+    {
+      "date": "2026-04-08",
+      "close": 323.1,
+      "volume": 31600,
+      "money_flow_multiplier": 0.0923,
+      "money_flow_volume": 2916.92,
+      "cumulative_money_flow": 2612780.66,
+      "intraday_intensity": 2916.92
+    },
+    {
+      "date": "2026-04-09",
+      "close": 315.2,
+      "volume": 39200,
+      "money_flow_multiplier": -0.1624,
+      "money_flow_volume": -6365.81,
+      "cumulative_money_flow": 2606414.85,
+      "intraday_intensity": -6365.81
+    },
+    {
+      "date": "2026-04-10",
+      "close": 320.5,
+      "volume": 34000,
+      "money_flow_multiplier": 0.0056,
+      "money_flow_volume": 189.94,
+      "cumulative_money_flow": 2606604.79,
+      "intraday_intensity": 189.94
+    },
+    {
+      "date": "2026-04-13",
+      "close": 322.25,
+      "volume": 34800,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 34800.0,
+      "cumulative_money_flow": 2641404.79,
+      "intraday_intensity": 34800.0
+    },
+    {
+      "date": "2026-04-15",
+      "close": 314.7,
+      "volume": 22400,
+      "money_flow_multiplier": -0.9592,
+      "money_flow_volume": -21485.71,
+      "cumulative_money_flow": 2619919.08,
+      "intraday_intensity": -21485.71
+    },
+    {
+      "date": "2026-04-16",
+      "close": 316.45,
+      "volume": 106400,
+      "money_flow_multiplier": -0.2727,
+      "money_flow_volume": -29018.18,
+      "cumulative_money_flow": 2590900.9,
+      "intraday_intensity": -29018.18
+    },
+    {
+      "date": "2026-04-17",
+      "close": 319.0,
+      "volume": 2800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2800.0,
+      "cumulative_money_flow": 2588100.9,
+      "intraday_intensity": -2800.0
+    },
+    {
+      "date": "2026-04-20",
+      "close": 315.05,
+      "volume": 18000,
+      "money_flow_multiplier": -0.4143,
+      "money_flow_volume": -7457.14,
+      "cumulative_money_flow": 2580643.76,
+      "intraday_intensity": -7457.14
+    },
+    {
+      "date": "2026-04-21",
+      "close": 318.0,
+      "volume": 15600,
+      "money_flow_multiplier": -0.7778,
+      "money_flow_volume": -12133.33,
+      "cumulative_money_flow": 2568510.42,
+      "intraday_intensity": -12133.33
+    },
+    {
+      "date": "2026-04-22",
+      "close": 315.0,
+      "volume": 15600,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -15600.0,
+      "cumulative_money_flow": 2552910.42,
+      "intraday_intensity": -15600.0
+    },
+    {
+      "date": "2026-04-23",
+      "close": 314.2,
+      "volume": 13200,
+      "money_flow_multiplier": -0.76,
+      "money_flow_volume": -10032.0,
+      "cumulative_money_flow": 2542878.42,
+      "intraday_intensity": -10032.0
+    },
+    {
+      "date": "2026-04-24",
+      "close": 315.6,
+      "volume": 57600,
+      "money_flow_multiplier": -0.6235,
+      "money_flow_volume": -35915.29,
+      "cumulative_money_flow": 2506963.13,
+      "intraday_intensity": -35915.29
+    },
+    {
+      "date": "2026-04-27",
+      "close": 314.0,
+      "volume": 67200,
+      "money_flow_multiplier": -0.6107,
+      "money_flow_volume": -41041.61,
+      "cumulative_money_flow": 2465921.52,
+      "intraday_intensity": -41041.61
+    },
+    {
+      "date": "2026-04-28",
+      "close": 318.75,
+      "volume": 37200,
+      "money_flow_multiplier": 0.6429,
+      "money_flow_volume": 23914.29,
+      "cumulative_money_flow": 2489835.8,
+      "intraday_intensity": 23914.29
+    },
+    {
+      "date": "2026-04-29",
+      "close": 376.85,
+      "volume": 46400,
+      "money_flow_multiplier": 0.8247,
+      "money_flow_volume": 38264.7,
+      "cumulative_money_flow": 2528100.5,
+      "intraday_intensity": 38264.7
+    },
+    {
+      "date": "2026-04-30",
+      "close": 418.9,
+      "volume": 30000,
+      "money_flow_multiplier": 0.7918,
+      "money_flow_volume": 23755.1,
+      "cumulative_money_flow": 2551855.61,
+      "intraday_intensity": 23755.1
+    },
+    {
+      "date": "2026-05-04",
+      "close": 426.75,
+      "volume": 124400,
+      "money_flow_multiplier": 0.7564,
+      "money_flow_volume": 94099.39,
+      "cumulative_money_flow": 2645954.99,
+      "intraday_intensity": 94099.39
+    },
+    {
+      "date": "2026-05-05",
+      "close": 417.25,
+      "volume": 6800,
+      "money_flow_multiplier": -0.6165,
+      "money_flow_volume": -4192.48,
+      "cumulative_money_flow": 2641762.51,
+      "intraday_intensity": -4192.48
+    },
+    {
+      "date": "2026-05-06",
+      "close": 471.9,
+      "volume": 106800,
+      "money_flow_multiplier": 0.7284,
+      "money_flow_volume": 77788.12,
+      "cumulative_money_flow": 2719550.63,
+      "intraday_intensity": 77788.12
+    },
+    {
+      "date": "2026-05-07",
+      "close": 478.0,
+      "volume": 2800,
+      "money_flow_multiplier": 0.9259,
+      "money_flow_volume": 2592.59,
+      "cumulative_money_flow": 2722143.22,
+      "intraday_intensity": 2592.59
+    },
+    {
+      "date": "2026-05-08",
+      "close": 456.3,
+      "volume": 20400,
+      "money_flow_multiplier": -0.7233,
+      "money_flow_volume": -14754.72,
+      "cumulative_money_flow": 2707388.5,
+      "intraday_intensity": -14754.72
+    },
+    {
+      "date": "2026-05-11",
+      "close": 459.0,
+      "volume": 9200,
+      "money_flow_multiplier": 0.6364,
+      "money_flow_volume": 5854.55,
+      "cumulative_money_flow": 2713243.05,
+      "intraday_intensity": 5854.55
+    },
+    {
+      "date": "2026-05-12",
+      "close": 463.6,
+      "volume": 9200,
+      "money_flow_multiplier": 0.9648,
+      "money_flow_volume": 8876.48,
+      "cumulative_money_flow": 2722119.53,
+      "intraday_intensity": 8876.48
+    },
+    {
+      "date": "2026-05-13",
+      "close": 459.5,
+      "volume": 18000,
+      "money_flow_multiplier": 0.9333,
+      "money_flow_volume": 16800.0,
+      "cumulative_money_flow": 2738919.53,
+      "intraday_intensity": 16800.0
+    },
+    {
+      "date": "2026-05-14",
+      "close": 445.0,
+      "volume": 6400,
+      "money_flow_multiplier": -0.3622,
+      "money_flow_volume": -2317.84,
+      "cumulative_money_flow": 2736601.7,
+      "intraday_intensity": -2317.84
+    },
+    {
+      "date": "2026-05-15",
+      "close": 465.0,
+      "volume": 1200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 1200.0,
+      "cumulative_money_flow": 2737801.7,
+      "intraday_intensity": 1200.0
+    },
+    {
+      "date": "2026-05-18",
+      "close": 451.0,
+      "volume": 2400,
+      "money_flow_multiplier": -0.75,
+      "money_flow_volume": -1800.0,
+      "cumulative_money_flow": 2736001.7,
+      "intraday_intensity": -1800.0
+    },
+    {
+      "date": "2026-05-19",
+      "close": 460.0,
+      "volume": 1200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 1200.0,
+      "cumulative_money_flow": 2737201.7,
+      "intraday_intensity": 1200.0
+    },
+    {
+      "date": "2026-05-20",
+      "close": 464.5,
+      "volume": 800,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 2737201.7,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2026-05-21",
+      "close": 449.0,
+      "volume": 6800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -6800.0,
+      "cumulative_money_flow": 2730401.7,
+      "intraday_intensity": -6800.0
+    },
+    {
+      "date": "2026-05-22",
+      "close": 460.15,
+      "volume": 11200,
+      "money_flow_multiplier": 0.5615,
+      "money_flow_volume": 6289.23,
+      "cumulative_money_flow": 2736690.93,
+      "intraday_intensity": 6289.23
+    },
+    {
+      "date": "2026-05-25",
+      "close": 447.0,
+      "volume": 3600,
+      "money_flow_multiplier": -0.6357,
+      "money_flow_volume": -2288.48,
+      "cumulative_money_flow": 2734402.45,
+      "intraday_intensity": -2288.48
+    },
+    {
+      "date": "2026-05-26",
+      "close": 445.95,
+      "volume": 8400,
+      "money_flow_multiplier": -0.9045,
+      "money_flow_volume": -7597.99,
+      "cumulative_money_flow": 2726804.46,
+      "intraday_intensity": -7597.99
+    },
+    {
+      "date": "2026-05-27",
+      "close": 449.9,
+      "volume": 4000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 4000.0,
+      "cumulative_money_flow": 2730804.46,
+      "intraday_intensity": 4000.0
+    },
+    {
+      "date": "2026-05-29",
+      "close": 440.0,
+      "volume": 3200,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -3200.0,
+      "cumulative_money_flow": 2727604.46,
+      "intraday_intensity": -3200.0
+    },
+    {
+      "date": "2026-06-01",
+      "close": 447.3,
+      "volume": 8800,
+      "money_flow_multiplier": 0.825,
+      "money_flow_volume": 7260.0,
+      "cumulative_money_flow": 2734864.46,
+      "intraday_intensity": 7260.0
+    },
+    {
+      "date": "2026-06-02",
+      "close": 438.1,
+      "volume": 3200,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -3200.0,
+      "cumulative_money_flow": 2731664.46,
+      "intraday_intensity": -3200.0
+    },
+    {
+      "date": "2026-06-03",
+      "close": 422.5,
+      "volume": 800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -800.0,
+      "cumulative_money_flow": 2730864.46,
+      "intraday_intensity": -800.0
+    },
+    {
+      "date": "2026-06-04",
+      "close": 441.9,
+      "volume": 400,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 2730864.46,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2026-06-05",
+      "close": 442.7,
+      "volume": 2800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2800.0,
+      "cumulative_money_flow": 2728064.46,
+      "intraday_intensity": -2800.0
+    },
+    {
+      "date": "2026-06-08",
+      "close": 435.0,
+      "volume": 3200,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -3200.0,
+      "cumulative_money_flow": 2724864.46,
+      "intraday_intensity": -3200.0
+    },
+    {
+      "date": "2026-06-09",
+      "close": 440.0,
+      "volume": 2800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2800.0,
+      "cumulative_money_flow": 2722064.46,
+      "intraday_intensity": -2800.0
+    },
+    {
+      "date": "2026-06-10",
+      "close": 437.5,
+      "volume": 1600,
+      "money_flow_multiplier": -0.6667,
+      "money_flow_volume": -1066.67,
+      "cumulative_money_flow": 2720997.79,
+      "intraday_intensity": -1066.67
+    },
+    {
+      "date": "2026-06-11",
+      "close": 449.0,
+      "volume": 800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -800.0,
+      "cumulative_money_flow": 2720197.79,
+      "intraday_intensity": -800.0
+    },
+    {
+      "date": "2026-06-12",
+      "close": 450.5,
+      "volume": 8800,
+      "money_flow_multiplier": -0.2086,
+      "money_flow_volume": -1835.97,
+      "cumulative_money_flow": 2718361.82,
+      "intraday_intensity": -1835.97
+    },
+    {
+      "date": "2026-06-15",
+      "close": 434.8,
+      "volume": 11200,
+      "money_flow_multiplier": -0.82,
+      "money_flow_volume": -9184.0,
+      "cumulative_money_flow": 2709177.82,
+      "intraday_intensity": -9184.0
+    },
+    {
+      "date": "2026-06-16",
+      "close": 447.95,
+      "volume": 1600,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 2709177.82,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2026-06-17",
+      "close": 429.1,
+      "volume": 13200,
+      "money_flow_multiplier": -0.7965,
+      "money_flow_volume": -10513.95,
+      "cumulative_money_flow": 2698663.87,
+      "intraday_intensity": -10513.95
+    },
+    {
+      "date": "2026-06-18",
+      "close": 431.0,
+      "volume": 2000,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2000.0,
+      "cumulative_money_flow": 2696663.87,
+      "intraday_intensity": -2000.0
+    },
+    {
+      "date": "2026-06-19",
+      "close": 424.95,
+      "volume": 10400,
+      "money_flow_multiplier": 0.9936,
+      "money_flow_volume": 10333.12,
+      "cumulative_money_flow": 2706996.99,
+      "intraday_intensity": 10333.12
+    },
+    {
+      "date": "2026-06-22",
+      "close": 432.95,
+      "volume": 35200,
+      "money_flow_multiplier": 0.8688,
+      "money_flow_volume": 30581.76,
+      "cumulative_money_flow": 2737578.75,
+      "intraday_intensity": 30581.76
+    },
+    {
+      "date": "2026-06-23",
+      "close": 428.0,
+      "volume": 2000,
+      "money_flow_multiplier": 0.3668,
+      "money_flow_volume": 733.51,
+      "cumulative_money_flow": 2738312.26,
+      "intraday_intensity": 733.51
+    },
+    {
+      "date": "2026-06-24",
+      "close": 427.9,
+      "volume": 800,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -800.0,
+      "cumulative_money_flow": 2737512.26,
+      "intraday_intensity": -800.0
+    },
+    {
+      "date": "2026-06-25",
+      "close": 436.0,
+      "volume": 8000,
+      "money_flow_multiplier": 0.76,
+      "money_flow_volume": 6080.0,
+      "cumulative_money_flow": 2743592.26,
+      "intraday_intensity": 6080.0
+    },
+    {
+      "date": "2026-06-29",
+      "close": 423.0,
+      "volume": 6400,
+      "money_flow_multiplier": 0.5455,
+      "money_flow_volume": 3490.91,
+      "cumulative_money_flow": 2747083.17,
+      "intraday_intensity": 3490.91
+    },
+    {
+      "date": "2026-06-30",
+      "close": 423.0,
+      "volume": 62800,
+      "money_flow_multiplier": 0.2,
+      "money_flow_volume": 12560.0,
+      "cumulative_money_flow": 2759643.17,
+      "intraday_intensity": 12560.0
+    },
+    {
+      "date": "2026-07-01",
+      "close": 417.0,
+      "volume": 4000,
+      "money_flow_multiplier": 0.3333,
+      "money_flow_volume": 1333.33,
+      "cumulative_money_flow": 2760976.5,
+      "intraday_intensity": 1333.33
+    },
+    {
+      "date": "2026-07-02",
+      "close": 416.5,
+      "volume": 6400,
+      "money_flow_multiplier": 0.4667,
+      "money_flow_volume": 2986.67,
+      "cumulative_money_flow": 2763963.17,
+      "intraday_intensity": 2986.67
+    },
+    {
+      "date": "2026-07-03",
+      "close": 412.8,
+      "volume": 11200,
+      "money_flow_multiplier": -0.7886,
+      "money_flow_volume": -8832.52,
+      "cumulative_money_flow": 2755130.65,
+      "intraday_intensity": -8832.52
+    },
+    {
+      "date": "2026-07-06",
+      "close": 412.8,
+      "volume": 9200,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -9200.0,
+      "cumulative_money_flow": 2745930.65,
+      "intraday_intensity": -9200.0
+    },
+    {
+      "date": "2026-07-07",
+      "close": 418.0,
+      "volume": 3600,
+      "money_flow_multiplier": -0.9753,
+      "money_flow_volume": -3511.11,
+      "cumulative_money_flow": 2742419.54,
+      "intraday_intensity": -3511.11
+    },
+    {
+      "date": "2026-07-08",
+      "close": 418.0,
+      "volume": 4400,
+      "money_flow_multiplier": 0.1304,
+      "money_flow_volume": 573.91,
+      "cumulative_money_flow": 2742993.45,
+      "intraday_intensity": 573.91
+    },
+    {
+      "date": "2026-07-09",
+      "close": 433.5,
+      "volume": 3200,
+      "money_flow_multiplier": 0.9474,
+      "money_flow_volume": 3031.58,
+      "cumulative_money_flow": 2746025.03,
+      "intraday_intensity": 3031.58
+    },
+    {
+      "date": "2026-07-10",
+      "close": 420.75,
+      "volume": 3600,
+      "money_flow_multiplier": -0.8929,
+      "money_flow_volume": -3214.29,
+      "cumulative_money_flow": 2742810.74,
+      "intraday_intensity": -3214.29
+    },
+    {
+      "date": "2026-07-13",
+      "close": 421.0,
+      "volume": 6000,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 2742810.74,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2026-07-14",
+      "close": 434.0,
+      "volume": 3600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 3600.0,
+      "cumulative_money_flow": 2746410.74,
+      "intraday_intensity": 3600.0
+    },
+    {
+      "date": "2026-07-15",
+      "close": 424.0,
+      "volume": 3200,
+      "money_flow_multiplier": -0.7143,
+      "money_flow_volume": -2285.71,
+      "cumulative_money_flow": 2744125.03,
+      "intraday_intensity": -2285.71
+    },
+    {
+      "date": "2026-07-16",
+      "close": 430.0,
+      "volume": 800,
+      "money_flow_multiplier": 0.0,
+      "money_flow_volume": 0.0,
+      "cumulative_money_flow": 2744125.03,
+      "intraday_intensity": 0.0
+    },
+    {
+      "date": "2026-07-17",
+      "close": 419.0,
+      "volume": 2400,
+      "money_flow_multiplier": -0.5,
+      "money_flow_volume": -1200.0,
+      "cumulative_money_flow": 2742925.03,
+      "intraday_intensity": -1200.0
+    },
+    {
+      "date": "2026-07-20",
+      "close": 428.0,
+      "volume": 7600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 7600.0,
+      "cumulative_money_flow": 2750525.03,
+      "intraday_intensity": 7600.0
+    },
+    {
+      "date": "2026-07-21",
+      "close": 429.0,
+      "volume": 4400,
+      "money_flow_multiplier": 0.8667,
+      "money_flow_volume": 3813.33,
+      "cumulative_money_flow": 2754338.36,
+      "intraday_intensity": 3813.33
+    },
+    {
+      "date": "2026-07-22",
+      "close": 415.0,
+      "volume": 4400,
+      "money_flow_multiplier": -0.9512,
+      "money_flow_volume": -4185.37,
+      "cumulative_money_flow": 2750152.99,
+      "intraday_intensity": -4185.37
+    },
+    {
+      "date": "2026-07-23",
+      "close": 417.0,
+      "volume": 2000,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 2000.0,
+      "cumulative_money_flow": 2752152.99,
+      "intraday_intensity": 2000.0
+    },
+    {
+      "date": "2026-07-24",
+      "close": 420.0,
+      "volume": 6400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 6400.0,
+      "cumulative_money_flow": 2758552.99,
+      "intraday_intensity": 6400.0
+    },
+    {
+      "date": "2026-07-27",
+      "close": 418.0,
+      "volume": 3200,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -3200.0,
+      "cumulative_money_flow": 2755352.99,
+      "intraday_intensity": -3200.0
+    },
+    {
+      "date": "2026-07-28",
+      "close": 420.0,
+      "volume": 2800,
+      "money_flow_multiplier": -0.3333,
+      "money_flow_volume": -933.33,
+      "cumulative_money_flow": 2754419.66,
+      "intraday_intensity": -933.33
+    },
+    {
+      "date": "2026-07-29",
+      "close": 428.0,
+      "volume": 1600,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 1600.0,
+      "cumulative_money_flow": 2756019.66,
+      "intraday_intensity": 1600.0
+    },
+    {
+      "date": "2026-07-30",
+      "close": 427.0,
+      "volume": 3200,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 3200.0,
+      "cumulative_money_flow": 2759219.66,
+      "intraday_intensity": 3200.0
+    },
+    {
+      "date": "2026-07-31",
+      "close": 410.0,
+      "volume": 11200,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -11200.0,
+      "cumulative_money_flow": 2748019.66,
+      "intraday_intensity": -11200.0
+    },
+    {
+      "date": "2026-08-03",
+      "close": 418.5,
+      "volume": 2000,
+      "money_flow_multiplier": -1.0,
+      "money_flow_volume": -2000.0,
+      "cumulative_money_flow": 2746019.66,
+      "intraday_intensity": -2000.0
+    },
+    {
+      "date": "2026-08-04",
+      "close": 413.1,
+      "volume": 8800,
+      "money_flow_multiplier": -0.8995,
+      "money_flow_volume": -7915.98,
+      "cumulative_money_flow": 2738103.68,
+      "intraday_intensity": -7915.98
+    },
+    {
+      "date": "2026-08-05",
+      "close": 408.5,
+      "volume": 4800,
+      "money_flow_multiplier": -0.6667,
+      "money_flow_volume": -3200.0,
+      "cumulative_money_flow": 2734903.68,
+      "intraday_intensity": -3200.0
+    },
+    {
+      "date": "2026-08-06",
+      "close": 417.0,
+      "volume": 4400,
+      "money_flow_multiplier": -0.9048,
+      "money_flow_volume": -3980.95,
+      "cumulative_money_flow": 2730922.73,
+      "intraday_intensity": -3980.95
+    },
+    {
+      "date": "2026-08-07",
+      "close": 413.2,
+      "volume": 18000,
+      "money_flow_multiplier": -0.5733,
+      "money_flow_volume": -10320.0,
+      "cumulative_money_flow": 2720602.73,
+      "intraday_intensity": -10320.0
+    },
+    {
+      "date": "2026-08-10",
+      "close": 429.0,
+      "volume": 4400,
+      "money_flow_multiplier": 1.0,
+      "money_flow_volume": 4400.0,
+      "cumulative_money_flow": 2725002.73,
+      "intraday_intensity": 4400.0
+    },
+    {
+      "date": "2026-08-11",
+      "close": 416.8,
+      "volume": 25200,
+      "money_flow_multiplier": -0.7231,
+      "money_flow_volume": -18221.54,
+      "cumulative_money_flow": 2706781.19,
+      "intraday_intensity": -18221.54
+    },
+    {
+      "date": "2026-08-12",
+      "close": 419.0,
+      "volume": 5200,
+      "money_flow_multiplier": -0.3665,
+      "money_flow_volume": -1905.59,
+      "cumulative_money_flow": 2704875.6,
+      "intraday_intensity": -1905.59
+    },
+    {
+      "date": "2026-08-13",
+      "close": 415.75,
+      "volume": 2400,
+      "money_flow_multiplier": 0.5158,
+      "money_flow_volume": 1237.89,
+      "cumulative_money_flow": 2706113.49,
+      "intraday_intensity": 1237.89
+    },
+    {
+      "date": "2026-08-14",
+      "close": 422.4,
+      "volume": 14000,
+      "money_flow_multiplier": 0.2542,
+      "money_flow_volume": 3559.32,
+      "cumulative_money_flow": 2709672.82,
+      "intraday_intensity": 3559.32
+    },
+    {
+      "date": "2026-08-17",
+      "close": 415.0,
+      "volume": 17200,
+      "money_flow_multiplier": -0.1045,
+      "money_flow_volume": -1797.01,
+      "cumulative_money_flow": 2707875.8,
+      "intraday_intensity": -1797.01
+    },
+    {
+      "date": "2026-08-18",
+      "close": 414.0,
+      "volume": 6000,
+      "money_flow_multiplier": 0.809,
+      "money_flow_volume": 4854.27,
+      "cumulative_money_flow": 2712730.07,
+      "intraday_intensity": 4854.27
+    },
+    {
+      "date": "2026-08-19",
+      "close": 400.15,
+      "volume": 15600,
+      "money_flow_multiplier": -0.9845,
+      "money_flow_volume": -15358.76,
+      "cumulative_money_flow": 2697371.31,
+      "intraday_intensity": -15358.76
+    },
+    {
+      "date": "2026-08-20",
+      "close": 399.1,
+      "volume": 32800,
+      "money_flow_multiplier": -0.1551,
+      "money_flow_volume": -5086.63,
+      "cumulative_money_flow": 2692284.68,
+      "intraday_intensity": -5086.63
+    },
+    {
+      "date": "2026-08-21",
+      "close": 409.1,
+      "volume": 9600,
+      "money_flow_multiplier": 0.8704,
+      "money_flow_volume": 8355.56,
+      "cumulative_money_flow": 2700640.23,
+      "intraday_intensity": 8355.56
+    }
+  ],
+  "ingested_at": "2026-08-24T18:33:58.127464+00:00"
+}
