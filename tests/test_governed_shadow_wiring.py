@@ -18,6 +18,7 @@ from quant_system.execution.governed_strategy import (
     GOVERNED_BARS_KEY,
     ExecutionSurface,
     GovernedModelStrategy,
+    ModelEvidenceIdentityV1,
     PromotedModelBundleV1,
 )
 from quant_system.execution.realtime_shadow import (
@@ -40,20 +41,29 @@ def _acquisition() -> object:
 
 def _bundle(score_threshold: str) -> PromotedModelBundleV1:
     fitted, preprocessing = _fitted_pair(governed_training_journey())
+    card = ModelCardV1(
+        model_id="model_shadow_wiring_test",
+        candidate_id=CANDIDATE,
+        verdict=PromotionState.SHADOW,
+        created_at=datetime(2026, 8, 22, 12, 0, tzinfo=UTC),
+        monitoring_limits={"max_drawdown": "0.10"},
+        halt_and_rollback_policy="halt and roll back",
+        limitations=("research only",),
+    )
     return PromotedModelBundleV1(
         candidate_id=CANDIDATE,
-        model_card=ModelCardV1(
-            model_id="model_shadow_wiring_test",
-            candidate_id=CANDIDATE,
-            verdict=PromotionState.SHADOW,
-            created_at=datetime(2026, 8, 22, 12, 0, tzinfo=UTC),
-            monitoring_limits={"max_drawdown": "0.10"},
-            halt_and_rollback_policy="halt and roll back",
-            limitations=("research only",),
-        ),
+        model_card=card,
         fitted=fitted,
         standardization=preprocessing,
         score_threshold=score_threshold,
+        evidence=ModelEvidenceIdentityV1(
+            model_id=card.model_id,
+            candidate_id=CANDIDATE,
+            trial_id="trial_test_001",
+            fitted_state_hash=fitted.fitted_state_hash,
+            preprocessing_state_hash=preprocessing.state_hash,
+            score_threshold=score_threshold,
+        ),
     )
 
 

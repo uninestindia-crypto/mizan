@@ -18,6 +18,7 @@ from quant_system.execution.governed_strategy import (
     ExecutionSurface,
     GovernedExecutionError,
     GovernedModelStrategy,
+    ModelEvidenceIdentityV1,
     PromotedModelBundleV1,
 )
 from quant_system.modeling import (
@@ -87,12 +88,21 @@ def _bundle(
     candidate_id: str = CANDIDATE,
 ) -> PromotedModelBundleV1:
     fitted, preprocessing = _fitted_pair(journey)
+    card = _card(verdict, candidate_id)
     return PromotedModelBundleV1(
         candidate_id=candidate_id,
-        model_card=_card(verdict, candidate_id),
+        model_card=card,
         fitted=fitted,
         standardization=preprocessing,
         score_threshold=score_threshold,
+        evidence=ModelEvidenceIdentityV1(
+            model_id=card.model_id,
+            candidate_id=candidate_id,
+            trial_id="trial_test_001",
+            fitted_state_hash=fitted.fitted_state_hash,
+            preprocessing_state_hash=preprocessing.state_hash,
+            score_threshold=score_threshold,
+        ),
     )
 
 
@@ -259,13 +269,22 @@ def test_paper_verdict_may_drive_every_surface(journey: object) -> None:
 def test_bundle_refuses_a_card_describing_a_different_candidate(journey: object) -> None:
     fitted, preprocessing = _fitted_pair(journey)
 
+    other = _card(candidate_id="cand_something_else")
     with pytest.raises(GovernedExecutionError, match="candidate"):
         PromotedModelBundleV1(
             candidate_id=CANDIDATE,
-            model_card=_card(candidate_id="cand_something_else"),
+            model_card=other,
             fitted=fitted,
             standardization=preprocessing,
             score_threshold="0",
+            evidence=ModelEvidenceIdentityV1(
+                model_id=other.model_id,
+                candidate_id="cand_something_else",
+                trial_id="trial_test_001",
+                fitted_state_hash=fitted.fitted_state_hash,
+                preprocessing_state_hash=preprocessing.state_hash,
+                score_threshold="0",
+            ),
         )
 
 
@@ -274,13 +293,22 @@ def test_bundle_refuses_a_standardization_that_did_not_produce_the_fit(journey: 
     fitted, _ = _fitted_pair(journey)
     other = fit_standardization(fold_feature_rows(journey, validation=True))  # type: ignore[arg-type]
 
+    card = _card()
     with pytest.raises(GovernedExecutionError, match="mismatched scaler|not produced"):
         PromotedModelBundleV1(
             candidate_id=CANDIDATE,
-            model_card=_card(),
+            model_card=card,
             fitted=fitted,
             standardization=other,
             score_threshold="0",
+            evidence=ModelEvidenceIdentityV1(
+                model_id=card.model_id,
+                candidate_id=CANDIDATE,
+                trial_id="trial_test_001",
+                fitted_state_hash=fitted.fitted_state_hash,
+                preprocessing_state_hash=other.state_hash,
+                score_threshold="0",
+            ),
         )
 
 

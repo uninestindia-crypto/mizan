@@ -42,7 +42,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import ROUND_HALF_EVEN, Decimal, localcontext
 from enum import StrEnum
-from typing import Final
+from typing import Any, Final
 
 from quant_system.core.domain import Side, Signal
 from quant_system.data.market_data import PointInTimeBar
@@ -56,10 +56,13 @@ from quant_system.modeling import (
     standardize_feature_values,
 )
 from quant_system.modeling.features import FEATURE_WARMUP_BARS_V1
+from quant_system.modeling.ridge import predict_ridge_scores
 from quant_system.strategies.base import BaseStrategy, MarketContext
 
 __all__ = [
     "GOVERNED_BARS_KEY",
+    "ModelEvidenceIdentityV1",
+    "score_row",
     "ExecutionSurface",
     "GovernedExecutionError",
     "GovernedModelStrategy",
@@ -110,6 +113,55 @@ SURFACE_ALLOWED_VERDICTS: Final[Mapping[ExecutionSurface, frozenset[PromotionSta
 
 
 @dataclass(frozen=True, slots=True)
+class ModelEvidenceIdentityV1:
+    """The identity of one published model, taken from a single evidence record.
+
+    This exists because ``candidate_id`` cannot bind a card to a fitted state. Every model in a
+    campaign shares one candidate — all 51 trials of the NIFTY 50 run carry ``cand_ridge_v1`` — so a
+    candidate check passes for *any* pairing. A Red Team probe used exactly that to build a bundle
+    reporting the best model's id while holding the worst model's coefficients, at a threshold from
+    neither.
+
+    Every field here comes from the same published manifest, so a bundle cannot straddle two models
+    without the forger also fabricating this record.
+    """
+
+    model_id: str
+    candidate_id: str
+    trial_id: str
+    fitted_state_hash: str
+    preprocessing_state_hash: str
+    score_threshold: str
+
+    @classmethod
+    def from_manifest_metadata(
+        cls,
+        metadata: Mapping[str, Any],
+        *,
+        score_threshold: str,
+    ) -> ModelEvidenceIdentityV1:
+        """Derive an identity from one published model manifest's metadata.
+
+        ``score_threshold`` is passed separately because it lives on the trial start record rather
+        than the model manifest; the caller must read it from the trial named by ``trial_id`` and
+        nowhere else.
+        """
+        try:
+            return cls(
+                model_id=metadata["model_id"],
+                candidate_id=metadata["candidate_id"],
+                trial_id=metadata["trial_id"],
+                fitted_state_hash=metadata["fitted_state"]["fitted_state_hash"],
+                preprocessing_state_hash=metadata["preprocessing"]["state_hash"],
+                score_threshold=score_threshold,
+            )
+        except (KeyError, TypeError) as error:
+            raise GovernedExecutionError(
+                f"model evidence is missing an identity field: {error}"
+            ) from error
+
+
+@dataclass(frozen=True, slots=True)
 class PromotedModelBundleV1:
     """A promoted model plus everything needed to reproduce its decisions.
 
@@ -127,6 +179,7 @@ class PromotedModelBundleV1:
     fitted: RidgeFittedStateV1
     standardization: StandardizationStateV1
     score_threshold: str
+    evidence: ModelEvidenceIdentityV1
 
     def __post_init__(self) -> None:
         if not self.candidate_id:
@@ -154,6 +207,36 @@ class PromotedModelBundleV1:
                 f"verdict {self.model_card.verdict.value} is not executable on any surface"
             )
         _require_canonical_decimal(self.score_threshold, "score_threshold")
+        self._verify_against_evidence()
+
+    def _verify_against_evidence(self) -> None:
+        """Tie the card, the artefacts and the threshold to one published model record.
+
+        Without this, `candidate_id` was the only thing linking a card to a fitted state, and it
+        links nothing: a campaign shares one candidate across every model it produces.
+        """
+        evidence = self.evidence
+        if evidence.model_id != self.model_card.model_id:
+            raise GovernedExecutionError(
+                f"model_id mismatch: the card says {self.model_card.model_id!r} but the evidence "
+                f"describes {evidence.model_id!r}; this bundle pairs a card with another model's "
+                "artefacts"
+            )
+        if evidence.candidate_id != self.candidate_id:
+            raise GovernedExecutionError("candidate_id does not match the model evidence")
+        if evidence.fitted_state_hash != self.fitted.fitted_state_hash:
+            raise GovernedExecutionError(
+                "fitted state does not match the model evidence; these coefficients were not "
+                f"published by {evidence.model_id!r}"
+            )
+        if evidence.preprocessing_state_hash != self.standardization.state_hash:
+            raise GovernedExecutionError("standardization does not match the model evidence")
+        if evidence.score_threshold != self.score_threshold:
+            raise GovernedExecutionError(
+                f"score_threshold {self.score_threshold!r} is not the value trial "
+                f"{evidence.trial_id!r} was validated at ({evidence.score_threshold!r}); executing "
+                "at a different threshold is a different strategy"
+            )
 
     @property
     def model_id(self) -> str:
@@ -251,7 +334,7 @@ class GovernedModelStrategy(BaseStrategy):
             return None
         features = compute_feature_values(window)
         standardized = standardize_feature_values(features, self.bundle.standardization)
-        score = _score(self.bundle.fitted, standardized)
+        score = score_row(self.bundle.fitted, standardized)
         if score <= self._threshold + self._band:
             return None
         return Signal(
@@ -313,22 +396,17 @@ def _available_window(
     return tuple(sorted(available, key=lambda bar: bar.exchange_date))
 
 
-def _score(fitted: RidgeFittedStateV1, standardized: tuple[str, ...]) -> Decimal:
-    """Reproduce ``predict_ridge_scores`` arithmetic in Decimal for one row.
+def score_row(fitted: RidgeFittedStateV1, standardized: tuple[str, ...]) -> Decimal:
+    """Score one standardized row with the **validated** scorer.
 
-    ``predict_ridge_scores`` operates on a matrix in float via numpy. A single live row is scored
-    here in Decimal instead: the inputs are already canonical decimal text, and staying in Decimal
-    until the final ``Signal.strength`` conversion keeps the recorded ``raw_score`` exactly
-    reconcilable with the coefficients that produced it.
+    This calls ``predict_ridge_scores`` rather than recomputing the dot product. An earlier version
+    reimplemented it in Decimal for "exact reconciliation"; a Red Team probe showed the two
+    disagreeing by 4e-13, which flipped a decision at the threshold — the adapter traded where
+    validation had recorded nothing. Faithfulness to the validated rule beats arithmetic purity, and
+    the only way to guarantee it is to run the same function.
     """
     if len(standardized) != len(fitted.coefficients):
         raise GovernedExecutionError(
             "standardized row width does not match the fitted coefficients"
         )
-    with localcontext() as context:
-        context.prec = 60
-        context.rounding = ROUND_HALF_EVEN
-        total = Decimal(fitted.intercept)
-        for value, coefficient in zip(standardized, fitted.coefficients, strict=True):
-            total += Decimal(value) * Decimal(coefficient)
-        return +total
+    return Decimal(predict_ridge_scores(fitted, (standardized,))[0])

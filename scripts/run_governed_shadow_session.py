@@ -37,6 +37,7 @@ from quant_system.execution.governed_strategy import (
     ExecutionSurface,
     GovernedExecutionError,
     GovernedModelStrategy,
+    ModelEvidenceIdentityV1,
     PromotedModelBundleV1,
 )
 from quant_system.modeling import ModelCardV1, PromotionState
@@ -186,12 +187,18 @@ def _run(args: argparse.Namespace) -> int:
     )
 
     try:
+        # Identity comes from the same manifest the artefacts came from, so a card cannot be
+        # paired with another model's coefficients — the Red Team break this closes.
+        identity = ModelEvidenceIdentityV1.from_manifest_metadata(
+            metadata, score_threshold=threshold
+        )
         bundle = PromotedModelBundleV1(
             candidate_id=metadata["candidate_id"],
             model_card=_card_from(metadata),
             fitted=fitted,
             standardization=standardization,
             score_threshold=threshold,
+            evidence=identity,
         )
         strategy = GovernedModelStrategy(bundle, ExecutionSurface(args.surface))
     except GovernedExecutionError as error:
