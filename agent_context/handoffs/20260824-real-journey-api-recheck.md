@@ -1,9 +1,13 @@
 # Handoff: governed journey API independent recheck
 
-STATUS: READY_FOR_FINAL_BLOCKER_RECHECK
+STATUS: INDEPENDENTLY_CERTIFIED_PENDING_INTEGRATION
 OWNER: Codex server/API implementation owner
 BRANCH: `codex/real-journey-api`
 IMPLEMENTATION_COMMIT: `261473eeb679ee93b36750d9dc83b9deecd4971c`
+CERTIFIED_HEAD: `474795f3ad6287bdec3b7deaa677a54b537f28c7`
+CERTIFIED_TREE: `1f6ca227bfdcd9dded692d7334f817da965d5f9e`
+VERDICT_REPORT: `agent_context/reports/20260824-final-adjudication-real-journey-api-474795f.md`
+REPORT_SHA256: `c0b71220145ff36e911f3e47c0afc069024fb988d034126c231718206eb9b85f`
 BASE_REVISION: `ac47d7cc03e4aa485e2c92d7022d33de3809a1f2`
 
 ## Scope
@@ -48,7 +52,7 @@ controls instead of fabricated results. Live-money and broker writes remain excl
 - Focused server/UI contract suite: 127 passed.
 - Full suite normal test-file order: 903 passed in 54.83s; one third-party Starlette/httpx warning.
 - Full suite reverse test-file order: 903 passed in 52.93s; same warning.
-- Ruff, mypy over 124 source files, Node syntax, changed-path security scan, changed-path secret scan,
+- Ruff, mypy over 125 source files, Node syntax, changed-path security scan, changed-path secret scan,
   OpenAPI generation, Git whitespace check, claim audit, and disk-layout audit: PASS.
 - Mutation probe inverted the idempotency fingerprint comparison; the two intended tests failed,
   then passed after restoration.
@@ -69,6 +73,19 @@ controls instead of fabricated results. Live-money and broker writes remain excl
   controls, light/dark at 1280x720 and 390x844, no page overflow after chart rendering, and no
   console errors.
 
+## Independent final certification
+
+- Fresh verifier Dewey executed exact detached revision `474795f3ad6287bdec3b7deaa677a54b537f28c7`
+  from a canonical clean clone and preserved 20 raw evidence artifacts.
+- Final adjudicator Ptolemy independently hashed and reviewed every requested artifact. All 16
+  claims were `PROVEN`; strict verdict: `PASS`.
+- Exact clean-state results: 127 focused tests; 903 normal and 903 reverse tests; 355-file format
+  gate; Mypy over 125 source files; 43-path OpenAPI contract; all lint, security, secret, Git,
+  claim, layout, historical-regression, governed-boundary, and zero-broker-write checks passed.
+- Real-browser evidence ran one local backtest with six trades and six fill rows. Desktop/mobile
+  light+dark rendered the self-hosted native canvas with no horizontal overflow, external assets,
+  undersized controls, or console/security errors.
+
 ## Prior independent reports to reproduce
 
 - `e329e84` report: `.launch/reports/VERIFIER-REAL-JOURNEY-API-E329E84.md` — BLOCKED on restart
@@ -87,11 +104,13 @@ controls instead of fabricated results. Live-money and broker writes remain excl
 
 ## Binding integration and training boundary
 
-Do not integrate this branch or begin training yet. Independent Dalton recheck of modeling revision
-`8f29564` halted because exported `compute_feature_values` accepted reverse-chronology bars. The
-modeling owner repaired that boundary at `88a7ac9`; a fresh final-2 Dalton recheck of that exact
-revision is active and must close both prior reproductions plus all 28 skipped Red Team items. The
-old 51-trial campaign is invalid for feature schema v2.
+This server/API/UI branch is certified and may now be integrated by a separate integrator. Preserve
+all disjoint modeling/training commits and runtime evidence, then rerun the combined full suite in
+normal and reverse file order plus static, OpenAPI, security, claim/layout, and real-browser gates.
 
-After both independent certifications, integrate the disjoint branches, rerun the full suite in
-normal and reverse test-file order, and only then launch a fresh schema-v2 model campaign.
+The separate ten-year NIFTY 50 schema-v2 campaign has already completed 50/50 trials at source
+revision `5a7185a`, but every result is capped at `RESEARCH_ONLY`. Best final-count DSR probability
+was `0.217695263874` against the `0.95` promotion gate. The static current-member universe is
+survivorship-biased and pre-2020 costs use explicit research proxies. Therefore no model promotion,
+final-holdout opening, shadow/paper/live session, or broker write is authorized. A new governed
+research hypothesis and fresh evidence are required before another promotion attempt.

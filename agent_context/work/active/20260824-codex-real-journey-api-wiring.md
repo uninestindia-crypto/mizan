@@ -1,6 +1,6 @@
 # Active work: real governed journey API wiring
 
-STATUS: ACTIVE_FINAL_RECHECK_PENDING
+STATUS: HANDED_OFF_CERTIFIED_PENDING_INTEGRATION
 OWNER: Codex — server/API implementation owner by founder direction
 TOOL: Codex
 STARTED_UTC: 2026-08-24T10:30:00Z
@@ -18,9 +18,9 @@ operations, idempotency, Decimal money, zero broker writes, and fail-closed beha
 
 The founder directed this agent to complete all non-training parts without crossing the separate
 model-training agent. The concurrent feature-window owner repaired the evaluator at `8f29564`, then
-repaired the independent reverse-chronology finding at `88a7ac9`. A fresh final-2 Dalton recheck of
-that exact revision is active. This branch remains based on `ac47d7c`; it has not merged, rebased
-onto, edited, or staged any modeling/execution path or concurrent record.
+repaired the independent reverse-chronology finding at `88a7ac9`. This branch remains based on
+`ac47d7c`; it has not merged, rebased onto, edited, or staged any modeling/execution path or
+concurrent record. Integration remains a separate, explicitly governed step.
 
 ## Owned paths
 
@@ -68,8 +68,8 @@ onto, edited, or staged any modeling/execution path or concurrent record.
 6. DONE — push the exact owned commits and hand off independent recheck.
 7. DONE — close completion-audit gaps in the same owned server/API paths and commit the repairs.
 8. DONE — obtain and reconcile independent verdicts on `e329e84` and `222b693`.
-9. IN PROGRESS — push the combined verifier-blocker repair and obtain one final exact-revision
-   clean-state verdict.
+9. DONE — push the combined verifier-blocker repair and obtain one final exact-revision clean-state
+   verdict.
 
 ## Decision rationale
 
@@ -160,6 +160,24 @@ are disabled. This preserves the seam with the concurrent feature/model owner.
   works after a real backtest; 1280x720 and 390x844 light/dark have no page overflow or console
   errors; measured theme, refresh, ingestion, backtest, and export targets are at least 44px.
 - Completion-blocker implementation commit: `261473eeb679ee93b36750d9dc83b9deecd4971c`.
+- Final handoff head `474795f3ad6287bdec3b7deaa677a54b537f28c7` is pushed and exactly
+  confirmed at `origin/codex/real-journey-api`.
+- A reuse attempt on completed verifier Godel was stopped before it created a new visible claim or
+  usable workspace; no evidence from that attempt was accepted.
+- Fresh verifier Dewey executed exact revision `474795f3ad6287bdec3b7deaa677a54b537f28c7`
+  from a clean detached canonical clone. Independent final adjudicator Ptolemy hashed and reviewed
+  all 20 raw evidence artifacts and returned `VERDICT: PASS` in
+  `agent_context/reports/20260824-final-adjudication-real-journey-api-474795f.md`.
+- Certified evidence: 127 focused tests; 903 normal and 903 reverse tests; Ruff lint; Ruff format
+  over 355 files; Mypy over 125 source files; Node syntax; 43-path OpenAPI contract; changed-path
+  security and secret scans; Git integrity; 20 historical blocker regressions; 29 governed
+  boundary tests; claim/layout audits; and zero broker-write behavior all passed.
+- Certified browser evidence: a real local backtest produced six trades and six fill rows; the
+  self-hosted native canvas rendered at 1280x720 and 390x844 in light and dark themes; controls
+  measured at least 44px; no horizontal overflow, external assets, or console/security errors were
+  observed.
+- The final adjudication report SHA-256 is
+  `c0b71220145ff36e911f3e47c0afc069024fb988d034126c231718206eb9b85f`.
 
 ## Files changed
 
@@ -181,31 +199,25 @@ are disabled. This preserves the seam with the concurrent feature/model owner.
 
 ## Blockers and conflicts
 
-- Training cannot start from this branch. Feature schema v2 changes arithmetic compatibility and
-  invalidates the old 51-trial campaign. The reverse-chronology blocker found at `8f29564` was
-  repaired at `88a7ac9`, but the fresh final-2 independent recheck is still active.
-- The final-2 clone must close both prior reproductions and complete the 28 Red Team items skipped
-  after halt-on-first-finding before integration or training.
-- This branch must be integrated only after that record's binding next action is satisfied.
-- Independent recheck cannot be performed by this implementation agent.
-- A distinct clean-state verifier is active against exact server revision `e329e84`; it owns only a
-  unique record/report/clone and may not edit product code.
-- The completion audit's server-only gaps are repaired in `1e953f5`: placeholder training is
-  refused, dataset cursors bind a verified total sort key, HTTP validation enforces the provider
-  range, provider failures are sanitized, evidence staging observes cancellation, operator-only
-  runtime configuration is excluded from idempotency intent, and catalog reads validate domain
-  identity and `PointInTimeBar` record bindings.
-- Both independent BLOCKED reports are fully reconciled in `261473e`; the remaining server gate is
-  a new clean-state verifier at the new exact pushed revision, not another implementation change.
+- No implementation or verification blocker remains in this agent's server/API/UI scope.
+- The branch is ready for a separate integrator, but the combined repository must rerun normal and
+  reverse full suites plus static, contract, security, and browser gates before release use.
+- The separate NIFTY 50 schema-v2 campaign completed at source revision `5a7185a` with 50/50
+  `RESEARCH_ONLY` results. Its best final-count DSR probability was `0.217695263874`, below the
+  `0.95` promotion gate. Static current membership and explicit pre-2020 research-cost proxies also
+  prevent historical-index or production claims. No model promotion, shadow, paper, live-money, or
+  broker-write action is authorized from those results.
+- Integration must preserve the disjoint modeling/training history and evidence. This branch must
+  not be used to overwrite, stage, or rewrite the training agent's paths or artifacts.
 
 ## Stop point
 
-The final known independent blockers are repaired and committed at `261473e`; local normal/reverse,
-static, security, OpenAPI, repository, and real-browser evidence is green.
+Exact pushed head `474795f3ad6287bdec3b7deaa677a54b537f28c7` is independently certified
+`PASS`. All owned server/API/UI implementation work is complete; no product edit remains in scope.
 
 ## Next safe action
 
-Commit the updated handoff, push the new exact head, and dispatch a fresh clean-state verifier that
-must rerun both prior reproductions plus Godel's matrix and all gates. If it passes, record the
-immutable verdict and hand off integration. Separately, do not touch the model/training agent's
-paths, campaign, or runtime artifacts.
+A separate integrator may integrate `codex/real-journey-api` with current `main`, preserve the
+training agent's disjoint commits and evidence, and rerun the combined normal/reverse, static,
+OpenAPI, security, claim/layout, and real-browser gates. The research-only model result must not be
+promoted; a new governed research hypothesis is required before another promotion attempt.
