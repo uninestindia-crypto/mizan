@@ -1,6 +1,6 @@
 # Active work: real governed journey API wiring
 
-STATUS: ACTIVE_NEW_REVISION_RECHECK_PENDING
+STATUS: ACTIVE_FINAL_RECHECK_PENDING
 OWNER: Codex — server/API implementation owner by founder direction
 TOOL: Codex
 STARTED_UTC: 2026-08-24T10:30:00Z
@@ -28,12 +28,16 @@ onto, edited, or staged any modeling/execution path or concurrent record.
 - `src/quant_system/server/data_sync.py` (new)
 - `src/quant_system/server/dataset_schemas.py` (new)
 - `src/quant_system/server/governed_journeys.py` (new)
+- `src/quant_system/server/operation_journal.py` (new; durable idempotency/recovery receipts)
 - `src/quant_system/server/schemas.py` only if required; unchanged at handoff
+- `src/quant_system/server/security.py` (bounded trusted request correlation IDs)
 - `src/quant_system/server/static/app.js`
+- `src/quant_system/server/static/index.html` (remove CSP-blocked external chart dependency)
 - `src/quant_system/server/static/styles.css`
 - `src/quant_system/server/supervisor.py`
 - `src/quant_system/server/ui/constants.py`
 - `src/quant_system/server/ui/journeys.py`
+- `src/quant_system/server/ui/templates.py` (self-hosted/CSP-safe dashboard shell)
 - `docs/ui-profile.md` (new)
 - `tests/test_server_governed_journeys.py` (new)
 - `tests/test_server_governed_completion.py` (new completion-audit regressions)
@@ -63,7 +67,9 @@ onto, edited, or staged any modeling/execution path or concurrent record.
 5. DONE — harden identity, cancellation, validation serialization, responsive UI, and output escaping.
 6. DONE — push the exact owned commits and hand off independent recheck.
 7. DONE — close completion-audit gaps in the same owned server/API paths and commit the repairs.
-8. IN PROGRESS — push the new exact revision and obtain a fresh independent clean-state verdict.
+8. DONE — obtain and reconcile independent verdicts on `e329e84` and `222b693`.
+9. IN PROGRESS — push the combined verifier-blocker repair and obtain one final exact-revision
+   clean-state verdict.
 
 ## Decision rationale
 
@@ -123,6 +129,37 @@ are disabled. This preserves the seam with the concurrent feature/model owner.
   truthful unavailable-state explanations.
 - Completion revision repository agent-claim and disk-layout audits: PASS.
 - Completion implementation commit: `1e953f53d7d5e2ce920452845c6ea69c47decd75`.
+- Completion handoff head: `222b69322ff8ec782d055ebcd951bde42621ed03`; pushed and
+  independently confirmed at `origin/codex/real-journey-api`.
+- Clean-state verifier Godel (`01a033b1-515b-7aa3-92fe-c1c7044d7e7f`) completed exact remote
+  revision `222b693`; it owned only its unique record/report/verification clone and made no product
+  edit.
+- Planck's independent `e329e84` verdict was BLOCKED: restart replay created a second dataset
+  operation, oversized/unsafe `X-Request-ID` values were reflected, a forged cursor was accepted,
+  the external chart script violated CSP, two controls were below 44px, and four files failed the
+  formatter. The cursor/domain/formatter findings were already closed by `1e953f5` plus the current
+  formatting repair.
+- Godel's independent `222b693` public-boundary matrix passed 12/12, with 115 focused and 891 normal/
+  reverse tests, browser, OpenAPI, lint, typing, security, secret, Git, claim, and layout evidence
+  green. Its sole BLOCKED item was `tests/test_ui_journeys.py` formatting; that exact file is now
+  formatted.
+- Additional failing-first regressions reproduced durable restart replay, unsafe request-ID
+  reflection, external chart loading/undersized targets, and cancellation losing a worker success;
+  all five are now green.
+- Durable dataset idempotency receipts are atomically claimed below the operator evidence root,
+  contain no raw idempotency key, bind the canonical request fingerprint, persist terminal state,
+  reject tampering with typed `503 OPERATION_JOURNAL_UNAVAILABLE`, and prevent duplicate workers
+  across supervisor restart.
+- Completion-blocker focused server/UI suite: 127 passed; one third-party Starlette/httpx warning.
+- Completion-blocker full suite normal order: 903 passed in 54.83s; same warning.
+- Completion-blocker full suite reverse test-file order: 903 passed in 52.93s; same warning.
+- Full Ruff lint and `ruff format --check .`: PASS, 355 files formatted. Mypy `src`: PASS, 125
+  source files. Node syntax, OpenAPI (43 paths), changed-path security/secrets, and Git whitespace:
+  PASS.
+- Final browser repair inspection: only self-hosted `app.js` loads; native canvas equity rendering
+  works after a real backtest; 1280x720 and 390x844 light/dark have no page overflow or console
+  errors; measured theme, refresh, ingestion, backtest, and export targets are at least 44px.
+- Completion-blocker implementation commit: `261473eeb679ee93b36750d9dc83b9deecd4971c`.
 
 ## Files changed
 
@@ -158,15 +195,17 @@ are disabled. This preserves the seam with the concurrent feature/model owner.
   range, provider failures are sanitized, evidence staging observes cancellation, operator-only
   runtime configuration is excluded from idempotency intent, and catalog reads validate domain
   identity and `PointInTimeBar` record bindings.
+- Both independent BLOCKED reports are fully reconciled in `261473e`; the remaining server gate is
+  a new clean-state verifier at the new exact pushed revision, not another implementation change.
 
 ## Stop point
 
-The completion-audit repairs are committed at `1e953f5` with all local verification green. The
-remaining server-branch gate is a fresh independent clean-state verdict on the new pushed head.
+The final known independent blockers are repaired and committed at `261473e`; local normal/reverse,
+static, security, OpenAPI, repository, and real-browser evidence is green.
 
 ## Next safe action
 
-Push the completion implementation and documentation commits, then run a new clean-state verifier
-against that exact remote head. If it passes, record the immutable verdict and hand off integration;
-if it finds a reproducible server-only defect, repair only the claimed server/API paths. Separately,
-do not touch the active final-2 model recheck at `88a7ac9`.
+Commit the updated handoff, push the new exact head, and dispatch a fresh clean-state verifier that
+must rerun both prior reproductions plus Godel's matrix and all gates. If it passes, record the
+immutable verdict and hand off integration. Separately, do not touch the model/training agent's
+paths, campaign, or runtime artifacts.

@@ -1,9 +1,9 @@
 # Handoff: governed journey API independent recheck
 
-STATUS: READY_FOR_FRESH_COMPLETION_RECHECK
+STATUS: READY_FOR_FINAL_BLOCKER_RECHECK
 OWNER: Codex server/API implementation owner
 BRANCH: `codex/real-journey-api`
-IMPLEMENTATION_COMMIT: `1e953f53d7d5e2ce920452845c6ea69c47decd75`
+IMPLEMENTATION_COMMIT: `261473eeb679ee93b36750d9dc83b9deecd4971c`
 BASE_REVISION: `ac47d7cc03e4aa485e2c92d7022d33de3809a1f2`
 
 ## Scope
@@ -34,12 +34,20 @@ controls instead of fabricated results. Live-money and broker writes remain excl
     published unless publication has already won.
 11. Confirm `/api/v1/operations/train` cannot create a placeholder operation or return invented
     metrics before the independently certified feature-schema-v2 adapter is integrated.
+12. Complete a dataset operation, restart/clear the supervisor's process-local state, and replay the
+    same idempotency key. It must return the original terminal operation ID without another worker;
+    a conflicting payload must still fail, and a tampered receipt must return typed `503`.
+13. Send oversized and markup-shaped `X-Request-ID` headers. They must be replaced by a bounded
+    generated correlation ID and never reflected; a valid bounded ID must still round-trip.
+14. Verify only self-hosted scripts load, the native canvas chart renders after a real backtest,
+    desktop/mobile remain overflow-free after chart rendering, interactive targets are at least
+    44px, and the console remains clean.
 
 ## Existing evidence
 
-- Focused server/UI contract suite: 115 passed.
-- Full suite normal test-file order: 891 passed in 53.27s; one third-party Starlette/httpx warning.
-- Full suite reverse test-file order: 891 passed in 55.57s; same warning.
+- Focused server/UI contract suite: 127 passed.
+- Full suite normal test-file order: 903 passed in 54.83s; one third-party Starlette/httpx warning.
+- Full suite reverse test-file order: 903 passed in 52.93s; same warning.
 - Ruff, mypy over 124 source files, Node syntax, changed-path security scan, changed-path secret scan,
   OpenAPI generation, Git whitespace check, claim audit, and disk-layout audit: PASS.
 - Mutation probe inverted the idempotency fingerprint comparison; the two intended tests failed,
@@ -51,6 +59,24 @@ controls instead of fabricated results. Live-money and broker writes remain excl
   then passed. They cover domain-invalid evidence, invented cursors, provider date limits,
   exception sanitization, staging cancellation, operator-only idempotency inputs, and refusal of
   placeholder training.
+- Five independent-verifier blocker regressions were also observed failing before repair: durable
+  restart replay, unsafe request-ID reflection, external chart/CSP loading, undersized controls,
+  and cancellation overwriting a worker success. They now pass.
+- Full `ruff format --check .` is green across 355 files. Ruff lint, mypy over 125 source files,
+  Node syntax, OpenAPI generation, changed-path security/secrets, Git whitespace, claim audit, and
+  disk-layout audit pass.
+- Real-browser post-repair evidence proves self-hosted native chart rendering, measured 44px
+  controls, light/dark at 1280x720 and 390x844, no page overflow after chart rendering, and no
+  console errors.
+
+## Prior independent reports to reproduce
+
+- `e329e84` report: `.launch/reports/VERIFIER-REAL-JOURNEY-API-E329E84.md` — BLOCKED on restart
+  idempotency, request-ID reflection, forged cursor, CSP/target sizes, and formatting.
+- `222b693` report: `agent_context/reports/20260824-godel2-verifier-real-journey-api-222b693.md` —
+  12/12 public probes and all substantive gates passed; BLOCKED only on UI-test formatting.
+- The final verifier must rerun both reports' concrete reproductions on the new exact head and may
+  not reuse their outcomes as current evidence.
 
 ## Known inherited caveats
 
