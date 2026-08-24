@@ -12,6 +12,7 @@ Verifies:
 9. Options contract execution with exact regulatory friction.
 """
 
+from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
@@ -117,13 +118,17 @@ def test_orderbook_simulator_adverse_slippage_and_vwap() -> None:
     # Level 1: 1500.00 + 10bps (1.50) = 1501.50
     assert result.allocations[0].effective_price == Decimal("1501.50")
     assert result.allocations[0].matched_quantity == 100
-    # Level 2: 1501.00 + 10bps (1.501 -> rounded up 1.51) = 1502.51
-    assert result.allocations[1].effective_price == Decimal("1502.51")
+    # Level 2: 1501.00 + 10bps (1.501) = 1502.501 -> nearest paisa 1502.50.
+    # This previously expected 1502.51, because slippage was rounded UP to a whole paisa per
+    # unit. That is S10-M5: on a 1.00 ask the same floor turned 5 bps into 100 bps. The
+    # expectation was corrected when that rounding was repaired, not to make a suite pass.
+    assert result.allocations[1].effective_price == Decimal("1502.50")
     assert result.allocations[1].matched_quantity == 100
 
-    # Total VWAP = (100 * 1501.50 + 100 * 1502.51) / 200 = 1502.005 -> 1502.00
+    # Total VWAP = (100 * 1501.50 + 100 * 1502.50) / 200 = 1502.00
     assert result.vwap_price == Decimal("1502.00")
-    assert result.total_slippage == Decimal("301.00")
+    # Slippage now reports what was charged: (1501.50-1500.00)*100 + (1502.50-1501.00)*100.
+    assert result.total_slippage == Decimal("300.00")
 
 
 def test_orderbook_simulator_partial_fill_against_depth() -> None:
@@ -310,8 +315,10 @@ def test_paper_pilot_basic_buy_and_sell_lifecycle() -> None:
     assert len(fills) == 1
     assert fills[0].quantity == 100
     assert fills[0].symbol == "INFY"
-    # Buy fill price = 1500.50 + 5bps slippage (0.76) = 1501.26
-    assert fills[0].price == Decimal("1501.26")
+    # Buy fill price = 1500.50 + 5 bps slippage (0.75025) = 1501.25025 -> nearest paisa 1501.25.
+    # Previously 1501.26, because slippage was rounded UP to a whole paisa before being added
+    # (S10-M5). Corrected alongside that repair.
+    assert fills[0].price == Decimal("1501.25")
     assert engine.positions["INFY"].quantity == 100
     assert engine.orders[order_sub.order_id].status == OrderStatus.FILLED
     assert engine.ledger.reconcile() is True
@@ -342,8 +349,9 @@ def test_paper_pilot_basic_buy_and_sell_lifecycle() -> None:
     fills_sell = engine.process_quote(quote2)
     assert len(fills_sell) == 1
     assert fills_sell[0].quantity == 100
-    # Sell fill price = 1550.00 - 5bps slippage (0.78) = 1549.22
-    assert fills_sell[0].price == Decimal("1549.22")
+    # Sell fill price = 1550.00 - 5 bps slippage (0.775) = 1549.225 -> nearest paisa 1549.23.
+    # Previously 1549.22, from the same round-up-a-whole-paisa behaviour (S10-M5).
+    assert fills_sell[0].price == Decimal("1549.23")
     assert "INFY" not in engine.positions  # Fully closed
     assert engine.orders[order_sell.order_id].status == OrderStatus.FILLED
 
@@ -925,3 +933,222 @@ def test_unpriced_market_order_faces_risk_before_it_fills() -> None:
         f"rejection must name the limit that refused it; got {final_order.rejection_reason!r}"
     )
     assert engine.positions.get("INFY") is None
+
+
+# -------------------------------------------------------------------------
+# Ring 5: S10-M2..M7 regressions
+# -------------------------------------------------------------------------
+
+
+def _pilot_with_fill() -> tuple[PaperPilotEngine, datetime]:
+    engine = PaperPilotEngine(initial_cash=Decimal("1000000.00"), session_id="sess_s10")
+    t0 = datetime(2025, 1, 1, 9, 15, 0, tzinfo=UTC)
+    engine.start_session(session_date=date(2025, 1, 1), timestamp=t0)
+    engine.submit_proposal(
+        PaperProposal(
+            proposal_id="prop_s10",
+            symbol="INFY",
+            side=Side.BUY,
+            quantity=100,
+            order_type=OrderType.MARKET,
+            decision_at=t0,
+        )
+    )
+    engine.process_quote(
+        Quote(
+            symbol="INFY",
+            timestamp=t0 + timedelta(seconds=1),
+            bid=Decimal("1500.00"),
+            ask=Decimal("1500.50"),
+            bid_size=500,
+            ask_size=500,
+            last_price=Decimal("1500.25"),
+        )
+    )
+    return engine, t0
+
+
+def test_reconciliation_reports_the_slippage_actually_charged() -> None:
+    """S10-M2: total_slippage_cost summed cost-model slippage, which is passed 0.0 by design.
+
+    The real slippage lives in the fill simulation, so the report structurally read 0.00 while
+    every fill paid it.
+    """
+    engine, _ = _pilot_with_fill()
+    report = engine.end_session(
+        timestamp=datetime(2025, 1, 1, 15, 30, tzinfo=UTC),
+        close_prices={"INFY": Decimal("1500.00")},
+    )
+    assert report.total_slippage_cost > Decimal("0.00"), (
+        "fills were charged slippage but the report says 0.00"
+    )
+
+
+def test_idempotency_conflict_notices_a_changed_decision_time() -> None:
+    """S10-M6: the conflict check ignored decision_at, strategy_name and model_artifact_id.
+
+    Two genuinely different decisions sharing a proposal_id were treated as the same one.
+    """
+    engine = PaperPilotEngine(initial_cash=Decimal("1000000.00"), session_id="sess_idem_s10")
+    t0 = datetime(2025, 1, 1, 9, 15, 0, tzinfo=UTC)
+    engine.start_session(session_date=date(2025, 1, 1), timestamp=t0)
+    base = PaperProposal(
+        proposal_id="prop_same_id",
+        symbol="INFY",
+        side=Side.BUY,
+        quantity=100,
+        order_type=OrderType.MARKET,
+        decision_at=t0,
+        model_artifact_id="model_a",
+    )
+    engine.submit_proposal(base)
+
+    for changed in (
+        replace(base, decision_at=t0 + timedelta(hours=2)),
+        replace(base, model_artifact_id="model_b"),
+        replace(base, strategy_name="OTHER"),
+    ):
+        with pytest.raises(ValueError, match="Idempotency conflict"):
+            engine.submit_proposal(changed)
+
+
+def test_staleness_guard_is_not_dead_when_no_clock_is_supplied() -> None:
+    """S10-M4: `eval_time = current_time or book.timestamp` made age identically 0.
+
+    Omitting current_time silently disabled the AC-62 freshness guard, so a five-day-old book
+    filled.
+    """
+    sim = OrderBookSimulator(OrderBookSimConfig(max_quote_age_seconds=5.0))
+    order_time = datetime(2025, 1, 1, 9, 15, 0, tzinfo=UTC)
+    order = Order(
+        order_id="o_stale_default",
+        symbol="INFY",
+        side=Side.BUY,
+        quantity=10,
+        order_type=OrderType.MARKET,
+        created_at=order_time,
+    )
+    book = OrderBookSnapshot.from_levels(
+        symbol="INFY",
+        timestamp=order_time + timedelta(days=5),
+        bids=[(Decimal("1500.00"), 100)],
+        asks=[(Decimal("1500.50"), 100)],
+    )
+    result = sim.simulate_fill(order, book)  # no current_time at all
+    assert result.is_executable is False, "a quote with no evaluation clock must not fill"
+
+
+def test_slippage_does_not_impose_a_one_paisa_per_unit_floor() -> None:
+    """S10-M5: per-unit ROUND_UP turned a configured 5 bps into 100 bps at price 1.00."""
+    sim = OrderBookSimulator(OrderBookSimConfig(slippage_bps=Decimal("5.0")))
+    order_time = datetime(2025, 1, 1, 9, 15, 0, tzinfo=UTC)
+    order = Order(
+        order_id="o_penny",
+        symbol="PENNY",
+        side=Side.BUY,
+        quantity=100,
+        order_type=OrderType.MARKET,
+        created_at=order_time,
+    )
+    book = OrderBookSnapshot.from_levels(
+        symbol="PENNY",
+        timestamp=order_time + timedelta(seconds=1),
+        bids=[(Decimal("0.99"), 500)],
+        asks=[(Decimal("1.00"), 500)],
+    )
+    result = sim.simulate_fill(order, book, current_time=order_time + timedelta(seconds=1))
+    assert result.is_executable is True
+    # 5 bps of 1.00 is 0.0005. A one-paisa floor charges 1.00% — two hundred times the config.
+    assert result.allocations[0].effective_price < Decimal("1.01"), (
+        f"5 bps became {result.allocations[0].effective_price} on a 1.00 ask"
+    )
+
+
+def test_incomplete_book_is_refused_rather_than_skipping_the_spread_guards() -> None:
+    """S10-M7: with one side empty, spread_pct is None and the crossed/wide guards were skipped.
+
+    A BUY then filled against a book with no bid side at all, unvalidated.
+    """
+    sim = OrderBookSimulator(OrderBookSimConfig(max_spread_pct=Decimal("0.02")))
+    order_time = datetime(2025, 1, 1, 9, 15, 0, tzinfo=UTC)
+    order = Order(
+        order_id="o_onesided",
+        symbol="INFY",
+        side=Side.BUY,
+        quantity=10,
+        order_type=OrderType.MARKET,
+        created_at=order_time,
+    )
+    book = OrderBookSnapshot.from_levels(
+        symbol="INFY",
+        timestamp=order_time + timedelta(seconds=1),
+        bids=[],  # no bid side at all
+        asks=[(Decimal("1500.50"), 100)],
+    )
+    result = sim.simulate_fill(order, book, current_time=order_time + timedelta(seconds=1))
+    assert result.is_executable is False, "a one-sided book cannot be spread-validated"
+
+
+def test_fill_is_refused_outside_nse_market_hours() -> None:
+    """S10-M3: no session-hours check existed, so a fill executed on a Sunday at 03:02."""
+    sim = OrderBookSimulator(OrderBookSimConfig())
+    sunday = datetime(2026, 8, 23, 3, 2, 0, tzinfo=UTC)  # Sunday, 08:32 IST
+    order = Order(
+        order_id="o_sunday",
+        symbol="INFY",
+        side=Side.BUY,
+        quantity=10,
+        order_type=OrderType.MARKET,
+        created_at=sunday - timedelta(seconds=10),
+    )
+    book = OrderBookSnapshot.from_levels(
+        symbol="INFY",
+        timestamp=sunday,
+        bids=[(Decimal("1500.00"), 100)],
+        asks=[(Decimal("1500.50"), 100)],
+    )
+    result = sim.simulate_fill(order, book, current_time=sunday)
+    assert result.is_executable is False
+    assert "MARKET" in (result.rejection_reason or "")
+
+
+def test_fill_is_refused_before_the_open_on_a_weekday() -> None:
+    """S10-M3: 08:32 IST on a trading day is still outside the 09:15-15:30 session."""
+    sim = OrderBookSimulator(OrderBookSimConfig())
+    early = datetime(2026, 8, 24, 3, 2, 0, tzinfo=UTC)  # Monday, 08:32 IST
+    order = Order(
+        order_id="o_early",
+        symbol="INFY",
+        side=Side.BUY,
+        quantity=10,
+        order_type=OrderType.MARKET,
+        created_at=early - timedelta(seconds=10),
+    )
+    book = OrderBookSnapshot.from_levels(
+        symbol="INFY",
+        timestamp=early,
+        bids=[(Decimal("1500.00"), 100)],
+        asks=[(Decimal("1500.50"), 100)],
+    )
+    assert sim.simulate_fill(order, book, current_time=early).is_executable is False
+
+
+def test_fill_is_allowed_inside_the_session() -> None:
+    """The guard must not refuse a genuine in-session fill."""
+    sim = OrderBookSimulator(OrderBookSimConfig())
+    midday = datetime(2026, 8, 24, 6, 0, 0, tzinfo=UTC)  # Monday, 11:30 IST
+    order = Order(
+        order_id="o_midday",
+        symbol="INFY",
+        side=Side.BUY,
+        quantity=10,
+        order_type=OrderType.MARKET,
+        created_at=midday - timedelta(seconds=10),
+    )
+    book = OrderBookSnapshot.from_levels(
+        symbol="INFY",
+        timestamp=midday,
+        bids=[(Decimal("1500.00"), 100)],
+        asks=[(Decimal("1500.50"), 100)],
+    )
+    assert sim.simulate_fill(order, book, current_time=midday).is_executable is True

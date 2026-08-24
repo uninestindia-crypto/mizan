@@ -42,6 +42,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
 
 import run_governed_ridge_training as t  # noqa: E402
 
+from quant_system.advisory import AdvisoryJournal, HypothesisRegistry  # noqa: E402
 from quant_system.data.market_data import (  # noqa: E402
     HistoricalAcquisition,
     HistoricalDailyRequest,
@@ -60,6 +61,9 @@ from quant_system.modeling.features import FEATURE_WARMUP_BARS_V1  # noqa: E402
 from quant_system.modeling.holdout import (  # noqa: E402
     HoldoutVaultTracker,
     create_holdout_partition,
+)
+from quant_system.modeling.persisted_trials import (  # noqa: E402
+    load_persisted_trial_registry,
 )
 from quant_system.modeling.promotion import PromotionState  # noqa: E402
 from quant_system.modeling.promotion_pipeline import (  # noqa: E402
@@ -211,6 +215,46 @@ def _report(result: PersistedPromotionV1, evidence_root: Path) -> None:
     )
 
 
+def _resolve_multiplicity(store: EvidenceStore, args: argparse.Namespace) -> int:
+    """Derive the attempt count from evidence; never default it to a flattering constant.
+
+    `--multiplicity-count` previously defaulted to 1, so omitting the flag evaluated a candidate
+    as though it were the only attempt ever made. That is the documented GRASIM failure: a
+    published DSR of 0.696673 re-deflates to 0.397794 against the campaign's true count of 51,
+    against a 0.95 threshold. A silent default fails in the direction that flatters the candidate,
+    so there is no default.
+
+    Two streams spend multiplicity against one candidate family: registered ridge trial starts,
+    and advisory hypotheses that have spent a trial ordinal. They are added. An unverifiable
+    advisory journal raises rather than counting low.
+    """
+    derived = load_persisted_trial_registry(store).multiplicity_count
+    advisory = 0
+    if args.advisory_journal is not None:
+        # attempt_count() verifies the hash chain and truncation witness first and raises on
+        # failure. Let that propagate: an unverifiable count must not be read as zero.
+        advisory = HypothesisRegistry(AdvisoryJournal(args.advisory_journal)).attempt_count()
+        t._log("[5/5] multiplicity", f"advisory journal contributes {advisory} spent ordinal(s)")
+
+    total = _apply_override(derived, advisory, args.multiplicity_count)
+    t._log("[5/5] multiplicity", f"deflating against {total} attempt(s)")
+    return total
+
+
+def _apply_override(derived: int, advisory: int, override: int | None) -> int:
+    """An override may raise the attempt count but never lower it."""
+    total = derived + advisory
+    if override is None:
+        return total
+    if override < total:
+        raise t.ConfigurationRefused(
+            f"--multiplicity-count {override} is below the {total} attempts derived from "
+            f"evidence ({derived} ridge + {advisory} advisory); lowering the attempt count "
+            "weakens the deflation and flatters the candidate"
+        )
+    return override
+
+
 def _run(args: argparse.Namespace) -> int:
     repo_root = Path(__file__).resolve().parent.parent
     _refuse_leaky_windows(args)
@@ -280,6 +324,7 @@ def _run(args: argparse.Namespace) -> int:
     )
 
     # ---- Governed promotion ------------------------------------------------------------
+    multiplicity = _resolve_multiplicity(store, args)
     result = run_persisted_promotion(
         store,
         operation_id=f"{args.operation_id}-promotion",
@@ -291,7 +336,7 @@ def _run(args: argparse.Namespace) -> int:
         label_dataset=full.labels,
         cost_quotes=full.cost_quotes,
         calendar=full.calendar,
-        multiplicity_count=args.multiplicity_count,
+        multiplicity_count=multiplicity,
         from_state=PromotionState(args.from_state),
         to_state=PromotionState(args.to_state),
         evaluation_id=args.evaluation_id,
@@ -331,8 +376,21 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     promo.add_argument(
         "--multiplicity-count",
         type=int,
-        default=1,
-        help="total attempts this candidate family has spent; deflation depends on it",
+        default=None,
+        help=(
+            "override the derived attempt count. It may only RAISE it: a value below the "
+            "count derived from the evidence store is refused, because lowering it weakens "
+            "the deflation in the direction that flatters the candidate"
+        ),
+    )
+    promo.add_argument(
+        "--advisory-journal",
+        type=Path,
+        default=None,
+        help=(
+            "advisory hypothesis journal. Its spent trial ordinals are ADDED to the ridge "
+            "attempt count, because both streams spend multiplicity against the same family"
+        ),
     )
     promo_args, rest = promo.parse_known_args(list(argv) if argv is not None else None)
     merged = argparse.Namespace(**vars(t._parse_args(rest)))

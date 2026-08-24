@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
-from decimal import ROUND_UP, Decimal
+from datetime import datetime, time, timedelta, timezone
+from decimal import ROUND_HALF_UP, Decimal
 
 from quant_system.core.domain import (
     Order,
@@ -21,6 +21,9 @@ from quant_system.core.domain import (
 )
 
 _PAISA = Decimal("0.01")
+_IST = timezone(timedelta(hours=5, minutes=30), name="IST")
+_SESSION_OPEN_IST = time(9, 15)
+_SESSION_CLOSE_IST = time(15, 30)
 _DEFAULT_TICK_SIZE = Decimal("0.05")
 
 
@@ -195,6 +198,7 @@ class OrderBookSimConfig:
     slippage_bps: Decimal = Decimal("5.0")  # 5 basis points adverse slippage
     conservative_adverse_slippage: bool = True
     max_spread_pct: Decimal = Decimal("0.02")  # 2.0% maximum allowed spread
+    enforce_market_hours: bool = True  # NSE 09:15-15:30 IST, weekdays only
     max_quote_age_seconds: float = 5.0  # Max 5 seconds quote age (AC-62)
     tick_size: Decimal = _DEFAULT_TICK_SIZE  # ₹0.05 default tick size
     lot_size: int = 1  # 1 for cash equity, contract specific for derivatives
@@ -222,12 +226,27 @@ class OrderBookSimulator:
             return "QUOTE_NOT_LATER_THAN_ORDER_CREATION"
 
         # 2. Quote freshness / staleness check (AC-62, AC-65)
-        eval_time = current_time or book.timestamp
-        quote_age = (eval_time - book.timestamp).total_seconds()
+        # Defaulting eval_time to the book's own timestamp made age identically zero, which
+        # silently disabled this guard for every caller that omitted a clock (S10-M4). A quote
+        # whose age cannot be established is not a fresh quote.
+        if current_time is None:
+            return "NO_EVALUATION_TIME_SUPPLIED_CANNOT_ESTABLISH_QUOTE_AGE"
+        quote_age = (current_time - book.timestamp).total_seconds()
         if quote_age > self.config.max_quote_age_seconds:
             return f"STALE_QUOTE_AGE_{quote_age:.1f}S_EXCEEDS_{self.config.max_quote_age_seconds}S"
 
-        # 3. Lot size check (AC-65)
+        # 3. Session-hours check. There was no market-hours guard at all, so a fill executed on
+        # a Sunday at 03:02 (S10-M3). The exchange calendar's holidays are not modelled here;
+        # this is the weekly and intraday boundary only, which is why the reason names the
+        # session rather than claiming the day was a trading day.
+        if self.config.enforce_market_hours:
+            ist = book.timestamp.astimezone(_IST)
+            if ist.weekday() >= 5:
+                return f"OUTSIDE_MARKET_SESSION: {ist:%Y-%m-%d %H:%M} IST falls on a weekend"
+            if not (_SESSION_OPEN_IST <= ist.timetz().replace(tzinfo=None) <= _SESSION_CLOSE_IST):
+                return f"OUTSIDE_MARKET_SESSION: {ist:%H:%M} IST is outside 09:15-15:30"
+
+        # 4. Lot size check (AC-65)
         if self.config.lot_size > 1 and (order.quantity % self.config.lot_size != 0):
             return f"INVALID_LOT_SIZE: quantity {order.quantity} not multiple of lot {self.config.lot_size}"
 
@@ -259,6 +278,13 @@ class OrderBookSimulator:
         else:
             if not book.bids or book.total_bid_depth == 0:
                 return "ZERO_LIQUIDITY_BID_DEPTH_EMPTY"
+
+        # 9. Completeness. With one side missing, spread_pct is None and the crossed, locked and
+        # wide-spread guards above all silently did nothing, so a one-sided book filled entirely
+        # unvalidated (S10-M7). Checked last so the more specific zero-liquidity reason wins when
+        # it is the order's own side that is empty.
+        if book.spread_pct is None:
+            return "INCOMPLETE_BOOK_SPREAD_UNDETERMINED"
 
         return None
 
@@ -330,11 +356,14 @@ class OrderBookSimulator:
                 matched_qty = min(unallocated_qty, available_level_qty)
 
                 # Conservative adverse slippage: BUY fills higher than displayed ask
-                slippage_per_unit = (
-                    level.price * (self.config.slippage_bps / Decimal("10000.0"))
-                ).quantize(_PAISA, rounding=ROUND_UP)
-
-                effective_price = (level.price + slippage_per_unit).quantize(_PAISA)
+                # Rounding the per-unit slippage UP to a whole paisa imposed a floor: 5 bps on a
+                # 1.00 ask became 1.00%, two hundred times the configured rate (S10-M5). The
+                # adverse direction is preserved by rounding the effective PRICE up instead.
+                raw_slip = level.price * (self.config.slippage_bps / Decimal("10000.0"))
+                effective_price = (level.price + raw_slip).quantize(_PAISA, rounding=ROUND_HALF_UP)
+                # Report the slippage actually charged, not the pre-rounding intent, so the
+                # reconciliation total equals the difference between fill and book price.
+                slippage_per_unit = effective_price - level.price
                 if order.order_type == OrderType.LIMIT and order.limit_price is not None:
                     effective_price = min(order.limit_price, effective_price)
                 gross_val = effective_price * Decimal(matched_qty)
@@ -376,11 +405,12 @@ class OrderBookSimulator:
                 matched_qty = min(unallocated_qty, available_level_qty)
 
                 # Conservative adverse slippage: SELL fills lower than displayed bid
-                slippage_per_unit = (
-                    level.price * (self.config.slippage_bps / Decimal("10000.0"))
-                ).quantize(_PAISA, rounding=ROUND_UP)
-
-                effective_price = max(_PAISA, (level.price - slippage_per_unit).quantize(_PAISA))
+                raw_slip = level.price * (self.config.slippage_bps / Decimal("10000.0"))
+                effective_price = max(
+                    _PAISA,
+                    (level.price - raw_slip).quantize(_PAISA, rounding=ROUND_HALF_UP),
+                )
+                slippage_per_unit = level.price - effective_price
                 if order.order_type == OrderType.LIMIT and order.limit_price is not None:
                     effective_price = max(order.limit_price, effective_price)
                 gross_val = effective_price * Decimal(matched_qty)

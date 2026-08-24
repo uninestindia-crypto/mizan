@@ -19,6 +19,7 @@ from quant_system.execution.shadow_models import (
     RuleBasedShadowModel,
     ShadowExecutionMode,
     ShadowProposalStatus,
+    ShadowSessionAudit,
     ShadowSessionStatus,
 )
 from quant_system.execution.shadow_replay import ShadowReplayEngine
@@ -502,3 +503,75 @@ def test_shadow_replay_deterministic_reproducibility() -> None:
     assert audit1.proposals_total == audit2.proposals_total
     assert audit1.proposals_filled == audit2.proposals_filled
     assert len(engine1.fills) == len(engine2.fills)
+
+
+# -------------------------------------------------------------------------
+# Ring 5: S8-M3 / S8-M4 regressions
+# -------------------------------------------------------------------------
+
+
+def test_shadow_audit_refuses_a_tampered_broker_write_count() -> None:
+    """S8-M3: broker_write_calls was a plain field with no guard, unlike Slice 9's report.
+
+    Slice 9's ShadowAuditReport raises on a non-zero count. Slice 8's audit accepted one, so the
+    single invariant the whole slice exists to prove could be asserted false and still publish.
+    """
+    engine = ShadowReplayEngine(
+        session_id="sess_tamper", model=RuleBasedShadowModel(model_id="rule_v1")
+    )
+    engine.broker_write_calls = 7
+    with pytest.raises(ValueError, match="ZERO"):
+        engine.run(ReplayQuoteFeed(_make_quotes(5)))
+
+
+def test_shadow_audit_model_itself_refuses_a_non_zero_write_count() -> None:
+    """S8-M3: the invariant belongs on the record, so no construction path can bypass it."""
+    with pytest.raises(ValueError, match="ZERO"):
+        ShadowSessionAudit(
+            session_id="s",
+            mode=ShadowExecutionMode.SHADOW_READ_ONLY.value,
+            model_id="m",
+            status=ShadowSessionStatus.COMPLETED,
+            start_timestamp=None,
+            end_timestamp=None,
+            quotes_processed=0,
+            proposals_total=0,
+            proposals_filled=0,
+            proposals_rejected=0,
+            proposals_pending=0,
+            proposals_cancelled=0,
+            proposals_unprocessed=0,
+            initial_cash=Decimal("0.00"),
+            final_cash=Decimal("0.00"),
+            realized_pnl=Decimal("0.00"),
+            unrealized_pnl=Decimal("0.00"),
+            total_equity=Decimal("0.00"),
+            total_fees_paid=Decimal("0.00"),
+            reconciled=True,
+            matured_decisions_count=0,
+            audit_hash="x",
+            broker_write_calls=1,
+        )
+
+
+def test_replay_feed_refuses_a_float_size() -> None:
+    """S8-M4: float sizes were silently truncated (3.9 -> 3) while float prices were refused.
+
+    Silently discarding displayed depth changes fill simulation without any signal.
+    """
+    base = datetime(2026, 8, 22, 9, 15, tzinfo=UTC)
+    feed = ReplayQuoteFeed(
+        [
+            {
+                "symbol": "INFY",
+                "timestamp": base,
+                "bid": Decimal("100.00"),
+                "ask": Decimal("100.50"),
+                "bid_size": 3.9,
+                "ask_size": 10,
+            }
+        ]
+    )
+    with pytest.raises(ReplayFeedError) as excinfo:
+        feed.next_tick()
+    assert excinfo.value.code == ReplayFeedFailureCode.CORRUPTED_PAYLOAD

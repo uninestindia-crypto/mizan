@@ -168,6 +168,7 @@ class PaperPilotEngine:
         # Orders approved without a price, so order value and position weight could not be
         # evaluated at submission. Their risk check is DEFERRED to first fill, never skipped.
         self._staged_order_ids: set[str] = set()
+        self._fill_slippage: dict[str, Decimal] = {}
         self._fills: list[Fill] = []
         self._order_fills: dict[str, list[Fill]] = defaultdict(list)
         self._fill_by_id: dict[str, Fill] = {}
@@ -298,6 +299,12 @@ class PaperPilotEngine:
                 or existing_proposal.quantity != proposal.quantity
                 or existing_proposal.order_type != proposal.order_type
                 or existing_proposal.limit_price != proposal.limit_price
+                # decision_at, strategy_name and model_artifact_id identify WHICH decision this
+                # is. Omitting them let two genuinely different decisions sharing a proposal_id
+                # be replayed as the same one (S10-M6).
+                or existing_proposal.decision_at != proposal.decision_at
+                or existing_proposal.strategy_name != proposal.strategy_name
+                or existing_proposal.model_artifact_id != proposal.model_artifact_id
             ):
                 raise ValueError(
                     f"Idempotency conflict: proposal {proposal.proposal_id} already exists with different parameters"
@@ -615,6 +622,11 @@ class PaperPilotEngine:
                     self._order_fills[order_id].append(fill)
                     self._fill_by_id[fill_id] = fill
                     self._fill_cost_breakdowns[fill_id] = cost_breakdown
+                    # The cost model is deliberately passed slippage_bps=0.0 because slippage is
+                    # already in vwap_price, so breakdown.slippage is structurally zero. Record
+                    # what the fill simulation actually charged, or the report says 0.00 while
+                    # every fill paid it (S10-M2).
+                    self._fill_slippage[fill_id] = sim_result.total_slippage
                     executed_fills.append(fill)
 
                     new_remaining = remaining_qty - sim_result.filled_quantity
@@ -804,10 +816,7 @@ class PaperPilotEngine:
         rejected_count = sum(1 for o in self._orders.values() if o.status == OrderStatus.REJECTED)
 
         total_fees = sum((f.fee for f in self._fills), Decimal("0.00"))
-        total_slippage = sum(
-            (breakdown.slippage for breakdown in self._fill_cost_breakdowns.values()),
-            Decimal("0.00"),
-        )
+        total_slippage = sum(self._fill_slippage.values(), Decimal("0.00"))
 
         snapshot = self.get_portfolio_snapshot(timestamp=timestamp, current_prices=close_prices)
 

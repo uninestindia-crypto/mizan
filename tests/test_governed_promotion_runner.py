@@ -92,3 +92,49 @@ def test_no_session_on_or_after_the_holdout_date_is_refused() -> None:
     calendar = _Calendar([date(2025, 10, 10)])
     with pytest.raises(t.ConfigurationRefused, match="no exchange session"):
         r._session_close_on_or_after(calendar, date(2025, 12, 1))  # type: ignore[arg-type]
+
+
+# -------------------------------------------------------------------------
+# Deflation attempt count — raised by a peer session's REQUEST record
+# -------------------------------------------------------------------------
+
+
+def test_multiplicity_count_has_no_flattering_default() -> None:
+    """A default of 1 evaluated a candidate as though it were the only attempt ever made.
+
+    That reproduces the documented GRASIM failure by omission: a published DSR of 0.696673
+    re-deflates to 0.397794 against the campaign's true count of 51, versus a 0.95 threshold.
+    """
+    args = r._parse_args(
+        [
+            "--train-to-date",
+            "2025-09-30",
+            "--holdout-from-date",
+            "2025-10-15",
+            "--symbol",
+            "INFY",
+            "--instrument-key",
+            "NSE_EQ|INE009A01021",
+            "--from-date",
+            "2024-01-01",
+            "--to-date",
+            "2025-12-31",
+        ]
+    )
+    assert args.multiplicity_count is None, "the attempt count must be derived, never defaulted"
+
+
+def test_attempt_counts_from_both_streams_are_added() -> None:
+    """Ridge trials and advisory hypotheses spend multiplicity against the same family."""
+    assert r._apply_override(51, 6, None) == 57
+
+
+def test_override_may_raise_the_attempt_count() -> None:
+    """An operator who knows of attempts the evidence cannot see may declare more."""
+    assert r._apply_override(51, 0, 60) == 60
+
+
+def test_override_may_not_lower_the_attempt_count() -> None:
+    """Lowering it weakens the deflation in the direction that flatters the candidate."""
+    with pytest.raises(t.ConfigurationRefused, match="flatters the candidate"):
+        r._apply_override(51, 6, 12)

@@ -103,6 +103,18 @@ class ShadowSessionAudit:
     halt_reason: str | None = None
     broker_write_calls: int = 0
 
+    def __post_init__(self) -> None:
+        # Slice 9's ShadowAuditReport already refuses a non-zero count; this record did not, so
+        # the single invariant the shadow slices exist to prove could be asserted false and still
+        # publish (S8-M3). The guard belongs on the record so no construction path bypasses it.
+        if self.broker_write_calls != 0:
+            raise ValueError(
+                "ZERO ORDER ENDPOINT EXPOSURE INVARIANT VIOLATED: "
+                f"{self.broker_write_calls} broker writes recorded in a read-only shadow session"
+            )
+        if self.mode != ShadowExecutionMode.SHADOW_READ_ONLY.value:
+            raise ValueError(f"shadow session mode must be SHADOW_READ_ONLY, got {self.mode}")
+
 
 class ShadowDecisionModel(Protocol):
     @property

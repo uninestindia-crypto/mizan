@@ -111,6 +111,34 @@ class ReplayQuote:
         )
 
 
+def _parse_size(raw: Any, field_name: str, symbol: str, seq: int) -> int:
+    """Strictly convert a displayed size into int, rejecting floats.
+
+    `int(3.9)` silently discarded displayed depth while float *prices* were refused, so the same
+    payload was strict about one field and lax about another (S8-M4). Depth drives fill
+    simulation, so truncating it changes results with no signal.
+    """
+    if isinstance(raw, float):
+        raise ReplayFeedError(
+            ReplayFeedFailureCode.CORRUPTED_PAYLOAD,
+            f"Binary float is forbidden for size field '{field_name}' on {symbol}",
+            sequence_id=seq,
+        )
+    if isinstance(raw, bool) or not isinstance(raw, int):
+        try:
+            text = str(raw).strip()
+            if not text.lstrip("-").isdigit():
+                raise ValueError("not an integer")
+            return int(text)
+        except (ValueError, TypeError) as err:
+            raise ReplayFeedError(
+                ReplayFeedFailureCode.CORRUPTED_PAYLOAD,
+                f"Size field '{field_name}' on {symbol} is not an integer: {raw!r}",
+                sequence_id=seq,
+            ) from err
+    return raw
+
+
 def _parse_decimal(raw: Any, field_name: str, symbol: str) -> Decimal:
     """Strictly convert price into Decimal, rejecting float or non-finite values."""
     if isinstance(raw, float):
@@ -294,8 +322,8 @@ class ReplayQuoteFeed:
             ts = datetime.fromisoformat(raw_ts) if isinstance(raw_ts, str) else raw_ts
             bid = _parse_decimal(raw["bid"], "bid", symbol)
             ask = _parse_decimal(raw["ask"], "ask", symbol)
-            bid_sz = int(raw.get("bid_size", 0))
-            ask_sz = int(raw.get("ask_size", 0))
+            bid_sz = _parse_size(raw.get("bid_size", 0), "bid_size", symbol, seq)
+            ask_sz = _parse_size(raw.get("ask_size", 0), "ask_size", symbol, seq)
             raw_last = raw.get("last_price")
             last_p = (
                 _parse_decimal(raw_last, "last_price", symbol) if raw_last is not None else None
