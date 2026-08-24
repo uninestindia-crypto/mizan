@@ -183,20 +183,27 @@ It was also worse than first reported, and the reason is now provable rather tha
 Measured against the pre-repair condition over p = 0.01..0.99, **39 of 99 two-point series would
 have fired — roughly 40% of that legitimate parameter space**, not a rare tie.
 
-Five independent measurements across different constructions gave 31, 34, 36, 37 and 39 firings out
-of 99, with firing sets overlapping only about half. The decisive one: skewness and kurtosis are
-location- and scale-invariant, so the same distribution written as `[0, 1]` or as `[-3.5, 11.25]`
-has mathematically identical moments — verified equal in **99 of 99** cases, yet **bit**-identical
-in only **8 of 99**. Those two constructions fired on 39 and 34 series respectively, overlapping on
-just 11. A transformation that provably cannot change the mathematics changed which inputs were
-rejected, which proves the rejection was decided by float residue in the arithmetic path rather than
-by anything about the distribution.
+Measurements across different constructions gave 31, 34, 36, 37 and 39 firings out of 99, with
+firing sets overlapping only about half. The decisive argument: skewness and kurtosis are location-
+and scale-invariant, so the same distribution written as `[0, 1]` or as `[-3.5, 11.25]` has
+mathematically identical moments — verified equal in **99 of 99** cases by two independent
+implementations — yet the guard rejected substantially different sets of them. A transformation that
+provably cannot change the mathematics changed which inputs were rejected, which proves the
+rejection was decided by float residue in the arithmetic path rather than by anything about the
+distribution.
 
-**No list of firing p values is canonical, including the 39 measured here.** Cite the proportion and
-the mechanism, never a specific p — presenting one as *the* reproducer implies the input determines
-the outcome, which is what this disproves. It also explains an earlier error rather than dismissing
-it: a peer's original claim that p=0.10 fired was correct for `[-3.5, 11.25]` and wrong for
-`[0, 1]`. The confusion was itself an instance of the defect being reported.
+**Cite the proportion and the mechanism, never a specific p, and nothing finer-grained than that.**
+Two lessons were learned the hard way here and are recorded in full in the notice:
+
+- A count of *bit-identical* moment pairs was briefly cited as the headline evidence (8 of 99).
+  A peer's independent implementation of the same experiment gave 39 of 99. Only the mathematical
+  equality reproduces across implementations; the bit-identical count is a property of an arithmetic
+  path, exactly like every firing list. Withdrawn.
+- A generous explanation of an earlier p=0.10 error — that it "was correct for an unpinned
+  construction" — was withdrawn at the peer's own insistence. The observation is true but was not
+  the cause: they evaluated `kurt - skew**2` against 1 rather than the guard's
+  `kurtosis < 1.0 + skewness**2`. Recording luck as cause would have put a false causal story into
+  three records.
 
 **Repaired at `ac47d7c`** by another agent, and independently verified by the filer, who did not
 write the repair: the guard now compares with a tolerance of `64 * sys.float_info.epsilon` and raises
@@ -244,6 +251,7 @@ that no live path called.
 | `1e5beb5` | Real governed shadow session attempted against the real evidence store |
 | `97fcc4b` | Red Team Blockers 1 and 3 repaired |
 | `deccec1` | Red Team Majors 4-9 repaired |
+| `85ff535` | The ungoverned ridge refused at the execution surface — second calculation path closed |
 
 ### This path is adjudicated. The research results are not.
 
@@ -280,13 +288,36 @@ research evidence but cannot execute. `scripts/run_governed_shadow_session.py` r
 GRASIM artifact with typed missing-schema detail and exit 3. Those fitted states would have to be
 retrained under v2 before any of them could run.
 
+### The second calculation path is closed (`85ff535`)
+
+`strategies/ml_equity.py` defines `RollingRidgeClassifier` — a ridge with no purging, no
+multiplicity accounting and no evidence. Measured before deciding: it was **not wired** into any
+live surface. Both server paths (`app.py:670`, `supervisor.py:157`) run `BacktestEngine` over
+`SyntheticDataGenerator`, which is research; `PaperPilot` takes no strategy; `ShadowReplayEngine`
+takes a `ShadowDecisionModel`. The one reachable execution surface was `RealtimeShadowRunner`, which
+accepted any `BaseStrategy` with no guard — so an operator could run the ungoverned ridge in a
+shadow session.
+
+**Blocked at the surface rather than deleted.** Deleting the classifier would break
+`AIEnhancedMLEquityStrategy`, which the advisory layer wires into, and would remove a legitimate
+research capability. An ungoverned ridge in a backtest is research; the violation is that it could
+*execute*. So both ungoverned strategies declare `research_only = True` and the shadow runner
+refuses anything so marked. Research, backtest and registry paths are untouched — verified by
+demonstration, not assertion.
+
+Residual, stated rather than hidden: this reads a **declaration, not a detector**. A future strategy
+that embeds an ungoverned model without declaring it will not be caught. The bounded guarantee is
+that the two known ungoverned-ridge strategies can no longer reach a shadow session.
+
+Record: `agent_context/work/active/20260824-claude-remove-ungoverned-ridge-from-execution.md`.
+
 ### Still not true
 
 - **No governed shadow session has ever run.** The runner reaches the promotion gate and is refused:
   every published model is `RESEARCH_ONLY`, and the best campaign DSR is `0.397794` against a `0.95`
   requirement. Promotion is not a wiring problem and cannot be fixed by wiring.
-- **`RollingRidgeClassifier` is still what execution uses by default.** A governed alternative now
-  exists and is reachable, but the second calculation path has not been removed.
+- ~~`RollingRidgeClassifier` is still what execution uses by default.~~ **Closed at `85ff535`** —
+  see below.
 - Shadow P&L does not equal backtest P&L. The validated label enters and exits at session *opens*
   while the runner fills on quotes; the maturity horizon closes the structural gap, not the pricing
   one.
@@ -324,6 +355,7 @@ Records: `agent_context/work/completed/20260823-claude-redteam-repair-b1-b3.md`,
    is trained under it, and retraining spends fresh multiplicity ordinals — so it is worth pairing
    with a genuinely different hypothesis rather than repeating the same six-feature ridge on the
    same universe and period.
-6. Remove `RollingRidgeClassifier` from the execution path. A governed alternative now exists;
-   leaving both in place is the second-calculation-path defect this work exists to close.
+6. ~~Remove `RollingRidgeClassifier` from the execution path.~~ Done at `85ff535`. What remains is
+   the harder version: nothing detects a strategy that embeds an ungoverned model without declaring
+   itself research-only.
 7. Reconcile the stale sections at the top of this file against `.launch/STATE.md` (coordinator).

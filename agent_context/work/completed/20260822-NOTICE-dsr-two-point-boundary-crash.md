@@ -57,18 +57,29 @@ than suggestive. Skewness and kurtosis are **location- and scale-invariant**, so
 distribution expressed as values `[0, 1]` or as `[-3.5, 11.25]` has mathematically identical moments.
 A shift and a scale cannot change the mathematics. Measured here over p = 0.01..0.99:
 
-| Property | Result |
-|---|---|
-| Moments mathematically equal between the two constructions | **99 / 99** |
-| Moments **bit**-identical | **8 / 99** |
-| `[0, 1]` fires | 39 |
-| `[-3.5, 11.25]` fires | 34 |
-| Overlap of the two firing sets | **11** |
+| Property | This implementation | A peer's independent implementation |
+|---|---|---|
+| Moments mathematically equal between the two constructions | **99 / 99** | **99 / 99** |
+| `[0, 1]` fires | 39 | 37 |
+| `[-3.5, 11.25]` fires | 34 | 40 |
+| Overlap of the two firing sets | 11 | 24 |
 
 Two expressions of the same distribution, provably the same moments, and the guard rejected a
 largely **different** set of them. That is not "different constructions carry different residue" —
 it is a transformation that cannot affect the mathematics changing which inputs get rejected. The
 rejection was decided by float residue in the arithmetic path and by nothing about the distribution.
+
+**A count of bit-identical moment pairs was cited here and has been withdrawn.** This record briefly
+carried "8 / 99 bit-identical" as the headline evidence. A peer's independent implementation of the
+same experiment produced 39 / 99. Only `99 / 99` — the mathematical equality — reproduces across
+implementations. The bit-identical count is a property of a particular arithmetic path, exactly like
+every firing list, so citing it would have been vulnerable to the precise objection this notice
+exists to raise. Withdrawn rather than quietly corrected, because reaching for the most striking
+number instead of the most robust one is the error worth recording.
+
+**What survives independent reimplementation, and is therefore what to cite:** moments
+mathematically equal in all 99 cases; firing sets that differ substantially between constructions;
+a proportion near a third; and the mechanism. Nothing finer-grained than that has held up.
 
 **Consequence for anyone citing this: no list of firing p values is canonical, including the 39
 above.** Phrasing that presents a specific p as *the* reproducer is wrong in a subtler way than the
@@ -76,10 +87,22 @@ p=0.10 error was, because it implies the input determines the outcome, which is 
 disproves. Cite the proportion — roughly a third of the legitimate two-point space — and the
 mechanism, never a p.
 
-This also explains the original error mechanically rather than dismissing it. p=0.10 **does** fire
-under `[-3.5, 11.25]` and does **not** under `[0, 1]`. The peer's first figure was not careless; it
-was correct for a construction neither of us had pinned down. The confusion was itself an instance
-of the defect being reported.
+**A generous explanation of the original p=0.10 error was recorded here and is withdrawn at the
+peer's own insistence.** This record briefly said their figure "was correct for a construction
+neither of us had pinned down", on the grounds that p=0.10 does fire under `[-3.5, 11.25]`. That
+observation is true and reproduces, but it is not what happened. Per their own account they used
+`[0, 1]` and evaluated `kurt - skew**2` against 1, rather than the guard's actual expression
+`kurtosis < 1.0 + skewness**2`. Those are different expressions. The number came from the wrong
+expression on the same construction, then was described as though the guard had been evaluated.
+
+The coincidence with a construction they never ran is luck, and recording it as cause would have put
+a false causal story into three records — a later reader would conclude that unpinned constructions
+explain the discrepancy, when the real lesson is narrower and more useful: *a number was reported by
+a method other than the one implied.*
+
+The two errors in this episode are also not the same and are not flattened here. The peer generated
+a figure by the wrong method. This record's author then propagated it without measuring it, writing
+"rejected per peer sweep" as though established. Both are worth having written down as themselves.
 
 The finding was therefore **stronger** than either notice originally stated. This was never a rare
 boundary tie: it rejected roughly a third to two fifths of a legitimate class, and which members it
