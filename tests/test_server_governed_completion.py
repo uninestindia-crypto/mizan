@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import time
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -299,3 +300,92 @@ def test_versioned_training_operation_never_returns_invented_model_metrics(
     assert response.status_code == 409
     assert _error_code(response) == "MODEL_CONTRACT_INCOMPATIBLE"
     assert supervisor.list_operations() == []
+
+
+# test-allow: loop-in-test — bounded HTTP polling observes one spawned worker to terminal state.
+def test_dataset_idempotency_replays_the_same_operation_after_supervisor_restart(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.delenv(ACCESS_TOKEN_ENV_VAR, raising=False)
+    monkeypatch.setenv(_EVIDENCE_ROOT_ENV, str(tmp_path / "runtime-evidence"))
+    headers = {**auth_headers, "Idempotency-Key": "durable-dataset-intent"}
+    request = {
+        "instrument_key": "NSE_EQ|INE009A01021",
+        "symbol": "INFY",
+        "from_date": "2025-01-01",
+        "to_date": "2025-01-31",
+    }
+
+    created = client.post("/api/v1/datasets", json=request, headers=headers)
+    assert created.status_code == 202
+    operation_id = created.json()["operation_id"]
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        terminal = client.get(created.headers["Location"])
+        assert terminal.status_code == 200
+        if terminal.json()["status"] in {"FAILED", "LOST"}:
+            break
+        # test-allow: sleep-in-test — bounded polling observes a real spawned process via HTTP.
+        time.sleep(0.05)
+    else:
+        pytest.fail("dataset operation did not reach a terminal failure")
+    assert terminal.json()["status"] == "FAILED"
+
+    supervisor.shutdown()
+    with supervisor._lock:
+        supervisor._operations.clear()
+        supervisor._idempotency_map.clear()
+
+    replay = client.post("/api/v1/datasets", json=request, headers=headers)
+    assert replay.status_code == 202
+    assert replay.json()["operation_id"] == operation_id
+    assert replay.json()["status"] == "FAILED"
+
+    conflict = client.post(
+        "/api/v1/datasets",
+        json={**request, "to_date": "2025-02-01"},
+        headers=headers,
+    )
+    assert conflict.status_code == 422
+    assert _error_code(conflict) == "IDEMPOTENCY_KEY_REUSED"
+
+    receipt_file = next(
+        (tmp_path / "runtime-evidence" / ".server" / "operation-receipts").glob("*.json")
+    )
+    receipt_file.write_text("{}\n", encoding="utf-8")
+    supervisor.shutdown()
+    with supervisor._lock:
+        supervisor._operations.clear()
+        supervisor._idempotency_map.clear()
+
+    tampered = client.post("/api/v1/datasets", json=request, headers=headers)
+    assert tampered.status_code == 503
+    assert _error_code(tampered) == "OPERATION_JOURNAL_UNAVAILABLE"
+    assert str(tmp_path) not in tampered.text
+    assert supervisor.list_operations() == []
+
+
+def test_security_middleware_never_reflects_an_unbounded_or_unsafe_request_id(
+    client: TestClient,
+) -> None:
+    unsafe_request_id = "<script>alert(1)</script>" + ("x" * 4096)
+
+    response = client.get(
+        "/api/v1/version",
+        headers={"X-Request-ID": unsafe_request_id},
+    )
+
+    assert response.status_code == 200
+    trusted_request_id = response.headers["X-Request-ID"]
+    assert trusted_request_id.startswith("req-")
+    assert len(trusted_request_id) <= 64
+    assert unsafe_request_id not in response.text
+
+    valid = client.get(
+        "/api/v1/version",
+        headers={"X-Request-ID": "trace.dataset-123"},
+    )
+    assert valid.headers["X-Request-ID"] == "trace.dataset-123"

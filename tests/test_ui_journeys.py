@@ -93,6 +93,36 @@ def test_static_js_served_with_controller_functions(client: TestClient) -> None:
     assert "formatINR" in content
 
 
+@pytest.mark.parametrize("route", ["/", "/ui", "/static/index.html"])
+def test_dashboard_has_no_external_chart_script(client: TestClient, route: str) -> None:
+    html = client.get(route).text
+    assert "cdn.jsdelivr.net" not in html
+    assert "chart.umd" not in html
+
+
+def test_chart_controller_uses_native_canvas(client: TestClient) -> None:
+    javascript = client.get("/static/app.js").text
+    assert "new Chart" not in javascript
+    assert "drawLineChart" in javascript
+
+
+@pytest.mark.parametrize("selector", [".tab-btn", ".icon-btn", ".btn-primary", ".btn-secondary"])
+def test_control_target_size(client: TestClient, selector: str) -> None:
+    css = client.get("/static/styles.css").text
+    match = re.search(rf"{re.escape(selector)}\s*\{{(?P<body>.*?)\}}", css, re.DOTALL)
+    assert match is not None
+    body = match.group("body")
+    assert "min-height: 44px" in body or "height: 44px" in body
+
+
+def test_chart_canvas_is_responsive_and_contained(client: TestClient) -> None:
+    css = client.get("/static/styles.css").text
+    chart = re.search(r"\.chart-card canvas\s*\{(?P<body>.*?)\}", css, re.DOTALL)
+    assert chart is not None
+    assert "width: 100%" in chart.group("body")
+    assert "max-width: 100%" in chart.group("body")
+
+
 def test_static_index_html_contains_all_seven_journeys(client: TestClient) -> None:
     res = client.get("/static/index.html")
     assert res.status_code == 200
@@ -413,7 +443,10 @@ def test_journey_6_shadow_monitor_dom_and_api(
     assert 'id="shadow-speed"' in html
     assert 'id="btn-start-shadow"' in html
     assert 'id="btn-pause-shadow"' in html
-    assert 'id="btn-start-shadow" class="btn-primary" aria-label="Start Shadow Stream" disabled' in html
+    assert (
+        'id="btn-start-shadow" class="btn-primary" aria-label="Start Shadow Stream" disabled'
+        in html
+    )
     assert 'id="btn-pause-shadow" class="btn-secondary" aria-label="Pause Stream" disabled' in html
     assert "Configure a persisted read-only shadow session" in html
     assert 'id="shadow-broker-orders"' in html
@@ -460,7 +493,10 @@ def test_journey_7_paper_pilot_dom_and_api(
     assert 'id="pilot-dd-buffer"' in html
     assert "2,548,200" not in html
     assert "ord_p_10492" not in html
-    assert 'id="btn-submit-pilot-order" class="btn-primary" aria-label="Place Paper Order" disabled' in html
+    assert (
+        'id="btn-submit-pilot-order" class="btn-primary" aria-label="Place Paper Order" disabled'
+        in html
+    )
 
     # 2. No campaign means no fabricated positions or P&L.
     camp_res = client.get("/api/paper-pilot/campaign")

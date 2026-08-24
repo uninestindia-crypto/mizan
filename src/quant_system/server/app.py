@@ -106,6 +106,7 @@ from quant_system.server.supervisor import (
     ConcurrentLimitError,
     IdempotencyConflictError,
     OperationNotFoundError,
+    OperationRecoveryError,
     supervisor,
 )
 from quant_system.server.ui import (
@@ -245,6 +246,19 @@ async def idempotency_conflict_handler(
         content=format_error_response(
             code="IDEMPOTENCY_KEY_REUSED",
             message=str(exc).removeprefix("IDEMPOTENCY_KEY_REUSED: "),
+            request_id=request_id,
+        ),
+    )
+
+
+@app.exception_handler(OperationRecoveryError)
+async def operation_recovery_handler(request: Request, exc: OperationRecoveryError) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", None)
+    return JSONResponse(
+        status_code=503,
+        content=format_error_response(
+            code="OPERATION_JOURNAL_UNAVAILABLE",
+            message=str(exc),
             request_id=request_id,
         ),
     )

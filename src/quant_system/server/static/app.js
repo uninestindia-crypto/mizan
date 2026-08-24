@@ -1,6 +1,6 @@
 /**
  * QuantOS Desktop Web UI Application Controller v1.0.0
- * Handles Reactive State, Chart.js Visualizations, A11y Keyboard Navigation,
+ * Handles Reactive State, self-hosted Canvas visualizations, A11y Keyboard Navigation,
  * and REST API communication supporting the 7 Core User Journeys.
  */
 
@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initMonteCarlo();
   initRiskForm();
   initDiagnostics();
+  window.addEventListener("resize", scheduleChartRedraw);
 });
 
 // Toast notification helper
@@ -120,7 +121,7 @@ function initTheme() {
     const next = current === "dark" ? "light" : "dark";
     html.setAttribute("data-theme", next);
     localStorage.setItem("quantos-theme", next);
-    if (equityChartInstance) updateChartTheme();
+    if (equityChartInstance || mcChartInstance) updateChartTheme();
   });
 
   const saved = localStorage.getItem("quantos-theme");
@@ -152,6 +153,7 @@ function initTabs() {
     const panel = document.getElementById(targetId);
     if (panel) {
       panel.classList.add("active");
+      scheduleChartRedraw();
     }
 
     if (targetId === "tab-risk") loadRiskLimits();
@@ -687,76 +689,107 @@ function initBacktestForm() {
 function renderEquityChart(curve) {
   const canvas = document.getElementById("equityChart");
   if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)";
-  const textColor = cssToken("--color-text-secondary");
-
-  const labels = curve.map((s) => s.timestamp);
-  const data = curve.map((s) => s.total_equity);
-
-  if (equityChartInstance) {
-    equityChartInstance.destroy();
-  }
-
-  equityChartInstance = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: "Portfolio Total Equity (₹)",
-          data: data,
-          borderColor: cssToken("--color-accent"),
-          backgroundColor: "rgba(0, 113, 227, 0.1)",
-          borderWidth: 2,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          tension: 0.1,
-          fill: true,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (context) => formatINR(context.raw),
-          },
-        },
+  equityChartInstance = {
+    canvas,
+    labels: curve.map((snapshot) => snapshot.timestamp),
+    datasets: [
+      {
+        colorToken: "--color-accent",
+        values: curve.map((snapshot) => Number(snapshot.total_equity)),
+        width: 2.5,
       },
-      scales: {
-        x: {
-          grid: { color: gridColor },
-          ticks: { color: textColor, maxTicksLimit: 8 },
-        },
-        y: {
-          grid: { color: gridColor },
-          ticks: {
-            color: textColor,
-            callback: (v) => `₹${(v / 1000).toFixed(0)}k`,
-          },
-        },
-      },
-    },
-  });
+    ],
+  };
+  drawLineChart(equityChartInstance);
 }
 
 function updateChartTheme() {
-  if (!equityChartInstance) return;
+  if (equityChartInstance) drawLineChart(equityChartInstance);
+  if (mcChartInstance) drawLineChart(mcChartInstance);
+}
+
+let chartRedrawFrame = null;
+
+function scheduleChartRedraw() {
+  if (chartRedrawFrame !== null) cancelAnimationFrame(chartRedrawFrame);
+  chartRedrawFrame = requestAnimationFrame(() => {
+    chartRedrawFrame = null;
+    updateChartTheme();
+  });
+}
+
+function drawLineChart(chart) {
+  const { canvas, datasets, labels } = chart;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  const width = Math.max(1, Math.floor(canvas.clientWidth || 640));
+  const height = Math.max(220, Math.floor(canvas.clientHeight || 280));
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(width * pixelRatio);
+  canvas.height = Math.floor(height * pixelRatio);
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  context.clearRect(0, 0, width, height);
+
+  const values = datasets.flatMap((dataset) => dataset.values).filter(Number.isFinite);
+  if (values.length === 0) return;
+  const observedMin = Math.min(...values);
+  const observedMax = Math.max(...values);
+  const observedRange = Math.max(observedMax - observedMin, Math.abs(observedMax) * 0.01, 1);
+  const minimum = observedMin - observedRange * 0.06;
+  const maximum = observedMax + observedRange * 0.06;
+  const bounds = { top: 16, right: 16, bottom: 28, left: 64 };
+  const plotWidth = width - bounds.left - bounds.right;
+  const plotHeight = height - bounds.top - bounds.bottom;
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)";
+  const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)";
   const textColor = cssToken("--color-text-secondary");
 
-  equityChartInstance.options.scales.x.grid.color = gridColor;
-  equityChartInstance.options.scales.x.ticks.color = textColor;
-  equityChartInstance.options.scales.y.grid.color = gridColor;
-  equityChartInstance.options.scales.y.ticks.color = textColor;
-  equityChartInstance.update();
+  context.font = "11px system-ui, sans-serif";
+  context.fillStyle = textColor;
+  context.strokeStyle = gridColor;
+  context.lineWidth = 1;
+  for (let index = 0; index <= 4; index += 1) {
+    const ratio = index / 4;
+    const y = bounds.top + plotHeight * ratio;
+    context.beginPath();
+    context.moveTo(bounds.left, y);
+    context.lineTo(width - bounds.right, y);
+    context.stroke();
+    const value = maximum - (maximum - minimum) * ratio;
+    context.fillText(compactINR(value), 4, y + 4);
+  }
+
+  const firstLabel = labels[0] || "";
+  const lastLabel = labels[labels.length - 1] || "";
+  context.fillText(firstLabel, bounds.left, height - 6);
+  const lastWidth = context.measureText(lastLabel).width;
+  context.fillText(lastLabel, Math.max(bounds.left, width - bounds.right - lastWidth), height - 6);
+
+  datasets.forEach((dataset) => {
+    const series = dataset.values;
+    if (series.length === 0) return;
+    const denominator = Math.max(series.length - 1, 1);
+    const sampleStep = Math.max(1, Math.floor(series.length / Math.max(plotWidth * 2, 1)));
+    context.beginPath();
+    context.strokeStyle = cssToken(dataset.colorToken);
+    context.lineWidth = dataset.width;
+    series.forEach((value, index) => {
+      if (index % sampleStep !== 0 && index !== series.length - 1) return;
+      const x = bounds.left + (index / denominator) * plotWidth;
+      const y = bounds.top + ((maximum - value) / (maximum - minimum)) * plotHeight;
+      if (index === 0) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    });
+    context.stroke();
+  });
+}
+
+function compactINR(value) {
+  const magnitude = Math.abs(value);
+  if (magnitude >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
+  if (magnitude >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
+  if (magnitude >= 1000) return `₹${(value / 1000).toFixed(0)}k`;
+  return `₹${value.toFixed(0)}`;
 }
 
 function renderFillsTable(fills) {
@@ -1237,64 +1270,29 @@ function initMonteCarlo() {
 function renderMonteCarloChart(data) {
   const canvas = document.getElementById("mcChart");
   if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)";
-  const textColor = cssToken("--color-text-secondary");
-
-  const labels = Array.from({ length: data.percentile_50th.length }, (_, i) => `Day ${i}`);
-
-  if (mcChartInstance) {
-    mcChartInstance.destroy();
-  }
-
-  mcChartInstance = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: "95th Percentile",
-          data: data.percentile_95th,
-          borderColor: cssToken("--color-success"),
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false,
-        },
-        {
-          label: "Median Path (50th)",
-          data: data.percentile_50th,
-          borderColor: cssToken("--color-accent"),
-          borderWidth: 2.5,
-          pointRadius: 0,
-          fill: false,
-        },
-        {
-          label: "5th Percentile (Tail-Risk)",
-          data: data.percentile_5th,
-          borderColor: cssToken("--color-danger"),
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          grid: { color: gridColor },
-          ticks: { color: textColor, maxTicksLimit: 8 },
-        },
-        y: {
-          grid: { color: gridColor },
-          ticks: {
-            color: textColor,
-            callback: (v) => `₹${(v / 1000).toFixed(0)}k`,
-          },
-        },
+  mcChartInstance = {
+    canvas,
+    labels: Array.from(
+      { length: data.percentile_50th.length },
+      (_, index) => `Day ${index}`,
+    ),
+    datasets: [
+      {
+        colorToken: "--color-success",
+        values: data.percentile_95th.map(Number),
+        width: 1.5,
       },
-    },
-  });
+      {
+        colorToken: "--color-accent",
+        values: data.percentile_50th.map(Number),
+        width: 2.5,
+      },
+      {
+        colorToken: "--color-danger",
+        values: data.percentile_5th.map(Number),
+        width: 1.5,
+      },
+    ],
+  };
+  drawLineChart(mcChartInstance);
 }
