@@ -179,11 +179,24 @@ Sharpened during triage by a peer session: for **any** two-point distribution
 therefore tested a strict inequality against an exact tie for a whole legitimate class of input,
 which makes a tolerance the correct implementation of the constraint rather than a workaround.
 
-It was also worse than first reported. Measured against the pre-repair condition over
-p = 0.01..0.99, **39 of 99 two-point series would have fired — 39.4% of that legitimate parameter
-space**, not a rare tie. An independent run by another agent gave 37 of 99 with a partly different
-p-list; the two agree on the proportion and disagree on which p values, which is itself evidence
-that the outcome was decided by float residue rather than by p.
+It was also worse than first reported, and the reason is now provable rather than suggestive.
+Measured against the pre-repair condition over p = 0.01..0.99, **39 of 99 two-point series would
+have fired — roughly 40% of that legitimate parameter space**, not a rare tie.
+
+Five independent measurements across different constructions gave 31, 34, 36, 37 and 39 firings out
+of 99, with firing sets overlapping only about half. The decisive one: skewness and kurtosis are
+location- and scale-invariant, so the same distribution written as `[0, 1]` or as `[-3.5, 11.25]`
+has mathematically identical moments — verified equal in **99 of 99** cases, yet **bit**-identical
+in only **8 of 99**. Those two constructions fired on 39 and 34 series respectively, overlapping on
+just 11. A transformation that provably cannot change the mathematics changed which inputs were
+rejected, which proves the rejection was decided by float residue in the arithmetic path rather than
+by anything about the distribution.
+
+**No list of firing p values is canonical, including the 39 measured here.** Cite the proportion and
+the mechanism, never a specific p — presenting one as *the* reproducer implies the input determines
+the outcome, which is what this disproves. It also explains an earlier error rather than dismissing
+it: a peer's original claim that p=0.10 fired was correct for `[-3.5, 11.25]` and wrong for
+`[0, 1]`. The confusion was itself an instance of the defect being reported.
 
 **Repaired at `ac47d7c`** by another agent, and independently verified by the filer, who did not
 write the repair: the guard now compares with a tolerance of `64 * sys.float_info.epsilon` and raises

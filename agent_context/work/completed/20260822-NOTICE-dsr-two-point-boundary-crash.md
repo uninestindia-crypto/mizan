@@ -52,15 +52,38 @@ Measured here directly against the pre-repair condition, two-point series over p
 - p=0.10 was **not** among them.
 - bf's independent run gave 37 of 99 with a partly different p-list.
 
-The disagreement in the exact list is the most useful part. Both runs test the same mathematical
-class, and both find roughly the same *proportion* firing, but they disagree on *which* p values —
-because the outcome is decided by float residue in a particular series construction, not by p. That
-is direct evidence for the framing this notice already argued: the guard was classifying an exact
-tie by rounding noise.
+The disagreement in the exact list is the most useful part, and a peer then made it provable rather
+than suggestive. Skewness and kurtosis are **location- and scale-invariant**, so the same two-point
+distribution expressed as values `[0, 1]` or as `[-3.5, 11.25]` has mathematically identical moments.
+A shift and a scale cannot change the mathematics. Measured here over p = 0.01..0.99:
+
+| Property | Result |
+|---|---|
+| Moments mathematically equal between the two constructions | **99 / 99** |
+| Moments **bit**-identical | **8 / 99** |
+| `[0, 1]` fires | 39 |
+| `[-3.5, 11.25]` fires | 34 |
+| Overlap of the two firing sets | **11** |
+
+Two expressions of the same distribution, provably the same moments, and the guard rejected a
+largely **different** set of them. That is not "different constructions carry different residue" —
+it is a transformation that cannot affect the mathematics changing which inputs get rejected. The
+rejection was decided by float residue in the arithmetic path and by nothing about the distribution.
+
+**Consequence for anyone citing this: no list of firing p values is canonical, including the 39
+above.** Phrasing that presents a specific p as *the* reproducer is wrong in a subtler way than the
+p=0.10 error was, because it implies the input determines the outcome, which is exactly what this
+disproves. Cite the proportion — roughly a third of the legitimate two-point space — and the
+mechanism, never a p.
+
+This also explains the original error mechanically rather than dismissing it. p=0.10 **does** fire
+under `[-3.5, 11.25]` and does **not** under `[0, 1]`. The peer's first figure was not careless; it
+was correct for a construction neither of us had pinned down. The confusion was itself an instance
+of the defect being reported.
 
 The finding was therefore **stronger** than either notice originally stated. This was never a rare
-boundary tie; it rejected roughly two fifths of a legitimate class. Only the specific p value was
-wrong.
+boundary tie: it rejected roughly a third to two fifths of a legitimate class, and which members it
+rejected was not a property of the data.
 
 The original notice follows unchanged, as the record of what was found and why.
 
