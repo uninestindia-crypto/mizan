@@ -1,3 +1,4 @@
+# craft-allow: god-file — one governed boundary for bundle identity, bar integrity, and scoring.
 """Drive execution decisions from a governed, promoted model.
 
 Before this module the system that executed was not the system that was validated. Nothing outside
@@ -415,6 +416,12 @@ def _require_bar_sequence(symbol: str, served: object) -> tuple[PointInTimeBar, 
     if any(not isinstance(bar, PointInTimeBar) for bar in bars):
         raise GovernedExecutionError(
             f"bar history for {symbol!r} contains an entry that is not a PointInTimeBar"
+        )
+    mismatched_symbol = next((bar.symbol for bar in bars if bar.symbol != symbol), None)
+    if mismatched_symbol is not None:
+        raise GovernedExecutionError(
+            f"bar history bound to {symbol!r} contains a bar for {mismatched_symbol!r}. The map key "
+            "cannot substitute for the instrument identity carried by each point-in-time record"
         )
     dates = [bar.exchange_date for bar in bars]
     if len(set(dates)) != len(dates):

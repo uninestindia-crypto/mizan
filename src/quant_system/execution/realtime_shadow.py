@@ -26,7 +26,7 @@ from quant_system.data.live_feed import (
 from quant_system.data.market_data_evidence import canonical_sha256, decimal_text, utc_text
 from quant_system.data.upstox_failures import require_aware_utc
 from quant_system.execution.bar_history import BarHistoryProvider
-from quant_system.execution.governed_strategy import GOVERNED_BARS_KEY
+from quant_system.execution.governed_strategy import GOVERNED_BARS_KEY, GovernedExecutionError
 from quant_system.execution.maturity import MaturityPolicy, MaturityPolicyError
 from quant_system.risk.governor import PreTradeRiskGovernor
 from quant_system.strategies.base import BaseStrategy, MarketContext
@@ -64,6 +64,7 @@ class ShadowHaltReason(StrEnum):
     # A maturity horizon could not be resolved for an open entry. Halting keeps the audit;
     # letting the error escape lost the whole session report along with it.
     MATURITY_UNRESOLVABLE = "MATURITY_UNRESOLVABLE"
+    GOVERNED_INPUT_INVALID = "GOVERNED_INPUT_INVALID"
 
 
 class ShadowDecisionStatus(StrEnum):
@@ -601,13 +602,20 @@ class RealtimeShadowRunner:
         self, current_quote: Quote, now: datetime
     ) -> None:
         """Mature open shadow entries against latest quote."""
-        to_remove = []
-        for prop_id, (prop, entry_price, entry_time) in self._open_entries.items():
+        eligibility_by_proposal: dict[str, bool] = {}
+        for prop_id, (prop, _entry_price, entry_time) in self._open_entries.items():
+            if prop.symbol != current_quote.symbol:
+                eligibility_by_proposal[prop_id] = False
+                continue
             try:
-                eligible = prop.symbol == current_quote.symbol and self._may_mature(entry_time, now)
+                eligibility_by_proposal[prop_id] = self._may_mature(entry_time, now)
             except MaturityPolicyError as error:
                 self._halt_unresolvable_maturity(error)
                 return
+
+        to_remove = []
+        for prop_id, (prop, entry_price, entry_time) in self._open_entries.items():
+            eligible = eligibility_by_proposal[prop_id]
             if eligible:
                 exit_price = current_quote.bid if prop.side == Side.BUY else current_quote.ask
                 if prop.side == Side.BUY:
@@ -724,7 +732,15 @@ class RealtimeShadowRunner:
                 self._halt(ShadowHaltReason.FEED_ERROR, str(err), ShadowSessionState.SHADOW_HALTED)
                 break
 
-            self.process_live_quote(live_quote)
+            try:
+                self.process_live_quote(live_quote)
+            except GovernedExecutionError as err:
+                self._halt(
+                    ShadowHaltReason.GOVERNED_INPUT_INVALID,
+                    str(err),
+                    ShadowSessionState.SHADOW_HALTED,
+                )
+                break
             if self.state in {
                 ShadowSessionState.SHADOW_HALTED,
                 ShadowSessionState.OFFLINE,
