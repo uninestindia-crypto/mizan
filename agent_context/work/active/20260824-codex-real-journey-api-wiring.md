@@ -1,6 +1,6 @@
 # Active work: real governed journey API wiring
 
-STATUS: HANDED_OFF_PENDING_INDEPENDENT_RECHECK
+STATUS: ACTIVE_NEW_REVISION_RECHECK_PENDING
 OWNER: Codex — server/API implementation owner by founder direction
 TOOL: Codex
 STARTED_UTC: 2026-08-24T10:30:00Z
@@ -36,6 +36,7 @@ onto, edited, or staged any modeling/execution path or concurrent record.
 - `src/quant_system/server/ui/journeys.py`
 - `docs/ui-profile.md` (new)
 - `tests/test_server_governed_journeys.py` (new)
+- `tests/test_server_governed_completion.py` (new completion-audit regressions)
 - `tests/test_server_api.py` only if required; unchanged at handoff
 - `tests/test_server_supervisor.py` only if required; unchanged at handoff
 - `tests/test_ui_journeys.py`
@@ -61,6 +62,8 @@ onto, edited, or staged any modeling/execution path or concurrent record.
 4. DONE — replace prefilled dashboard financial/model/runtime claims with truthful states.
 5. DONE — harden identity, cancellation, validation serialization, responsive UI, and output escaping.
 6. DONE — push the exact owned commits and hand off independent recheck.
+7. DONE — close completion-audit gaps in the same owned server/API paths and commit the repairs.
+8. IN PROGRESS — push the new exact revision and obtain a fresh independent clean-state verdict.
 
 ## Decision rationale
 
@@ -106,6 +109,20 @@ are disabled. This preserves the seam with the concurrent feature/model owner.
 - Handoff commit: `3a5938161f05d543cf44a7546887c6ff5d3d1628`.
 - Remote branch `origin/codex/real-journey-api`: pushed and verified.
 - Final post-push agent-claim and disk-layout audits: PASS.
+- Completion-audit failing-first evidence: seven focused regressions failed for the intended
+  boundary defects before repair, then passed after repair.
+- Completion revision focused server/UI suite: 115 passed; one third-party Starlette/httpx
+  deprecation warning.
+- Completion revision full suite normal order: 891 passed in 53.27s; same warning.
+- Completion revision full suite reverse test-file order: 891 passed in 55.57s; same warning.
+- Completion revision Ruff, mypy over 124 source files, changed-file format check, Node syntax,
+  OpenAPI generation (43 paths), Git whitespace, changed-path security scan, and changed-path
+  secret scan: PASS.
+- Completion revision browser inspection at 1280x720 and 390x844 in light/dark: no page overflow,
+  no console errors, and feature/training/holdout/shadow/paper actions remained disabled with
+  truthful unavailable-state explanations.
+- Completion revision repository agent-claim and disk-layout audits: PASS.
+- Completion implementation commit: `1e953f53d7d5e2ce920452845c6ea69c47decd75`.
 
 ## Files changed
 
@@ -121,6 +138,7 @@ are disabled. This preserves the seam with the concurrent feature/model owner.
 - `src/quant_system/server/ui/constants.py`
 - `src/quant_system/server/ui/journeys.py`
 - `tests/test_server_governed_journeys.py`
+- `tests/test_server_governed_completion.py`
 - `tests/test_ui_journeys.py`
 - this record
 
@@ -133,16 +151,22 @@ are disabled. This preserves the seam with the concurrent feature/model owner.
   after halt-on-first-finding before integration or training.
 - This branch must be integrated only after that record's binding next action is satisfied.
 - Independent recheck cannot be performed by this implementation agent.
+- A distinct clean-state verifier is active against exact server revision `e329e84`; it owns only a
+  unique record/report/clone and may not edit product code.
+- The completion audit's server-only gaps are repaired in `1e953f5`: placeholder training is
+  refused, dataset cursors bind a verified total sort key, HTTP validation enforces the provider
+  range, provider failures are sanitized, evidence staging observes cancellation, operator-only
+  runtime configuration is excluded from idempotency intent, and catalog reads validate domain
+  identity and `PointInTimeBar` record bindings.
 
 ## Stop point
 
-Implementation, verification, repository audits, exact commits, remote push, and the independent
-recheck handoff are complete. The claim remains active while this registered worktree awaits the
-independent reviewer; retiring it earlier would leave a live workspace unclaimed.
+The completion-audit repairs are committed at `1e953f5` with all local verification green. The
+remaining server-branch gate is a fresh independent clean-state verdict on the new pushed head.
 
 ## Next safe action
 
-An independent reviewer may now check `origin/codex/real-journey-api` using the handoff record.
-Separately, wait for the active final-2 independent recheck of model revision `88a7ac9`. Only after
-both certifications may this disjoint server branch be integrated and the full suite rerun before
-a new schema-v2 model training campaign.
+Push the completion implementation and documentation commits, then run a new clean-state verifier
+against that exact remote head. If it passes, record the immutable verdict and hand off integration;
+if it finds a reproducible server-only defect, repair only the claimed server/API paths. Separately,
+do not touch the active final-2 model recheck at `88a7ac9`.
