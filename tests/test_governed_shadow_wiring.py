@@ -60,6 +60,7 @@ def _bundle(score_threshold: str) -> PromotedModelBundleV1:
             model_id=card.model_id,
             candidate_id=CANDIDATE,
             trial_id="trial_test_001",
+            symbol=SYMBOL,
             fitted_state_hash=fitted.fitted_state_hash,
             preprocessing_state_hash=preprocessing.state_hash,
             score_threshold=score_threshold,

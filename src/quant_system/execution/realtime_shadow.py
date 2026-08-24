@@ -1,3 +1,4 @@
+# craft-allow: god-file — one fail-closed shadow-session state machine and its audit contracts.
 """Read-only Real-Time Shadow execution runner with strict freshness budget and risk gating."""
 
 from __future__ import annotations
@@ -26,7 +27,7 @@ from quant_system.data.market_data_evidence import canonical_sha256, decimal_tex
 from quant_system.data.upstox_failures import require_aware_utc
 from quant_system.execution.bar_history import BarHistoryProvider
 from quant_system.execution.governed_strategy import GOVERNED_BARS_KEY
-from quant_system.execution.maturity import MaturityPolicy
+from quant_system.execution.maturity import MaturityPolicy, MaturityPolicyError
 from quant_system.risk.governor import PreTradeRiskGovernor
 from quant_system.strategies.base import BaseStrategy, MarketContext
 
@@ -60,6 +61,9 @@ class ShadowHaltReason(StrEnum):
     # (Slice 9) surfaces describe the same defect with the same word in the audit.
     DUPLICATE_TICK = "DUPLICATE_TICK"
     OUT_OF_ORDER_TIMESTAMP = "OUT_OF_ORDER_TIMESTAMP"
+    # A maturity horizon could not be resolved for an open entry. Halting keeps the audit;
+    # letting the error escape lost the whole session report along with it.
+    MATURITY_UNRESOLVABLE = "MATURITY_UNRESOLVABLE"
 
 
 class ShadowDecisionStatus(StrEnum):
@@ -188,11 +192,17 @@ class ShadowAuditReport:
     matured_outcomes: tuple[ShadowMaturedOutcome, ...]
     audit_hash: str
     execution_mode: str = "SHADOW_READ_ONLY"
+    # Open exposure, added after a Red Team probe found a held position invisible in the audit:
+    # matured_outcomes read 0 and no field reported the position still on the book. Defaulted
+    # so existing constructions stay valid — this is an additive change to a public contract.
+    open_entries: int = 0
+    open_symbols: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.broker_orders_submitted != 0:
             raise ValueError(
-                f"ZERO ORDER ENDPOINT EXPOSURE INVARIANT VIOLATED: {self.broker_orders_submitted} broker orders submitted!"
+                "ZERO ORDER ENDPOINT EXPOSURE INVARIANT VIOLATED: "
+                f"{self.broker_orders_submitted} broker orders submitted!"
             )
         if self.execution_mode != "SHADOW_READ_ONLY":
             raise ValueError(
@@ -305,7 +315,10 @@ class RealtimeShadowRunner:
         self.halt_details = details
         self._ended_at = require_aware_utc(self._clock())
 
-    def process_live_quote(self, live_quote: LiveQuoteRecord) -> ShadowProposal | None:
+    # craft-allow: long-function — validation order is the fail-closed quote state machine.
+    def process_live_quote(  # craft-allow: deep-nesting — guards and risk branches are ordered.
+        self, live_quote: LiveQuoteRecord
+    ) -> ShadowProposal | None:
         """Process one real-time quote: freshness check, risk gating, and shadow attribution."""
         now = require_aware_utc(self._clock())
         if self._started_at is None:
@@ -327,7 +340,8 @@ class RealtimeShadowRunner:
         if latency > self.config.freshness_budget_seconds:
             self._halt(
                 ShadowHaltReason.STALE_QUOTE,
-                f"Quote latency {latency:.3f}s exceeds freshness budget {self.config.freshness_budget_seconds:.1f}s for {live_quote.symbol}",
+                f"Quote latency {latency:.3f}s exceeds freshness budget "
+                f"{self.config.freshness_budget_seconds:.1f}s for {live_quote.symbol}",
             )
             return None
 
@@ -336,7 +350,8 @@ class RealtimeShadowRunner:
         if drift > self.config.max_clock_drift_seconds:
             self._halt(
                 ShadowHaltReason.CLOCK_DRIFT,
-                f"Quote timestamp is {drift:.3f}s in the future, exceeding clock drift allowance of {self.config.max_clock_drift_seconds:.1f}s",
+                f"Quote timestamp is {drift:.3f}s in the future, exceeding clock drift allowance "
+                f"of {self.config.max_clock_drift_seconds:.1f}s",
             )
             return None
 
@@ -567,11 +582,33 @@ class RealtimeShadowRunner:
             return True
         return now >= policy.matures_at(entry_time)
 
-    def _check_matured_outcomes(self, current_quote: Quote, now: datetime) -> None:
+    def _halt_unresolvable_maturity(self, error: MaturityPolicyError) -> None:
+        """Halt on a maturity that cannot be resolved, preserving the audit.
+
+        The policy raises so a direct caller fails closed. Inside a session that raise escaped
+        ``run_session`` entirely: state stayed RUNNING, no halt reason was set, decisions already
+        taken were never written, and ``build_audit_report`` was never reached. Catching to report
+        and halt is correct; catching to continue would not be.
+
+        The detail deliberately carries no outcome figures. A handler that exists to report a
+        failure must not emit a partial result, because the tempting later edit is to recover
+        something computable under cover of the same handler.
+        """
+        self._halt(ShadowHaltReason.MATURITY_UNRESOLVABLE, str(error))
+
+    # craft-allow: long-function — maturity settlement is one atomic Decimal accounting change.
+    def _check_matured_outcomes(  # craft-allow: deep-nesting — loop, eligibility, and typed halt.
+        self, current_quote: Quote, now: datetime
+    ) -> None:
         """Mature open shadow entries against latest quote."""
         to_remove = []
         for prop_id, (prop, entry_price, entry_time) in self._open_entries.items():
-            if prop.symbol == current_quote.symbol and self._may_mature(entry_time, now):
+            try:
+                eligible = prop.symbol == current_quote.symbol and self._may_mature(entry_time, now)
+            except MaturityPolicyError as error:
+                self._halt_unresolvable_maturity(error)
+                return
+            if eligible:
                 exit_price = current_quote.bid if prop.side == Side.BUY else current_quote.ask
                 if prop.side == Side.BUY:
                     gross_pnl = (exit_price - entry_price) * Decimal(prop.quantity)
@@ -629,7 +666,10 @@ class RealtimeShadowRunner:
         for prop_id in to_remove:
             self._open_entries.pop(prop_id, None)
 
-    def run_session(self, max_quotes: int | None = None) -> ShadowAuditReport:
+    # craft-allow: long-function — ordered feed failures map to distinct terminal session states.
+    def run_session(  # craft-allow: deep-nesting — the streaming loop contains typed feed guards.
+        self, max_quotes: int | None = None
+    ) -> ShadowAuditReport:
         """Run the real-time shadow session loop, streaming from live feed and enforcing budgets."""
         self._started_at = require_aware_utc(self._clock())
         self.state = ShadowSessionState.RUNNING
@@ -698,6 +738,7 @@ class RealtimeShadowRunner:
 
         return self.build_audit_report()
 
+    # craft-allow: long-function — hash payload and returned audit must remain visibly paired.
     def build_audit_report(self) -> ShadowAuditReport:
         """Construct canonical audit report with cryptographic digest."""
         now = require_aware_utc(self._clock())
@@ -727,6 +768,8 @@ class RealtimeShadowRunner:
             "avg_quote_latency_seconds": round(avg_lat, 4),
             "decisions": [d.canonical_dict() for d in self._decisions],
             "matured_outcomes": [m.canonical_dict() for m in self._matured_outcomes],
+            "open_entries": len(self._open_entries),
+            "open_symbols": sorted({p.symbol for p, _, _ in self._open_entries.values()}),
             "execution_mode": self.config.execution_mode,
         }
         audit_hash = canonical_sha256(manifest_data)
@@ -748,6 +791,8 @@ class RealtimeShadowRunner:
             avg_quote_latency_seconds=avg_lat,
             decisions=tuple(self._decisions),
             matured_outcomes=tuple(self._matured_outcomes),
+            open_entries=len(self._open_entries),
+            open_symbols=tuple(sorted({p.symbol for p, _, _ in self._open_entries.values()})),
             audit_hash=audit_hash,
             execution_mode=self.config.execution_mode,
         )

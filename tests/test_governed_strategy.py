@@ -99,6 +99,7 @@ def _bundle(
             model_id=card.model_id,
             candidate_id=candidate_id,
             trial_id="trial_test_001",
+            symbol=SYMBOL,
             fitted_state_hash=fitted.fitted_state_hash,
             preprocessing_state_hash=preprocessing.state_hash,
             score_threshold=score_threshold,
@@ -122,6 +123,7 @@ def _context(bars: tuple[object, ...], decision_time: datetime) -> MarketContext
 # ---------------------------------------------------------------------------------------------
 
 
+# test-allow: loop-in-test — the governed feature builder guarantees a non-empty closed dataset.
 def test_adapter_features_are_identical_to_training_features() -> None:
     """Execution features must equal training features bar for bar, not merely approximate them.
 
@@ -281,6 +283,7 @@ def test_bundle_refuses_a_card_describing_a_different_candidate(journey: object)
                 model_id=other.model_id,
                 candidate_id="cand_something_else",
                 trial_id="trial_test_001",
+                symbol=SYMBOL,
                 fitted_state_hash=fitted.fitted_state_hash,
                 preprocessing_state_hash=preprocessing.state_hash,
                 score_threshold="0",
@@ -305,6 +308,7 @@ def test_bundle_refuses_a_standardization_that_did_not_produce_the_fit(journey: 
                 model_id=card.model_id,
                 candidate_id=CANDIDATE,
                 trial_id="trial_test_001",
+                symbol=SYMBOL,
                 fitted_state_hash=fitted.fitted_state_hash,
                 preprocessing_state_hash=other.state_hash,
                 score_threshold="0",

@@ -146,11 +146,19 @@ def test_default_holding_matches_the_validated_label_horizon() -> None:
 
 
 def test_entry_session_is_resolved_by_instant_not_by_calendar_date() -> None:
-    """An entry after a session's close still belongs to that session, not the next one."""
+    """An entry after a session's close belongs to the NEXT session, not the one that ended.
+
+    CORRECTED after Red Team Major 7. This case previously asserted that a post-close entry belonged
+    to the session that had already closed. That rule is what produced the pre-open defect as its
+    mirror image: resolving an entry to a session which was not open at that instant let a 09:05
+    fill mature at 09:15 the same morning and count as a full session held. The rule is now the
+    first session whose close is at or after the entry, so a post-close fill starts its holding on
+    the following session. See tests/test_governed_execution_majors.py for the pre-open case.
+    """
     policy = SessionHorizonMaturity(CALENDAR)
     after_close = CALENDAR.sessions[0].close_at + timedelta(hours=1)
 
-    assert policy.matures_at(after_close) == CALENDAR.sessions[1].open_at
+    assert policy.matures_at(after_close) == CALENDAR.sessions[2].open_at
 
 
 def test_immediate_policy_names_the_no_horizon_choice() -> None:
@@ -159,12 +167,26 @@ def test_immediate_policy_names_the_no_horizon_choice() -> None:
     assert ImmediateMaturity().matures_at(entry_at) == entry_at
 
 
-def test_entry_before_any_session_opened_fails_closed() -> None:
+def test_entry_before_the_calendar_starts_fails_closed() -> None:
+    """An uncovered entry and a pre-open fill must not collapse into the same case.
+
+    Both are "before a session opens". Only one is legitimate: a pre-open fill belongs to the
+    session about to open, while an entry predating the calendar means the calendar does not cover
+    the run. Resolving the second to the first session would silently invent coverage.
+    """
     policy = SessionHorizonMaturity(CALENDAR)
     before_everything = CALENDAR.sessions[0].open_at - timedelta(days=1)
 
-    with pytest.raises(MaturityPolicyError, match="no exchange session had opened"):
+    with pytest.raises(MaturityPolicyError, match="predates the calendar"):
         policy.matures_at(before_everything)
+
+
+def test_a_pre_open_entry_on_a_covered_date_is_not_treated_as_uncovered() -> None:
+    """The other side of the same boundary: same date, before the open, still legitimate."""
+    policy = SessionHorizonMaturity(CALENDAR)
+    pre_open = CALENDAR.sessions[0].open_at - timedelta(minutes=10)
+
+    assert policy.matures_at(pre_open) == CALENDAR.sessions[1].open_at
 
 
 def test_horizon_beyond_the_calendar_fails_closed_rather_than_maturing_early() -> None:

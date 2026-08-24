@@ -68,11 +68,11 @@ class SessionHorizonMaturity:
     put execution and validation back out of step, so the relationship is stated here rather than
     left to be rediscovered.
 
-    The entry session is resolved by instant, not by calendar date: it is the latest session whose
-    ``open_at`` is at or before ``entry_time``. Comparing aware datetimes avoids converting a UTC
-    entry time into an exchange-local date, which is where timezone defects live. The runner works
-    in UTC and the calendar in IST; for NSE hours those dates coincide, but relying on that
-    coincidence would be a latent bug rather than a design.
+    The entry session is resolved by instant, not by calendar date: it is the first session whose
+    ``close_at`` is at or after ``entry_time`` — the session the position is actually held through.
+    A pre-open fill therefore belongs to the session about to open, and a post-close fill to the
+    next one, rather than to a session that had already ended. Comparing aware datetimes avoids
+    converting a UTC entry time into an exchange-local date, which is where timezone defects live.
     """
 
     def __init__(self, calendar: SessionCalendarV1, holding_sessions: int = 1) -> None:
@@ -89,16 +89,34 @@ class SessionHorizonMaturity:
         if entry_time.tzinfo is None or entry_time.utcoffset() is None:
             raise MaturityPolicyError("entry_time must be timezone-aware")
         sessions = self._calendar.sessions
-        entry_ordinal = None
-        for ordinal, session in enumerate(sessions):
-            if session.open_at <= entry_time:
-                entry_ordinal = ordinal
-            else:
-                break
+        # The entry session is the first session still open at, or opening after, the entry
+        # instant — the session the position is actually held through.
+        #
+        # An earlier version used the last session whose open_at had already passed. That resolved
+        # an entry to a session which, for a pre-open or post-close fill, was not open at that
+        # instant. The consequence was measured: a 09:05 pre-open entry resolved to the previous
+        # day, so the one-session horizon landed on 09:15 the same morning and the position was
+        # held for ten minutes and counted as a full session.
+        # A pre-open fill belongs to the session about to open, but an entry that predates the
+        # calendar entirely is not a pre-open fill — it is a calendar that does not cover the run,
+        # and the two must not collapse into one another. Coverage starts at the beginning of the
+        # first session's own exchange date, derived from that session's timestamp so no UTC time
+        # is converted into an exchange-local date here.
+        coverage_start = sessions[0].open_at.replace(hour=0, minute=0, second=0, microsecond=0)
+        if entry_time < coverage_start:
+            raise MaturityPolicyError(
+                f"entry at {entry_time.isoformat()} predates the calendar's first session date "
+                f"({sessions[0].exchange_date.isoformat()}); the calendar does not cover this "
+                "entry, so its maturity cannot be resolved"
+            )
+        entry_ordinal = next(
+            (ordinal for ordinal, session in enumerate(sessions) if session.close_at >= entry_time),
+            None,
+        )
         if entry_ordinal is None:
             raise MaturityPolicyError(
-                f"no exchange session had opened at {entry_time.isoformat()}; the calendar does "
-                "not cover this entry, so its maturity cannot be resolved"
+                f"the calendar ends before {entry_time.isoformat()}; no session covers this entry, "
+                "so its maturity cannot be resolved"
             )
         exit_ordinal = entry_ordinal + self._holding_sessions
         if exit_ordinal >= len(sessions):

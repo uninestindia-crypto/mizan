@@ -129,6 +129,7 @@ class ModelEvidenceIdentityV1:
     model_id: str
     candidate_id: str
     trial_id: str
+    symbol: str
     fitted_state_hash: str
     preprocessing_state_hash: str
     score_threshold: str
@@ -139,18 +140,21 @@ class ModelEvidenceIdentityV1:
         metadata: Mapping[str, Any],
         *,
         score_threshold: str,
+        symbol: str,
     ) -> ModelEvidenceIdentityV1:
         """Derive an identity from one published model manifest's metadata.
 
-        ``score_threshold`` is passed separately because it lives on the trial start record rather
-        than the model manifest; the caller must read it from the trial named by ``trial_id`` and
-        nowhere else.
+        ``score_threshold`` and ``symbol`` are passed separately because neither sits on the model
+        manifest: the threshold lives on the trial start record, and the instrument lives on the
+        published decision records. The caller must read both from the evidence for this same
+        ``trial_id`` and nowhere else.
         """
         try:
             return cls(
                 model_id=metadata["model_id"],
                 candidate_id=metadata["candidate_id"],
                 trial_id=metadata["trial_id"],
+                symbol=symbol,
                 fitted_state_hash=metadata["fitted_state"]["fitted_state_hash"],
                 preprocessing_state_hash=metadata["preprocessing"]["state_hash"],
                 score_threshold=score_threshold,
@@ -312,14 +316,21 @@ class GovernedModelStrategy(BaseStrategy):
         self._scale = scale
 
     def generate_signals(self, ctx: MarketContext) -> list[Signal]:
-        """Score every symbol with sufficient available history and emit BUY signals or nothing."""
+        """Score the model's bound instrument when sufficient history is available."""
         history = _require_bar_history(ctx)
-        signals: list[Signal] = []
-        for symbol in sorted(history):
-            signal = self._signal_for(symbol, tuple(history[symbol]), ctx.current_time)
-            if signal is not None:
-                signals.append(signal)
-        return signals
+        symbol = self.bundle.evidence.symbol
+        unexpected = [served for served in history if served != symbol]
+        if unexpected:
+            raise GovernedExecutionError(
+                f"this model was fitted on {symbol!r} and cannot score {unexpected[0]!r}. The "
+                "governed dataset contract is single-instrument, so a model has no meaning "
+                "applied to another instrument's price series"
+            )
+        if symbol not in history:
+            return []
+        bars = _require_bar_sequence(symbol, history[symbol])
+        signal = self._signal_for(symbol, bars, ctx.current_time)
+        return [] if signal is None else [signal]
 
     def _signal_for(
         self,
@@ -365,6 +376,34 @@ class GovernedModelStrategy(BaseStrategy):
             excess = score - self._threshold
             ratio = excess / self._scale
         return float(min(Decimal(1), max(Decimal(0), ratio)))
+
+
+def _require_bar_sequence(symbol: str, served: object) -> tuple[PointInTimeBar, ...]:
+    """Coerce one symbol's served history to bars, or fail with a code a caller can match.
+
+    Previously a malformed value reached the feature kernel and surfaced as ``TypeError`` or
+    ``AttributeError`` — indistinguishable from a genuine bug in the model code. An empty sequence
+    stays legal: served-nothing is a real outcome, malformed is not, and the two must not collapse
+    into one another.
+    """
+    if isinstance(served, str) or not isinstance(served, Sequence):
+        raise GovernedExecutionError(
+            f"bar history for {symbol!r} must be a sequence of PointInTimeBar, got "
+            f"{type(served).__name__}"
+        )
+    bars = tuple(served)
+    if any(not isinstance(bar, PointInTimeBar) for bar in bars):
+        raise GovernedExecutionError(
+            f"bar history for {symbol!r} contains an entry that is not a PointInTimeBar"
+        )
+    dates = [bar.exchange_date for bar in bars]
+    if len(set(dates)) != len(dates):
+        raise GovernedExecutionError(
+            f"bar history for {symbol!r} contains duplicate exchange dates. The training builder "
+            "rejects the same input as RECORD_ORDER_INVALID, and overlapping bars silently change "
+            "feature values rather than failing"
+        )
+    return bars
 
 
 def _require_bar_history(ctx: MarketContext) -> Mapping[str, Sequence[PointInTimeBar]]:

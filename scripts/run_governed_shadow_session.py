@@ -27,12 +27,18 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
-import json
 import sys
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Final
 
+from quant_system.evidence import (
+    EvidenceNotFound,
+    EvidenceResourceType,
+    EvidenceStore,
+    EvidenceStoreConfig,
+)
 from quant_system.execution.governed_strategy import (
     ExecutionSurface,
     GovernedExecutionError,
@@ -53,36 +59,61 @@ def _log(label: str, message: str) -> None:
     print(f"{label:<34}: {message}", flush=True)
 
 
-def _load_models(root: Path) -> list[dict[str, Any]]:
-    models = []
-    for manifest_path in sorted((root / "models").glob("*/manifest.json")):
-        metadata = json.loads(manifest_path.read_text(encoding="utf-8"))["metadata"]
-        models.append(metadata)
-    return models
+def _load_models(store: EvidenceStore) -> list[dict[str, Any]]:
+    """Load model metadata only through integrity-verified evidence reads."""
+    return [
+        dict(evidence.manifest.metadata)
+        for evidence in store.list_verified(EvidenceResourceType.MODEL)
+    ]
 
 
-def _score_threshold_for(root: Path, trial_id: str) -> str | None:
-    """Read the threshold the trial was actually validated at, from its start record."""
-    import gzip
-
-    manifest_path = root / "trials" / trial_id / "manifest.json"
-    if not manifest_path.is_file():
+def _threshold_from_record(record: Mapping[str, Any]) -> str | None:
+    parameters = record.get("parameters")
+    if not isinstance(parameters, dict):
         return None
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    for blob in manifest.get("blobs", []):
-        blob_path = root / blob["relative_path"]
-        if not blob_path.is_file():
-            continue
-        with gzip.open(blob_path, "rt", encoding="utf-8") as handle:
-            for line in handle:
-                record = json.loads(line)
-                # The start record nests the fitted hyper-parameters under "parameters"; the
-                # threshold is one of them, alongside l2_penalty and numpy_seed.
-                parameters = record.get("parameters")
-                if isinstance(parameters, dict) and "score_threshold" in parameters:
-                    threshold: str = parameters["score_threshold"]
-                    return threshold
+    threshold = parameters.get("score_threshold")
+    return threshold if isinstance(threshold, str) else None
+
+
+def _score_threshold_for(store: EvidenceStore, trial_id: str) -> str | None:
+    """Read the threshold the trial was actually validated at, from its start record."""
+    try:
+        evidence = store.open_verified(EvidenceResourceType.TRIAL, trial_id)
+    except EvidenceNotFound:
+        return None
+    for record in evidence.records:
+        # The start record nests the fitted hyper-parameters under "parameters"; the threshold is
+        # one of them, alongside l2_penalty and numpy_seed.
+        threshold = _threshold_from_record(record)
+        if threshold is not None:
+            return threshold
     return None
+
+
+def _published_symbol(record: Mapping[str, Any], model_id: str) -> str:
+    symbol = record.get("symbol")
+    if not isinstance(symbol, str) or not symbol:
+        raise GovernedExecutionError(
+            f"model {model_id!r} has a published decision without a valid symbol"
+        )
+    return symbol
+
+
+def _model_symbol_for(store: EvidenceStore, model_id: str) -> str:
+    """Return the one instrument present in a model's verified published decisions.
+
+    The governed v1 dataset is single-instrument. Accepting a caller-supplied symbol here would
+    recreate Major 4 at the evidence boundary: the loader could truthfully reconstruct one model's
+    coefficients while falsely declaring that they belonged to another instrument.
+    """
+    evidence = store.open_verified(EvidenceResourceType.MODEL, model_id)
+    symbols = {_published_symbol(record, model_id) for record in evidence.records}
+    if len(symbols) != 1:
+        raise GovernedExecutionError(
+            f"model {model_id!r} must contain exactly one published instrument, found "
+            f"{sorted(symbols)!r}"
+        )
+    return next(iter(symbols))
 
 
 def _fitted_from(metadata: dict[str, Any]) -> RidgeFittedStateV1:
@@ -144,12 +175,14 @@ def _report_refusal(metadata: dict[str, Any], error: GovernedExecutionError) -> 
     )
 
 
+# craft-allow: long-function — the fail-closed CLI transcript is deliberately linear and ordered.
 def _run(args: argparse.Namespace) -> int:
     root: Path = args.evidence_root
     if not (root / "models").is_dir():
         _log("evidence", f"no models directory under {root}")
         return EXIT_NO_EVIDENCE
-    models = _load_models(root)
+    store = EvidenceStore(EvidenceStoreConfig(root=root))
+    models = _load_models(store)
     if not models:
         _log("evidence", f"no published models under {root}")
         return EXIT_NO_EVIDENCE
@@ -171,11 +204,18 @@ def _run(args: argparse.Namespace) -> int:
     _log("verdict in evidence", str(metadata["verdict"]))
     _log("published DSR", str(metadata["deflated_sharpe_ratio"]))
 
-    threshold = _score_threshold_for(root, metadata["trial_id"])
+    threshold = _score_threshold_for(store, metadata["trial_id"])
     if threshold is None:
         _log("trial start", "score_threshold not found; cannot bind the validated decision rule")
         return EXIT_NO_EVIDENCE
     _log("score_threshold", f"{threshold} (from the trial start, not a default)")
+
+    try:
+        symbol = _model_symbol_for(store, metadata["model_id"])
+    except GovernedExecutionError as error:
+        _log("model symbol", str(error))
+        return EXIT_NO_EVIDENCE
+    _log("model symbol", f"{symbol} (from verified published decisions)")
 
     fitted = _fitted_from(metadata)
     standardization = _standardization_from(metadata)
@@ -190,7 +230,7 @@ def _run(args: argparse.Namespace) -> int:
         # Identity comes from the same manifest the artefacts came from, so a card cannot be
         # paired with another model's coefficients — the Red Team break this closes.
         identity = ModelEvidenceIdentityV1.from_manifest_metadata(
-            metadata, score_threshold=threshold
+            metadata, score_threshold=threshold, symbol=symbol
         )
         bundle = PromotedModelBundleV1(
             candidate_id=metadata["candidate_id"],

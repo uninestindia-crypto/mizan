@@ -11,9 +11,16 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
+from quant_system.evidence import (
+    EvidenceDraft,
+    EvidenceResourceType,
+    EvidenceStore,
+    EvidenceStoreConfig,
+)
 from quant_system.execution.governed_strategy import (
     GOVERNED_BARS_KEY,
     ExecutionSurface,
@@ -31,11 +38,46 @@ from quant_system.modeling import (
 from quant_system.modeling.features import FEATURE_WARMUP_BARS_V1
 from quant_system.modeling.ridge import predict_ridge_scores
 from quant_system.strategies.base import MarketContext
+from scripts.run_governed_shadow_session import _model_symbol_for
 from tests.modeling_fixtures import SYMBOL, governed_acquisition, governed_calendar
 from tests.modeling_training_fixtures import governed_training_journey
 from tests.test_governed_strategy import _fitted_pair
 
 CANDIDATE = "cand_ridge_v1"
+
+
+def _model_store(root: Path, symbols: tuple[str, ...]) -> EvidenceStore:
+    store = EvidenceStore(EvidenceStoreConfig(root=root, min_free_bytes=0))
+    records = tuple(
+        sorted(
+            (
+                {
+                    "strategy_id": "RIDGE",
+                    "decision_at": f"2025-01-{ordinal + 2:02d}T10:00:00Z",
+                    "symbol": symbol,
+                }
+                for ordinal, symbol in enumerate(symbols)
+            ),
+            key=lambda record: (
+                record["strategy_id"],
+                record["decision_at"],
+                record["symbol"],
+            ),
+        )
+    )
+    store.commit(
+        EvidenceDraft(
+            resource_type=EvidenceResourceType.MODEL,
+            resource_id="model_symbol_test",
+            schema_id="quantos.fold_strategy_decision",
+            schema_version=1,
+            metadata={},
+            records=records,
+            total_order=("strategy_id", "decision_at", "symbol"),
+        ),
+        operation_id="publish-model-symbol-test",
+    )
+    return store
 
 
 def _card(model_id: str, candidate_id: str = CANDIDATE) -> ModelCardV1:
@@ -55,6 +97,7 @@ def _identity(model_id: str, fitted: object, standardization: object, threshold:
         model_id=model_id,
         candidate_id=CANDIDATE,
         trial_id="trial_uni_018",
+        symbol=SYMBOL,
         fitted_state_hash=fitted.fitted_state_hash,  # type: ignore[attr-defined]
         preprocessing_state_hash=standardization.state_hash,  # type: ignore[attr-defined]
         score_threshold=threshold,
@@ -93,6 +136,7 @@ def test_bundle_refuses_fitted_state_that_the_evidence_does_not_describe() -> No
         model_id="model_A",
         candidate_id=CANDIDATE,
         trial_id="trial_uni_018",
+        symbol=SYMBOL,
         fitted_state_hash="f" * 64,  # a different model's fitted state
         preprocessing_state_hash=standardization.state_hash,
         score_threshold="0",
@@ -156,10 +200,27 @@ def test_identity_is_derived_from_one_manifest_so_a_pairing_cannot_be_mixed() ->
         "preprocessing": {"state_hash": standardization.state_hash},
     }
 
-    identity = ModelEvidenceIdentityV1.from_manifest_metadata(metadata, score_threshold="0")
+    identity = ModelEvidenceIdentityV1.from_manifest_metadata(
+        metadata, score_threshold="0", symbol=SYMBOL
+    )
 
     assert identity.model_id == "model_A"
     assert identity.fitted_state_hash == fitted.fitted_state_hash
+
+
+def test_real_evidence_loader_derives_the_bound_symbol_from_published_decisions(
+    tmp_path: Path,
+) -> None:
+    store = _model_store(tmp_path / "evidence", (SYMBOL, SYMBOL))
+
+    assert _model_symbol_for(store, "model_symbol_test") == SYMBOL
+
+
+def test_real_evidence_loader_refuses_a_multi_instrument_model(tmp_path: Path) -> None:
+    store = _model_store(tmp_path / "evidence", (SYMBOL, "RELIANCE"))
+
+    with pytest.raises(GovernedExecutionError, match="exactly one published instrument"):
+        _model_symbol_for(store, "model_symbol_test")
 
 
 # -------------------------------------------------------------------------------------------

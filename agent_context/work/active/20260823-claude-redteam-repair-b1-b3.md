@@ -1,10 +1,10 @@
-# Repair: Red Team Blockers 1 and 3 (governed execution path)
+# Repair: Red Team Blockers 1 and 3, then Majors 4-9 (governed execution path)
 
-STATUS: REPAIRED — awaiting independent recheck  
-OWNER: Claude Code — author of the defective code, acting as repair agent  
-TOOL: Claude Code  
-STARTED_UTC: 2026-08-23T03:00:00Z  
-STARTING_REVISION: `1e5beb5`  
+STATUS: REPAIRED (B1, B3, M4-M9) — awaiting independent recheck
+OWNER: Claude Code — author of the defective code, acting as repair agent
+TOOL: Claude Code
+STARTED_UTC: 2026-08-23T03:00:00Z
+STARTING_REVISION: `1e5beb5`
 WORKTREE_OR_BRANCH: `D:\quant_system` on `main`
 
 ## Provenance of these findings
@@ -58,14 +58,19 @@ one, which is the defect this adapter exists to remove.
 ## Owned paths
 
 - `src/quant_system/execution/governed_strategy.py`
+- `src/quant_system/execution/maturity.py`
+- `src/quant_system/execution/realtime_shadow.py`
 - `scripts/run_governed_shadow_session.py`
 - `tests/test_governed_bundle_binding.py` (new)
+- `tests/test_governed_execution_majors.py` (new)
+- `tests/test_governed_shadow_wiring.py`
+- `tests/test_governed_strategy.py`
+- `tests/test_maturity_horizon.py`
 - `agent_context/work/active/20260823-claude-redteam-repair-b1-b3.md` (this file)
 
 ## Non-goals
 
 - Blocker 2 (window-length feature divergence) — needs a founder design decision.
-- Majors 4-9 — separate repair, after these two.
 - Declaring anything closed. The author repairing defects the author introduced, verified by tests
   the author writes, is the same closed loop the Red Team exists to break. These repairs need an
   independent recheck.
@@ -83,14 +88,15 @@ scorer by construction rather than by argument.
 
 ## Plan
 
-1. COMPLETE — reproduce both, this record.
-2. Failing-first regressions in `tests/test_governed_bundle_binding.py`.
-3. Repair.
-4. Gate.
+1. REPRODUCED — B1/B3 raw evidence recorded.
+2. IMPLEMENTED — failing-first B1/B3 regressions and repairs.
+3. REPRODUCED — Majors 4-9 with failing-first regressions.
+4. IMPLEMENTED — Majors 4-9 repairs and local gates.
+5. AWAITING — independent Red Team recheck.
 
 ## Current step
 
-All four steps complete.
+Repair and local checks performed; independent recheck remains.
 
 ## Verification
 
@@ -102,7 +108,7 @@ All four steps complete.
 | **Both attacks re-run on REAL evidence** | refused, see below |
 | `pytest` over 6 affected suites | 98 passed |
 | Ruff, strict mypy | clean; 121 source files |
-| `run_governed_shadow_session.py` on the real store | still refuses `RESEARCH_ONLY`, unchanged |
+| `run_governed_shadow_session.py` on the real store | verified 40 models, derived `GRASIM` from the selected model's published decisions, then refused `RESEARCH_ONLY` with exit 3; no session ran |
 
 Re-running the swap on the real campaign store, best model against worst:
 
@@ -124,15 +130,80 @@ real artefacts the Red Team used, are what proves the attack is caught rather th
 
 - `src/quant_system/execution/governed_strategy.py`: `ModelEvidenceIdentityV1` added and required on
   the bundle; `_score` replaced by `score_row`, which calls `predict_ridge_scores`.
-- `scripts/run_governed_shadow_session.py`: derives the identity from the same manifest.
+- `scripts/run_governed_shadow_session.py`: uses verified evidence-store reads, derives the single
+  bound symbol from the selected model's published decisions, and supplies it to the identity.
 - `tests/test_governed_bundle_binding.py`: new, 8 cases.
 - `tests/test_governed_strategy.py`, `tests/test_governed_shadow_wiring.py`: helpers construct a
   bound identity. No assertion was weakened; the two direct-construction cases still test what they
   tested.
 
+## Majors 4-9 — repaired
+
+Failing-first: 15 of the initial 17 cases in `tests/test_governed_execution_majors.py` failed before
+the repairs. A public `run_session()` maturity-halt case was added during final review; all 18 pass.
+
+| # | Defect | Repair |
+|---|---|---|
+| 4 | An INFY-fitted model emitted BUY for `RELIANCE` and `TOTALLY_MADE_UP` | `ModelEvidenceIdentityV1` carries `symbol`; the strategy refuses any other instrument. The governed dataset contract is single-instrument, so a model applied to another price series has no meaning |
+| 5 | `None`/`str`/`int` history raised `TypeError`/`AttributeError` | `_require_bar_sequence` raises `GovernedExecutionError`. An **empty** sequence stays a legal no-signal: served-nothing is a real outcome, malformed is not, and they must not collapse |
+| 6 | `MaturityPolicyError` escaped `run_session`; state RUNNING, no halt reason, decision lost, no audit | Caught and halted as `MATURITY_UNRESOLVABLE`; the audit survives. The halt detail carries no outcome figures, and a test asserts they are absent |
+| 7 | Pre-open entry 09:05 matured 09:15 the same morning, held 10 minutes | Entry session is now the first session whose `close_at >= entry_time` — the session actually held through. Plus a coverage floor so an entry predating the calendar fails closed instead of silently resolving to session 0 |
+| 8 | Duplicate exchange dates silently changed feature values | Refused at the adapter boundary, matching training's `RECORD_ORDER_INVALID` |
+| 9 | A held position was invisible in the audit | `open_entries` and `open_symbols` on `ShadowAuditReport`, **defaulted** so the addition is additive and no existing caller breaks |
+
+Red Team probes re-run against the repaired code:
+
+```
+probe_symbol        : GovernedExecutionError: this model was fitted on 'INFY' and cannot score 'RELIANCE'
+probe_failopen      : None/str/int/dict -> GovernedExecutionError (was TypeError/AttributeError)
+                      empty tuple -> [] (SILENT), deliberately unchanged
+probe_preopen       : held 3 days 0:10:00, same calendar day? False  (was 10 minutes, same day)
+probe_maturity_crash: run_session returned SHADOW_HALTED MATURITY_UNRESOLVABLE  (was an unhandled escape)
+probe_open_entry_invisible: fields mentioning open exposure: ['open_entries', 'open_symbols']  (was [])
+```
+
+The real evidence runner initially exposed a missed caller after the symbol field was added. That
+caller now obtains the symbol from the verified model decisions rather than accepting a CLI value.
+Against `tmp/real-training-evidence` it reported:
+
+```
+published models                  : 40
+selected model                    : model_b0e4e7dc4c30e2ca534b1e6c (trial trial_uni_018)
+model symbol                      : GRASIM (from verified published decisions)
+REFUSED BY THE PROMOTION GATE
+  verdict in evidence : RESEARCH_ONLY
+SCRIPT_EXIT=3
+```
+
+No session or order ran.
+
+`probe_duplicates` still shows `compute_feature_values` producing different values for overlapping
+bars. That is expected and is **not** a remaining hole: the probe calls the kernel directly, and the
+kernel behaves identically for training. The guard sits at the adapter boundary, where execution
+enters, which is where training's own validator sits too. Stating this rather than presenting the
+probe as passing.
+
+### One test I corrected rather than accommodated
+
+`test_entry_session_is_resolved_by_instant_not_by_calendar_date` asserted that a post-close entry
+belonged to the session that had already closed. That assertion encoded the defect: resolving an
+entry to a session not open at that instant is exactly what let a 09:05 fill mature at 09:15. It now
+asserts the next session, with the reason written into the test body so a later reader does not
+mistake it for an assertion loosened to make a suite pass.
+
 ## Not closed
 
 - **Blocker 2** (window-length feature divergence) — awaiting a founder design decision.
-- **Majors 4-9** — untouched.
 - **These repairs are unadjudicated.** Author-repaired, author-tested. The Red Team that found the
   defects never finished, so nothing here has been independently rechecked.
+
+## Full suite
+
+`uv run pytest -q` -> **855 passed, 1 dependency deprecation warning** in the shared checkout. This
+count includes another agent's unstaged DSR tests and is recorded as checkout evidence, not claimed
+as this repair's test contribution.
+
+The five owned suites ran twice concurrently in opposite file orders: **68 passed** in each run.
+The available pytest plugins were `anyio` and `cov`; no random-order plugin was installed. Ruff,
+Ruff format, strict mypy, `check-code.mjs`, and `check-tests.mjs` were clean on the exact owned paths.
+`scripts/audit-agent-claims.ps1` and `scripts/audit-disk-layout.ps1` both exited 0.
