@@ -288,6 +288,45 @@ research evidence but cannot execute. `scripts/run_governed_shadow_session.py` r
 GRASIM artifact with typed missing-schema detail and exit 3. Those fitted states would have to be
 retrained under v2 before any of them could run.
 
+### Retrained under feature schema v2 — still nothing promotable
+
+The v2 retraining is **done**, by another agent, and independently verified here from the evidence
+store rather than from its record. Store:
+`data/evidence/models/nifty50-current-20160822-20260821-schema-v2-source-bound-v2`, 50 published
+models, every one carrying `('quantos.ridge_technical_six', 2)`.
+
+| | v1 campaign | **v2 campaign** |
+|---|---:|---:|
+| Published models | 40 | **50** |
+| `multiplicity_count` | 51 | **50** |
+| Positive Sharpe | 14 of 40 (35%) | **21 of 50 (42%)** |
+| Median Sharpe | -1.1791 | **-0.2278** |
+| Mean Sharpe | -0.7756 | **-0.6834** |
+| Best / worst | +4.3143 / -5.7716 | **+3.2207 / -5.2615** |
+| Best campaign DSR | 0.397794 | **0.217695** |
+| Verdict | NONE PROMOTABLE | **NONE PROMOTABLE** |
+
+**The honest reading is that v2 is a better measurement of the same absence of edge.** The
+distribution is markedly better centred — the median name loses 0.23 instead of 1.18, and 42% beat
+zero instead of 35%. But the *best* name is further from promotable than before: 0.2177 against
+0.3978, both against a 0.95 gate.
+
+Those two movements are consistent rather than contradictory, and the reason matters. Schema v1's
+window dependence let the same decision bar take different feature values depending on how much
+history happened to be retained, which is noise. Removing it tightened the distribution and shrank
+the tails — and the v1 best case sat in that tail. Some of what made GRASIM look strong under v1 was
+the artifact, not the model.
+
+So the six-feature ridge has now been tested on this universe under both a defective and a corrected
+feature computation, and has no edge under either. That is a real finding, and it is a stronger one
+than the v1 campaign alone supported.
+
+**Do not re-run this.** A repeat would spend 50 fresh multiplicity ordinals, produce no information
+that these 50 trials have not already produced, and make any future candidate harder to promote.
+
+Record: `agent_context/work/completed/20260824-1216Z-codex-nifty50-ten-year-v2-training.md`
+(`STATUS: RETIRED_RESEARCH_ONLY`).
+
 ### The second calculation path is closed (`85ff535`)
 
 `strategies/ml_equity.py` defines `RollingRidgeClassifier` — a ridge with no purging, no
@@ -351,10 +390,9 @@ Records: `agent_context/work/completed/20260823-claude-redteam-repair-b1-b3.md`,
 4. Independent adjudication of the **training runner and campaign results** has still not occurred.
    The governed execution path now has one; these research numbers do not. `RESEARCH_ONLY` is the
    model's own label, not a certification.
-5. Decide whether to retrain under feature schema v2. No existing model can execute until something
-   is trained under it, and retraining spends fresh multiplicity ordinals — so it is worth pairing
-   with a genuinely different hypothesis rather than repeating the same six-feature ridge on the
-   same universe and period.
+5. ~~Decide whether to retrain under feature schema v2.~~ Done — see the v2 campaign below. Still
+   nothing promotable, so **do not re-run it**: a repeat spends 50 fresh multiplicity ordinals for
+   no new information and makes any future candidate harder to promote.
 6. ~~Remove `RollingRidgeClassifier` from the execution path.~~ Done at `85ff535`. What remains is
    the harder version: nothing detects a strategy that embeds an ungoverned model without declaring
    itself research-only.
