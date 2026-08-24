@@ -1,6 +1,11 @@
 # Modular Quant System (QuantOS)
 
-A high-performance, institutional-grade, modular Quantitative Trading & Backtesting System designed for equity and derivatives markets (specifically optimized for NSE India and US Equities).
+A governed quantitative **research and backtesting** platform for NSE India equity and derivatives
+markets, built so that a model cannot be promoted on evidence it has not earned.
+
+**It has never placed an order.** Shadow and paper surfaces simulate execution and are invariant-checked
+to submit zero broker orders. Live-money routing is explicitly out of scope, not merely unimplemented.
+See [What this does and does not do](#-what-this-does-and-does-not-do).
 
 ---
 
@@ -66,4 +71,34 @@ Comprehensive documentation is available in the [`docs/`](file:///d:/quant_syste
 2. **Strict Pre-Trade Risk**: Every trade proposal must be approved by the `RiskGovernor` before it can reach execution.
 3. **No Lookahead Bias**: Fills occur on the *next bar open* after a signal is calculated at bar close. Same-bar fills are strictly rejected.
 4. **Realistic Market Friction**: Models Indian STT (Securities Transaction Tax), GST, Exchange Turnover, Stamp Duty, and slippage.
-5. **Multi-Modal Alpha Engine**: Unifies Price/Derivatives Technical Alpha, Fundamental Balance Sheet Factor Scoring, and AI/NLP Sentiment Feeds.
+5. **Governed Model Lifecycle**: A model reaches an execution surface only by carrying evidence — a
+   published fitted state, its validated decision threshold, and a promotion verdict — all bound to a
+   single evidence record. Ungoverned strategies are refused at the boundary.
+6. **Multiplicity Accounting**: Every training attempt is recorded and counted, including failed ones,
+   and a candidate's deflated Sharpe is discounted for the whole search that produced it.
+
+---
+
+## 🔍 What this does and does not do
+
+Verified against the code, not against intent.
+
+**It does:**
+
+* Acquire real point-in-time NSE equity history with typed failures and no synthetic fallback.
+* Build features, executable labels, and purged/embargoed folds under a versioned feature schema.
+* Charge real dated NSE statutory costs — STT, GST, exchange turnover, SEBI, stamp duty — measured at
+  about 0.224% per equity-delivery round trip.
+* Record every trial immutably and deflate results against the full attempt count.
+* Refuse to promote, and refuse to execute, anything that has not earned it.
+
+**It does not:**
+
+* **Trade.** No live-money order routing exists, by design. `broker_orders_submitted` is enforced as
+  zero on the shadow surface.
+* **Support US equities.** The instrument contract accepts NSE cash equities only.
+* **Score fundamentals.** There is no balance-sheet, earnings, or valuation factor model.
+* **Have a profitable model.** Two governed campaigns totalling 101 trials, plus six pre-declared
+  research screens, found no edge that survives real costs. The best candidate reached a deflated
+  Sharpe of 0.398 against a 0.95 promotion gate. That is a result the platform produced about itself,
+  and it is recorded rather than hidden — see `agent_context/CURRENT.md`.

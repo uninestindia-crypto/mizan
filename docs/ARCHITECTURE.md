@@ -24,9 +24,9 @@ This document details the software architecture, data pipelines, domain models, 
     │                            Alpha & Signal Generation                            │
     │  ┌───────────────────────┐ ┌───────────────────────┐ ┌───────────────────────┐  │
     │  │ Technical & Greeks    │ │ Fundamental Factors   │ │ Sentiment & AI Agents │  │
-    │  │ • RSI, EMA, ATR, BB   │ │ • Value (P/E, EV/EBIT)│ │ • FinBERT Sentiment  │  │
-    │  │ • BS Greeks, IV Solver│ │ • Quality (ROE, D/E)  │ │ • Claude / Codex LLM  │  │
-    │  │ • Volatility Surface  │ │ • Earnings Surprises  │ │ • arXiv RAG Retrieval │  │
+    │  │ • RSI, EMA, ATR, BB   │ │ • PLANNED, NOT BUILT  │ │ • Claude / Codex LLM │  │
+    │  │ • BS Greeks, IV Solver│ │ • no P/E, ROE, EV/EBIT│ │ • arXiv RAG Retrieval │  │
+    │  │ • Volatility Surface  │ │ • no earnings data    │ │ • FinBERT: planned    │  │
     │  └───────────┬───────────┘ └───────────┬───────────┘ └───────────┬───────────┘  │
     └──────────────┼─────────────────────────┼─────────────────────────┼──────────────┘
                    │                         │                         │
