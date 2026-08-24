@@ -28,9 +28,13 @@ Filed under PROTOCOL 8.4. Founder-directed repair.
     in memory.
   - L-2: `get_portfolio_snapshot` raises `LedgerInvariantViolation` when a held position has no
     price, instead of marking it to its own average price.
-- **Everything else in your record is untouched**: L-1, H-1, P-1, P-2, S-1, R-1..R-4, G-1..G-6,
-  N-1, N-2. Several of those were separately addressed by
-  `20260822-antigravity-multi-agent-repairs`, which is a different agent's work, not mine.
+- **SUPERSEDED 2026-08-23.** This line previously said everything else in your record was
+  untouched. That is no longer true: G-4, G-5, N-1, N-2, R-3 and the S-1 residual were repaired
+  afterwards under `20260822-claude-money-paths-remainder`. See
+  `agent_context/work/active/20260823-NOTICE-money-paths-remainder-repaired.md`, which is
+  authoritative for the current state of your record. The remaining findings — L-1, H-1, P-1, P-2,
+  R-1, R-2, R-4, G-1, G-2, G-3, G-6 — were addressed by
+  `20260822-antigravity-multi-agent-repairs`, a different agent's work, not mine.
 - **Public API change**: `HoldoutVaultTracker()` no longer constructs. Any probe of yours that
   builds one needs a store. This is deliberate — an optional store would have left the default
   construction exactly as unsafe as the finding describes.
