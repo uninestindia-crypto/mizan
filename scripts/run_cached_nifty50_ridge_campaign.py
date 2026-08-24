@@ -83,6 +83,7 @@ from quant_system.modeling.features import FEATURE_WARMUP_BARS_V1  # noqa: E402
 from quant_system.modeling.training_evidence import (  # noqa: E402
     run_persisted_ridge_trial,
 )
+from quant_system.modeling.trials import RidgeTrialStartV1  # noqa: E402
 
 
 @dataclass(frozen=True, slots=True)
@@ -276,7 +277,7 @@ def _namespace(args: argparse.Namespace, **overrides: Any) -> argparse.Namespace
     return argparse.Namespace(**merged)
 
 
-def _trial_start(context: StudyContext, inputs: ModelInputs, trial_id: str) -> object:
+def _trial_start(context: StudyContext, inputs: ModelInputs, trial_id: str) -> RidgeTrialStartV1:
     args = _namespace(
         context.args,
         trial_id=trial_id,
@@ -323,7 +324,7 @@ def _persist_model(context: StudyContext, inputs: ModelInputs) -> universe_runne
 
 
 def _successful_result(
-    context: StudyContext, start: object, trial_id: str
+    context: StudyContext, start: RidgeTrialStartV1, trial_id: str
 ) -> universe_runner.InstrumentResult:
     sharpe, accuracy, trades, dsr = universe_runner._metrics_for(
         context.args.evidence_root, trial_id

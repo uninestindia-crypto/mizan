@@ -185,7 +185,7 @@ def write_summary(
     *,
     args: object,
     universe_count: int,
-    results: Sequence[object],
+    results: Sequence[universe_runner.InstrumentResult],
     stopped: bool,
 ) -> None:
     """Publish a human-readable restart summary after each terminal instrument state."""

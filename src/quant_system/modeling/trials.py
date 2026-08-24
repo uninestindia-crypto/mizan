@@ -351,8 +351,7 @@ def _validate_trial_start_contract(start: RidgeTrialStartV1) -> None:
     if (
         start.model_family != MODEL_FAMILY_V1
         or start.model_contract_version != MODEL_CONTRACT_VERSION_V1
-        or (start.feature_schema_id, start.feature_schema_version)
-        not in SUPPORTED_FEATURE_SCHEMAS
+        or (start.feature_schema_id, start.feature_schema_version) not in SUPPORTED_FEATURE_SCHEMAS
         or start.label_contract_version != LABEL_CONTRACT_VERSION_V1
     ):
         raise ModelingError(ModelingFailureCode.TRIAL_INVALID, "trial contract version is invalid")
