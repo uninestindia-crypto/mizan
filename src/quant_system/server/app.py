@@ -456,21 +456,13 @@ def create_train_operation(
     response: Response,
     idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
 ) -> OperationCreateResponse:
-    """Dispatches model training to a supervised background worker process."""
-    op = supervisor.submit_operation(
-        op_type=OperationType.TRAINING,
-        payload=req.model_dump(),
-        idempotency_key=idempotency_key,
-    )
-    location = f"/api/v1/operations/{op.operation_id}"
-    response.headers["Location"] = location
-    return OperationCreateResponse(
-        operation_id=op.operation_id,
-        type=op.operation_type,
-        status=op.status,
-        location=location,
-        message="Model training operation accepted and running in worker process.",
-        created_at=op.created_at.isoformat(),
+    """Refuse placeholder training until the governed model adapter is integrated."""
+    _ = req, response
+    require_idempotency_key(idempotency_key)
+    raise JourneyApiError(
+        "MODEL_CONTRACT_INCOMPATIBLE",
+        "Governed model training is unavailable until feature schema v2 is certified and wired.",
+        status_code=409,
     )
 
 
@@ -1029,6 +1021,7 @@ def train_governed_ridge(req: GovernedRidgeTrainRequest) -> GovernedRidgeTrainRe
         status_code=409,
     )
 
+
 # Journey 4: Single-use Holdout & Stress Testing
 @app.post("/api/holdout/evaluate", response_model=HoldoutEvaluateResponse)
 def evaluate_holdout(req: HoldoutEvaluateRequest) -> HoldoutEvaluateResponse:
@@ -1040,6 +1033,7 @@ def evaluate_holdout(req: HoldoutEvaluateRequest) -> HoldoutEvaluateResponse:
         status_code=409,
     )
 
+
 # Journey 6: Shadow Monitor
 @app.get("/api/shadow/status", response_model=ShadowMonitorStatusResponse)
 def get_shadow_status() -> ShadowMonitorStatusResponse:
@@ -1049,6 +1043,7 @@ def get_shadow_status() -> ShadowMonitorStatusResponse:
         "No shadow session has been configured or started.",
         status_code=404,
     )
+
 
 @app.post("/api/shadow/control", response_model=ShadowControlResponse)
 def control_shadow_monitor(
@@ -1063,6 +1058,7 @@ def control_shadow_monitor(
         status_code=404,
     )
 
+
 # Journey 7: Paper Pilot
 @app.get("/api/paper-pilot/campaign", response_model=PaperPilotCampaignResponse)
 def get_paper_pilot_campaign() -> PaperPilotCampaignResponse:
@@ -1072,6 +1068,7 @@ def get_paper_pilot_campaign() -> PaperPilotCampaignResponse:
         "No paper campaign has been configured or started.",
         status_code=404,
     )
+
 
 @app.post("/api/paper-pilot/order", response_model=PaperOrderSubmitResponse)
 def submit_paper_order(
@@ -1085,6 +1082,7 @@ def submit_paper_order(
         "No paper campaign has been configured or started.",
         status_code=404,
     )
+
 
 # =====================================================================
 # UI Views & Static Asset Delivery

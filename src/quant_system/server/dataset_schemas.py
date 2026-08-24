@@ -6,6 +6,8 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from quant_system.data.market_data import HistoricalDailyRequest
+
 SUPPORTED_NSE_EQUITY_INSTRUMENTS = {
     "HDFCBANK": "NSE_EQ|INE040A01034",
     "ICICIBANK": "NSE_EQ|INE090A01021",
@@ -58,10 +60,17 @@ class DatasetCreateRequest(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_date_order(self) -> DatasetCreateRequest:
-        if self.from_date > self.to_date:
-            raise ValueError("from_date must be on or before to_date")
+    def validate_request_contract(self) -> DatasetCreateRequest:
+        _ = HistoricalDailyRequest(
+            instrument_key=self.instrument_key,
+            symbol=self.symbol,
+            from_date=self.from_date,
+            to_date=self.to_date,
+            request_id=self.request_id,
+        )
         expected_key = SUPPORTED_NSE_EQUITY_INSTRUMENTS.get(self.symbol)
         if expected_key != self.instrument_key:
-            raise ValueError("symbol and instrument_key must identify the same supported NSE equity")
+            raise ValueError(
+                "symbol and instrument_key must identify the same supported NSE equity"
+            )
         return self

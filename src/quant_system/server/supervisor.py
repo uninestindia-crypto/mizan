@@ -415,48 +415,6 @@ def _run_portfolio_optimize_task(
     }
 
 
-def _run_training_task(payload: dict[str, Any], cancel_event: Any, queue: Any) -> dict[str, Any]:
-    candidate_id = payload.get("candidate_id", "cand_ridge_v1")
-    l2_penalty = float(payload.get("l2_penalty", 1.0))
-    days = int(payload.get("days", 252))
-
-    queue.put(
-        {
-            "type": "PROGRESS",
-            "progress": 0.2,
-            "stage": "FITTING_STANDARDIZATION",
-            "timestamp": datetime.now(UTC).isoformat(),
-        }
-    )
-
-    time.sleep(0.1)
-    if cancel_event.is_set():
-        raise InterruptedError("Operation cancelled.")
-
-    queue.put(
-        {
-            "type": "PROGRESS",
-            "progress": 0.6,
-            "stage": "FITTING_RIDGE_MODEL",
-            "timestamp": datetime.now(UTC).isoformat(),
-        }
-    )
-
-    time.sleep(0.1)
-    if cancel_event.is_set():
-        raise InterruptedError("Operation cancelled.")
-
-    return {
-        "candidate_id": candidate_id,
-        "l2_penalty": l2_penalty,
-        "trained_sessions": days,
-        "verdict": "RESEARCH_ONLY",
-        "output_type": "UNCALIBRATED_SCORE",
-        "deflated_sharpe_probability": 0.854984141908,
-        "status": "COMPLETED",
-    }
-
-
 def _run_custom_task(payload: dict[str, Any], cancel_event: Any, queue: Any) -> dict[str, Any]:
     action = payload.get("action", "compute")
     duration = float(payload.get("duration", 1.0))
@@ -527,7 +485,7 @@ def _worker_process_entrypoint(
         elif op_type_val == OperationType.PORTFOLIO_OPTIMIZE.value:
             res = _run_portfolio_optimize_task(payload, cancel_event, queue)
         elif op_type_val == OperationType.TRAINING.value:
-            res = _run_training_task(payload, cancel_event, queue)
+            raise ValueError("Governed model training is not wired to this supervisor revision.")
         elif op_type_val == OperationType.DATA_SYNC.value:
             res = run_data_sync_task(payload, cancel_event, queue)
         elif op_type_val == OperationType.CUSTOM.value:
@@ -580,8 +538,9 @@ def _worker_process_entrypoint(
 
 def _request_fingerprint(op_type: OperationType, payload: dict[str, Any]) -> str:
     """Bind one idempotency key to one canonical operation intent."""
+    request_payload = {key: value for key, value in payload.items() if not key.startswith("_")}
     canonical = json.dumps(
-        {"operation_type": op_type.value, "payload": payload},
+        {"operation_type": op_type.value, "payload": request_payload},
         allow_nan=False,
         default=_json_value,
         ensure_ascii=True,

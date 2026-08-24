@@ -14,7 +14,11 @@ from httpx import Response
 
 from quant_system.data.evidence_draft import draft_from_historical_acquisition
 from quant_system.data.provenance import ACCESS_TOKEN_ENV_VAR
-from quant_system.evidence import EvidenceResourceType, EvidenceStore, EvidenceStoreConfig
+from quant_system.evidence import (
+    EvidenceResourceType,
+    EvidenceStore,
+    EvidenceStoreConfig,
+)
 from quant_system.server import data_sync
 from quant_system.server.app import app
 from quant_system.server.data_sync import DataSyncTaskError, run_data_sync_task
@@ -399,6 +403,7 @@ def test_data_sync_worker_refuses_a_provider_identity_mismatch(
     assert not (tmp_path / "runtime-evidence").exists()
 
 
+# test-allow: loop-in-test — bounded polling observes one spawned worker to terminal state.
 def test_dataset_acquisition_reports_missing_provider_credentials_without_publishing(
     client: TestClient,
     auth_headers: dict[str, str],
