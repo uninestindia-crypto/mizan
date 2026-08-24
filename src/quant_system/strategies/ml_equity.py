@@ -66,6 +66,13 @@ class MLEquityStrategy(BaseStrategy):
     6. Normalized ATR volatility
     """
 
+    #: This strategy computes its own ridge inline via ``RollingRidgeClassifier`` — no purging, no
+    #: multiplicity accounting, no evidence. That is acceptable for research and backtesting, and
+    #: it is a second calculation path if it executes (SLICES.md slice rule 2), so execution
+    #: surfaces refuse it. The governed alternative is
+    #: ``quant_system.execution.governed_strategy.GovernedModelStrategy``.
+    research_only = True
+
     def __init__(
         self,
         name: str = "MLEquityStrategy",

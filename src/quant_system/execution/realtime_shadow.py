@@ -240,6 +240,33 @@ class RealtimeShadowConfig:
     """
 
 
+def _refuse_ungoverned_strategy(strategy: BaseStrategy | None) -> None:
+    """Refuse a strategy that declares itself research-only.
+
+    `strategies/ml_equity.py` computes a ridge inline with no purging, no multiplicity accounting
+    and no evidence. Running it here would put a second calculation path on an execution surface,
+    which SLICES.md slice rule 2 forbids, and would mean the system that executes is again not the
+    system that was validated.
+
+    Research use is deliberately untouched: an ungoverned ridge in a backtest is research. The
+    violation is execution, so the refusal sits at the execution boundary rather than on the model.
+
+    This reads a declaration, not the strategy's internals. A future strategy that embeds an
+    ungoverned model without setting ``research_only`` will not be caught — that is a detector, and
+    a much harder problem. The guarantee here is bounded to strategies that say what they are.
+    """
+    if strategy is None:
+        return
+    if getattr(strategy, "research_only", False):
+        raise GovernedExecutionError(
+            f"{type(strategy).__name__} is marked research_only and cannot drive an execution "
+            "session. It computes its own model with no purging, multiplicity accounting or "
+            "evidence, so executing it would be a second calculation path. Use "
+            "GovernedModelStrategy with a promoted model bundle instead; backtesting this strategy "
+            "remains supported."
+        )
+
+
 class RealtimeShadowRunner:
     """Executes a strictly read-only shadow session bound to a real-time feed with zero broker write endpoints."""
 
@@ -253,6 +280,7 @@ class RealtimeShadowRunner:
     ) -> None:
         self.config = config
         self.live_feed = live_feed
+        _refuse_ungoverned_strategy(strategy)
         self.strategy = strategy
         self.risk_governor = risk_governor or PreTradeRiskGovernor()
         self._clock = clock or (lambda: datetime.now(UTC))
