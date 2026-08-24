@@ -56,6 +56,15 @@ def test_feature_values_ignore_history_before_the_canonical_window() -> None:
     assert compute_feature_values(full_history) == compute_feature_values(canonical_tail)
 
 
+def test_exported_feature_kernel_rejects_reverse_chronology() -> None:
+    canonical_tail = _oscillating_history()[-FEATURE_WARMUP_BARS_V1:]
+
+    with pytest.raises(ModelingError) as captured:
+        compute_feature_values(tuple(reversed(canonical_tail)))
+
+    assert captured.value.code is ModelingFailureCode.RECORD_ORDER_INVALID
+
+
 def test_execution_decision_ignores_history_before_the_canonical_window() -> None:
     """The public strategy boundary must preserve both features and the resulting score."""
     history = _oscillating_history()

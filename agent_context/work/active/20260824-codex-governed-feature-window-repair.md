@@ -66,11 +66,13 @@ untouched.
 3. DONE — shared training/execution repair and v1 fail-closed binding implemented.
 4. DONE — focused, mutation, static, full-suite, real-evidence-refusal, and repository audits run.
 5. DONE — independent Red Team reproduced one evaluator-boundary Blocker at `81f4f1b`.
-6. IN PROGRESS — evaluator repair is locally verified; commit, push, and commission full recheck.
+6. DONE — evaluator repair pushed as `8f29564`.
+7. DONE — recheck at `8f29564` closed evaluator finding, then found reversed-kernel Blocker.
+8. IN PROGRESS — order repair locally verified; commit, push, then resume final recheck.
 
 ## Current step
 
-Commit the evaluator-boundary repair and hand the new exact revision to an independent full recheck.
+Commit and push the chronological-uniqueness repair, then resume the independent matrix.
 
 ## Decision rationale
 
@@ -107,6 +109,13 @@ expanding-prefix arithmetic is incompatible with v2 serving.
 | Ruff / Mypy after repair | GREEN | Ruff clean; Mypy 122 source files |
 | Real legacy evidence after repair | REFUSED, exit 3 | 40 verified models; no session ran |
 | Repository audits after repair | GREEN | agent claims and disk layout both clean |
+| Evaluator repair push | PUSHED | `8f29564680c3563e8694ad486429c068242738ab` |
+| Final independent recheck | RUNNING | `Dalton`; new isolated record/report/clone required |
+| Final independent recheck at `8f29564` | BLOCKER | reversed 21-bar input returned six changed values instead of `RECORD_ORDER_INVALID`; report commit `7339975` |
+| Reversed-kernel regression before repair | FAIL (expected) | kernel returned values and did not raise |
+| Focused order/modeling tests after repair | GREEN | 75 tests |
+| `uv run pytest -q` after order repair | GREEN | 869 tests; one third-party warning |
+| Ruff / Mypy / repository audits | GREEN | Ruff clean; Mypy 122 source files; claims/layout clean |
 
 ## Files changed
 
@@ -148,4 +157,4 @@ Ownership recorded before source or test edits.
 
 ## Next safe action
 
-Stage only this record, `modeling/validation.py`, and the feature-window regression; commit and push.
+Stage only this record, `modeling/features.py`, and the regression; commit and push.

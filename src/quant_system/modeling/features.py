@@ -310,6 +310,7 @@ def canonical_feature_window(
     records: tuple[PointInTimeBar, ...],
 ) -> tuple[PointInTimeBar, ...]:
     """Return the exact feature-schema v2 input window or reject insufficient history."""
+    _validate_record_order(records)
     if len(records) < FEATURE_WARMUP_BARS_V1:
         raise ModelingError(
             ModelingFailureCode.INSUFFICIENT_HISTORY,
