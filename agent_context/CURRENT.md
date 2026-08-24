@@ -167,13 +167,35 @@ cannot establish that it does.
 evidence was the better decision. The honest denominator is 50, not 40; the table flatters the
 candidate by dropping its most conservative outcomes.
 
-### Open defect raised by this campaign
+### Defect raised by this campaign — now CLOSED
 
-`agent_context/work/active/20260822-NOTICE-dsr-two-point-boundary-crash.md` — a two-point validation
-return series lands exactly on the `kurtosis >= skewness**2 + 1` boundary in
-`analytics/multiplicity.py:92`, where floating-point rounding at the 15th decimal decides between a
-published result and an uncaught `ValueError` that no caller can type-match. Proposed Blocker. One
-NIFTY 50 constituent hit it. Not repaired here: those files are claimed by other active records.
+`agent_context/work/completed/20260822-NOTICE-dsr-two-point-boundary-crash.md`. A two-point
+validation return series sits on the `kurtosis >= skewness**2 + 1` boundary in
+`analytics/multiplicity.py`, where an uncaught `ValueError` that no caller could type-match was
+decided by floating-point rounding. One NIFTY 50 constituent hit it and it killed the whole sweep.
+
+Sharpened during triage by a peer session: for **any** two-point distribution
+`kurtosis - skewness**2 = 1` is an *exact algebraic identity*, with equality iff two-point. The guard
+therefore tested a strict inequality against an exact tie for a whole legitimate class of input,
+which makes a tolerance the correct implementation of the constraint rather than a workaround.
+
+It was also worse than first reported. Measured against the pre-repair condition over
+p = 0.01..0.99, **39 of 99 two-point series would have fired — 39.4% of that legitimate parameter
+space**, not a rare tie. An independent run by another agent gave 37 of 99 with a partly different
+p-list; the two agree on the proportion and disagree on which p values, which is itself evidence
+that the outcome was decided by float residue rather than by p.
+
+**Repaired at `ac47d7c`** by another agent, and independently verified by the filer, who did not
+write the repair: the guard now compares with a tolerance of `64 * sys.float_info.epsilon` and raises
+a typed `MultiplicityError(MOMENT_CONSTRAINT_INVALID)`. The case previously rejected (29 zeros plus
+one 0.05, `kurt - bound = -7.105e-15`) is accepted; genuinely impossible moments (skew 2.0,
+kurt 1.0) are still refused. The tolerance admits the exact-tie class without admitting real
+inconsistency.
+
+Trail note recorded by a peer, observation rather than accusation:
+`20260820-codex-slice4-ridge-training.md` still reads `STATUS: ACTIVE` and still lists
+`analytics/multiplicity.py` among its owned paths, so the file changed under a claim never formally
+released.
 
 ### Limitations stated rather than resolved
 
@@ -184,11 +206,81 @@ NIFTY 50 constituent hit it. Not repaired here: those files are claimed by other
   dataset to feed it. Closing that needs `modeling/**` changes.
 - The session calendar, absent `--calendar-file`, is derived from provider data, so a provider that
   silently omits a trading day yields a calendar agreeing with its own gap.
-- Neither Red Team nor an independent clean-clone Verifier has adjudicated the runner, the campaign
-  driver, or any of these results.
+- Neither Red Team nor an independent clean-clone Verifier has adjudicated the training runner, the
+  campaign driver, or any of these research results. The governed *execution* path has since been
+  independently adjudicated — see the next section — but these training numbers have not.
 
 Full record: `agent_context/work/completed/20260822-claude-real-data-training-runner.md`.
 Outstanding work: `agent_context/handoffs/20260822-claude-real-data-training-runner-handoff.md`.
+
+## Governed execution path (added 2026-08-23/24)
+
+The system that executed was not the system that was validated. Verified at `9789fd4`: nothing
+outside `modeling/` consumed `RidgeFittedStateV1`, `ModelCardV1` or `predict_ridge_scores`;
+`execution/` and `server/` imported nothing from `modeling/`; and `strategies/ml_equity.py:17`
+carried `RollingRidgeClassifier`, a second ungoverned ridge with no purging, multiplicity or
+evidence — the one execution actually used. Every governed guarantee in `.launch/` described code
+that no live path called.
+
+| Commit | What landed |
+|---|---|
+| `9789fd4` | **Nothing loaded `.env`.** No `python-dotenv`, no `load_dotenv` anywhere in `src/`. `UpstoxClient`, `provenance` and `alpha/key_pool` all read `os.getenv`, so a correctly filled `.env` was invisible and every run failed `PROVIDER_UNAUTHORIZED` before issuing a request. Dependency-free loader, wired at the launcher entry point |
+| `11ee334` | Governed adapter: `PromotedModelBundleV1`, `GovernedModelStrategy`. Long-only, because that is what `validation.py` measured; the threshold travels with the bundle and never defaults to zero. Training kernels promoted to public so training and execution share one implementation |
+| `e6f42b1` | Point-in-time bar history supplied to the shadow engine, default off |
+| `9470d97` | Maturity horizon, so a two-session model cannot open and close inside one session |
+| `1e5beb5` | Real governed shadow session attempted against the real evidence store |
+| `97fcc4b` | Red Team Blockers 1 and 3 repaired |
+| `deccec1` | Red Team Majors 4-9 repaired |
+
+### This path is adjudicated. The research results are not.
+
+This is the first work in this repository carrying an independent verdict rather than its author's.
+
+**Blockers 1 and 3** both landed on judgment calls the author had defended in writing. B1: a bundle
+accepted the best model's card paired with the worst model's coefficients, because `candidate_id` was
+doing the binding and all 51 campaign trials share `cand_ridge_v1`. B3: the adapter reimplemented
+scoring in Decimal and disagreed with `predict_ridge_scores` by 4e-13, flipping a decision at the
+threshold. Repaired by binding the bundle to one published manifest through `ModelEvidenceIdentityV1`,
+and by calling the validated scorer rather than a parallel one.
+
+**Majors 4-9** were repaired at `deccec1`, then **independently rechecked, which broke them**: 2 P1
+Critical and 1 P2 Major. The sharpest is instructive — the author's symbol binding checked the
+`extra_data` map *key* but not each bar's own `PointInTimeBar.symbol`, so bars whose symbol was
+RELIANCE passed under the key INFY. The author bound the label, not the data. Phase 2 closed all
+three; verdict **READY within the governed-execution Majors 4-9 scope**, explicitly not authorising
+live-money routing, promotion, or legacy model execution. Reports:
+`.launch/reports/RED-TEAM-GOVERNED-EXECUTION-MAJORS-4-9-RECHECK.md` and `-PHASE2.md`.
+
+### Feature schema v2, and what it costs the existing evidence
+
+The remaining Blocker was that feature values depended on how much history was supplied: Wilder
+RSI-14 and ATR-14 seed at the start of the sequence, so training's expanding prefix and execution's
+retained prefix produced different values for the same decision bar. Adopted in
+`agent_context/decisions/20260824-canonical-feature-window.md`: **schema v2 consumes exactly the
+trailing 21 point-in-time-available bars**, enforced at the shared kernel boundary so the two sides
+cannot diverge by accident. Its own recheck then found two further defects, both repaired — the
+exported evaluator omitted the schema match (`8f29564`), and the exported kernel accepted reverse
+chronology (`88a7ac9`).
+
+**Consequence, stated plainly: all 40 published models are pre-v2.** They remain auditable historical
+research evidence but cannot execute. `scripts/run_governed_shadow_session.py` refuses the selected
+GRASIM artifact with typed missing-schema detail and exit 3. Those fitted states would have to be
+retrained under v2 before any of them could run.
+
+### Still not true
+
+- **No governed shadow session has ever run.** The runner reaches the promotion gate and is refused:
+  every published model is `RESEARCH_ONLY`, and the best campaign DSR is `0.397794` against a `0.95`
+  requirement. Promotion is not a wiring problem and cannot be fixed by wiring.
+- **`RollingRidgeClassifier` is still what execution uses by default.** A governed alternative now
+  exists and is reachable, but the second calculation path has not been removed.
+- Shadow P&L does not equal backtest P&L. The validated label enters and exits at session *opens*
+  while the runner fills on quotes; the maturity horizon closes the structural gap, not the pricing
+  one.
+
+Records: `agent_context/work/completed/20260823-claude-redteam-repair-b1-b3.md`,
+`20260822-claude-governed-execution-adapter.md`, `20260822-claude-maturity-horizon.md`,
+`20260822-claude-dotenv-loading.md`, `20260823-claude-real-governed-shadow-session.md`.
 
 ## Open program-level majors
 
@@ -212,7 +304,13 @@ Outstanding work: `agent_context/handoffs/20260822-claude-real-data-training-run
    posts a negative Sharpe beaten by doing nothing; further sweeps are multiplicity spend against
    evidence that already points one way. If the ridge family is to be pursued, change something
    real — instrument, universe breadth, horizon, or feature set — and treat it as a new campaign.
-4. Independent adjudication of the runner and these results has **not** occurred. No Red Team pass,
-   no clean-clone Verifier pass. `verdict=RESEARCH_ONLY` is the model's own label, not a
-   certification.
-4. Reconcile the stale sections at the top of this file against `.launch/STATE.md` (coordinator).
+4. Independent adjudication of the **training runner and campaign results** has still not occurred.
+   The governed execution path now has one; these research numbers do not. `RESEARCH_ONLY` is the
+   model's own label, not a certification.
+5. Decide whether to retrain under feature schema v2. No existing model can execute until something
+   is trained under it, and retraining spends fresh multiplicity ordinals — so it is worth pairing
+   with a genuinely different hypothesis rather than repeating the same six-feature ridge on the
+   same universe and period.
+6. Remove `RollingRidgeClassifier` from the execution path. A governed alternative now exists;
+   leaving both in place is the second-calculation-path defect this work exists to close.
+7. Reconcile the stale sections at the top of this file against `.launch/STATE.md` (coordinator).

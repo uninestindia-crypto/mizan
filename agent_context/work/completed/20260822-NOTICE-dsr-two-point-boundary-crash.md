@@ -30,13 +30,37 @@ Verified against the exact cases this notice recorded:
 |---|---|---|---|
 | 29×`0.0` + 1×`0.05` | **REJECTED** | ACCEPTED, DSR 0.228402 | `-7.105e-15` |
 | 62×`0.0` + 1×`0.0123456789` | accepted | ACCEPTED, DSR 0.245463 | `+7.105e-15` |
-| two-point p=0.10 | rejected per peer sweep | ACCEPTED, DSR 0.286697 | `+0.000e+00` |
+| two-point p=0.10 | see correction below | ACCEPTED, DSR 0.286697 | `+0.000e+00` |
 | two-point p=0.30 | — | ACCEPTED, DSR 0.292213 | `+0.000e+00` |
 | two-point p=0.50 | — | ACCEPTED, DSR 0.294801 | `+0.000e+00` |
 
 And the guard still does its actual job: `skewness=2.0, kurtosis=1.0` — four below the bound, a
 genuinely impossible pair — is refused with `MOMENT_CONSTRAINT_INVALID`. The tolerance admits the
 exact-tie class without admitting real inconsistency, which was the whole question.
+
+### Correction: how much of the two-point space actually fired
+
+An earlier version of this section said p=0.10 was "rejected per peer sweep". **That was wrong, and
+it was my error to write it** — I took a peer's figure and recorded it as established without
+measuring it. `quant-system-bf` then corrected their own claim: they had computed
+`kurt - skew**2` and compared to 1, whereas the guard evaluates `kurtosis < 1.0 + skewness**2`, and
+those two round differently.
+
+Measured here directly against the pre-repair condition, two-point series over p = 0.01..0.99:
+
+- **39 of 99 would have fired — 39.4% of the legitimate two-point parameter space.**
+- p=0.10 was **not** among them.
+- bf's independent run gave 37 of 99 with a partly different p-list.
+
+The disagreement in the exact list is the most useful part. Both runs test the same mathematical
+class, and both find roughly the same *proportion* firing, but they disagree on *which* p values —
+because the outcome is decided by float residue in a particular series construction, not by p. That
+is direct evidence for the framing this notice already argued: the guard was classifying an exact
+tie by rounding noise.
+
+The finding was therefore **stronger** than either notice originally stated. This was never a rare
+boundary tie; it rejected roughly two fifths of a legitimate class. Only the specific p value was
+wrong.
 
 The original notice follows unchanged, as the record of what was found and why.
 
