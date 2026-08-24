@@ -327,6 +327,56 @@ that these 50 trials have not already produced, and make any future candidate ha
 Record: `agent_context/work/completed/20260824-1216Z-codex-nifty50-ten-year-v2-training.md`
 (`STATUS: RETIRED_RESEARCH_ONLY`).
 
+### A different feature family was screened, and is worse (2026-08-24)
+
+Three pre-declared research screens against the real cached ten-year NIFTY 50 data. **No
+`EvidenceStore` written, no multiplicity ordinal spent, no model published — not governed evidence.**
+Recorded anyway, because an unrecorded search is invisible multiplicity to whoever screens the same
+family next.
+
+| Screen | Result |
+|---|---|
+| New family: gap, close-location, range expansion, volume z, dollar-volume, price position | mean IC +0.00732, **t = 1.08**, 31/50 positive |
+| **Control: the existing v1/v2 close-only six** | mean IC +0.01556, **t = 2.34**, 35/50 positive |
+
+**The new family is worse than the one that already failed.** That is the direct answer to trying a
+different feature set: tried, pre-declared, no improvement.
+
+The control was more informative than the thing it controlled for. The existing family has a
+*detectable gross* signal yet produced nothing promotable in 101 governed trials, with best-name
+gross edge about 0.2% against a 0.224% round trip. That suggested "edge roughly equal to cost", which
+predicts that a longer hold should turn net edge positive as the fixed cost amortises. Tested on a
+pre-declared grid, labels net of cost:
+
+| Hold | t(IC) | Mean net return | t(net) |
+|---:|---:|---:|---:|
+| 2 | +2.34 | -0.002100 | -13.57 |
+| 5 | +0.60 | -0.001900 | -3.72 |
+| 10 | +0.44 | -0.002117 | -1.99 |
+| 21 | +0.93 | **-0.000264** | **-0.13** |
+
+Net return climbs toward zero as cost amortises but **never turns positive**; at hold 21 it is
+indistinguishable from zero. The diagnosis is falsified: removing the cost drag revealed nothing
+underneath, so the gross signal at hold 2 is most likely short-horizon microstructure that does not
+survive as tradeable return.
+
+**Nothing here justifies feature schema v3.** Extending the governed contract for a family the cheap
+test already rejects would spend engineering and multiplicity on a dead hypothesis — which is why the
+screen came before the governance work rather than after it.
+
+One correction recorded in full: the first run of screen 1 reported t = 1.53. The cache holds two
+DATASET resources per symbol and counting both doubled n, shrinking the standard error by sqrt(2). A
+40% inflation of my own headline number from a bookkeeping artifact, in a screen whose purpose was
+scepticism.
+
+What would justify another look is **not** another feature family on the same data. Every attempt so
+far shares one frame: single-instrument, daily, long-only, 2-21 sessions. A genuinely different
+attempt changes the frame — a cross-sectional design ranking names against each other — and the
+governed dataset contract cannot currently express it (`modeling/labels.py:135` is
+single-instrument). That is a modelling-contract change, not a feature change.
+
+Record: `agent_context/work/completed/20260824-claude-alternative-feature-screens.md`.
+
 ### The second calculation path is closed (`85ff535`)
 
 `strategies/ml_equity.py` defines `RollingRidgeClassifier` — a ridge with no purging, no
