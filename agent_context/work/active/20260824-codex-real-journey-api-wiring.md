@@ -1,6 +1,6 @@
 # Active work: real governed journey API wiring
 
-STATUS: ACTIVE
+STATUS: HANDED_OFF_PENDING_INDEPENDENT_RECHECK
 OWNER: Codex — server/API implementation owner by founder direction
 TOOL: Codex
 STARTED_UTC: 2026-08-24T10:30:00Z
@@ -61,7 +61,7 @@ path or concurrent record.
 3. DONE — bind idempotency keys to canonical operation intent and supervise real data acquisition.
 4. DONE — replace prefilled dashboard financial/model/runtime claims with truthful states.
 5. DONE — harden identity, cancellation, validation serialization, responsive UI, and output escaping.
-6. IN PROGRESS — push the exact owned commits and hand off independent recheck.
+6. DONE — push the exact owned commits and hand off independent recheck.
 
 ## Decision rationale
 
@@ -104,6 +104,9 @@ are disabled. This preserves the seam with the concurrent feature/model owner.
 - Repository agent-claim audit: PASS.
 - Repository disk-layout audit: PASS.
 - Implementation commit: `4905b5b7168677eb8115e267b8b8d225a2cc7e6c`.
+- Handoff commit: `3a5938161f05d543cf44a7546887c6ff5d3d1628`.
+- Remote branch `origin/codex/real-journey-api`: pushed and verified.
+- Final post-push agent-claim and disk-layout audits: PASS.
 
 ## Files changed
 
@@ -134,12 +137,13 @@ are disabled. This preserves the seam with the concurrent feature/model owner.
 
 ## Stop point
 
-Implementation, verification, repository audits, and the implementation commit are complete. Push
-and the independent-recheck handoff remain.
+Implementation, verification, repository audits, exact commits, remote push, and the independent
+recheck handoff are complete. The claim remains active while this registered worktree awaits the
+independent reviewer; retiring it earlier would leave a live workspace unclaimed.
 
 ## Next safe action
 
-Commit this record and the handoff, push only owned paths, then hand the branch to an independent
-reviewer. Separately, repair and independently certify the reverse-order model blocker. Only after
-that certification may this disjoint server branch be integrated and the full suite rerun before a
-new schema-v2 model training campaign.
+An independent reviewer may now check `origin/codex/real-journey-api` using the handoff record.
+Separately, repair and independently certify the reverse-order model blocker. Only after both
+certifications may this disjoint server branch be integrated and the full suite rerun before a new
+schema-v2 model training campaign.
