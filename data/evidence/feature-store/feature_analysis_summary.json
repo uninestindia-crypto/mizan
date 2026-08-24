@@ -1,0 +1,597 @@
+{
+  "analysis_timestamp": "2026-08-24T18:45:03.701715+00:00",
+  "total_observations": 358495,
+  "unique_sessions": 2429,
+  "feature_moments": {
+    "ret_1d": {
+      "count": 358495,
+      "mean": 0.0008,
+      "std": 0.02229,
+      "min": -0.64898,
+      "q25": -0.00979,
+      "median": 1e-05,
+      "q75": 0.01067,
+      "max": 0.58086,
+      "skewness": 0.1939,
+      "kurtosis": 18.5222
+    },
+    "ret_5d": {
+      "count": 358495,
+      "mean": 0.00398,
+      "std": 0.05075,
+      "min": -0.63085,
+      "q25": -0.02204,
+      "median": 0.00209,
+      "q75": 0.02813,
+      "max": 1.76,
+      "skewness": 0.6636,
+      "kurtosis": 15.2952
+    },
+    "ret_21d": {
+      "count": 358495,
+      "mean": 0.01697,
+      "std": 0.10703,
+      "min": -0.775,
+      "q25": -0.04146,
+      "median": 0.01113,
+      "q75": 0.07003,
+      "max": 1.664,
+      "skewness": 0.7097,
+      "kurtosis": 7.3263
+    },
+    "gk_vol": {
+      "count": 358495,
+      "mean": 0.01779,
+      "std": 0.01203,
+      "min": 0.0,
+      "q25": 0.01087,
+      "median": 0.015,
+      "q75": 0.02122,
+      "max": 1.16859,
+      "skewness": 6.7456,
+      "kurtosis": 281.1845
+    },
+    "park_vol": {
+      "count": 358495,
+      "mean": 0.01738,
+      "std": 0.01213,
+      "min": 0.0,
+      "q25": 0.01029,
+      "median": 0.01445,
+      "q75": 0.02082,
+      "max": 1.06263,
+      "skewness": 5.8331,
+      "kurtosis": 193.0307
+    },
+    "rsi_14": {
+      "count": 358495,
+      "mean": 52.03134,
+      "std": 12.40589,
+      "min": 7.55,
+      "q25": 43.35,
+      "median": 52.01,
+      "q75": 60.74,
+      "max": 98.73,
+      "skewness": -0.0055,
+      "kurtosis": -0.2457
+    },
+    "ratio_sma20": {
+      "count": 358495,
+      "mean": 0.0067,
+      "std": 0.06114,
+      "min": -0.6482,
+      "q25": -0.025,
+      "median": 0.0052,
+      "q75": 0.0376,
+      "max": 0.8253,
+      "skewness": 0.0837,
+      "kurtosis": 8.1728
+    },
+    "ratio_sma50": {
+      "count": 358495,
+      "mean": 0.01612,
+      "std": 0.09633,
+      "min": -0.744,
+      "q25": -0.0356,
+      "median": 0.013,
+      "q75": 0.0652,
+      "max": 1.1908,
+      "skewness": 0.2825,
+      "kurtosis": 5.4485
+    },
+    "vol_zscore": {
+      "count": 358495,
+      "mean": 0.14261,
+      "std": 2.11673,
+      "min": -5.505,
+      "q25": -0.7,
+      "median": -0.295,
+      "q75": 0.384,
+      "max": 145.155,
+      "skewness": 15.6199,
+      "kurtosis": 587.9662
+    },
+    "mf_multiplier": {
+      "count": 358495,
+      "mean": -0.04779,
+      "std": 0.54562,
+      "min": -1.0,
+      "q25": -0.5533,
+      "median": -0.0884,
+      "q75": 0.4571,
+      "max": 1.0,
+      "skewness": 0.1353,
+      "kurtosis": -1.3186
+    },
+    "india_vix": {
+      "count": 358495,
+      "mean": 16.44053,
+      "std": 6.40213,
+      "min": 9.15,
+      "q25": 12.73,
+      "median": 14.85,
+      "q75": 18.39,
+      "max": 83.61,
+      "skewness": 4.1579,
+      "kurtosis": 27.9586
+    },
+    "nifty_ret_5d": {
+      "count": 358495,
+      "mean": 0.00237,
+      "std": 0.02241,
+      "min": -0.19024,
+      "q25": -0.00913,
+      "median": 0.0038,
+      "q75": 0.0152,
+      "max": 0.10522,
+      "skewness": -0.9723,
+      "kurtosis": 8.4739
+    },
+    "cs_rank_mom5d": {
+      "count": 358495,
+      "mean": 0.50339,
+      "std": 0.28867,
+      "min": 0.0062,
+      "q25": 0.2538,
+      "median": 0.5034,
+      "q75": 0.7535,
+      "max": 1.0,
+      "skewness": 0.0,
+      "kurtosis": -1.2001
+    },
+    "cs_rank_vol_surprise": {
+      "count": 358495,
+      "mean": 0.50339,
+      "std": 0.28867,
+      "min": 0.0062,
+      "q25": 0.2538,
+      "median": 0.5034,
+      "q75": 0.7535,
+      "max": 1.0,
+      "skewness": 0.0,
+      "kurtosis": -1.2001
+    }
+  },
+  "information_coefficients": {
+    "fwd_ret_1d": {
+      "ret_1d": {
+        "mean_rank_ic": -0.0143,
+        "ic_std": 0.1626,
+        "information_ratio_annualized": -1.4,
+        "pct_positive_ic_days": 47.1,
+        "days_evaluated": 2425
+      },
+      "ret_5d": {
+        "mean_rank_ic": -0.0154,
+        "ic_std": 0.1726,
+        "information_ratio_annualized": -1.42,
+        "pct_positive_ic_days": 46.8,
+        "days_evaluated": 2425
+      },
+      "ret_21d": {
+        "mean_rank_ic": -0.0039,
+        "ic_std": 0.1782,
+        "information_ratio_annualized": -0.35,
+        "pct_positive_ic_days": 49.2,
+        "days_evaluated": 2425
+      },
+      "gk_vol": {
+        "mean_rank_ic": -0.0138,
+        "ic_std": 0.1772,
+        "information_ratio_annualized": -1.23,
+        "pct_positive_ic_days": 46.9,
+        "days_evaluated": 2425
+      },
+      "park_vol": {
+        "mean_rank_ic": -0.0147,
+        "ic_std": 0.1749,
+        "information_ratio_annualized": -1.34,
+        "pct_positive_ic_days": 45.9,
+        "days_evaluated": 2425
+      },
+      "rsi_14": {
+        "mean_rank_ic": -0.009,
+        "ic_std": 0.1756,
+        "information_ratio_annualized": -0.81,
+        "pct_positive_ic_days": 47.5,
+        "days_evaluated": 2425
+      },
+      "ratio_sma20": {
+        "mean_rank_ic": -0.0106,
+        "ic_std": 0.1791,
+        "information_ratio_annualized": -0.94,
+        "pct_positive_ic_days": 47.8,
+        "days_evaluated": 2425
+      },
+      "ratio_sma50": {
+        "mean_rank_ic": -0.0042,
+        "ic_std": 0.188,
+        "information_ratio_annualized": -0.35,
+        "pct_positive_ic_days": 49.2,
+        "days_evaluated": 2425
+      },
+      "vol_zscore": {
+        "mean_rank_ic": -0.0005,
+        "ic_std": 0.13,
+        "information_ratio_annualized": -0.06,
+        "pct_positive_ic_days": 50.1,
+        "days_evaluated": 2425
+      },
+      "mf_multiplier": {
+        "mean_rank_ic": -0.0196,
+        "ic_std": 0.1411,
+        "information_ratio_annualized": -2.21,
+        "pct_positive_ic_days": 45.0,
+        "days_evaluated": 2425
+      },
+      "india_vix": {
+        "mean_rank_ic": -0.0004,
+        "ic_std": 0.1118,
+        "information_ratio_annualized": -0.06,
+        "pct_positive_ic_days": 51.1,
+        "days_evaluated": 2425
+      },
+      "nifty_ret_5d": {
+        "mean_rank_ic": -0.0004,
+        "ic_std": 0.1119,
+        "information_ratio_annualized": -0.06,
+        "pct_positive_ic_days": 51.1,
+        "days_evaluated": 2425
+      },
+      "cs_rank_mom5d": {
+        "mean_rank_ic": -0.0154,
+        "ic_std": 0.1726,
+        "information_ratio_annualized": -1.42,
+        "pct_positive_ic_days": 46.8,
+        "days_evaluated": 2425
+      },
+      "cs_rank_vol_surprise": {
+        "mean_rank_ic": -0.0005,
+        "ic_std": 0.13,
+        "information_ratio_annualized": -0.06,
+        "pct_positive_ic_days": 50.1,
+        "days_evaluated": 2425
+      }
+    },
+    "fwd_ret_5d": {
+      "ret_1d": {
+        "mean_rank_ic": -0.0141,
+        "ic_std": 0.1561,
+        "information_ratio_annualized": -1.44,
+        "pct_positive_ic_days": 46.3,
+        "days_evaluated": 2421
+      },
+      "ret_5d": {
+        "mean_rank_ic": -0.0174,
+        "ic_std": 0.1666,
+        "information_ratio_annualized": -1.66,
+        "pct_positive_ic_days": 46.3,
+        "days_evaluated": 2421
+      },
+      "ret_21d": {
+        "mean_rank_ic": -0.0024,
+        "ic_std": 0.1794,
+        "information_ratio_annualized": -0.21,
+        "pct_positive_ic_days": 51.4,
+        "days_evaluated": 2421
+      },
+      "gk_vol": {
+        "mean_rank_ic": -0.0025,
+        "ic_std": 0.1774,
+        "information_ratio_annualized": -0.23,
+        "pct_positive_ic_days": 49.4,
+        "days_evaluated": 2421
+      },
+      "park_vol": {
+        "mean_rank_ic": -0.0031,
+        "ic_std": 0.1751,
+        "information_ratio_annualized": -0.28,
+        "pct_positive_ic_days": 48.7,
+        "days_evaluated": 2421
+      },
+      "rsi_14": {
+        "mean_rank_ic": -0.0075,
+        "ic_std": 0.18,
+        "information_ratio_annualized": -0.66,
+        "pct_positive_ic_days": 49.8,
+        "days_evaluated": 2421
+      },
+      "ratio_sma20": {
+        "mean_rank_ic": -0.0081,
+        "ic_std": 0.1773,
+        "information_ratio_annualized": -0.73,
+        "pct_positive_ic_days": 49.2,
+        "days_evaluated": 2421
+      },
+      "ratio_sma50": {
+        "mean_rank_ic": -0.003,
+        "ic_std": 0.1914,
+        "information_ratio_annualized": -0.25,
+        "pct_positive_ic_days": 51.3,
+        "days_evaluated": 2421
+      },
+      "vol_zscore": {
+        "mean_rank_ic": -0.0034,
+        "ic_std": 0.1293,
+        "information_ratio_annualized": -0.42,
+        "pct_positive_ic_days": 48.6,
+        "days_evaluated": 2421
+      },
+      "mf_multiplier": {
+        "mean_rank_ic": -0.0134,
+        "ic_std": 0.1386,
+        "information_ratio_annualized": -1.53,
+        "pct_positive_ic_days": 46.2,
+        "days_evaluated": 2421
+      },
+      "india_vix": {
+        "mean_rank_ic": -0.0053,
+        "ic_std": 0.1195,
+        "information_ratio_annualized": -0.71,
+        "pct_positive_ic_days": 49.1,
+        "days_evaluated": 2421
+      },
+      "nifty_ret_5d": {
+        "mean_rank_ic": -0.0054,
+        "ic_std": 0.1196,
+        "information_ratio_annualized": -0.72,
+        "pct_positive_ic_days": 49.0,
+        "days_evaluated": 2421
+      },
+      "cs_rank_mom5d": {
+        "mean_rank_ic": -0.0174,
+        "ic_std": 0.1666,
+        "information_ratio_annualized": -1.66,
+        "pct_positive_ic_days": 46.3,
+        "days_evaluated": 2421
+      },
+      "cs_rank_vol_surprise": {
+        "mean_rank_ic": -0.0034,
+        "ic_std": 0.1293,
+        "information_ratio_annualized": -0.42,
+        "pct_positive_ic_days": 48.7,
+        "days_evaluated": 2421
+      }
+    },
+    "fwd_ret_21d": {
+      "ret_1d": {
+        "mean_rank_ic": -0.005,
+        "ic_std": 0.1518,
+        "information_ratio_annualized": -0.52,
+        "pct_positive_ic_days": 49.2,
+        "days_evaluated": 2405
+      },
+      "ret_5d": {
+        "mean_rank_ic": -0.0043,
+        "ic_std": 0.1585,
+        "information_ratio_annualized": -0.44,
+        "pct_positive_ic_days": 49.7,
+        "days_evaluated": 2405
+      },
+      "ret_21d": {
+        "mean_rank_ic": -0.0064,
+        "ic_std": 0.1756,
+        "information_ratio_annualized": -0.58,
+        "pct_positive_ic_days": 50.4,
+        "days_evaluated": 2405
+      },
+      "gk_vol": {
+        "mean_rank_ic": 0.0158,
+        "ic_std": 0.1718,
+        "information_ratio_annualized": 1.46,
+        "pct_positive_ic_days": 52.8,
+        "days_evaluated": 2405
+      },
+      "park_vol": {
+        "mean_rank_ic": 0.0131,
+        "ic_std": 0.1694,
+        "information_ratio_annualized": 1.23,
+        "pct_positive_ic_days": 52.3,
+        "days_evaluated": 2405
+      },
+      "rsi_14": {
+        "mean_rank_ic": -0.0073,
+        "ic_std": 0.1724,
+        "information_ratio_annualized": -0.68,
+        "pct_positive_ic_days": 49.5,
+        "days_evaluated": 2405
+      },
+      "ratio_sma20": {
+        "mean_rank_ic": -0.0049,
+        "ic_std": 0.1695,
+        "information_ratio_annualized": -0.45,
+        "pct_positive_ic_days": 51.6,
+        "days_evaluated": 2405
+      },
+      "ratio_sma50": {
+        "mean_rank_ic": -0.003,
+        "ic_std": 0.1853,
+        "information_ratio_annualized": -0.26,
+        "pct_positive_ic_days": 51.1,
+        "days_evaluated": 2405
+      },
+      "vol_zscore": {
+        "mean_rank_ic": -0.0001,
+        "ic_std": 0.1289,
+        "information_ratio_annualized": -0.01,
+        "pct_positive_ic_days": 50.2,
+        "days_evaluated": 2405
+      },
+      "mf_multiplier": {
+        "mean_rank_ic": -0.0018,
+        "ic_std": 0.1366,
+        "information_ratio_annualized": -0.21,
+        "pct_positive_ic_days": 50.4,
+        "days_evaluated": 2405
+      },
+      "india_vix": {
+        "mean_rank_ic": -0.0129,
+        "ic_std": 0.1226,
+        "information_ratio_annualized": -1.66,
+        "pct_positive_ic_days": 45.2,
+        "days_evaluated": 2405
+      },
+      "nifty_ret_5d": {
+        "mean_rank_ic": -0.0129,
+        "ic_std": 0.1226,
+        "information_ratio_annualized": -1.67,
+        "pct_positive_ic_days": 45.1,
+        "days_evaluated": 2405
+      },
+      "cs_rank_mom5d": {
+        "mean_rank_ic": -0.0043,
+        "ic_std": 0.1585,
+        "information_ratio_annualized": -0.43,
+        "pct_positive_ic_days": 49.7,
+        "days_evaluated": 2405
+      },
+      "cs_rank_vol_surprise": {
+        "mean_rank_ic": -0.0001,
+        "ic_std": 0.1289,
+        "information_ratio_annualized": -0.01,
+        "pct_positive_ic_days": 50.2,
+        "days_evaluated": 2405
+      }
+    },
+    "fwd_alpha_5d": {
+      "ret_1d": {
+        "mean_rank_ic": -0.0141,
+        "ic_std": 0.1561,
+        "information_ratio_annualized": -1.44,
+        "pct_positive_ic_days": 46.3,
+        "days_evaluated": 2421
+      },
+      "ret_5d": {
+        "mean_rank_ic": -0.0174,
+        "ic_std": 0.1666,
+        "information_ratio_annualized": -1.66,
+        "pct_positive_ic_days": 46.3,
+        "days_evaluated": 2421
+      },
+      "ret_21d": {
+        "mean_rank_ic": -0.0024,
+        "ic_std": 0.1794,
+        "information_ratio_annualized": -0.21,
+        "pct_positive_ic_days": 51.4,
+        "days_evaluated": 2421
+      },
+      "gk_vol": {
+        "mean_rank_ic": -0.0025,
+        "ic_std": 0.1774,
+        "information_ratio_annualized": -0.23,
+        "pct_positive_ic_days": 49.4,
+        "days_evaluated": 2421
+      },
+      "park_vol": {
+        "mean_rank_ic": -0.0031,
+        "ic_std": 0.1751,
+        "information_ratio_annualized": -0.28,
+        "pct_positive_ic_days": 48.7,
+        "days_evaluated": 2421
+      },
+      "rsi_14": {
+        "mean_rank_ic": -0.0075,
+        "ic_std": 0.18,
+        "information_ratio_annualized": -0.66,
+        "pct_positive_ic_days": 49.7,
+        "days_evaluated": 2421
+      },
+      "ratio_sma20": {
+        "mean_rank_ic": -0.0082,
+        "ic_std": 0.1773,
+        "information_ratio_annualized": -0.73,
+        "pct_positive_ic_days": 49.2,
+        "days_evaluated": 2421
+      },
+      "ratio_sma50": {
+        "mean_rank_ic": -0.003,
+        "ic_std": 0.1914,
+        "information_ratio_annualized": -0.25,
+        "pct_positive_ic_days": 51.3,
+        "days_evaluated": 2421
+      },
+      "vol_zscore": {
+        "mean_rank_ic": -0.0034,
+        "ic_std": 0.1293,
+        "information_ratio_annualized": -0.42,
+        "pct_positive_ic_days": 48.7,
+        "days_evaluated": 2421
+      },
+      "mf_multiplier": {
+        "mean_rank_ic": -0.0134,
+        "ic_std": 0.1386,
+        "information_ratio_annualized": -1.53,
+        "pct_positive_ic_days": 46.2,
+        "days_evaluated": 2421
+      },
+      "india_vix": {
+        "mean_rank_ic": -0.0053,
+        "ic_std": 0.1195,
+        "information_ratio_annualized": -0.7,
+        "pct_positive_ic_days": 49.1,
+        "days_evaluated": 2421
+      },
+      "nifty_ret_5d": {
+        "mean_rank_ic": -0.0054,
+        "ic_std": 0.1196,
+        "information_ratio_annualized": -0.71,
+        "pct_positive_ic_days": 49.0,
+        "days_evaluated": 2421
+      },
+      "cs_rank_mom5d": {
+        "mean_rank_ic": -0.0174,
+        "ic_std": 0.1666,
+        "information_ratio_annualized": -1.66,
+        "pct_positive_ic_days": 46.3,
+        "days_evaluated": 2421
+      },
+      "cs_rank_vol_surprise": {
+        "mean_rank_ic": -0.0034,
+        "ic_std": 0.1293,
+        "information_ratio_annualized": -0.42,
+        "pct_positive_ic_days": 48.8,
+        "days_evaluated": 2421
+      }
+    }
+  },
+  "market_regimes": {
+    "LOW_VOL": {
+      "observations": 144845,
+      "mean_forward_5d_return": 0.278,
+      "mean_gk_volatility": 1.499,
+      "median_forward_5d_return": 0.113
+    },
+    "NORMAL_VOL": {
+      "observations": 149372,
+      "mean_forward_5d_return": 0.281,
+      "mean_gk_volatility": 1.801,
+      "median_forward_5d_return": 0.148
+    },
+    "HIGH_VOL": {
+      "observations": 63473,
+      "mean_forward_5d_return": 0.967,
+      "mean_gk_volatility": 2.374,
+      "median_forward_5d_return": 0.74
+    }
+  }
+}

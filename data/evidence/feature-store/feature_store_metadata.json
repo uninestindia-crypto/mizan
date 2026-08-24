@@ -1,0 +1,32 @@
+{
+  "generated_at": "2026-08-24T18:43:40.181940+00:00",
+  "total_rows": 358495,
+  "total_symbols": 161,
+  "feature_count": 23,
+  "features_list": [
+    "date",
+    "symbol",
+    "close",
+    "volume",
+    "ret_1d",
+    "ret_5d",
+    "ret_21d",
+    "gk_vol",
+    "park_vol",
+    "rsi_14",
+    "ratio_sma20",
+    "ratio_sma50",
+    "vol_zscore",
+    "mf_multiplier",
+    "india_vix",
+    "vix_regime",
+    "nifty_ret_5d",
+    "fwd_ret_1d",
+    "fwd_ret_5d",
+    "fwd_ret_21d",
+    "fwd_alpha_5d",
+    "cs_rank_mom5d",
+    "cs_rank_vol_surprise"
+  ],
+  "csv_path": "D:\\quant_system\\data\\evidence\\feature-store\\multidim_feature_store.csv"
+}
