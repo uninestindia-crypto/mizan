@@ -119,3 +119,24 @@ def test_model_publication_cannot_relabel_v2_evaluation_as_legacy() -> None:
         )
 
     assert captured.value.code is ModelingFailureCode.TRAINING_INPUT_MISMATCH
+
+
+def test_exported_evaluator_refuses_legacy_trial_over_v2_features() -> None:
+    """Schema identity must be checked before an in-memory model identity can be returned."""
+    journey = governed_training_journey()
+    legacy_claim = replace(
+        journey.start,
+        feature_schema_version=FEATURE_SCHEMA_VERSION_V1,
+    )
+    legacy_registry = type(journey.registry)(starts=(legacy_claim,), outcomes=())
+
+    with pytest.raises(ModelingError) as captured:
+        evaluate_governed_ridge_fold(
+            legacy_claim,
+            legacy_registry,
+            journey.features,
+            journey.labels,
+            journey.fold,
+        )
+
+    assert captured.value.code is ModelingFailureCode.TRAINING_INPUT_MISMATCH

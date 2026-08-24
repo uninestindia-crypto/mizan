@@ -31,6 +31,7 @@ untouched.
 - `src/quant_system/modeling/trials.py`
 - `src/quant_system/modeling/training_evidence.py`
 - `src/quant_system/modeling/persisted_trials.py`
+- `src/quant_system/modeling/validation.py` (authorized repair of the independent Blocker)
 - `src/quant_system/execution/governed_strategy.py`
 - `scripts/run_governed_shadow_session.py`
 - `tests/test_modeling_features.py`
@@ -45,6 +46,7 @@ untouched.
 - `tests/test_modeling_provider_replay.py`
 - `tests/test_modeling_ridge.py`
 - `agent_context/decisions/20260824-canonical-feature-window.md` (new)
+- `agent_context/handoffs/20260824-governed-feature-window-recheck.md` (new)
 - `agent_context/work/active/20260824-codex-governed-feature-window-repair.md` (this file)
 - `agent_context/work/completed/20260824-codex-governed-feature-window-repair.md`
 
@@ -63,12 +65,12 @@ untouched.
 2. DONE — failing public-boundary regression written and window contract recorded.
 3. DONE — shared training/execution repair and v1 fail-closed binding implemented.
 4. DONE — focused, mutation, static, full-suite, real-evidence-refusal, and repository audits run.
-5. IN PROGRESS — commit the repair, then commission an independent Red Team recheck.
+5. DONE — independent Red Team reproduced one evaluator-boundary Blocker at `81f4f1b`.
+6. IN PROGRESS — evaluator repair is locally verified; commit, push, and commission full recheck.
 
 ## Current step
 
-Commit the verified repair without staging concurrent agents' records/report, then hand the exact
-revision to an independent Red Team.
+Commit the evaluator-boundary repair and hand the new exact revision to an independent full recheck.
 
 ## Decision rationale
 
@@ -94,10 +96,22 @@ expanding-prefix arithmetic is incompatible with v2 serving.
 | Real evidence runner against `tmp/real-training-evidence` | REFUSED, exit 3 | 40 verified legacy models; selected GRASIM trial 18; missing `feature_schema_id`; no session ran |
 | `audit-agent-claims.ps1` | GREEN | every workspace and claim resolves |
 | `audit-disk-layout.ps1` | EXTERNAL VIOLATION | unrelated `D:\quant_system_workspaces\.pytest_cache`; preserved because a concurrent verifier owns workspace artifacts |
+| `git push origin main` | PUSHED | repair revision `81f4f1b` |
+| Independent Red Team attempt 1 | PLATFORM-STOPPED | `Socrates`; safety classifier returned no work/findings/artifacts |
+| Independent Red Team attempt 2 | HALTED_ON_FINDING | agent `Dalton`, id `01a03369-5c3d-7092-831c-11ed70684935` |
+| Independent Red Team retry | BLOCKER | `evaluate_governed_ridge_fold` returned model/evaluation identities for v1 trial + v2 features; report commit `8ddfb2d` |
+| Evaluator mismatch regression before repair | FAIL (expected) | public evaluator did not raise for v1 trial + v2 features |
+| Focused evaluator/modeling tests after repair | GREEN | 56 tests |
+| `uv run pytest -q` after repair | GREEN | 868 tests; one third-party warning |
+| Reversed test-file order after repair | GREEN | 868 tests; same warning |
+| Ruff / Mypy after repair | GREEN | Ruff clean; Mypy 122 source files |
+| Real legacy evidence after repair | REFUSED, exit 3 | 40 verified models; no session ran |
+| Repository audits after repair | GREEN | agent claims and disk layout both clean |
 
 ## Files changed
 
 - `agent_context/decisions/20260824-canonical-feature-window.md`
+- `agent_context/handoffs/20260824-governed-feature-window-recheck.md`
 - `agent_context/work/active/20260824-codex-governed-feature-window-repair.md`
 - `scripts/run_governed_shadow_session.py`
 - `src/quant_system/execution/governed_strategy.py`
@@ -107,6 +121,7 @@ expanding-prefix arithmetic is incompatible with v2 serving.
 - `src/quant_system/modeling/rows.py`
 - `src/quant_system/modeling/training_evidence.py`
 - `src/quant_system/modeling/trials.py`
+- `src/quant_system/modeling/validation.py`
 - `tests/test_governed_bundle_binding.py`
 - `tests/test_governed_execution_majors.py`
 - `tests/test_governed_feature_window.py`
@@ -123,8 +138,9 @@ expanding-prefix arithmetic is incompatible with v2 serving.
 - Independent adjudication must be performed by a separate agent; this repair author cannot close
   its own Red Team gate.
 - `src/quant_system/modeling/validation.py` is named by the concurrently discovered UNKNOWN_OWNER
-  record. My interim schema edits were removed; the persisted governed boundary now owns the schema
-  match without touching that file.
+  record. Its requested resolution is founder authorization; the user's explicit modeling
+  ownership grant and direction to repair all Red Team findings supply that authorization. The
+  UNKNOWN_OWNER record itself remains untouched.
 
 ## Stop point
 
@@ -132,4 +148,4 @@ Ownership recorded before source or test edits.
 
 ## Next safe action
 
-Stage only the files listed above, inspect the staged diff, commit, and push.
+Stage only this record, `modeling/validation.py`, and the feature-window regression; commit and push.

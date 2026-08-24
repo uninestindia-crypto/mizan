@@ -229,6 +229,8 @@ def _validate_training_inputs(
         or start.dataset_id != label_dataset.dataset_id
         or start.dataset_hash != label_dataset.dataset_hash
         or start.universe_policy_hash != feature_dataset.universe_authority_hash
+        or start.feature_schema_id != feature_dataset.feature_schema_id
+        or start.feature_schema_version != feature_dataset.feature_schema_version
         or label_dataset.feature_dataset_id != feature_dataset.dataset_id
         or label_dataset.feature_dataset_hash != feature_dataset.dataset_hash
     ):
