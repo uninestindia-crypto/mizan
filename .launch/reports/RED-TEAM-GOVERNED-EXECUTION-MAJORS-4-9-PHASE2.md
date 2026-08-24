@@ -52,7 +52,7 @@ Every mutant was restored before the final commit.
 | Ruff format, Phase 2-owned paths | 3 files already formatted |
 | Code Craft / Test Craft, Phase 2-owned paths | Clean |
 | Real-evidence runner | Bound the real GRASIM artifact, refused legacy/schema-less `RESEARCH_ONLY` evidence with exit 3; no session or order |
-| Agent-claims and disk-layout audits | Required at final handoff after branch reconciliation |
+| Agent-claims and disk-layout audits | Passed after branch reconciliation and worktree retirement |
 
 The repository-wide Ruff format baseline has one inherited, out-of-scope file that would be
 reformatted: `src/quant_system/modeling/trials.py`. The repository-wide craft scan also retains

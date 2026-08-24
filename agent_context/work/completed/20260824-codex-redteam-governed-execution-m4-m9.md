@@ -43,8 +43,7 @@ proof-backed Phase 2 verdict without live-money, broker-write, or promotion acti
 5. Run independent, adjacent, static, real-evidence, and full regression gates.
 6. Close the structured ledger, publish reports, reconcile, commit, and push.
 
-All implementation and verification steps are complete. Final reconciliation, audit scripts, merge,
-and push are the remaining mechanical handoff actions.
+All implementation, verification, reconciliation, audit, merge, and push steps are complete.
 
 ## Decision rationale
 
@@ -71,6 +70,9 @@ and push are the remaining mechanical handoff actions.
 | Owned-path Ruff format and craft checks | passed |
 | Real evidence runner | exit 3, safe refusal, no session/order/promotion |
 | Structured QA ledger | 23/23 passed, 144/144 weight, 7/7 milestones, release validation passed |
+| Main reconciliation | fast-forwarded through the product and certification commits |
+| Agent-claims / disk-layout audits | passed after retiring only this run's worktree and local branch |
+| Remote delivery | feature branch and `main` pushed to `origin`; main includes the Phase 1 report |
 
 ## Files changed
 
@@ -88,6 +90,7 @@ this closure.
 
 ## Stop point and next safe action
 
-Reconcile this branch into `main`, push the branch and `main`, retire only the worktree created by
-this run, remove the install-root active claim after retirement, and run both repository ownership
-audits. Then continue the real journey API task or the independent feature-window certification.
+Phase 2 is merged and pushed. The derived repair worktree was removed after Git retirement; all
+commits and evidence remain recoverable from Git and the recorded scratch directory. Continue the
+real journey API task or the independent feature-window certification. A fresh schema-v2 real-data
+training campaign is required before any governed model may reach shadow execution.
