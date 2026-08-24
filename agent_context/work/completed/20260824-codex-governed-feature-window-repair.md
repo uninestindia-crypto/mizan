@@ -1,6 +1,6 @@
-# Active work: governed feature-window repair and independent recheck
+# Retired work: governed feature-window repair and independent recheck
 
-STATUS: ACTIVE
+STATUS: RETIRED_AFTER_INDEPENDENT_RECHECK
 OWNER: Codex — governed execution/modeling owner by founder grant
 TOOL: Codex
 STARTED_UTC: 2026-08-24T10:20:00Z
@@ -68,11 +68,14 @@ untouched.
 5. DONE — independent Red Team reproduced one evaluator-boundary Blocker at `81f4f1b`.
 6. DONE — evaluator repair pushed as `8f29564`.
 7. DONE — recheck at `8f29564` closed evaluator finding, then found reversed-kernel Blocker.
-8. IN PROGRESS — order repair locally verified; commit, push, then resume final recheck.
+8. DONE — order repair pushed as `88a7ac9`.
+9. DONE — final-2 independent recheck at exact revision `88a7ac9`; no correctness defect was
+   reproduced in the bounded 30-item matrix.
 
 ## Current step
 
-Commit and push the chronological-uniqueness repair, then resume the independent matrix.
+Record retired after the independent report. The remaining scientific boundary is a fresh
+real-data schema-v2 training campaign.
 
 ## Decision rationale
 
@@ -116,6 +119,17 @@ expanding-prefix arithmetic is incompatible with v2 serving.
 | Focused order/modeling tests after repair | GREEN | 75 tests |
 | `uv run pytest -q` after order repair | GREEN | 869 tests; one third-party warning |
 | Ruff / Mypy / repository audits | GREEN | Ruff clean; Mypy 122 source files; claims/layout clean |
+| Order repair push | PUSHED | `88a7ac988114267a0d44203587a57b680717bf3b` |
+| Final-2 independent recheck | REVIEWED | 30/30 expected outcomes; 0 Blocker, 0 Major, 0 Minor at exact revision `88a7ac9` |
+| Independent focused tests | GREEN | 114 tests in 4.19 seconds |
+| Independent full suite | GREEN | 869 tests in 56.60 seconds; one third-party warning |
+| Independent reversed suite | GREEN | 869 tests in 46.14 seconds; same warning |
+| Independent static checks | GREEN | Ruff clean; Mypy clean across 122 source files |
+| Independent real evidence runner | REFUSED, exit 3 | 40 verified pre-v2 models; selected GRASIM trial 18 lacked `feature_schema_id`; no session or order created |
+| Independent repository audits | GREEN | agent claims and disk layout both clean |
+| Independent report push | PUSHED | report commit `69d8cd0f423edb6ffd75d86b30b361aa1ec37f30` |
+| Direct final audit invocation | ENVIRONMENT-BLOCKED | Windows execution policy rejected direct `.ps1` loading; no audit result inferred |
+| Final audits via `powershell -NoProfile -ExecutionPolicy Bypass -File ...` | GREEN | claim audit exit 0; disk-layout audit exit 0 |
 
 ## Files changed
 
@@ -144,8 +158,8 @@ expanding-prefix arithmetic is incompatible with v2 serving.
 
 ## Blockers and conflicts
 
-- Independent adjudication must be performed by a separate agent; this repair author cannot close
-  its own Red Team gate.
+- No repair blocker remains within the bounded feature-window matrix. This does not authorize
+  deployment or promotion.
 - `src/quant_system/modeling/validation.py` is named by the concurrently discovered UNKNOWN_OWNER
   record. Its requested resolution is founder authorization; the user's explicit modeling
   ownership grant and direction to repair all Red Team findings supply that authorization. The
@@ -153,8 +167,12 @@ expanding-prefix arithmetic is incompatible with v2 serving.
 
 ## Stop point
 
-Ownership recorded before source or test edits.
+Source repairs are at `81f4f1b`, `8f29564`, and `88a7ac9`. The independent final-2 report is at
+`69d8cd0` and records no reproduced correctness defect in the requested matrix. Existing real-data
+artifacts remain historical pre-v2 evidence and cannot execute under schema v2.
 
 ## Next safe action
 
-Stage only this record, `modeling/features.py`, and the regression; commit and push.
+Run a new governed training campaign from real point-in-time market data under feature schema v2,
+then independently review its trial, publication, and promotion evidence. Do not relabel or reuse
+the 40 pre-v2 model artifacts as v2 evidence.
