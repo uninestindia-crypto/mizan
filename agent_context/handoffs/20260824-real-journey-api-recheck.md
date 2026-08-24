@@ -48,11 +48,11 @@ controls instead of fabricated results. Live-money and broker writes remain excl
 
 ## Binding integration and training boundary
 
-Do not integrate this branch into the modeling repair or begin training yet. Independent Dalton
-recheck of modeling revision `8f29564` halted because exported `compute_feature_values` accepts the
-same 21 bars in reverse chronology and silently changes all six feature values. That owner must add
-fail-closed chronological validation, rerun the focused probes, and complete the 28 skipped Red Team
-items in a fresh independent clone. The old 51-trial campaign is invalid for feature schema v2.
+Do not integrate this branch or begin training yet. Independent Dalton recheck of modeling revision
+`8f29564` halted because exported `compute_feature_values` accepted reverse-chronology bars. The
+modeling owner repaired that boundary at `88a7ac9`; a fresh final-2 Dalton recheck of that exact
+revision is active and must close both prior reproductions plus all 28 skipped Red Team items. The
+old 51-trial campaign is invalid for feature schema v2.
 
 After both independent certifications, integrate the disjoint branches, rerun the full suite in
 normal and reverse test-file order, and only then launch a fresh schema-v2 model campaign.

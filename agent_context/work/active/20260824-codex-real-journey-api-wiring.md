@@ -17,11 +17,10 @@ operations, idempotency, Decimal money, zero broker writes, and fail-closed beha
 ## Founder direction and concurrency boundary
 
 The founder directed this agent to complete all non-training parts without crossing the separate
-model-training agent. The concurrent feature-window owner has repair `8f29564` on `main`. Its final
-independent Dalton recheck halted on a new finding: exported `compute_feature_values` accepts
-reverse-chronology bars and produces six different values instead of failing closed. This branch
-remains based on `ac47d7c`; it has not merged, rebased onto, edited, or staged any modeling/execution
-path or concurrent record.
+model-training agent. The concurrent feature-window owner repaired the evaluator at `8f29564`, then
+repaired the independent reverse-chronology finding at `88a7ac9`. A fresh final-2 Dalton recheck of
+that exact revision is active. This branch remains based on `ac47d7c`; it has not merged, rebased
+onto, edited, or staged any modeling/execution path or concurrent record.
 
 ## Owned paths
 
@@ -127,11 +126,11 @@ are disabled. This preserves the seam with the concurrent feature/model owner.
 
 ## Blockers and conflicts
 
-- Training cannot start from this branch. Feature schema v2 at `8f29564` changes arithmetic
-  compatibility, invalidates the old 51-trial campaign, and failed its final independent recheck
-  because the public feature kernel accepts reverse-chronology bars.
-- The modeling owner must repair chronological-order validation and a fresh independent clone must
-  complete the reverse-order probes plus the 28 Red Team items skipped after halt-on-first-finding.
+- Training cannot start from this branch. Feature schema v2 changes arithmetic compatibility and
+  invalidates the old 51-trial campaign. The reverse-chronology blocker found at `8f29564` was
+  repaired at `88a7ac9`, but the fresh final-2 independent recheck is still active.
+- The final-2 clone must close both prior reproductions and complete the 28 Red Team items skipped
+  after halt-on-first-finding before integration or training.
 - This branch must be integrated only after that record's binding next action is satisfied.
 - Independent recheck cannot be performed by this implementation agent.
 
@@ -144,6 +143,6 @@ independent reviewer; retiring it earlier would leave a live workspace unclaimed
 ## Next safe action
 
 An independent reviewer may now check `origin/codex/real-journey-api` using the handoff record.
-Separately, repair and independently certify the reverse-order model blocker. Only after both
-certifications may this disjoint server branch be integrated and the full suite rerun before a new
-schema-v2 model training campaign.
+Separately, wait for the active final-2 independent recheck of model revision `88a7ac9`. Only after
+both certifications may this disjoint server branch be integrated and the full suite rerun before
+a new schema-v2 model training campaign.
