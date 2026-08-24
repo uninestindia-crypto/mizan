@@ -66,7 +66,8 @@ one, which is the defect this adapter exists to remove.
 - `tests/test_governed_shadow_wiring.py`
 - `tests/test_governed_strategy.py`
 - `tests/test_maturity_horizon.py`
-- `agent_context/work/active/20260823-claude-redteam-repair-b1-b3.md` (this file)
+- `agent_context/work/completed/20260823-claude-redteam-repair-b1-b3.md` (this file)
+- `agent_context/handoffs/20260824-governed-execution-majors-4-9-recheck.md`
 
 ## Non-goals
 
@@ -207,3 +208,16 @@ The five owned suites ran twice concurrently in opposite file orders: **68 passe
 The available pytest plugins were `anyio` and `cov`; no random-order plugin was installed. Ruff,
 Ruff format, strict mypy, `check-code.mjs`, and `check-tests.mjs` were clean on the exact owned paths.
 `scripts/audit-agent-claims.ps1` and `scripts/audit-disk-layout.ps1` both exited 0.
+
+## Stop point
+
+Repair commit `deccec1` is pushed to `origin/main`. No independent adjudicator has rechecked it.
+Unrelated DSR boundary changes remained unstaged and were not included in the commit.
+
+## Next safe action
+
+An independent Red Team should adopt
+`agent_context/handoffs/20260824-governed-execution-majors-4-9-recheck.md`, rerun the original
+probes and attempt bypasses around symbol identity, malformed history, maturity resolution,
+duplicate dates, and open-exposure auditing. Blocker 2 must remain open until the founder chooses a
+canonical feature-window policy.
