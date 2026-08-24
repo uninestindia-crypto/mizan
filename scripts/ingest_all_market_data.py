@@ -123,7 +123,7 @@ def atomic_write_json(target: Path, value: object) -> None:
 
 
 def fetch_or_load_corporate_actions(
-    symbol: str, start: date, end: date, out_dir: Path, timeout: float = 12.0
+    symbol: str, start: date, end: date, out_dir: Path, timeout: float = 10.0
 ) -> tuple[Path, int]:
     """Fetch corporate actions for an equity or load from cached JSON."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -197,7 +197,7 @@ class IngestionEngine:
         ca_dir: Path,
         from_date: date,
         to_date: date,
-        rate_limit_sleep: float = 0.03,
+        rate_limit_sleep: float = 0.02,
     ) -> None:
         self.store = store
         self.client = client
@@ -207,7 +207,18 @@ class IngestionEngine:
         self.rate_limit_sleep = rate_limit_sleep
         self.lock = threading.Lock()
         self.results: dict[str, IngestionResult] = {}
+        self._clean_stale_locks()
         self._fast_index_catalog()
+
+    def _clean_stale_locks(self) -> None:
+        """Clean any abandoned lock files from previous runs."""
+        lock_file = self.store.root / "locks" / "governed-operation.lock"
+        if lock_file.exists():
+            try:
+                lock_file.unlink()
+                print("Cleaned abandoned store lock file.", flush=True)
+            except Exception:
+                pass
 
     def _fast_index_catalog(self) -> None:
         """Fast index of existing dataset manifests on disk."""
@@ -221,7 +232,8 @@ class IngestionEngine:
             m_file = d_dir / "manifest.json"
             if m_file.is_file():
                 try:
-                    meta = json.loads(m_file.read_text(encoding="utf-8"))
+                    data = json.loads(m_file.read_text(encoding="utf-8"))
+                    meta = data.get("metadata", data)
                     sym = meta.get("symbol")
                     if sym and meta.get("status") in ("ACCEPTED", "PARTIAL") and meta.get("row_count", 0) > 0:
                         rec_rng = meta.get("received_range", {})
@@ -240,6 +252,11 @@ class IngestionEngine:
                 except Exception:
                     pass
         print(f"Indexed {count} pre-existing cached datasets in EvidenceStore.", flush=True)
+
+    def get_results_copy(self) -> list[IngestionResult]:
+        """Thread-safe snapshot of results for progress updates."""
+        with self.lock:
+            return list(self.results.values())
 
     def process_target(self, target: InstrumentTarget) -> IngestionResult:
         """Acquire, validate, and persist one instrument."""
@@ -287,7 +304,7 @@ class IngestionEngine:
                 error_detail=outcome.recovery_action,
             )
         else:
-            # 4. Atomically persist to EvidenceStore
+            # 4. Atomically persist to EvidenceStore under lock
             try:
                 with self.lock:
                     saved = persist_verified_acquisition(
@@ -333,7 +350,7 @@ def run_ingestion_pipeline(
     corporate_actions_dir: Path,
     from_date: date,
     to_date: date,
-    concurrency: int = 12,
+    concurrency: int = 10,
     rate_limit_sleep: float = 0.02,
     limit: int = 0,
     skip: int = 0,
@@ -355,11 +372,11 @@ def run_ingestion_pipeline(
         targets = targets[:limit]
 
     total_targets = len(targets)
-    print(f"=== ALL-MARKET INGESTION PIPELINE ===")
-    print(f"Universe Source       : {universe_csv} ({total_targets:,} selected targets)")
-    print(f"Target Range          : {from_date} -> {to_date} (10 calendar years)")
-    print(f"Cache Evidence Root   : {cache_root.resolve()}")
-    print(f"Corporate Actions Dir : {corporate_actions_dir.resolve()}")
+    print(f"=== ALL-MARKET INGESTION PIPELINE ===", flush=True)
+    print(f"Universe Source       : {universe_csv} ({total_targets:,} selected targets)", flush=True)
+    print(f"Target Range          : {from_date} -> {to_date} (10 calendar years)", flush=True)
+    print(f"Cache Evidence Root   : {cache_root.resolve()}", flush=True)
+    print(f"Corporate Actions Dir : {corporate_actions_dir.resolve()}", flush=True)
     print(f"Worker Concurrency    : {concurrency} threads (sleep={rate_limit_sleep}s)\n", flush=True)
 
     engine = IngestionEngine(
@@ -390,7 +407,7 @@ def run_ingestion_pipeline(
             "empty_or_failed": empty_or_failed,
             "total_bars_ingested": total_bars,
             "elapsed_seconds": round(time.time() - start_time, 2),
-            "results": [asdict(r) for r in engine.results.values()],
+            "results": [asdict(r) for r in engine.get_results_copy()],
         }
         atomic_write_json(summary_file, summary_data)
 
@@ -411,7 +428,7 @@ def run_ingestion_pipeline(
                 else:
                     empty_or_failed += 1
 
-                if completed_count % 10 == 0 or completed_count == total_targets:
+                if completed_count % 25 == 0 or completed_count == total_targets:
                     elapsed = time.time() - start_time
                     rate = completed_count / max(0.1, elapsed)
                     print(
@@ -426,12 +443,12 @@ def run_ingestion_pipeline(
 
     update_summary()
     elapsed = time.time() - start_time
-    print(f"\n=== INGESTION COMPLETED IN {elapsed:.1f}s ===")
-    print(f"Total Targets Evaluated : {completed_count}")
-    print(f"Successfully Persisted  : {saved_count + hit_count} (Hits: {hit_count}, New: {saved_count})")
-    print(f"Empty or Inactive       : {empty_or_failed}")
-    print(f"Total Daily OHLCV Bars  : {total_bars:,}")
-    print(f"Summary Written To      : {summary_file}")
+    print(f"\n=== INGESTION COMPLETED IN {elapsed:.1f}s ===", flush=True)
+    print(f"Total Targets Evaluated : {completed_count}", flush=True)
+    print(f"Successfully Persisted  : {saved_count + hit_count} (Hits: {hit_count}, New: {saved_count})", flush=True)
+    print(f"Empty or Inactive       : {empty_or_failed}", flush=True)
+    print(f"Total Daily OHLCV Bars  : {total_bars:,}", flush=True)
+    print(f"Summary Written To      : {summary_file}", flush=True)
 
     return {
         "total_targets": total_targets,
@@ -468,7 +485,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--from-date", type=date.fromisoformat, default=date(2016, 8, 22))
     parser.add_argument("--to-date", type=date.fromisoformat, default=date(2026, 8, 21))
-    parser.add_argument("--concurrency", type=int, default=12)
+    parser.add_argument("--concurrency", type=int, default=10)
     parser.add_argument("--rate-limit-sleep", type=float, default=0.02)
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--skip", type=int, default=0)

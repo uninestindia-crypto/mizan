@@ -1,0 +1,210 @@
+{
+  "interval": "minutes/15",
+  "from_date": "2025-08-21",
+  "to_date": "2026-08-21",
+  "total_targets": 50,
+  "total_intraday_bars": 245795,
+  "elapsed_seconds": 17.67,
+  "results": {
+    "SHIPROCKET": {
+      "bars": 74,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_SHIPROCKET.json"
+    },
+    "MILKYMIST": {
+      "bars": 99,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_MILKYMIST.json"
+    },
+    "ICICIBANK": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_ICICIBANK.json"
+    },
+    "RELIANCE": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_RELIANCE.json"
+    },
+    "DHOOTTRANS": {
+      "bars": 124,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_DHOOTTRANS.json"
+    },
+    "BLEL": {
+      "bars": 74,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_BLEL.json"
+    },
+    "SBIN": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_SBIN.json"
+    },
+    "HDFCBANK": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_HDFCBANK.json"
+    },
+    "AXISBANK": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_AXISBANK.json"
+    },
+    "ETERNAL": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_ETERNAL.json"
+    },
+    "GROWW": {
+      "bars": 4822,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_GROWW.json"
+    },
+    "MOLBIO": {
+      "bars": 124,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_MOLBIO.json"
+    },
+    "BAJFINANCE": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_BAJFINANCE.json"
+    },
+    "TMPV": {
+      "bars": 6176,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_TMPV.json"
+    },
+    "INFY": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_INFY.json"
+    },
+    "INDOMIM": {
+      "bars": 424,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_INDOMIM.json"
+    },
+    "TATASTEEL": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_TATASTEEL.json"
+    },
+    "BHARTIARTL": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_BHARTIARTL.json"
+    },
+    "TCS": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_TCS.json"
+    },
+    "JIOFIN": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_JIOFIN.json"
+    },
+    "VAML": {
+      "bars": 1224,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_VAML.json"
+    },
+    "KOTAKBANK": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_KOTAKBANK.json"
+    },
+    "WAAREEENER": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_WAAREEENER.json"
+    },
+    "MARUTI": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_MARUTI.json"
+    },
+    "SWIGGY": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_SWIGGY.json"
+    },
+    "LEAPIND": {
+      "bars": 149,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_LEAPIND.json"
+    },
+    "INDUSINDBK": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_INDUSINDBK.json"
+    },
+    "ITC": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_ITC.json"
+    },
+    "LT": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_LT.json"
+    },
+    "OLAELEC": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_OLAELEC.json"
+    },
+    "MEESHO": {
+      "bars": 4322,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_MEESHO.json"
+    },
+    "TMCV": {
+      "bars": 4822,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_TMCV.json"
+    },
+    "YESBANK": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_YESBANK.json"
+    },
+    "SBIFUNDS": {
+      "bars": 599,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_SBIFUNDS.json"
+    },
+    "ADANIENT": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_ADANIENT.json"
+    },
+    "ADANIPORTS": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_ADANIPORTS.json"
+    },
+    "PAYTM": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_PAYTM.json"
+    },
+    "MANIPALHOS": {
+      "bars": 324,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_MANIPALHOS.json"
+    },
+    "M&M": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_M&M.json"
+    },
+    "BSE": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_BSE.json"
+    },
+    "HINDUNILVR": {
+      "bars": 6176,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_HINDUNILVR.json"
+    },
+    "SUNPHARMA": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_SUNPHARMA.json"
+    },
+    "SAMMAANCAP": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_SAMMAANCAP.json"
+    },
+    "VEDL": {
+      "bars": 6176,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_VEDL.json"
+    },
+    "IREDA": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_IREDA.json"
+    },
+    "HINDALCO": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_HINDALCO.json"
+    },
+    "HAL": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_HAL.json"
+    },
+    "HCLTECH": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_HCLTECH.json"
+    },
+    "IRFC": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_IRFC.json"
+    },
+    "SILVERBEES": {
+      "bars": 6179,
+      "file": "D:\\quant_system\\data\\evidence\\market-cache\\intraday-liquid-20230822-20260821\\intraday_15m_SILVERBEES.json"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "canonical_hash": "6a63a60893afa160a64b1c3f49dea88572a956c0c3e068af5145d20f7c32be88",
+  "policy_id": "quantos-nifty50-10y-research-cost-proxy-20260824-v1",
+  "publication_date": "2026-08-24",
+  "rules": [
+    {
+      "component": "EXCHANGE_TURNOVER",
+      "effective_from": "2016-08-22",
+      "effective_to": "2017-03-31",
+      "rate": "0.0000345",
+      "rate_basis": "TURNOVER",
+      "side_basis": "BOTH"
+    },
+    {
+      "component": "GST",
+      "effective_from": "2016-08-22",
+      "effective_to": "2017-06-30",
+      "rate": "0.18",
+      "rate_basis": "STATUTORY_CHARGES",
+      "side_basis": "BOTH"
+    },
+    {
+      "component": "STAMP_DUTY",
+      "effective_from": "2016-08-22",
+      "effective_to": "2020-06-30",
+      "rate": "0.000150",
+      "rate_basis": "TURNOVER",
+      "side_basis": "BUY"
+    }
+  ],
+  "status": "RESEARCH_PROXY_NOT_HISTORICAL_AUTHORITY"
+}

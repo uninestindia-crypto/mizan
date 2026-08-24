@@ -1,0 +1,47 @@
+{
+  "analysis_timestamp": "2026-08-24T23:51:34.288028",
+  "total_symbols_analyzed": 3267,
+  "total_historical_bars": 4501992,
+  "total_daily_market_turnover_inr": 944009844393.27,
+  "total_corporate_actions_recorded": 19194,
+  "total_dividends": 12360,
+  "total_splits": 332,
+  "total_bonuses": 376,
+  "tenure_cohorts": {
+    "10_year_veterans_gt_2400_bars": 1148,
+    "5_to_9_years_1200_to_2400_bars": 522,
+    "1_to_4_years_250_to_1200_bars": 1014,
+    "recent_listings_lt_250_bars": 583
+  },
+  "liquidity_concentration": {
+    "nifty50_turnover_pct": 24.3,
+    "top100_turnover_pct": 49.7,
+    "nifty500_turnover_pct": 68.74
+  },
+  "liquidity_tiers": {
+    "Tier 1: Mega-Liquid (>100 Cr/day)": {
+      "count": 228,
+      "total_adtv_inr": 652216869888.81
+    },
+    "Tier 2: Liquid Institutional (10-100 Cr/day)": {
+      "count": 756,
+      "total_adtv_inr": 247548419055.77
+    },
+    "Tier 3: Mid-Market Tradable (1-10 Cr/day)": {
+      "count": 1017,
+      "total_adtv_inr": 40064186514.23
+    },
+    "Tier 4: SmallCap Active (10L-1 Cr/day)": {
+      "count": 951,
+      "total_adtv_inr": 4046853308.22
+    },
+    "Tier 5: Microcap / Illiquid (<10L/day)": {
+      "count": 315,
+      "total_adtv_inr": 133515626.24
+    }
+  },
+  "volatility_profile": {
+    "median_annualized_volatility": 0.4896,
+    "mean_annualized_volatility": 1.4175
+  }
+}

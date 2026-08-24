@@ -1,0 +1,30 @@
+{
+  "as_of": "2026-08-24T13:40:54.735886+00:00",
+  "candidate_id": "cand_ridge_nifty50_current_10y_schema_v2_20260824",
+  "cost_policy_hash": "6a63a60893afa160a64b1c3f49dea88572a956c0c3e068af5145d20f7c32be88",
+  "cost_policy_id": "quantos-nifty50-10y-research-cost-proxy-20260824-v1",
+  "date_range": {
+    "from": "2016-08-22",
+    "to": "2026-08-21"
+  },
+  "evidence_root": "D:\\quant_system\\data\\evidence\\training-runs\\nifty50-current-20160822-20260821-schema-v2\\indexed-canary-model-evidence",
+  "market_cache_root": "D:\\quant_system\\data\\evidence\\market-cache\\nifty50-current-20160822-20260821",
+  "result_count": 1,
+  "results": [
+    {
+      "accuracy": "0.555555555556",
+      "detail": "threshold=-0.056509;cost_policy=6a63a60893af",
+      "instrument_key": "NSE_EQ|INE423A01024",
+      "published_dsr": "0.584509790502",
+      "sharpe": "0.428049524942",
+      "state": "SUCCEEDED",
+      "symbol": "ADANIENT",
+      "trades": 16,
+      "trial_id": "trial_nifty50_10y_001"
+    }
+  ],
+  "static_current_member_studies": true,
+  "stopped": false,
+  "universe_count": 50,
+  "verdict_ceiling": "RESEARCH_ONLY"
+}

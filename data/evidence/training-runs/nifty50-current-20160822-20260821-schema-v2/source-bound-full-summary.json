@@ -1,0 +1,151 @@
+{
+  "as_of": "2026-08-24T13:38:25.040981+00:00",
+  "candidate_id": "cand_ridge_nifty50_current_10y_schema_v2_20260824",
+  "cost_policy_hash": "6a63a60893afa160a64b1c3f49dea88572a956c0c3e068af5145d20f7c32be88",
+  "cost_policy_id": "quantos-nifty50-10y-research-cost-proxy-20260824-v1",
+  "date_range": {
+    "from": "2016-08-22",
+    "to": "2026-08-21"
+  },
+  "evidence_root": "D:\\quant_system\\data\\evidence\\models\\nifty50-current-20160822-20260821-schema-v2-source-bound",
+  "market_cache_root": "D:\\quant_system\\data\\evidence\\market-cache\\nifty50-current-20160822-20260821",
+  "result_count": 12,
+  "results": [
+    {
+      "accuracy": "0.555555555556",
+      "detail": "threshold=-0.056509;cost_policy=6a63a60893af",
+      "instrument_key": "NSE_EQ|INE423A01024",
+      "published_dsr": "0.584509790502",
+      "sharpe": "0.428049524942",
+      "state": "SUCCEEDED",
+      "symbol": "ADANIENT",
+      "trades": 16,
+      "trial_id": "trial_nifty50_10y_001"
+    },
+    {
+      "accuracy": "0.555555555556",
+      "detail": "threshold=-0.104228;cost_policy=6a63a60893af",
+      "instrument_key": "NSE_EQ|INE742F01042",
+      "published_dsr": "0.396484281863",
+      "sharpe": "0.521184509699",
+      "state": "SUCCEEDED",
+      "symbol": "ADANIPORTS",
+      "trades": 8,
+      "trial_id": "trial_nifty50_10y_002"
+    },
+    {
+      "accuracy": "0.603174603175",
+      "detail": "threshold=-0.110925;cost_policy=6a63a60893af",
+      "instrument_key": "NSE_EQ|INE437A01024",
+      "published_dsr": "0.512112243631",
+      "sharpe": "1.770042968354",
+      "state": "SUCCEEDED",
+      "symbol": "APOLLOHOSP",
+      "trades": 10,
+      "trial_id": "trial_nifty50_10y_003"
+    },
+    {
+      "accuracy": "0.539682539683",
+      "detail": "threshold=-0.156132;cost_policy=6a63a60893af",
+      "instrument_key": "NSE_EQ|INE021A01026",
+      "published_dsr": "0.121077188375",
+      "sharpe": "-0.227814313082",
+      "state": "SUCCEEDED",
+      "symbol": "ASIANPAINT",
+      "trades": 29,
+      "trial_id": "trial_nifty50_10y_004"
+    },
+    {
+      "accuracy": "0.634920634921",
+      "detail": "threshold=-0.128506;cost_policy=6a63a60893af",
+      "instrument_key": "NSE_EQ|INE238A01034",
+      "published_dsr": "0.283591950942",
+      "sharpe": "1.273421578889",
+      "state": "SUCCEEDED",
+      "symbol": "AXISBANK",
+      "trades": 23,
+      "trial_id": "trial_nifty50_10y_005"
+    },
+    {
+      "accuracy": "0.444444444444",
+      "detail": "threshold=-0.119297;cost_policy=6a63a60893af",
+      "instrument_key": "NSE_EQ|INE917I01010",
+      "published_dsr": "0.001372725446",
+      "sharpe": "-2.817279459953",
+      "state": "SUCCEEDED",
+      "symbol": "BAJAJ-AUTO",
+      "trades": 29,
+      "trial_id": "trial_nifty50_10y_006"
+    },
+    {
+      "accuracy": "0.571428571429",
+      "detail": "threshold=-0.144412;cost_policy=6a63a60893af",
+      "instrument_key": "NSE_EQ|INE918I01026",
+      "published_dsr": "0.015382176957",
+      "sharpe": "-1.331684128909",
+      "state": "SUCCEEDED",
+      "symbol": "BAJAJFINSV",
+      "trades": 13,
+      "trial_id": "trial_nifty50_10y_007"
+    },
+    {
+      "accuracy": "0.634920634921",
+      "detail": "threshold=-0.105902;cost_policy=6a63a60893af",
+      "instrument_key": "NSE_EQ|INE296A01032",
+      "published_dsr": "0.563234778441",
+      "sharpe": "3.220727162812",
+      "state": "SUCCEEDED",
+      "symbol": "BAJFINANCE",
+      "trades": 23,
+      "trial_id": "trial_nifty50_10y_008"
+    },
+    {
+      "accuracy": "0.492063492063",
+      "detail": "threshold=-0.082461;cost_policy=6a63a60893af",
+      "instrument_key": "NSE_EQ|INE263A01024",
+      "published_dsr": "0.000000014535",
+      "sharpe": "-4.285842181283",
+      "state": "SUCCEEDED",
+      "symbol": "BEL",
+      "trades": 8,
+      "trial_id": "trial_nifty50_10y_009"
+    },
+    {
+      "accuracy": "0.539682539683",
+      "detail": "threshold=-0.12432;cost_policy=6a63a60893af",
+      "instrument_key": "NSE_EQ|INE397D01024",
+      "published_dsr": "0.023304572122",
+      "sharpe": "-0.860548060564",
+      "state": "SUCCEEDED",
+      "symbol": "BHARTIARTL",
+      "trades": 44,
+      "trial_id": "trial_nifty50_10y_010"
+    },
+    {
+      "accuracy": "0.619047619048",
+      "detail": "threshold=-0.164504;cost_policy=6a63a60893af",
+      "instrument_key": "NSE_EQ|INE059A01026",
+      "published_dsr": "0.045017150973",
+      "sharpe": "-0.158377337359",
+      "state": "SUCCEEDED",
+      "symbol": "CIPLA",
+      "trades": 24,
+      "trial_id": "trial_nifty50_10y_011"
+    },
+    {
+      "accuracy": "0.52380952381",
+      "detail": "threshold=-0.131854;cost_policy=6a63a60893af",
+      "instrument_key": "NSE_EQ|INE522F01014",
+      "published_dsr": "0.012775686772",
+      "sharpe": "-1.301078424326",
+      "state": "SUCCEEDED",
+      "symbol": "COALINDIA",
+      "trades": 18,
+      "trial_id": "trial_nifty50_10y_012"
+    }
+  ],
+  "static_current_member_studies": true,
+  "stopped": false,
+  "universe_count": 50,
+  "verdict_ceiling": "RESEARCH_ONLY"
+}

@@ -17,12 +17,12 @@ dist/
 *.whl
 *.exe
 
-# Runtime state and evidence (never source-controlled)
+# Runtime ephemeral logs and scratch
 logs/
 tmp/
-data/evidence/
 data/work/
 *.log
+!data/evidence/**/*.log
 
 # Credentials and machine-local configuration
 .env

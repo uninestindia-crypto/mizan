@@ -1,0 +1,22 @@
+{
+  "NIFTY50": {
+    "bars_count": 2479,
+    "latest_close": 24252.0,
+    "file": "D:\\quant_system\\data\\evidence\\market-cache\\macro-regimes-20160822-20260821\\macro_NIFTY50.json"
+  },
+  "INDIAVIX": {
+    "bars_count": 2478,
+    "latest_close": 11.2,
+    "file": "D:\\quant_system\\data\\evidence\\market-cache\\macro-regimes-20160822-20260821\\macro_INDIAVIX.json"
+  },
+  "NIFTYBANK": {
+    "bars_count": 2479,
+    "latest_close": 57761.95,
+    "file": "D:\\quant_system\\data\\evidence\\market-cache\\macro-regimes-20160822-20260821\\macro_NIFTYBANK.json"
+  },
+  "NIFTYIT": {
+    "bars_count": 2479,
+    "latest_close": 30532.25,
+    "file": "D:\\quant_system\\data\\evidence\\market-cache\\macro-regimes-20160822-20260821\\macro_NIFTYIT.json"
+  }
+}
