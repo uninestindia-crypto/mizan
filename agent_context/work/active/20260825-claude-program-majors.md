@@ -90,6 +90,52 @@ active files for style, which PROTOCOL section 4 puts under single-owner coordin
 reformat of live work is the highest-risk low-value action available. The measurement is now
 truthful, which is the part that was blocking anyone from acting on it.
 
+## Major #3 — rebuilt and verified (COMPLETE)
+
+Rebuilt at `dab7f7b3`, the current HEAD and past the gate repair. Tracked tree was clean at build
+time, so provenance is unambiguous.
+
+| | before | after |
+|---|---|---|
+| built | 2026-08-20 05:27 | 2026-08-25 12:23 |
+| manifest `git_commit_sha` | `b5bc061…` (41 h *before* the commit it claimed) | `dab7f7b3…` — **exact match to HEAD** |
+| bundle | missing modules it was certified for | **125 `quant_system` modules** |
+
+`dist/` is gitignored, so this is a local artifact; nothing tracked changed.
+
+### Two build-process findings
+
+**`scripts/build_dist.py` cannot run as documented.** It fails with
+`ModuleNotFoundError: No module named 'launcher'` unless the repository root is on `PYTHONPATH`
+alongside `src`. `launcher.py` sits at the root and `release/verifier.py:25` imports it. `pyproject`
+supplies `pythonpath = ["src", "."]` to pytest only, so the build works under test and fails from a
+shell. Anyone following a documented build command hits this. Not repaired here — `build_dist.py`
+and `release/**` are outside this record's adopted paths.
+
+**Grep is not a valid way to check bundle contents**, and both the original finding and my own first
+check used it. PyInstaller compiles modules into an embedded PYZ, so a module name can appear in the
+binary while the module is absent, and a present module produces no loose file. My first grep said
+"present" for all six; my second said "ABSENT" for all six; both were unreliable.
+
+The authoritative check reads the archive: extract `PYZ.pyz` via `CArchiveReader`, open it with
+`ZlibArchiveReader`, and enumerate `toc`. That gives 1,932 modules total, 125 under `quant_system`,
+with `execution.paper_pilot`, `execution.realtime_shadow`, `execution.governed_strategy`,
+`modeling.promotion_pipeline`, `modeling.holdout` and `modeling.promotion` all present.
+
+The original conclusion was right for a reason independent of its method: `promotion_pipeline` did
+not exist until this session, so an artifact built on 2026-08-20 could not have contained it.
+
+### An error I made and reverted
+
+Believing `dist/QuantOS` and `dist/quantos` were two directories, I moved the first aside as stale.
+Windows is case-insensitive — they are the same directory, and I had moved the freshly built
+artifact. Restored immediately and verified byte-size and manifest SHA. Nothing was lost **because
+it was moved, not deleted**, which is the whole reason that rule exists.
+
+`dist/QuantOS_v1.0.0_portable.zip` (2026-08-20, 58 MB) is genuinely superseded by
+`dist/quantos-v1.0.0-windows-x86_64.zip` (2026-08-25, 59 MB). Flagged, not deleted.
+
 ## Next safe action
 
-Major #3 — rebuild the shipped artifact at a revision past the gate repair.
+Major #1 — report the exact branch-protection commands for the founder. Then the training-path
+adjudication gap.
