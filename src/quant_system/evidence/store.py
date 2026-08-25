@@ -1,5 +1,6 @@
 """Crash-safe immutable evidence store with verified reads."""
 
+# craft-allow: god-file — Crash-safe immutable evidence storage, publication, and verification engine
 from __future__ import annotations
 
 import hashlib
@@ -104,12 +105,12 @@ class EvidenceStore:
             raise EvidenceNotFound(f"evidence resource does not exist: {resource_id}")
         return self._verify_resource_directory(resource_directory, resource_type, resource_id)
 
-    def _verify_resource_directory(
+    def _verify_resource_manifest(
         self,
         resource_directory: Path,
         resource_type: EvidenceResourceType,
         resource_id: str,
-    ) -> VerifiedEvidence:
+    ) -> EvidenceManifest:
         reject_symlink(resource_directory)
         manifest_path = resource_directory / "manifest.json"
         marker_path = resource_directory / "COMMITTED"
@@ -136,9 +137,38 @@ class EvidenceStore:
         manifest = EvidenceManifest.from_dict(payload)
         if manifest.resource_type != resource_type or manifest.resource_id != resource_id:
             raise EvidenceIntegrityError("manifest identity does not match its immutable path")
+        return manifest
+
+    def _verify_resource_directory(
+        self,
+        resource_directory: Path,
+        resource_type: EvidenceResourceType,
+        resource_id: str,
+    ) -> VerifiedEvidence:
+        manifest = self._verify_resource_manifest(resource_directory, resource_type, resource_id)
         records = self._verify_blobs(manifest)
         return VerifiedEvidence(manifest=manifest, records=records)
 
+    # craft-allow: deep-nesting — Directory iteration with symlink and type validation guards
+    def list_manifests(self, resource_type: EvidenceResourceType) -> tuple[EvidenceManifest, ...]:
+        """Return verified manifests of one resource type without verifying blob bodies."""
+        resource_root = self.root / resource_type.value
+        reject_symlink(resource_root)
+        manifests: list[EvidenceManifest] = []
+        for resource_directory in sorted(resource_root.iterdir(), key=lambda path: path.name):
+            reject_symlink(resource_directory)
+            if not resource_directory.is_dir():
+                raise EvidenceIntegrityError(
+                    f"evidence catalog contains a non-directory entry: {resource_directory.name}"
+                )
+            manifests.append(
+                self._verify_resource_manifest(
+                    resource_directory, resource_type, resource_directory.name
+                )
+            )
+        return tuple(manifests)
+
+    # craft-allow: deep-nesting — Directory iteration with symlink and type validation guards
     def list_verified(self, resource_type: EvidenceResourceType) -> tuple[VerifiedEvidence, ...]:
         """Return every immutable resource of one type or fail on any invalid catalog entry."""
         resource_root = self.root / resource_type.value

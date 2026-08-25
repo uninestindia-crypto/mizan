@@ -9,7 +9,11 @@ from typing import Any
 
 from quant_system.data.market_data_evidence import canonical_sha256, decimal_text
 from quant_system.modeling.errors import ModelingError, ModelingFailureCode
-from quant_system.modeling.rows import FEATURE_NAMES_V1, FeatureRowV1
+from quant_system.modeling.rows import (
+    FEATURE_NAMES_BY_SCHEMA,
+    FeatureRowV1,
+    feature_names_for,
+)
 
 _STATE_QUANTUM = Decimal("0.000000000000000001")
 
@@ -24,10 +28,10 @@ class StandardizationStateV1:
     state_hash: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if self.feature_names != FEATURE_NAMES_V1:
+        if self.feature_names not in set(FEATURE_NAMES_BY_SCHEMA.values()):
             raise ModelingError(
                 ModelingFailureCode.TRAINING_INPUT_MISMATCH,
-                "preprocessing feature order is not the closed v1 family",
+                "preprocessing feature order is not a registered closed family",
             )
         if len(self.means) != len(self.feature_names) or len(self.scales) != len(
             self.feature_names
@@ -89,8 +93,9 @@ def fit_standardization(rows: tuple[FeatureRowV1, ...]) -> StandardizationStateV
     with localcontext() as context:
         context.prec = 60
         context.rounding = ROUND_HALF_EVEN
+        feature_names = feature_names_for(rows[0].feature_schema_id, rows[0].feature_schema_version)
         columns = tuple(
-            tuple(Decimal(row.features[name]) for row in rows) for name in FEATURE_NAMES_V1
+            tuple(Decimal(row.features[name]) for row in rows) for name in feature_names
         )
         means = tuple(sum(column) / Decimal(len(column)) for column in columns)
         variances = tuple(
@@ -99,11 +104,11 @@ def fit_standardization(rows: tuple[FeatureRowV1, ...]) -> StandardizationStateV
         )
         raw_scales = tuple(variance.sqrt() for variance in variances)
         zero_variance = tuple(
-            name for name, scale in zip(FEATURE_NAMES_V1, raw_scales, strict=True) if scale == 0
+            name for name, scale in zip(feature_names, raw_scales, strict=True) if scale == 0
         )
         scales = tuple(Decimal(1) if scale == 0 else scale for scale in raw_scales)
         return StandardizationStateV1(
-            feature_names=FEATURE_NAMES_V1,
+            feature_names=feature_names,
             means=tuple(_state_decimal(value) for value in means),
             scales=tuple(_state_decimal(value) for value in scales),
             zero_variance_features=tuple(sorted(zero_variance)),
@@ -138,7 +143,7 @@ def standardize_feature_values(
         context.rounding = ROUND_HALF_EVEN
         return tuple(
             _state_decimal((Decimal(features[name]) - mean) / scale)
-            for name, mean, scale in zip(FEATURE_NAMES_V1, means, scales, strict=True)
+            for name, mean, scale in zip(state.feature_names, means, scales, strict=True)
         )
 
 

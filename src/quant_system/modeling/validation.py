@@ -29,7 +29,8 @@ from quant_system.modeling.ridge import (
     predict_ridge_scores,
 )
 from quant_system.modeling.rows import (
-    LABEL_HORIZON_SESSIONS_V1,
+    FEATURE_SCHEMA_ID_V3,
+    FEATURE_SCHEMA_VERSION_V3,
     FeatureDatasetV1,
     FeatureRowV1,
     LabelDatasetV1,
@@ -138,7 +139,7 @@ def evaluate_governed_ridge_fold(
         "PREVIOUS_SIGN": _previous_matured_targets(label_dataset.rows, fold.validation_rows),
         "EQUITY_DUAL_MOMENTUM": tuple(
             "UP"
-            if Decimal(row.features["return_10"]) > 0
+            if Decimal(row.features[_momentum_feature(row)]) > 0
             and Decimal(row.features["sma_20_distance"]) > 0
             else "DOWN"
             for row in validation_features
@@ -201,6 +202,23 @@ def deflate_ridge_report(
             "portfolio return moments violate Pearson's skewness-kurtosis constraint",
         ) from error
     return metric_decimal(Decimal(str(dsr)))
+
+
+_MOMENTUM_FEATURE_BY_SCHEMA = {
+    (FEATURE_SCHEMA_ID_V3, FEATURE_SCHEMA_VERSION_V3): "return_21",
+}
+
+
+def _momentum_feature(row: FeatureRowV1) -> str:
+    """The medium-horizon return the dual-momentum baseline reads, per feature schema.
+
+    The baseline exists to be a fair comparator, so it must be computed from whichever family the
+    candidate itself was trained on rather than from a column name that only the six-feature family
+    happens to have.
+    """
+    return _MOMENTUM_FEATURE_BY_SCHEMA.get(
+        (row.feature_schema_id, row.feature_schema_version), "return_10"
+    )
 
 
 def fold_spec_hash(fold: PartitionedFoldV1) -> str:
@@ -287,7 +305,7 @@ def _validate_fold_integrity(
         or fold.spec.validation_start != fold.validation_rows[0].decision_at
         or fold.spec.validation_end != fold.validation_rows[-1].decision_at
         or fold.spec.purge_end != fold.spec.validation_start
-        or fold.spec.label_horizon_sessions != LABEL_HORIZON_SESSIONS_V1
+        or fold.spec.label_horizon_sessions != label_dataset.label_horizon_sessions
         or fold.spec.embargo_sessions < fold.spec.label_horizon_sessions
     ):
         raise ModelingError(

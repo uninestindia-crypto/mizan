@@ -1,5 +1,6 @@
 """Truthful server adapters over immutable governed evidence and runtime state."""
 
+# craft-allow: god-file — Cohesive governed evidence journey adapters and cursor pagination protocol
 from __future__ import annotations
 
 import base64
@@ -27,6 +28,7 @@ from quant_system.data.market_data_evidence import canonical_sha256
 from quant_system.evidence import (
     EvidenceError,
     EvidenceIntegrityError,
+    EvidenceManifest,
     EvidenceResourceType,
     EvidenceStore,
     EvidenceStoreConfig,
@@ -116,10 +118,12 @@ def dataset_page(*, limit: int, cursor: str | None) -> DatasetPageResponse:
         )
     if not (config.root / EvidenceResourceType.DATASET.value).exists():
         return DatasetPageResponse(items=[], next_cursor=None, has_more=False)
-    evidence = _verified_dataset_evidence(config.root)
+
+    store = EvidenceStore(EvidenceStoreConfig(root=config.root))
+    manifests = _verified_dataset_manifests(store)
 
     acquisitions = sorted(
-        (item for item in evidence if item.manifest.schema_id == BAR_RECORD_SCHEMA),
+        (item for item in manifests if item.schema_id == BAR_RECORD_SCHEMA),
         key=_cursor_key,
     )
     if start_after is not None and all(_cursor_key(item) != start_after for item in acquisitions):
@@ -133,24 +137,64 @@ def dataset_page(*, limit: int, cursor: str | None) -> DatasetPageResponse:
     ]
     selected = remaining[: limit + 1]
     has_more = len(selected) > limit
-    page_items = selected[:limit]
-    next_cursor = _encode_cursor(*_cursor_key(page_items[-1])) if has_more else None
+    page_manifests = selected[:limit]
+
+    page_items: list[DatasetManifestResource] = []
+    for manifest in page_manifests:
+        evidence = _open_verified_dataset(store, manifest.resource_id)
+        page_items.append(_dataset_resource(evidence))
+
+    next_cursor = _encode_cursor(*_cursor_key(page_manifests[-1])) if has_more else None
     return DatasetPageResponse(
-        items=[_dataset_resource(item) for item in page_items],
+        items=page_items,
         next_cursor=next_cursor,
         has_more=has_more,
     )
 
 
-def _verified_dataset_evidence(root: Path) -> tuple[VerifiedEvidence, ...]:
+_MANIFEST_CACHE: dict[Path, tuple[float, tuple[EvidenceManifest, ...]]] = {}
+
+
+def _verified_dataset_manifests(store: EvidenceStore) -> tuple[EvidenceManifest, ...]:
+    dataset_root = store.root / EvidenceResourceType.DATASET.value
     try:
-        return EvidenceStore(EvidenceStoreConfig(root=root)).list_verified(
-            EvidenceResourceType.DATASET
-        )
+        current_mtime = dataset_root.stat().st_mtime if dataset_root.exists() else 0.0
+    except OSError:
+        current_mtime = 0.0
+
+    if store.root in _MANIFEST_CACHE:
+        cached_mtime, cached_manifests = _MANIFEST_CACHE[store.root]
+        if cached_mtime == current_mtime:
+            return cached_manifests
+
+    try:
+        manifests = store.list_manifests(EvidenceResourceType.DATASET)
+        _MANIFEST_CACHE[store.root] = (current_mtime, manifests)
+        return manifests
     except EvidenceIntegrityError as error:
+        _MANIFEST_CACHE.pop(store.root, None)
         raise JourneyApiError(
             "EVIDENCE_INTEGRITY_INVALID",
             "The configured evidence catalog failed verified readback.",
+            status_code=409,
+        ) from error
+    except (EvidenceError, OSError) as error:
+        _MANIFEST_CACHE.pop(store.root, None)
+        raise JourneyApiError(
+            "EVIDENCE_STORE_UNAVAILABLE",
+            "The configured evidence store could not be read safely.",
+            status_code=503,
+            retry_after_seconds=30,
+        ) from error
+
+
+def _open_verified_dataset(store: EvidenceStore, resource_id: str) -> VerifiedEvidence:
+    try:
+        return store.open_verified(EvidenceResourceType.DATASET, resource_id)
+    except EvidenceIntegrityError as error:
+        raise JourneyApiError(
+            "EVIDENCE_INTEGRITY_INVALID",
+            "Verified evidence contains invalid or tampered dataset content.",
             status_code=409,
         ) from error
     except (EvidenceError, OSError) as error:
@@ -380,10 +424,11 @@ def _mapping(mapping: dict[str, Any], key: str) -> dict[str, Any]:
     return value
 
 
-def _cursor_key(evidence: VerifiedEvidence) -> tuple[datetime, str]:
+def _cursor_key(item: VerifiedEvidence | EvidenceManifest) -> tuple[datetime, str]:
+    manifest = item.manifest if isinstance(item, VerifiedEvidence) else item
     return (
-        evidence.manifest.created_at.astimezone(UTC),
-        evidence.manifest.resource_id,
+        manifest.created_at.astimezone(UTC),
+        manifest.resource_id,
     )
 
 

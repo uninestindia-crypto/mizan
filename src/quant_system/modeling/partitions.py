@@ -23,6 +23,7 @@ def build_purged_fold(
     validation_end: datetime,
     calendar: SessionCalendarV1,
     embargo_sessions: int,
+    label_horizon_sessions: int = LABEL_HORIZON_SESSIONS_V1,
 ) -> PartitionedFoldV1:
     """Partition one chronological label stream and record every removed row."""
     _validate_partition_inputs(
@@ -31,6 +32,7 @@ def build_purged_fold(
         validation_end,
         embargo_sessions,
         calendar,
+        label_horizon_sessions,
     )
     validation_ordinal = calendar.ordinal_for_close(validation_start)
     if validation_ordinal is None:
@@ -71,7 +73,7 @@ def build_purged_fold(
         purge_start=purge_start,
         purge_end=validation_start,
         embargo_sessions=embargo_sessions,
-        label_horizon_sessions=LABEL_HORIZON_SESSIONS_V1,
+        label_horizon_sessions=label_horizon_sessions,
         train_row_count=len(train_rows),
         validation_row_count=len(validation_rows),
         train_class_balance=_class_balance(train_rows),
@@ -94,6 +96,7 @@ def _validate_partition_inputs(
     validation_end: datetime,
     embargo_sessions: int,
     calendar: SessionCalendarV1,
+    label_horizon_sessions: int = LABEL_HORIZON_SESSIONS_V1,
 ) -> None:
     if not rows:
         raise ModelingError(ModelingFailureCode.PARTITION_INVALID, "label rows cannot be empty")
@@ -112,7 +115,7 @@ def _validate_partition_inputs(
             ModelingFailureCode.PARTITION_INVALID,
             "validation start must not follow validation end",
         )
-    if embargo_sessions < LABEL_HORIZON_SESSIONS_V1:
+    if embargo_sessions < label_horizon_sessions:
         raise ModelingError(
             ModelingFailureCode.EMBARGO_TOO_SHORT,
             "embargo must be at least the maximum label horizon",
@@ -140,7 +143,9 @@ def _validate_partition_inputs(
         )
     for row in rows:
         decision_ordinal = calendar.ordinal_for_close(row.decision_at)
-        if decision_ordinal is None or decision_ordinal + 2 >= len(calendar.sessions):
+        if decision_ordinal is None or decision_ordinal + label_horizon_sessions >= len(
+            calendar.sessions
+        ):
             raise ModelingError(
                 ModelingFailureCode.CALENDAR_AUTHORITY_MISMATCH,
                 "label chronology is not represented by the supplied calendar",
@@ -148,11 +153,11 @@ def _validate_partition_inputs(
             )
         if (
             row.entry_at != calendar.sessions[decision_ordinal + 1].open_at
-            or row.exit_at != calendar.sessions[decision_ordinal + 2].open_at
+            or row.exit_at != calendar.sessions[decision_ordinal + label_horizon_sessions].open_at
         ):
             raise ModelingError(
                 ModelingFailureCode.PARTITION_INVALID,
-                "label does not use the next two eligible session opens",
+                "label does not use the eligible session opens its horizon declares",
                 offending_record_key=row.record_key,
             )
 

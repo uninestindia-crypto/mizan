@@ -35,7 +35,7 @@ def _args(**overrides: object) -> argparse.Namespace:
 
 
 def test_valid_windows_are_accepted() -> None:
-    r._refuse_leaky_windows(_args())
+    assert r._refuse_leaky_windows(_args()) is None
 
 
 def test_training_window_overlapping_the_holdout_is_refused() -> None:

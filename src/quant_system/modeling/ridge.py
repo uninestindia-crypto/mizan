@@ -22,10 +22,11 @@ class RidgeFittedStateV1:
     l2_penalty: str
     preprocessing_state_hash: str
     training_target_hash: str
+    feature_names: tuple[str, ...] = FEATURE_NAMES_V1
     fitted_state_hash: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if len(self.coefficients) != len(FEATURE_NAMES_V1):
+        if len(self.coefficients) != len(self.feature_names):
             raise ModelingError(
                 ModelingFailureCode.MODEL_FIT_FAILED,
                 "ridge coefficient shape does not match the feature contract",
@@ -56,7 +57,7 @@ class RidgeFittedStateV1:
 
     def _unsigned_dict(self) -> dict[str, Any]:
         return {
-            "coefficient_names": list(FEATURE_NAMES_V1),
+            "coefficient_names": list(self.feature_names),
             "coefficients": list(self.coefficients),
             "intercept": self.intercept,
             "l2_penalty": self.l2_penalty,
@@ -73,7 +74,9 @@ def fit_ridge_classifier(
     transformed_training_rows: tuple[tuple[str, ...], ...],
     targets: tuple[str, ...],
 ) -> RidgeFittedStateV1:
-    if len(transformed_training_rows) < len(FEATURE_NAMES_V1) + 2:
+    feature_names = preprocessing.feature_names
+    feature_count = len(feature_names)
+    if len(transformed_training_rows) < feature_count + 2:
         raise ModelingError(
             ModelingFailureCode.INSUFFICIENT_TRAINING_ROWS,
             "ridge fit requires at least feature_count + 2 training rows",
@@ -88,14 +91,14 @@ def fit_ridge_classifier(
             ModelingFailureCode.CONSTANT_TARGET,
             "ridge training requires both UP and DOWN targets",
         )
-    matrix = _matrix(transformed_training_rows)
+    matrix = _matrix(transformed_training_rows, feature_count)
     target_vector = np.array(
         [1.0 if target == "UP" else -1.0 for target in targets],
         dtype=np.float64,
     )
     design = np.hstack([np.ones((matrix.shape[0], 1), dtype=np.float64), matrix])
     regularizer = float(Decimal(start.l2_penalty)) * np.eye(
-        len(FEATURE_NAMES_V1) + 1,
+        feature_count + 1,
         dtype=np.float64,
     )
     regularizer[0, 0] = 0.0
@@ -120,6 +123,7 @@ def fit_ridge_classifier(
         coefficients=canonical[1:],
         l2_penalty=start.l2_penalty,
         preprocessing_state_hash=preprocessing.state_hash,
+        feature_names=feature_names,
         training_target_hash=canonical_sha256(
             {
                 "schema_id": "quantos.ridge_training_targets",
@@ -136,7 +140,7 @@ def predict_ridge_scores(
 ) -> tuple[str, ...]:
     if not transformed_rows:
         return ()
-    matrix = _matrix(transformed_rows)
+    matrix = _matrix(transformed_rows, len(fitted.feature_names))
     coefficients = np.array([float(Decimal(value)) for value in fitted.coefficients])
     scores = matrix @ coefficients + float(Decimal(fitted.intercept))
     if not np.isfinite(scores).all():
@@ -147,8 +151,8 @@ def predict_ridge_scores(
     return tuple(_float_decimal(value) for value in scores)
 
 
-def _matrix(rows: tuple[tuple[str, ...], ...]) -> np.ndarray:
-    if any(len(row) != len(FEATURE_NAMES_V1) for row in rows):
+def _matrix(rows: tuple[tuple[str, ...], ...], feature_count: int) -> np.ndarray:
+    if any(len(row) != feature_count for row in rows):
         raise ModelingError(
             ModelingFailureCode.TRAINING_INPUT_MISMATCH,
             "transformed feature shape is invalid",

@@ -21,17 +21,42 @@ FEATURE_SCHEMA_ID_V1 = "quantos.ridge_technical_six"
 FEATURE_SCHEMA_VERSION_V1 = 1
 FEATURE_SCHEMA_ID_V2 = "quantos.ridge_technical_six"
 FEATURE_SCHEMA_VERSION_V2 = 2
+FEATURE_SCHEMA_ID_V3 = "quantos.mizan_crosssectional_fifteen"
+FEATURE_SCHEMA_VERSION_V3 = 1
 CURRENT_FEATURE_SCHEMA_ID = FEATURE_SCHEMA_ID_V2
 CURRENT_FEATURE_SCHEMA_VERSION = FEATURE_SCHEMA_VERSION_V2
 SUPPORTED_FEATURE_SCHEMAS = frozenset(
     {
         (FEATURE_SCHEMA_ID_V1, FEATURE_SCHEMA_VERSION_V1),
         (FEATURE_SCHEMA_ID_V2, FEATURE_SCHEMA_VERSION_V2),
+        (FEATURE_SCHEMA_ID_V3, FEATURE_SCHEMA_VERSION_V3),
     }
 )
 EXECUTION_CONTRACT_VERSION_V1 = "next-open-v1"
 LABEL_CONTRACT_VERSION_V1 = "next-open-net-return-v1"
 LABEL_HORIZON_SESSIONS_V1 = 2
+"""Sessions from decision to exit: decision close -> next open (entry) -> following open (exit).
+
+Counted this way ``2`` is a **one-session hold**. That distinction decides whether the contract is
+profitable at all: measured over the cached NSE decade, one session held earns +0.0758% gross
+against a +0.2225% statutory round trip -- 0.34x -- while break-even needs about three sessions
+held, i.e. a horizon of 4. See ``scripts/screen_mizan_horizon.py``.
+"""
+
+
+def label_contract_version_for(horizon_sessions: int) -> str:
+    """The label contract identity for a horizon.
+
+    The default horizon keeps the original string verbatim, so every label dataset built the way
+    they were before hashes exactly as before and the 50 published schema-v2 models stay
+    reproducible. A different horizon is a different contract and says so in its own identity
+    rather than silently reusing the old one.
+    """
+    if horizon_sessions == LABEL_HORIZON_SESSIONS_V1:
+        return LABEL_CONTRACT_VERSION_V1
+    return f"next-open-net-return-h{horizon_sessions}-v1"
+
+
 FEATURE_NAMES_V1 = (
     "return_1",
     "return_5",
@@ -40,6 +65,46 @@ FEATURE_NAMES_V1 = (
     "sma_20_distance",
     "atr_14_normalized",
 )
+# Mīzān: the pooled cross-sectional family. Every name is computed from trailing or same-bar-close
+# information only, and the two `cs_rank_*` values rank an instrument against the rest of the
+# universe on its own decision date, which is the information a single-instrument family cannot
+# express at all.
+FEATURE_NAMES_V3 = (
+    "return_1",
+    "return_5",
+    "return_21",
+    "garman_klass_volatility",
+    "parkinson_volatility",
+    "rsi_14_centered",
+    "sma_20_distance",
+    "sma_50_distance",
+    "volume_zscore",
+    "money_flow_multiplier",
+    "india_vix_level",
+    "india_vix_change_5",
+    "nifty_return_5",
+    "cs_rank_momentum_5",
+    "cs_rank_volume_surprise",
+)
+FEATURE_NAMES_BY_SCHEMA = {
+    (FEATURE_SCHEMA_ID_V1, FEATURE_SCHEMA_VERSION_V1): FEATURE_NAMES_V1,
+    (FEATURE_SCHEMA_ID_V2, FEATURE_SCHEMA_VERSION_V2): FEATURE_NAMES_V1,
+    (FEATURE_SCHEMA_ID_V3, FEATURE_SCHEMA_VERSION_V3): FEATURE_NAMES_V3,
+}
+
+
+def feature_names_for(schema_id: str, schema_version: int) -> tuple[str, ...]:
+    """The closed ordered feature family a schema identity declares.
+
+    Feature order is part of the schema, not a convention: coefficients, standardization state and
+    the design matrix are all positional, so a family that reordered between fit and predict would
+    silently score against the wrong column.
+    """
+    try:
+        return FEATURE_NAMES_BY_SCHEMA[(schema_id, schema_version)]
+    except KeyError:
+        raise ValueError("unsupported feature schema identity") from None
+
 
 _HASH_PATTERN = re.compile(r"[0-9a-f]{64}")
 _CANDIDATE_PATTERN = re.compile(r"cand_[a-z0-9][a-z0-9_-]{0,91}")
@@ -156,8 +221,10 @@ class FeatureRowV1:
             raise ValueError("feature information cutoff cannot follow decision time")
         if (self.feature_schema_id, self.feature_schema_version) not in SUPPORTED_FEATURE_SCHEMAS:
             raise ValueError("unsupported feature schema identity")
-        if tuple(self.features) != FEATURE_NAMES_V1:
-            raise ValueError("feature map must use the closed ordered v1 feature family")
+        if tuple(self.features) != feature_names_for(
+            self.feature_schema_id, self.feature_schema_version
+        ):
+            raise ValueError("feature map must use its schema's closed ordered feature family")
         normalized = {
             name: _canonical_decimal(value, f"feature {name}")
             for name, value in self.features.items()
@@ -292,6 +359,7 @@ class LabelDatasetV1:
     feature_dataset_hash: str
     cost_quote_hashes: tuple[str, ...]
     rows: tuple[LabelRowV1, ...]
+    label_horizon_sessions: int = LABEL_HORIZON_SESSIONS_V1
 
     def metadata_dict(self) -> dict[str, Any]:
         return {
@@ -302,7 +370,7 @@ class LabelDatasetV1:
             "execution_contract_version": EXECUTION_CONTRACT_VERSION_V1,
             "feature_dataset_hash": self.feature_dataset_hash,
             "feature_dataset_id": self.feature_dataset_id,
-            "label_contract_version": LABEL_CONTRACT_VERSION_V1,
+            "label_contract_version": label_contract_version_for(self.label_horizon_sessions),
             "source_dataset_hash": self.source_dataset_hash,
             "source_dataset_id": self.source_dataset_id,
         }

@@ -251,6 +251,7 @@ def build_feature_store(
 
     # 4. Save to CSV and JSON Lines
     csv_file = output_dir / "multidim_feature_store.csv"
+    fieldnames: list[str] = []
     if all_feature_rows:
         fieldnames = list(all_feature_rows[0].keys())
         with open(csv_file, "w", newline="", encoding="utf-8") as f:

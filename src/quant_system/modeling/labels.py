@@ -14,7 +14,7 @@ from quant_system.modeling.authorities import SessionCalendarV1
 from quant_system.modeling.errors import ModelingError, ModelingFailureCode
 from quant_system.modeling.rows import (
     EXECUTION_CONTRACT_VERSION_V1,
-    LABEL_CONTRACT_VERSION_V1,
+    LABEL_HORIZON_SESSIONS_V1,
     LABEL_ROW_SCHEMA,
     FeatureDatasetV1,
     FeatureRowV1,
@@ -23,6 +23,7 @@ from quant_system.modeling.rows import (
     RoundTripCostQuoteV1,
     decimal_result,
     derived_dataset_hash,
+    label_contract_version_for,
     require_feature_dataset_identity,
 )
 
@@ -32,8 +33,19 @@ def build_label_dataset(
     acquisition: HistoricalAcquisition,
     calendar: SessionCalendarV1,
     cost_quotes: tuple[RoundTripCostQuoteV1, ...],
+    horizon_sessions: int = LABEL_HORIZON_SESSIONS_V1,
 ) -> LabelDatasetV1:
-    """Build matured labels, rejecting missing eligible opens or mismatched costs."""
+    """Build matured labels, rejecting missing eligible opens or mismatched costs.
+
+    ``horizon_sessions`` counts decision -> entry -> exit, so the default 2 holds for one session.
+    The cost quotes supplied must have been priced for the same horizon; a mismatch surfaces as
+    ``COST_QUOTE_MISSING`` rather than being silently repriced.
+    """
+    if horizon_sessions < LABEL_HORIZON_SESSIONS_V1:
+        raise ModelingError(
+            ModelingFailureCode.LABEL_HORIZON_INVALID,
+            "label horizon cannot be shorter than one held session",
+        )
     _validate_sources(feature_dataset, acquisition, calendar)
     bars_by_date = {record.exchange_date: record for record in acquisition.records}
     quotes_by_key = _index_quotes(cost_quotes)
@@ -46,6 +58,7 @@ def build_label_dataset(
             calendar,
             bars_by_date,
             quotes_by_key,
+            horizon_sessions,
         )
         if label_and_quote is None:
             continue
@@ -71,7 +84,7 @@ def build_label_dataset(
         "execution_contract_version": EXECUTION_CONTRACT_VERSION_V1,
         "feature_dataset_hash": feature_dataset.dataset_hash,
         "feature_dataset_id": feature_dataset.dataset_id,
-        "label_contract_version": LABEL_CONTRACT_VERSION_V1,
+        "label_contract_version": label_contract_version_for(horizon_sessions),
         "source_dataset_hash": acquisition.manifest.manifest_hash,
         "source_dataset_id": acquisition.manifest.dataset_id,
     }
@@ -86,6 +99,7 @@ def build_label_dataset(
         feature_dataset_hash=feature_dataset.dataset_hash,
         cost_quote_hashes=quote_hashes,
         rows=immutable_rows,
+        label_horizon_sessions=horizon_sessions,
     )
 
 
@@ -164,6 +178,7 @@ def _build_label(
     calendar: SessionCalendarV1,
     bars_by_date: dict[date, PointInTimeBar],
     quotes_by_key: dict[tuple[str, datetime, datetime], RoundTripCostQuoteV1],
+    horizon_sessions: int,
 ) -> tuple[LabelRowV1, RoundTripCostQuoteV1] | None:
     ordinal = calendar.ordinal_for_close(feature_row.decision_at)
     if ordinal is None:
@@ -172,10 +187,10 @@ def _build_label(
             "feature decision is not a calendar session close",
             offending_record_key=feature_row.record_key,
         )
-    if ordinal + 2 >= len(calendar.sessions):
+    if ordinal + horizon_sessions >= len(calendar.sessions):
         return None
     entry_session = calendar.sessions[ordinal + 1]
-    exit_session = calendar.sessions[ordinal + 2]
+    exit_session = calendar.sessions[ordinal + horizon_sessions]
     if exit_session.exchange_date > acquisition.manifest.received_end:
         return None
     entry_bar = bars_by_date.get(entry_session.exchange_date)

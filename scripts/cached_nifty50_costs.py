@@ -130,17 +130,23 @@ def round_trip_cost_quotes(
     calendar: SessionCalendarV1,
     *,
     quantity: int,
+    horizon_sessions: int = 2,
 ) -> tuple[RoundTripCostQuoteV1, ...]:
-    """Price every maturing next-open/following-open label with dated rules."""
+    """Price every maturing label with dated rules, for the horizon the labels will use.
+
+    A quote is keyed by (instrument, entry_at, exit_at), so pricing a different horizon than
+    ``build_label_dataset`` consumes surfaces as ``COST_QUOTE_MISSING`` rather than as a silently
+    mispriced label.
+    """
     engine = research_cost_engine()
     bars_by_date = {record.exchange_date: record for record in acquisition.records}
     quotes: list[RoundTripCostQuoteV1] = []
     for feature_row in features.rows:
         ordinal = calendar.ordinal_for_close(feature_row.decision_at)
-        if ordinal is None or ordinal + 2 >= len(calendar.sessions):
+        if ordinal is None or ordinal + horizon_sessions >= len(calendar.sessions):
             continue
         entry_session = calendar.sessions[ordinal + 1]
-        exit_session = calendar.sessions[ordinal + 2]
+        exit_session = calendar.sessions[ordinal + horizon_sessions]
         if exit_session.exchange_date > acquisition.manifest.received_end:
             continue
         entry_bar = bars_by_date.get(entry_session.exchange_date)

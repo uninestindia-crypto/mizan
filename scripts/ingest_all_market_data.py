@@ -9,7 +9,6 @@ import json
 import os
 import threading
 import time
-import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import asdict, dataclass

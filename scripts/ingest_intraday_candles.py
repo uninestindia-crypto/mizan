@@ -7,7 +7,6 @@ import json
 import os
 import threading
 import time
-import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import UTC, date, datetime, timedelta
@@ -19,7 +18,7 @@ from quant_system.config import load_env_file
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
-def read_liquid_symbols(profiles_json: Path, limit: int = 50) -> list[dict[str, str]]:
+def read_liquid_symbols(profiles_json: Path, limit: int = 50) -> list[dict[str, Any]]:
     """Load top liquid instruments from market profiles."""
     if not profiles_json.is_file():
         raise FileNotFoundError(f"Profiles JSON not found: {profiles_json}")
@@ -27,7 +26,7 @@ def read_liquid_symbols(profiles_json: Path, limit: int = 50) -> list[dict[str, 
         profiles = json.load(f)
     # Sort by ADTV descending
     profiles.sort(key=lambda p: p.get("avg_daily_turnover_inr", 0), reverse=True)
-    selected: list[dict[str, str]] = []
+    selected: list[dict[str, Any]] = []
     for p in profiles[:limit]:
         selected.append(
             {

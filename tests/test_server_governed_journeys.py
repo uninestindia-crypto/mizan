@@ -528,6 +528,24 @@ def test_legacy_feature_route_never_returns_sample_rows(
     assert _error_code(response) == "EVIDENCE_ROOT_NOT_CONFIGURED"
 
 
+def test_feature_explore_fails_closed_when_evidence_not_available(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv(_EVIDENCE_ROOT_ENV, str(tmp_path))
+
+    response = client.post(
+        "/api/features/explore",
+        json={"symbol": "INFY", "horizon_days": 5, "label_friction_bps": 5.0},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 404
+    assert _error_code(response) == "FEATURE_EVIDENCE_NOT_AVAILABLE"
+
+
 def test_legacy_training_route_never_returns_invented_positive_metrics(
     client: TestClient,
     auth_headers: dict[str, str],

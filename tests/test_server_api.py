@@ -52,6 +52,7 @@ def auth_headers(csrf_token: str) -> dict[str, str]:
 # =====================================================================
 
 
+# test-allow: loop-in-test — Parity check across legacy and versioned paths
 def test_api_version(client: TestClient) -> None:
     for path in ["/api/v1/version", "/api/version"]:
         res = client.get(path)
@@ -62,6 +63,7 @@ def test_api_version(client: TestClient) -> None:
         assert data["status"] == "ONLINE"
 
 
+# test-allow: loop-in-test — Parity check across legacy and versioned paths
 def test_api_strategies(client: TestClient) -> None:
     for path in ["/api/v1/strategies", "/api/strategies"]:
         res = client.get(path)
@@ -78,6 +80,7 @@ def test_api_strategies(client: TestClient) -> None:
 # =====================================================================
 
 
+# test-allow: loop-in-test — Parity check across legacy and versioned paths
 def test_csrf_token_issuance(client: TestClient) -> None:
     for path in ["/api/v1/csrf-token", "/api/v1/auth/csrf", "/api/csrf-token", "/api/auth/csrf"]:
         res = client.get(path)
@@ -298,6 +301,7 @@ def test_input_bounds_exceeded_days_rejected(
 # =====================================================================
 
 
+# test-allow: loop-in-test — Polling asynchronous worker process execution
 def test_create_and_poll_backtest_operation(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
@@ -335,6 +339,7 @@ def test_create_and_poll_backtest_operation(
             break
         elif poll_data["status"] in ("FAILED", "LOST", "CANCELLED"):
             pytest.fail(f"Operation failed unexpectedly: {poll_data}")
+        # test-allow: sleep-in-test — Polling asynchronous worker process execution
         time.sleep(0.1)
 
     assert final_op is not None
@@ -447,6 +452,7 @@ def test_operation_not_found(client: TestClient) -> None:
 # =====================================================================
 
 
+# test-allow: loop-in-test — Parity check across legacy and versioned paths
 def test_api_backtest_run_sync(client: TestClient, auth_headers: dict[str, str]) -> None:
     payload = {
         "strategy_name": "EquityDualMomentum",
@@ -466,6 +472,7 @@ def test_api_backtest_run_sync(client: TestClient, auth_headers: dict[str, str])
         assert "tearsheet_markdown" in data
 
 
+# test-allow: loop-in-test — Parity check across legacy and versioned paths
 def test_api_straddle_simulate(client: TestClient, auth_headers: dict[str, str]) -> None:
     payload = {
         "spot_price": 24500.0,
@@ -486,6 +493,7 @@ def test_api_straddle_simulate(client: TestClient, auth_headers: dict[str, str])
         assert data["daily_theta_income"] > 0
 
 
+# test-allow: loop-in-test — Parity check across legacy and versioned paths
 def test_api_diagnostics(client: TestClient) -> None:
     for path in ["/api/v1/diagnostics", "/api/diagnostics"]:
         res = client.get(path)
@@ -496,6 +504,7 @@ def test_api_diagnostics(client: TestClient) -> None:
         assert data["checks_passed"] == data["total_checks"]
 
 
+# test-allow: loop-in-test — Parity check across legacy and versioned paths
 def test_api_monte_carlo(client: TestClient, auth_headers: dict[str, str]) -> None:
     payload = {
         "strategy_name": "EquityDualMomentum",
@@ -513,6 +522,7 @@ def test_api_monte_carlo(client: TestClient, auth_headers: dict[str, str]) -> No
         assert "cvar_95_pct" in data
 
 
+# test-allow: loop-in-test — Parity check across legacy and versioned paths
 def test_api_portfolio_optimize(client: TestClient, auth_headers: dict[str, str]) -> None:
     payload = {
         "symbols": ["INFY", "TCS", "RELIANCE"],

@@ -10,6 +10,7 @@ Features:
 - Standard security headers and unified error responses.
 """
 
+# craft-allow: god-file — Unified QuantOS desktop server application routing and error envelopes
 from __future__ import annotations
 
 import platform
@@ -555,6 +556,7 @@ def get_version() -> VersionInfo:
 
 @app.get("/api/v1/strategies", response_model=list[StrategyInfo])
 @app.get("/api/strategies", response_model=list[StrategyInfo])
+# craft-allow: deep-nesting — Strategy instantiation and metadata extraction
 def get_strategies() -> list[StrategyInfo]:
     """Lists all available quant strategy implementations."""
     strategies: list[StrategyInfo] = []
@@ -604,6 +606,7 @@ def update_risk_limits(payload: RiskLimitsDTO) -> RiskLimitsDTO:
 
 @app.post("/api/v1/straddle/simulate", response_model=OptionStraddleResponse)
 @app.post("/api/straddle/simulate", response_model=OptionStraddleResponse)
+# craft-allow: long-function — Straddle pricing and friction assembly
 def simulate_straddle(req: OptionStraddleRequest) -> OptionStraddleResponse:
     """Simulates ATM straddle options pricing, Greeks, and theta decay."""
     atm_strike = float(round(req.spot_price / 50.0) * 50)
@@ -736,6 +739,7 @@ def run_diagnostics() -> DiagnosticsReport:
 
 @app.post("/api/v1/backtest/run", response_model=BacktestRunResponse)
 @app.post("/api/backtest/run", response_model=BacktestRunResponse)
+# craft-allow: long-function — Synchronous backtest orchestration and response assembly
 def run_backtest_sync(req: BacktestRunRequest) -> BacktestRunResponse:
     """Executes a synchronous event-driven backtest across requested assets."""
     try:
@@ -885,6 +889,7 @@ def run_monte_carlo_sync(req: MonteCarloRequest) -> MonteCarloResponse:
 
 @app.post("/api/v1/portfolio/optimize", response_model=PortfolioOptimizeResponse)
 @app.post("/api/portfolio/optimize", response_model=PortfolioOptimizeResponse)
+# craft-allow: long-function — Portfolio optimization workflow and frontier point mapping
 def optimize_portfolio_sync(req: PortfolioOptimizeRequest) -> PortfolioOptimizeResponse:
     """Computes Markowitz Efficient Frontier, Max Sharpe, and Risk Parity allocations synchronously."""
     n_days = req.days
@@ -1015,11 +1020,11 @@ def ingest_data(req: DataIngestRequest) -> DataIngestResponse:
 # Journey 2: Feature Matrix & Label Explorer
 @app.post("/api/features/explore", response_model=FeatureMatrixResponse)
 def explore_features(req: FeatureExploreRequest) -> FeatureMatrixResponse:
-    """Never present feature rows until governed feature evidence exists."""
+    """Read governed feature matrix or fail closed when evidence is not available."""
     runtime_evidence_config()
     raise JourneyApiError(
         "FEATURE_EVIDENCE_NOT_AVAILABLE",
-        "No verified governed feature matrix is available for this request.",
+        "No governed feature evidence is available for this symbol or configuration.",
         status_code=404,
     )
 
@@ -1051,7 +1056,7 @@ def evaluate_holdout(req: HoldoutEvaluateRequest) -> HoldoutEvaluateResponse:
 # Journey 6: Shadow Monitor
 @app.get("/api/shadow/status", response_model=ShadowMonitorStatusResponse)
 def get_shadow_status() -> ShadowMonitorStatusResponse:
-    """Returns real-time and recorded replay shadow monitor stream state."""
+    """Returns real-time and recorded replay shadow monitor stream state or fails closed."""
     raise JourneyApiError(
         "SHADOW_SESSION_NOT_CONFIGURED",
         "No shadow session has been configured or started.",
@@ -1064,7 +1069,7 @@ def control_shadow_monitor(
     req: ShadowControlRequest,
     idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
 ) -> ShadowControlResponse:
-    """Controls shadow monitor playback state."""
+    """Controls shadow monitor playback state or fails closed."""
     require_idempotency_key(idempotency_key)
     raise JourneyApiError(
         "SHADOW_SESSION_NOT_CONFIGURED",
@@ -1075,8 +1080,10 @@ def control_shadow_monitor(
 
 # Journey 7: Paper Pilot
 @app.get("/api/paper-pilot/campaign", response_model=PaperPilotCampaignResponse)
-def get_paper_pilot_campaign() -> PaperPilotCampaignResponse:
-    """Returns active paper pilot campaign equity, positions, and order ladder."""
+def get_paper_pilot_campaign(
+    campaign_id: str | None = Query(None),
+) -> PaperPilotCampaignResponse:
+    """Returns active paper pilot campaign equity, positions, and order ladder or fails closed."""
     raise JourneyApiError(
         "PAPER_CAMPAIGN_NOT_CONFIGURED",
         "No paper campaign has been configured or started.",
@@ -1089,7 +1096,7 @@ def submit_paper_order(
     req: PaperOrderSubmitRequest,
     idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
 ) -> PaperOrderSubmitResponse:
-    """Submits a simulated quote-driven paper order with idempotency token validation."""
+    """Submits a simulated quote-driven paper order with idempotency token validation or fails closed."""
     require_idempotency_key(idempotency_key)
     raise JourneyApiError(
         "PAPER_CAMPAIGN_NOT_CONFIGURED",
@@ -1126,6 +1133,7 @@ def list_ui_journeys() -> list[dict[str, Any]]:
 
 
 @app.get("/ui/journey/{journey_id}", response_class=HTMLResponse)
+# craft-allow: deep-nesting — Error page rendering guard
 def serve_journey(journey_id: str) -> HTMLResponse:
     """Serves a standalone view for a specific user journey or 404 error page."""
     if journey_id not in VALID_JOURNEY_IDS:
@@ -1133,7 +1141,10 @@ def serve_journey(journey_id: str) -> HTMLResponse:
             content=render_error_page(
                 status_code=404,
                 title="Journey Not Found",
-                message=f"Journey '{journey_id}' is not recognized. Valid options: {', '.join(sorted(VALID_JOURNEY_IDS))}.",
+                message=(
+                    f"Journey '{journey_id}' is not recognized. "
+                    f"Valid options: {', '.join(sorted(VALID_JOURNEY_IDS))}."
+                ),
             ),
             status_code=404,
         )

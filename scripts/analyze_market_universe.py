@@ -150,12 +150,12 @@ def run_comprehensive_market_analysis(
             for r in csv.DictReader(f):
                 equity_meta[r["Symbol"]] = r
 
-    nifty50_symbols = set()
+    nifty50_symbols: set[str] = set()
     if nifty50_csv.is_file():
         with open(nifty50_csv, encoding="utf-8-sig") as f:
             nifty50_symbols = {r["Symbol"].strip() for r in csv.DictReader(f) if "Symbol" in r}
 
-    nifty500_symbols = set()
+    nifty500_symbols: set[str] = set()
     if nifty500_csv.is_file():
         with open(nifty500_csv, encoding="utf-8-sig") as f:
             nifty500_symbols = {r["Symbol"].strip() for r in csv.DictReader(f) if "Symbol" in r}
@@ -166,7 +166,7 @@ def run_comprehensive_market_analysis(
     print(f"Loaded {len(datasets):,} verified datasets from EvidenceStore: {store_dir}")
 
     profiles: list[StockQuantitativeProfile] = []
-    processed_symbols = set()
+    processed_symbols: set[str] = set()
 
     for verified in datasets:
         acq = historical_acquisition_from_verified(verified)

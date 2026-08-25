@@ -67,6 +67,7 @@ from quant_system.data.upstox import UpstoxClient
 from quant_system.evidence import EvidenceStore, EvidenceStoreConfig
 from quant_system.evidence.errors import EvidenceError
 from quant_system.modeling import (
+    LABEL_HORIZON_SESSIONS_V1,
     ExchangeSessionV1,
     FeatureDatasetV1,
     HistoricalUniverseSnapshotV1,
@@ -470,6 +471,7 @@ def _fold_from_tail(
     validation_sessions: int,
     embargo_sessions: int,
     fold_id: str,
+    label_horizon_sessions: int = LABEL_HORIZON_SESSIONS_V1,
 ) -> PartitionedFoldV1:
     """Hold out the most recent labelled sessions as the validation block."""
     label_closes = sorted({row.decision_at for row in labels.rows})
@@ -487,6 +489,7 @@ def _fold_from_tail(
         validation_end=validation_closes[-1],
         calendar=calendar,
         embargo_sessions=embargo_sessions,
+        label_horizon_sessions=label_horizon_sessions,
     )
 
 

@@ -95,9 +95,9 @@ def run_delivery_accumulation_ingestion(
         acc_series = calculate_delivery_accumulation_series(closes, highs, lows, volumes)
 
         # Combine with dates
-        combined = []
+        combined: list[dict[str, Any]] = []
         for i in range(len(dates)):
-            item = {"date": dates[i], "close": closes[i], "volume": volumes[i]}
+            item: dict[str, Any] = {"date": dates[i], "close": closes[i], "volume": volumes[i]}
             item.update(acc_series[i])
             combined.append(item)
 

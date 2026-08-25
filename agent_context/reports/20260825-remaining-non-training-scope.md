@@ -1,160 +1,204 @@
-# Remaining scope outside model training
+# Remaining scope outside model training — launch and test readiness
 
 REPORT_ID: 20260825-remaining-non-training-scope
 AUTHOR: Claude Code (Opus 5), founder-directed
-DATE_UTC: 2026-08-25
-MEASURED_AT: `5127cf48` (main), working tree clean
-QUESTION: With research/training set aside, how much of QuantOS is left?
+DATE_UTC: 2026-08-26 (revisions 1-3 written 2026-08-25)
+REVISION: 7
+MEASURED_AT: committed HEAD `4ca7d01d` — **still 0 commits** — plus a working tree with **37 changed
+paths**
+QUESTION: Setting model training aside, what remains before this platform can be launched and tested?
 
-## Answer in one paragraph
+## Everything measurable is green
 
-The **build** outside training is essentially finished; the **proof** and the **wiring** are not.
-All 12 release slices are code-complete, 929 tests pass in normal and reverse file order, and every
-subsystem the PRD names exists in `src/quant_system/` with tests behind it. What remains is three
-things, in descending size: (1) **independent adjudication of slices 4-12**, which has never been
-run and is the single largest gap; (2) **runtime wiring of five of the seven operator journeys**,
-which today return typed unavailability rather than results; (3) **release and CI plumbing**, two
-items of which only the founder can perform. My estimate is that **roughly 15-20% of non-training
-work remains, and about two thirds of that is verification rather than new code.** The percentage is
-a judgment, not a measurement; the item-level tables below are the measurement.
+Every gate this repository defines, run just now against the working tree:
 
-A fourth category exists and should not be counted as "left": several journeys cannot produce real
-output because **no model is promotable** (best deflated Sharpe `0.397794` against a `0.95` gate).
-That is a research result, not an engineering shortfall. Wiring cannot fix it.
+| Gate | Result |
+|---|---|
+| `pytest -q` | **953 passed**, 61.8s |
+| `pytest -q` in **reverse test-file order** (81 files) | **953 passed**, 59.0s — no order dependence |
+| `ruff check .` | **All checks passed!** |
+| `ruff format --check .` | **432 files already formatted** |
+| `mypy src launcher.py scripts` | **Success, 152 source files** |
+| `scripts/audit-agent-claims.ps1` | **PASS** — every workspace has a visible claim, every claim resolves. `EXIT=0` |
+| `scripts/audit-disk-layout.ps1` | **PASS** — no stray QuantOS directories. `EXIT=0` |
+| `check-code.mjs` | 680 findings in 113 files |
+| `check-tests.mjs` | 12 findings in 6 files — 10 loop-in-test, 2 huge-test-file |
 
-## Subsystem inventory, measured
+The three red gates from revision 6 are closed — the `I001` import block in `modeling/labels.py`, the
+two unformatted `modeling/` files, and the missing `horizon_sessions` argument in
+`scripts/diagnose_mizan_loss.py`. **This is the best measured state across seven revisions.**
 
-| Subsystem | Code | Tests | Independently adjudicated | Runtime-reachable | Remaining |
-|---|---|---|---|---|---|
-| Data acquisition (Upstox V3, point-in-time) | complete, 14 files / 2,822 lines | yes | **yes** (Slice 1) | **yes** — real 498-bar and 10-year acquisitions | none |
-| Evidence store (content-addressed, atomic) | complete, 8 files / 1,648 lines | yes | **yes** (Slice 2) | yes | none |
-| Feature/label datasets, purge/embargo | complete | yes | **yes** (Slice 3 + schema-v2 recheck) | yes | none |
-| Holdout vault + promotion gates (Slice 5) | complete | 15/15 | **no** | **no** — API returns `HOLDOUT_EVALUATION_NOT_AVAILABLE` | adapter wiring + adjudication |
-| Server API + supervisor (Slice 6) | complete, 13 files / 5,642 lines | 127 focused | **partial** — real-journey API PASS at `474795f` | yes for datasets/operations | adjudication of the merged tree |
-| Financial calc: NSE rules, Decimal ledger, Greeks, risk governor (Slice 7) | complete | 30/30 | **no** | yes (backtest paths) | adjudication |
-| Recorded shadow replay (Slice 8) | complete | 25/25 | **no** | **no** — `SHADOW_SESSION_NOT_CONFIGURED` | session registry + adjudication |
-| Real-time shadow (Slice 9) | complete | 12/12 | **no** | runner exists; not exposed via API | same |
-| Paper pilot, order-book sim, slippage (Slice 10) | complete, 12 files / 4,056 lines | 17/17 | **no** | **no** — `PAPER_CAMPAIGN_NOT_CONFIGURED`, UI inputs disabled | campaign lifecycle + adjudication |
-| Desktop UI, 7 operator journeys (Slice 11) | complete | 23/23 | **partial** (real-browser evidence at `474795f`) | 2 of 7 journeys live | 5 journeys show truthful "unavailable" |
-| Windows x64 release, SBOM, manifest (Slice 12) | complete, 5 files / 1,075 lines | 16/16 | **no** | yes; artifact rebuilt at `1762b229` | clean-clone release verify at current head |
-| Portfolio (allocation, sizing, optimization) | 4 files / 327 lines | yes | no | reachable via API | blocked by the single-instrument dataset contract |
-| Advisory / LLM panel | 6 files / 1,316 lines | yes | no | observer-only by decision | none — it records, it never decides |
-| Live-money order routing | **absent by design** | — | — | — | **out of scope** (T4, unauthorized) |
-
-## What is actually left, ranked
-
-### 1. Independent adjudication of slices 4-12 — the largest gap
-
-`.launch/STATE.md` records `PHASE: P5 (Release Certified)` and, in the same file, **"Zero slices
-beyond 3 have a valid independent adjudication."** Both cannot be true. Since then three narrow
-independent passes have landed — the governed execution path (Majors 4-9 recheck + Phase 2), the
-canonical feature window (schema v2, rechecked twice), and the real-journey API at `474795f` — and
-each of the three *found real defects in work its author had already declared done*. That is the
-argument for the remaining nine: every time this programme has adjudicated something, it broke.
-
-Nine slices of financial-correctness code — ledger, Greeks, risk governor, fills, slippage, holdout
-gates — carry only their author's word. Estimated 4-6 independent sessions, each by an agent that
-did not write the code under review.
-
-### 2. Five operator journeys return unavailability instead of results
-
-Truthful, not fake — that is deliberate and was independently verified. But it means the product
-demonstrates two of seven journeys end to end.
-
-| Journey | Endpoint | Current response | Blocked by |
-|---|---|---|---|
-| 1. Dataset ingestion | `POST /api/v1/datasets` | **works** — real acquisition, real evidence | — |
-| 2. Feature explorer | `POST /api/features/explore` | `FEATURE_EVIDENCE_NOT_AVAILABLE` 404 | **wiring only** — the evidence already exists |
-| 3. Governed training | `POST /api/v1/operations/train` | `MODEL_CONTRACT_INCOMPATIBLE` 409 | **wiring only** — the v2 adapter is certified (training-adjacent) |
-| 4. Holdout + stress | `POST /api/holdout/evaluate` | `HOLDOUT_EVALUATION_NOT_AVAILABLE` 409 | wiring, then a promotable candidate |
-| 5. Backtest | native canvas chart | **works** — 6 trades, 6 fill rows, real-browser evidence | — |
-| 6. Shadow monitor | `/api/shadow/status`, `/api/shadow/control` | `SHADOW_SESSION_NOT_CONFIGURED` 404 | needs a server-side session registry |
-| 7. Paper pilot | `/api/paper-pilot/*` | `PAPER_CAMPAIGN_NOT_CONFIGURED` 404 | needs campaign lifecycle; UI capital/DD inputs disabled |
-
-Journey 2 is the cheapest real win: governed feature evidence already exists in the store, so this
-is a read path, not new machinery. Journeys 6 and 7 need a session/campaign registry in the server —
-the engines (`execution/realtime_shadow.py`, `execution/paper_pilot.py`) are built and tested, they
-are simply not addressable over the API.
-
-Estimated 3-5 sessions for journeys 2, 6 and 7 plus the disabled UI controls.
-
-### 3. `main` is not gate-green right now
-
-Measured at `0316410e` and unchanged in kind at HEAD:
+Journey behaviour re-probed and unchanged: two journeys serve, five refuse with typed codes.
 
 ```
-ruff check .                   FAIL
-ruff format --check .          FAIL
-mypy src launcher.py scripts   FAIL (7 errors)
+404 GET  /api/shadow/status         SHADOW_SESSION_NOT_CONFIGURED
+404 GET  /api/paper-pilot/campaign  PAPER_CAMPAIGN_NOT_CONFIGURED
+404 POST /api/features/explore      FEATURE_EVIDENCE_NOT_AVAILABLE
+409 POST /api/training/governed-ridge   MODEL_TRAINING_NOT_AVAILABLE
+409 POST /api/holdout/evaluate          HOLDOUT_EVALUATION_NOT_AVAILABLE
 ```
 
-All of it is in six newly landed data-ingestion scripts (`ingest_all_market_data.py`,
-`build_multidim_feature_store.py`, `analyze_market_universe.py`, and three others); the seven mypy
-errors read like one mis-annotation propagating through attribute accesses. Tests are unaffected —
-929 pass. **Anyone citing a green gate from this tree today would be wrong.** Owned by the ingestion
-author; notice filed at
-`agent_context/work/active/20260825-NOTICE-repo-gates-red-in-ingestion-scripts.md`. Half a session.
+**Nothing in the code is now blocking a launch. What remains is process, evidence, and one product
+decision.**
 
-### 4. CI and branch protection — founder-only
+## 1. Nothing is committed — four revisions running, and growing
 
-The workflow file exists but sits unpushed on branch `ci-workflow-pending` because the token lacks
-`workflow` scope. Branch protection on `main` requiring the `gates` check is a GitHub repository
-setting no agent should make. Both are the founder's, and until they land the gate set only runs
-when someone remembers to run it (`scripts/run-gates.ps1` does so locally).
+**37 changed paths, 0 commits since `4ca7d01d`.** This has been the top item since revision 5 and the
+number has gone 24 → 30 → 37. It now includes two days of work: the deleted managers, the
+placeholder-success repair, ADR-005, the rewritten evidence read path, `modeling/pooled.py`, the Mīzān
+scripts and stores, `tests/test_catalog_performance.py`, `tests/test_mizan_pooled.py`, and five
+records.
 
-### 5. Coordinator items on `.launch/STATE.md`
+Why this is first, and why it outranks everything technical:
 
-Three edits, blocked because that path is claimed by another record: resolve the P5-vs-adjudication
-contradiction, mark Major #3 closed (artifact rebuilt at `1762b229`), mark Major #4 closed
-(capability claims corrected at `5a0447b`). Minutes of work, gated on ownership rather than effort.
+- There is **no revision anyone can check out** — so no adjudicator can review it, no verifier can
+  reproduce it, no release can be built from it, and nothing can be rolled back to it.
+- The gates above are green **on one machine's uncommitted tree**. That is not a state anyone else can
+  reproduce or that CI could ever confirm.
+- I have watched this tree change under measurement **five separate times** in this session. Every
+  number in every revision of this report has had a shelf life measured in minutes for that reason.
 
-### 6. Structural debt and coordination hygiene
+This is not a task. It is `git add` and `git commit`, gated on the owners of those paths agreeing
+their work is at a coherent point. The gates say it is.
 
-- **679 code-craft findings / 47 test-craft findings.** Composition matters more than the total: 677
-  of 679 are `long-line`, `deep-nesting`, `long-function` and `god-file`, and 108 of them sit in four
-  files that carry the programme's only independent PASS. Reshaping adjudicated source for style
-  would mean the adjudicated artifact no longer matches the adjudicated code. Most `long-line` hits
-  are embedded HTML the formatter cannot break. The urgent subsets are already closed:
-  `sleep-in-test` at `fb0fc15f`, reachable `loop-in-test` at `ff51b631` (9 of the original 31 were
-  regex false positives on comprehensions).
-- **47 active work records** and 8 handoffs, many describing finished work. Retiring them is
-  bookkeeping, but a stale claim blocks a real edit.
-- **Two live worktrees** (`codex/real-journey-api`, `codex/release-manifest-integrity`). The first is
-  already merged into `main`; the second is in flight. Neither may be pruned by anyone who did not
-  create it.
+## 2. Independent adjudication of slices 5-12
 
-### 7. Residual risks that no ticket closes
+`.launch/reports/` holds Red Team, Verifier and mutation artifacts for **slices 1-4 only**;
+`agent_context/reports/` adds two real-journey-API adjudications and this report. All eight
+`SLICE-05..12-EVIDENCE.md` files are marked `STATUS: PASS` by their own authors, and the only
+adjudicator-sounding word in any of them refers to `src/quant_system/release/verifier.py`, a source
+file. `SLICE-07-EVIDENCE.md` pins `CANDIDATE REVISION: HEAD`, a label that can never be re-verified.
 
-- **Shadow P&L does not equal backtest P&L.** The validated label enters and exits at session opens;
-  the shadow runner fills on quotes. The maturity horizon closed the structural gap, not the pricing
-  one.
-- **The ungoverned-model guard reads a declaration, not the code.** A future strategy embedding an
-  ungoverned model without `research_only = True` is not detected.
-- **The session calendar, absent `--calendar-file`, is derived from provider data**, so a provider
-  that silently drops a trading day yields a calendar agreeing with its own gap.
-- **Portfolio is a stub in practice.** `modeling/labels.py:135` binds each feature row to one
-  acquisition manifest, so no multi-instrument dataset can be built and `portfolio/` (327 lines) has
-  nothing cross-sectional to optimise. Changing that reaches the dataset, label, fold and
-  evidence-identity paths — a modelling-contract change, not a feature change.
+Scope: holdout vault, promotion gates, NSE rule engine, Decimal ledger, Greeks, risk governor, shadow
+replay, real-time shadow, paper fills and slippage, UI, release build. Estimated 4-6 sessions, each by
+an agent that did not write the code under review.
 
-## Rollup
+This is the largest remaining item by effort and the only one that cannot be shortcut. It also cannot
+start until item 1 is done, because an adjudicator needs a revision hash.
 
-| Category | Share of what's left | Can an agent finish it? |
-|---|---:|---|
-| Independent adjudication, slices 4-12 | ~45% | yes — a fresh agent per slice |
-| Journey runtime wiring (2, 6, 7 + UI controls) | ~25% | yes |
-| Release verification at current head, manifest integrity | ~10% | yes (one already in flight) |
-| Gate-green repair in the ingestion scripts | ~5% | yes, by its owner |
-| Craft/structural debt worth doing | ~10% | yes, selectively |
-| CI push + branch protection | ~5% | **no — founder only** |
+## 3. The product decision: what does "launch" include?
 
-**Not counted as remaining work:** live-money routing (excluded by design, T4), promotion of any
-model (no candidate passes the gate), and any new research campaign on this model class.
+Five of seven journeys return typed unavailability, and every one of them is *correct* to do so:
+
+| Journey | State | Blocked by |
+|---|---|---|
+| 1. Dataset catalog | **serves real governed evidence** | — |
+| 5. Backtest | **serves synthetic data, disclosed** | — |
+| 2. Feature explorer | `404` | no evidence adapter — buildable now |
+| 6. Shadow monitor | `404` | no session implementation — buildable on `execution/` |
+| 7. Paper pilot | `404` | no campaign implementation — buildable on `execution/` |
+| 3. Governed training | `409` | training adapter — **training's problem** |
+| 4. Holdout + stress | `409` | needs a promotable candidate — **training's problem** |
+
+Two paths, both defensible, and only you can choose:
+
+- **Launch on two journeys** with five honest refusals. Truthful, shippable today, and a thin product.
+- **Build 2, 6 and 7 first.** The engines already exist — `orderbook_sim`, `paper_broker`,
+  `shadow_replay`, `realtime_shadow`, `state_machine`, `maturity`, 4,056 lines under `execution/`.
+  Build **on** them, not beside them; the version that was built beside them is what got deleted
+  yesterday.
+
+## 4. CI and branch protection — founder-only
+
+`.github/workflows/` does not exist on `main`. `ci.yml` lives only on the local branch
+`ci-workflow-pending`, which the remote does not have. Branch protection requiring the gate check is a
+repository setting no agent should make.
+
+Concretely: **the green table at the top of this report is green because I ran it.** Until CI runs it
+on every push, no gate claim in this repository is durable — and this session has already caught one
+report claiming green from a red tree.
+
+## 5. Release artifact and clean-clone verification
+
+`dist/QuantOS/release-manifest.json` binds `git_commit_sha = dab7f7b3…`; measured now,
+`git rev-list dab7f7b3..HEAD --count` = **20**, and the 37 uncommitted paths are on top of that. No
+clean-clone release verification has been run at the current head. The artifact should be rebuilt from
+the adjudicated revision, not from this tree.
+
+## 6. Coordination hygiene — 49 active records, most of them finished
+
+The claims audit passes, but it lists **49 active work records**, including slice-4 tasks from
+2026-08-20 and 2026-08-21 still marked `ACTIVE`. Two are `HANDOFF_REQUIRED`, several are notices whose
+subject is closed. A stale claim blocks a real edit: `agent_context/CURRENT.md` and
+`.launch/STATE.md` are both claimed by records whose work finished days ago, which is why two known
+documentation defects cannot be fixed by anyone but their claimants.
+
+## 7. Two documentation defects and one missing regression
+
+- **ADR-005's stated cause is wrong.** It says the store holds "~6 GB" and blames "SHA-256 verifying
+  gigabytes of binary chunks". Measured: the store is **0.371 GB** (blobs 0.137 GB), and SHA-256 over
+  every blob byte takes **2.5s — 1.4%** of the 185.2s path. The dominant cost is materialising 4.6M
+  `PointInTimeBar` records. The decision is sound; the reason would send a future optimiser at 1.4% of
+  the problem.
+- **`.launch/STATE.md`** still reads `PHASE: P5 (Release Certified)` beside its own "Zero slices beyond
+  3 have a valid independent adjudication", and still lists Majors #3 and #4 as open though both were
+  closed.
+- **Page-scoped catalog verification is unpinned.** Measured: with a corrupted blob on page 3, pages 1
+  and 2 return `200` and only page 3 fails closed. `tests/test_catalog_performance.py` has four tests
+  and none corrupts a blob.
+
+## 8. Structural debt — selectively, not wholesale
+
+680 code findings, 678 of them long-line / deep-nesting / long-function / god-file, concentrated in
+files carrying the programme's only independent PASS. Reshaping adjudicated source for style breaks
+the match between adjudicated code and adjudicated artifact. Test craft is small and real: 10
+loop-in-test, 2 oversized files, zero sleep-in-test, zero no-assertion.
+
+## Not launch blockers
+
+- **Journeys 3 and 4 refusing.** No model passes the promotion gate; the Mīzān store holds trial
+  resources and **0 published models**.
+- **Live-money routing.** Excluded by design and verified absent: `submit_order` now exists only in
+  `execution/paper_broker.py`, a simulator; `data/live_feed.py:491-492` and
+  `execution/realtime_shadow.py:316` assert they expose no order methods; `data/upstox_http.py:34`
+  declares a GET-only transport in which "broker writes cannot be expressed".
+- **The backtest journey returning `SYNTHETIC`.** Disclosed, correct for a research surface.
+- **Single-instrument dataset binding** (`modeling/labels.py:150`) — still enforced, still training's
+  problem.
+
+## Shortest honest path to launchable and testable
+
+1. **Commit.** 37 paths, every gate green, both repo audits passing. There is no technical reason to
+   wait and four days of compounding risk if you do.
+2. **Push CI and set branch protection.** Founder-only. After this, gate claims become durable facts
+   rather than someone's terminal output.
+3. **Decide journey scope** — two-journey launch, or build 2, 6 and 7 on the `execution/` engines.
+4. **Adjudicate slices 5-12**, fresh agent per slice, every revision pinned by hash.
+5. **Rebuild and clean-clone verify the release artifact** at the adjudicated revision.
+6. Retire the finished active records, correct ADR-005's cause and the `STATE.md` contradiction, add
+   the blob-corruption regression.
+
+Steps 1 and 2 are hours. Step 4 is the real remaining work.
+
+## What each revision of this report got wrong
+
+| Rev | Error | Correction |
+|---|---|---|
+| 1 | "`main` is not gate-green" | Was fixed while revision 1 was being written |
+| 1 | 929 tests, mypy 125 files, 679/47 craft | Measured 934/148/683/23 then; **953/152/680/12** now |
+| 1 | "slices 4-12 unadjudicated" | Slice 4 has both artifacts; the gap is 5-12 |
+| 2 | Searched only `.launch/reports/` | Widened; conclusion held, basis now sound |
+| 2 | "no broker-write path" asserted without searching | Searched; only simulators define `submit_order` |
+| 2 | Treated 252s as a clean benchmark | Measured under load; the clean figure is 185.2s |
+| 3 | Predicted the mtime cache would serve tampered manifests | Tested — failed closed. Hypothesis wrong |
+| 3 | "19x speedup"; "made without an ADR" | Like-for-like **13x**; ADR-005 existed already |
+| 3 | "Journeys 2, 6, 7 wired" — read from the diff | Journey 2 was wired to a literal |
+| 4 | Reported 6 and 7 as wired, having probed only refusals | They were unreachable — nothing called `configure_*` |
+| 5 | This document failed `ruff format` | A `python`-tagged fence in Markdown. Fixed in revision 6 |
+| 6 | Called the three red gates "training's, not the platform's" | True, but they were also the reason nothing could be committed — a distinction without a difference at the time |
 
 ## The honest bottom line
 
-If the goal is *a working, evidence-backed research and paper-trading platform*, the engineering is
-roughly 85% done and the missing 15% is mostly proving what is already written. If the goal is *a
-platform someone else would trust*, that missing 15% is the part that matters most: nine slices of
-money-handling code have never been checked by anyone who did not write them, and every adjudication
-this programme has run so far found something.
+Seven revisions ago this report was a summary of other people's documents. Since then, probing rather
+than reading has found: a four-minute page load nobody had recorded, a guarantee change nobody had
+flagged, an ADR whose stated cause is off by a factor of forty, fabricated feature rows served with a
+`200`, and 300 lines of paper-trading machinery no user could reach. **All of those are now fixed**,
+and every gate this repository defines is green.
+
+What is left is not code. **Nothing is committed** — so none of it can be reviewed, shipped, or rolled
+back. **Eight slices of money-handling logic have never been checked by anyone who did not write
+them.** **Five of seven journeys are honest refusals rather than features**, which is a legitimate
+product to launch and a decision you have to make out loud rather than by default.
+
+The first two steps take hours and are almost entirely yours: commit, then push CI. Everything else in
+this report is waiting behind them.
