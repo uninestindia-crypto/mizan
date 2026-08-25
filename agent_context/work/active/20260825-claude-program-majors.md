@@ -5,7 +5,7 @@ AGENT: Claude Code (Opus 5)
 STATUS: IN_PROGRESS
 STARTED_UTC: 2026-08-25
 STARTING_REVISION: `b9f4f70` (main)
-WORKTREE_OR_BRANCH: D:\quant_system on main
+WORKTREE_OR_BRANCH: D:\quant_system on main; **also claims branch `ci-workflow-pending`**
 
 ## Objective
 
