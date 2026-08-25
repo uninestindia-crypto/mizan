@@ -423,6 +423,47 @@ outside the governed store. All recorded so a future campaign can price the sear
 
 Record: `agent_context/work/completed/20260824-claude-cross-sectional-screen.md`.
 
+### The cross-sectional result did not replicate on 8.5x the universe (2026-08-25)
+
+The all-market cache (3,267 currently-listed NSE symbols, 4.6M bars, ingested by another agent)
+made the test possible that the cross-sectional t = 1.18 needed: more independent data rather than
+more looks at the same fifty names.
+
+**A defensible universe had to be built first.** The raw cache is not usable as delivered — 437 SME
+names whose liquidity cannot support the 0.224% cost model, 19 under surveillance, 22% of the market
+with >5% circuit-locked days, and only 1,289 of 3,267 with a full ten-year history.
+`scripts/build_research_universe.py` applies a declared filter (>= 9.5y history, median daily
+turnover >= Rs 5 crore, SME and PCA excluded) giving
+`data/authorities/nse-research-universe-liquid-10y.csv`, **423 names**.
+
+The configuration was carried over unchanged. The only translation was holding the selection
+*fraction* at the top 20% rather than the absolute top 10, so a 423-name universe is not silently
+made 8x more selective.
+
+| | 50 names | **423 names** |
+|---|---:|---:|
+| hold 21, long-only Sharpe | **+0.76** | **+0.12** |
+| hold 21, long-only t | +1.18 | **+0.19** |
+| hold 21, long-short mean net | +0.007606 | **-0.006449** |
+| hold 21, cross-sectional IC | +0.04494 | **-0.02212** |
+| hold 2, long-short t | -5.68 | **-7.85** |
+
+**The positive vanished.** Sharpe fell from +0.76 to +0.12, t from 1.18 to 0.19, and both the
+long-short return and the cross-sectional IC flipped sign. **The one thing that replicated is the
+loss:** hold-2 long-short went from t = -5.68 to **-7.85**. Getting stronger with more data is what a
+real effect looks like, and the real effect is that this strategy loses at short horizons.
+
+**Read this as a strong negative, not an inconclusive one.** The universe is survivorship-biased by
+construction — active listings only, so companies that delisted inside the window are absent. That
+bias pushes in the strategy's favour, and it failed anyway. A negative under a favourable bias is
+stronger than a negative under a neutral one. The bias is documented in the universe file header
+because it cannot be corrected from this cache.
+
+This closes the last untried direction. Across 101 governed trials and seven screens, no variation of
+this model class on this market has survived contact with more data.
+
+Record: `agent_context/work/active/20260825-claude-expanded-universe-authority.md`.
+
 ### The second calculation path is closed (`85ff535`)
 
 `strategies/ml_equity.py` defines `RollingRidgeClassifier` — a ridge with no purging, no
