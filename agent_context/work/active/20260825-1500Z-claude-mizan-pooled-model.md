@@ -1,6 +1,6 @@
 # Active work: Mīzān — one pooled cross-sectional governed model
 
-STATUS: COMPLETE — Mizan trained at two horizons; NOT promotable; negative skill measured  
+STATUS: COMPLETE — Mizan trained, diagnosed, corrected, and refuted out-of-sample; NOT promotable  
 OWNER: Claude Code — Mīzān model build  
 TOOL: Claude Code  
 STARTED_UTC: 2026-08-25T15:00:00Z  
@@ -290,6 +290,61 @@ The honest test needs data that did not produce the hypothesis. Two candidates e
   training rows;
 - the **final holdout**, which `modeling/holdout.py` supports and which has never been opened. It is
   one-shot and should be spent on a candidate that is actually believed, not on a first attempt.
+
+
+## Out-of-sample verdict: the corrected model has no selection edge (2026-08-26)
+
+`scripts/screen_mizan_out_of_sample.py` fits the corrected specification on the 45 governed names
+and tests it on the **378 liquid names that never produced the mean-reversion hypothesis** (the IC
+screen only ever saw universe-bound acquisitions). 108,585 training rows, **902,582 test rows**,
+2,413 rebalances. Ungoverned screen, no ordinal spent.
+
+**The specification fix worked.** Trained on the raw forward return rather than an UP/DOWN sign,
+with the three market-wide features and the two duplicate rank columns removed, the ridge learned
+the reversion: **7 of 8 coefficients are now negative** (only `sma_20_distance` is positive), against
+5 of 8 pointing the wrong way before.
+
+**And it still cannot beat holding everything equally.**
+
+| | Mean per 10-session period | t | Sharpe |
+|---|---:|---:|---:|
+| Long top 20% by Mizan score | +0.006528 | +5.86 | +0.60 |
+| Equal-weight all names (benchmark) | +0.006550 | +6.80 | +0.69 |
+| **Selection edge** | **-0.000022** | **-0.07** | **-0.01** |
+
+The model earns +0.65% per period, which looks fine until it is compared with the only honest
+comparator: equal-weight earns **more**, with a higher t and a higher Sharpe, and requires no model,
+no features, no training and no evidence store. The selection edge is indistinguishable from zero
+and marginally negative.
+
+**Why this comparison is the trustworthy one.** The 423-name universe is survivorship-biased, so the
+absolute +0.65% is inflated and must not be quoted as a return forecast. But both arms are drawn
+from the same biased universe on the same dates, so the bias cancels in the *difference*. The
+-0.000022 selection edge is the internally controlled number, and it is the one that matters.
+
+**The in-sample IC did not generalise.** Cross-sectional ICs as strong as t = -5.63 on the governed
+names produced no tradeable edge on untouched names. An IC of -0.02 is real but far too small to
+survive portfolio construction and a 0.2225% round trip.
+
+### Conclusion, and what it rules out
+
+Four independent negatives now, on top of the repository's prior 101 governed trials and seven
+screens: the ordinal-1 loss, the ordinal-2 loss in a profitable environment, the inverted
+coefficients, and now a corrected specification with zero out-of-sample selection edge.
+
+This closes prediction on technical features for this market. Specifically it means:
+
+- **Do not spend the governed ordinal.** There is nothing to promote; a third trial would raise the
+  deflation bar for whatever comes next and publish another RESEARCH_ONLY model.
+- **Do not do the universe re-binding for training.** Its value was to supply out-of-sample data,
+  and that job is now done -- the screen used those names without needing them governed.
+- **Do not paper trade.** `PromotedModelBundleV1` refuses a RESEARCH_ONLY verdict as "not executable
+  on any surface", and the model is beaten by equal-weight anyway.
+- **Do not open the final holdout.** It is one-shot and there is no candidate worth spending it on.
+
+What the evidence does support is that the *platform* works: governed acquisition, point-in-time
+features, cost-aware labels, purged folds, multiplicity accounting and a promotion gate that
+correctly refused every model put in front of it, including this one. That is the launchable asset.
 
 ## Next safe action
 
