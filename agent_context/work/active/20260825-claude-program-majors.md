@@ -227,7 +227,56 @@ clean clone — is acceptable at all.
 | 3 | Stale artifact | **Rebuilt and verified at HEAD.** 125 `quant_system` modules confirmed by reading the archive TOC. |
 | 4 | Training adjudication | **Made adjudicable.** Brief written, four claims corroborated, one false alarm withdrawn, six questions posed. |
 
+## Final state, and what each remaining item is actually waiting on
+
+Recorded precisely because "blocked" is a word that hides things. Neither remaining item is waiting
+on engineering.
+
+### Major #1 — waiting on a payment method and a browser
+
+Two independent blocks, both **tested rather than assumed**:
+
+| block | evidence |
+|---|---|
+| branch protection unavailable | `403 Upgrade to GitHub Pro` on `branches/main/protection` **and** on `rulesets`; repo is private, owner type User |
+| workflow cannot be pushed | token scopes are `gist, read:org, repo` — no `workflow`; GitHub refuses OAuth pushes creating `.github/workflows/**` |
+| SSH as an alternative | no keys present; `git@github.com: Permission denied (publickey)` |
+
+Everything an agent can do is done: the workflow exists on branch `ci-workflow-pending` (claimed
+here, so the claim audit passes), a pushable copy sits at `ci/gates-workflow.yml` with activation
+instructions, and `scripts/run-gates.ps1` runs the identical gate set locally today.
+
+Activation: `gh auth refresh -s workflow`, then merge `ci-workflow-pending`. Plus the plan decision.
+
+### Training adjudication — five of six resolved; Q5 needs a reviewer who is not me
+
+| Q | State |
+|---|---|
+| 1 reproducibility | Integrity proven. Determinism **downgraded on reviewer objection** to one instrument, four repetitions |
+| 2 re-deflation real | Answered — same model, sharpe 3.2207 |
+| 3 cache provenance | Integrity proven (100 datasets, 0 invalid); point-in-time honesty open |
+| 4 search accounting | Answered — understated ~48%, verdict unchanged at every count to 110 |
+| 5 my own work | **Partially reviewed.** Determinism downgraded, item 4 cleared. Full pass outstanding |
+| 6 gitignored evidence | Blocker removed — committed inventory, 3,771 resources |
+
+Three of the five risks I flagged for review are now tests rather than claims: the CRR gamma
+convergence with its control, the holdout durability-on-commit-failure path, and the fail-closed
+leverage guard's success path. Each was a case where I had verified the new behaviour and not the
+preserved behaviour.
+
+The only reviewer who answered declared a conflict of interest unprompted — they own `execution/**`
+and `modeling/**` and wrote the campaign drivers — so they are adjacent on three of five items. They
+are genuinely independent on `holdout.py`, `greeks.py`, `governor.py` and the CRR lattice, and that
+is where a pass would be worth having.
+
+### What must not happen
+
+Q5 must not be closed by my assertion, and Major #1 must not be closed by an agent writing repository
+settings through `gh api`. Either would produce a green record with nothing behind it, which is the
+failure `.launch/reports/quarantine/` exists to remember.
+
 ## Next safe action
 
-Founder decides Major #1 (upgrade / go public / accept a non-blocking gate). An independent
-adjudicator takes the training brief. The 677 structural craft findings need their path owners.
+Founder: `gh auth refresh -s workflow`, then the Pro-vs-public decision. A reviewer other than me
+takes `holdout.py` and `greeks.py`. The 677 structural craft findings belong to their path owners —
+`loop-in-test` is already being repaired by another session.
