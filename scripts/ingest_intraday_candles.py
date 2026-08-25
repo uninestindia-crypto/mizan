@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import argparse
 import concurrent.futures
-import csv
 import json
 import os
-import sys
 import threading
 import time
 import urllib.error
@@ -17,13 +14,9 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-# Add workspace path
-ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT_DIR / "src"))
-
 from quant_system.config import load_env_file
 
-load_env_file()
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
 def read_liquid_symbols(profiles_json: Path, limit: int = 50) -> list[dict[str, str]]:
@@ -36,13 +29,15 @@ def read_liquid_symbols(profiles_json: Path, limit: int = 50) -> list[dict[str, 
     profiles.sort(key=lambda p: p.get("avg_daily_turnover_inr", 0), reverse=True)
     selected: list[dict[str, str]] = []
     for p in profiles[:limit]:
-        selected.append({
-            "symbol": p["symbol"],
-            "isin": p["isin"],
-            "instrument_key": f"NSE_EQ|{p['isin']}",
-            "company_name": p["company_name"],
-            "adtv_inr": p["avg_daily_turnover_inr"],
-        })
+        selected.append(
+            {
+                "symbol": p["symbol"],
+                "isin": p["isin"],
+                "instrument_key": f"NSE_EQ|{p['isin']}",
+                "company_name": p["company_name"],
+                "adtv_inr": p["avg_daily_turnover_inr"],
+            }
+        )
     return selected
 
 
@@ -58,12 +53,12 @@ def fetch_intraday_chunked(
     """Fetch intraday candles in 30-day chunks and stitch chronologically."""
     encoded_key = urllib.parse.quote(instrument_key, safe="")
     all_candles: list[list[Any]] = []
-    
+
     current_end = to_date
     while current_end > from_date:
         current_start = max(from_date, current_end - timedelta(days=28))
         url = f"https://api.upstox.com/v3/historical-candle/{encoded_key}/{interval}/{current_end.isoformat()}/{current_start.isoformat()}"
-        
+
         req = urllib.request.Request(
             url,
             headers={
@@ -79,7 +74,7 @@ def fetch_intraday_chunked(
             all_candles.extend(candles)
         except Exception:
             pass
-        
+
         if rate_limit_sleep > 0:
             time.sleep(rate_limit_sleep)
         current_end = current_start - timedelta(days=1)
@@ -92,23 +87,25 @@ def fetch_intraday_chunked(
 def run_intraday_ingestion(
     profiles_json: Path,
     output_dir: Path,
-    interval: str = "minutes/15",
-    days_back: int = 365,
-    concurrency: int = 8,
+    interval: str = "15minute",
+    from_date: date = date(2025, 8, 22),
+    to_date: date = date(2026, 8, 21),
     limit: int = 50,
+    concurrency: int = 4,
 ) -> dict[str, Any]:
+    """Ingest intraday candles for top liquid symbols."""
+    load_env_file()
     output_dir.mkdir(parents=True, exist_ok=True)
     token = os.getenv("UPSTOX_ACCESS_TOKEN", "")
     if not token:
         raise RuntimeError("UPSTOX_ACCESS_TOKEN is required in environment.")
 
     targets = read_liquid_symbols(profiles_json, limit=limit)
-    to_date = date(2026, 8, 21)
-    from_date = to_date - timedelta(days=days_back)
+    days_count = (to_date - from_date).days
 
     print(f"=== INTRADAY DATA INGESTION ({interval}) ===", flush=True)
     print(f"Universe Source : {profiles_json} ({len(targets)} liquid targets)", flush=True)
-    print(f"Range           : {from_date} -> {to_date} ({days_back} days)", flush=True)
+    print(f"Range           : {from_date} -> {to_date} ({days_count} days)", flush=True)
     print(f"Output Directory: {output_dir.resolve()}", flush=True)
     print(f"Concurrency     : {concurrency} worker threads\n", flush=True)
 
@@ -155,23 +152,35 @@ def run_intraday_ingestion(
                     completed += 1
                     total_bars += count
                     results[sym] = {"bars": count, "file": path}
-                    print(f"[{completed:>2}/{len(targets)}] {sym:<12} -> {count:>5,} intraday bars saved. (Total: {total_bars:,})", flush=True)
+                    print(
+                        f"[{completed:>2}/{len(targets)}] {sym:<12} -> {count:>5,} intraday bars saved. (Total: {total_bars:,})",
+                        flush=True,
+                    )
             except Exception as e:
                 print(f"Error processing {target['symbol']}: {e}", flush=True)
 
     elapsed = time.time() - start_time
     summary_path = output_dir / "intraday_ingestion_summary.json"
-    summary_path.write_text(json.dumps({
-        "interval": interval,
-        "from_date": from_date.isoformat(),
-        "to_date": to_date.isoformat(),
-        "total_targets": len(targets),
-        "total_intraday_bars": total_bars,
-        "elapsed_seconds": round(elapsed, 2),
-        "results": results,
-    }, indent=2), encoding="utf-8")
+    summary_path.write_text(
+        json.dumps(
+            {
+                "interval": interval,
+                "from_date": from_date.isoformat(),
+                "to_date": to_date.isoformat(),
+                "total_targets": len(targets),
+                "total_intraday_bars": total_bars,
+                "elapsed_seconds": round(elapsed, 2),
+                "results": results,
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
-    print(f"\nIntraday Ingestion Complete: {total_bars:,} bars across {len(targets)} stocks in {elapsed:.1f}s.", flush=True)
+    print(
+        f"\nIntraday Ingestion Complete: {total_bars:,} bars across {len(targets)} stocks in {elapsed:.1f}s.",
+        flush=True,
+    )
     return results
 
 

@@ -5,25 +5,21 @@ from __future__ import annotations
 import csv
 import json
 import math
-import sys
 from collections import Counter
 from dataclasses import asdict, dataclass
-from datetime import date, datetime
-from decimal import Decimal
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-# Add workspace path
-ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT_DIR / "scripts"))
-sys.path.insert(0, str(ROOT_DIR / "src"))
+from cached_nifty50_evidence import historical_acquisition_from_verified
 
 from quant_system.evidence import (
     EvidenceResourceType,
     EvidenceStore,
     EvidenceStoreConfig,
 )
-from cached_nifty50_evidence import historical_acquisition_from_verified
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
 @dataclass(slots=True)
@@ -74,8 +70,8 @@ def compute_moments(returns: list[float]) -> tuple[float, float, float, float]:
     # Skewness and kurtosis
     m3 = sum((x - mean) ** 3 for x in returns) / n
     m4 = sum((x - mean) ** 4 for x in returns) / n
-    skew = m3 / (std ** 3) if std > 1e-8 else 0.0
-    kurt = m4 / (std ** 4) if std > 1e-8 else 3.0
+    skew = m3 / (std**3) if std > 1e-8 else 0.0
+    kurt = m4 / (std**4) if std > 1e-8 else 3.0
     return mean, std, skew, kurt
 
 
@@ -100,9 +96,9 @@ def assign_liquidity_tier(adtv_inr: float) -> str:
         return "Tier 1: Mega-Liquid (>100 Cr/day)"
     elif adtv_inr >= 100_000_000:  # 10 Cr to 100 Cr
         return "Tier 2: Liquid Institutional (10-100 Cr/day)"
-    elif adtv_inr >= 10_000_000:   # 1 Cr to 10 Cr
+    elif adtv_inr >= 10_000_000:  # 1 Cr to 10 Cr
         return "Tier 3: Mid-Market Tradable (1-10 Cr/day)"
-    elif adtv_inr >= 1_000_000:    # 10 Lakh to 1 Cr
+    elif adtv_inr >= 1_000_000:  # 10 Lakh to 1 Cr
         return "Tier 4: SmallCap Active (10L-1 Cr/day)"
     else:
         return "Tier 5: Microcap / Illiquid (<10L/day)"
@@ -205,12 +201,11 @@ def run_comprehensive_market_analysis(
         zero_vol_days = 0
         circuit_lock_days = 0
 
-        for r in records:
-            c = float(r.close)
-            o = float(r.open)
-            h = float(r.high)
-            l = float(r.low)
-            v = int(r.volume)
+        for bar in records:
+            c = float(bar.close)
+            h = float(bar.high)
+            low_val = float(bar.low)
+            v = int(bar.volume)
 
             closes.append(c)
             volumes.append(v)
@@ -219,7 +214,7 @@ def run_comprehensive_market_analysis(
             if v == 0:
                 zero_vol_days += 1
             # Circuit lock heuristic: High == Low == Close and traded
-            if h == l == c and v > 0 and len(closes) > 1:
+            if h == low_val == c and v > 0 and len(closes) > 1:
                 circuit_lock_days += 1
 
         # Daily returns
@@ -300,9 +295,11 @@ def run_comprehensive_market_analysis(
 
     # Liquidity distribution
     tier_counts = Counter(p.liquidity_tier for p in profiles)
-    tier_adtvs = {}
+    tier_adtvs: dict[str, float] = {}
     for p in profiles:
-        tier_adtvs[p.liquidity_tier] = tier_adtvs.get(p.liquidity_tier, 0.0) + p.avg_daily_turnover_inr
+        tier_adtvs[p.liquidity_tier] = (
+            tier_adtvs.get(p.liquidity_tier, 0.0) + p.avg_daily_turnover_inr
+        )
 
     # Index concentration
     n50_adtv = sum(p.avg_daily_turnover_inr for p in profiles if p.is_nifty50)
@@ -359,7 +356,10 @@ def run_comprehensive_market_analysis(
             "top100_turnover_pct": round(top100_pct, 2),
             "nifty500_turnover_pct": round(n500_pct, 2),
         },
-        "liquidity_tiers": {k: {"count": tier_counts[k], "total_adtv_inr": round(tier_adtvs.get(k, 0.0), 2)} for k in sorted(tier_counts.keys())},
+        "liquidity_tiers": {
+            k: {"count": tier_counts[k], "total_adtv_inr": round(tier_adtvs.get(k, 0.0), 2)}
+            for k in sorted(tier_counts.keys())
+        },
         "volatility_profile": {
             "median_annualized_volatility": round(med_vol, 4),
             "mean_annualized_volatility": round(mean_vol, 4),
@@ -370,7 +370,7 @@ def run_comprehensive_market_analysis(
     with open(summary_json_path, "w", encoding="utf-8") as f:
         json.dump(summary_meta, f, indent=2)
 
-    print(f"\nAnalysis complete:")
+    print("\nAnalysis complete:")
     print(f"- Total Analyzed Symbols : {total_symbols:,}")
     print(f"- Total Historical Bars  : {total_bars:,}")
     print(f"- Profiles exported to   : {json_path} and {csv_path}")

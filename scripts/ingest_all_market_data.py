@@ -7,48 +7,34 @@ import concurrent.futures
 import csv
 import json
 import os
-import shutil
-import sys
 import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Final
 
-# Repository paths
-ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT_DIR / "scripts"))
-sys.path.insert(0, str(ROOT_DIR / "src"))
-
-from quant_system.config import load_env_file
-
-load_env_file()
-
 from cached_nifty50_evidence import (
-    CachedAcquisitionQuery,
-    historical_acquisition_from_verified,
     persist_verified_acquisition,
 )
+
+from quant_system.config import load_env_file
 from quant_system.data.market_data import (
     AuthorityReference,
-    DatasetManifest,
-    HistoricalAcquisition,
     HistoricalAcquisitionFailure,
     HistoricalDailyRequest,
 )
 from quant_system.data.market_data_evidence import canonical_sha256
 from quant_system.data.upstox import UpstoxClient
 from quant_system.evidence import (
-    EvidenceIntegrityError,
-    EvidenceResourceType,
     EvidenceStore,
     EvidenceStoreConfig,
 )
+
+ROOT_DIR: Final = Path(__file__).resolve().parent.parent
 
 NSE_CA_ENDPOINT: Final = "https://www.nseindia.com/api/corporates-corporateActions"
 NSE_CA_SOURCE_URL: Final = "https://www.nseindia.com/companies-listing/corporate-filings-actions"
@@ -235,7 +221,11 @@ class IngestionEngine:
                     data = json.loads(m_file.read_text(encoding="utf-8"))
                     meta = data.get("metadata", data)
                     sym = meta.get("symbol")
-                    if sym and meta.get("status") in ("ACCEPTED", "PARTIAL") and meta.get("row_count", 0) > 0:
+                    if (
+                        sym
+                        and meta.get("status") in ("ACCEPTED", "PARTIAL")
+                        and meta.get("row_count", 0) > 0
+                    ):
                         rec_rng = meta.get("received_range", {})
                         self.results[sym] = IngestionResult(
                             symbol=sym,
@@ -300,7 +290,9 @@ class IngestionEngine:
                 received_end=None,
                 corporate_actions_count=ca_count,
                 manifest_hash=None,
-                source_layer="EMPTY" if outcome.code.value in ("DATASET_EMPTY", "PROVIDER_UNAVAILABLE") else "FAILED",
+                source_layer="EMPTY"
+                if outcome.code.value in ("DATASET_EMPTY", "PROVIDER_UNAVAILABLE")
+                else "FAILED",
                 error_detail=outcome.recovery_action,
             )
         else:
@@ -330,8 +322,12 @@ class IngestionEngine:
                     instrument_key=key,
                     status="PERSIST_ERROR",
                     row_count=len(outcome.records),
-                    received_start=outcome.records[0].exchange_date.isoformat() if outcome.records else None,
-                    received_end=outcome.records[-1].exchange_date.isoformat() if outcome.records else None,
+                    received_start=outcome.records[0].exchange_date.isoformat()
+                    if outcome.records
+                    else None,
+                    received_end=outcome.records[-1].exchange_date.isoformat()
+                    if outcome.records
+                    else None,
                     corporate_actions_count=ca_count,
                     manifest_hash=None,
                     source_layer="FAILED",
@@ -356,6 +352,7 @@ def run_ingestion_pipeline(
     skip: int = 0,
 ) -> dict[str, Any]:
     """Execute the end-to-end ingestion pipeline."""
+    load_env_file()
     cache_root.mkdir(parents=True, exist_ok=True)
     store_dir = cache_root / "store"
     store_dir.mkdir(parents=True, exist_ok=True)
@@ -372,12 +369,16 @@ def run_ingestion_pipeline(
         targets = targets[:limit]
 
     total_targets = len(targets)
-    print(f"=== ALL-MARKET INGESTION PIPELINE ===", flush=True)
-    print(f"Universe Source       : {universe_csv} ({total_targets:,} selected targets)", flush=True)
+    print("=== ALL-MARKET INGESTION PIPELINE ===", flush=True)
+    print(
+        f"Universe Source       : {universe_csv} ({total_targets:,} selected targets)", flush=True
+    )
     print(f"Target Range          : {from_date} -> {to_date} (10 calendar years)", flush=True)
     print(f"Cache Evidence Root   : {cache_root.resolve()}", flush=True)
     print(f"Corporate Actions Dir : {corporate_actions_dir.resolve()}", flush=True)
-    print(f"Worker Concurrency    : {concurrency} threads (sleep={rate_limit_sleep}s)\n", flush=True)
+    print(
+        f"Worker Concurrency    : {concurrency} threads (sleep={rate_limit_sleep}s)\n", flush=True
+    )
 
     engine = IngestionEngine(
         store=store,
@@ -411,7 +412,9 @@ def run_ingestion_pipeline(
         }
         atomic_write_json(summary_file, summary_data)
 
-    print(f"Starting multi-threaded ingestion pool across {total_targets} instruments...", flush=True)
+    print(
+        f"Starting multi-threaded ingestion pool across {total_targets} instruments...", flush=True
+    )
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
         future_map = {executor.submit(engine.process_target, t): t for t in targets}
         for future in concurrent.futures.as_completed(future_map):
@@ -445,7 +448,10 @@ def run_ingestion_pipeline(
     elapsed = time.time() - start_time
     print(f"\n=== INGESTION COMPLETED IN {elapsed:.1f}s ===", flush=True)
     print(f"Total Targets Evaluated : {completed_count}", flush=True)
-    print(f"Successfully Persisted  : {saved_count + hit_count} (Hits: {hit_count}, New: {saved_count})", flush=True)
+    print(
+        f"Successfully Persisted  : {saved_count + hit_count} (Hits: {hit_count}, New: {saved_count})",
+        flush=True,
+    )
     print(f"Empty or Inactive       : {empty_or_failed}", flush=True)
     print(f"Total Daily OHLCV Bars  : {total_bars:,}", flush=True)
     print(f"Summary Written To      : {summary_file}", flush=True)
@@ -462,7 +468,9 @@ def run_ingestion_pipeline(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="All-market NSE historical data ingestion pipeline.")
+    parser = argparse.ArgumentParser(
+        description="All-market NSE historical data ingestion pipeline."
+    )
     parser.add_argument(
         "--universe-csv",
         type=Path,
@@ -476,12 +484,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--summary-file",
         type=Path,
-        default=ROOT_DIR / "data" / "evidence" / "market-analysis" / "all-market-ingestion-summary.json",
+        default=ROOT_DIR
+        / "data"
+        / "evidence"
+        / "market-analysis"
+        / "all-market-ingestion-summary.json",
     )
     parser.add_argument(
         "--corporate-actions-dir",
         type=Path,
-        default=ROOT_DIR / "data" / "evidence" / "market-cache" / "all-market-20160822-20260821" / "corporate-actions",
+        default=ROOT_DIR
+        / "data"
+        / "evidence"
+        / "market-cache"
+        / "all-market-20160822-20260821"
+        / "corporate-actions",
     )
     parser.add_argument("--from-date", type=date.fromisoformat, default=date(2016, 8, 22))
     parser.add_argument("--to-date", type=date.fromisoformat, default=date(2026, 8, 21))

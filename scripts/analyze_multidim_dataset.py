@@ -5,7 +5,6 @@ from __future__ import annotations
 import csv
 import json
 import math
-import sys
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -37,8 +36,8 @@ def calc_skew_kurt(vals: list[float]) -> tuple[float, float]:
         return 0.0, 0.0
     m3 = sum((x - m) ** 3 for x in vals) / n
     m4 = sum((x - m) ** 4 for x in vals) / n
-    skew = m3 / (s ** 3)
-    kurt = (m4 / (s ** 4)) - 3.0
+    skew = m3 / (s**3)
+    kurt = (m4 / (s**4)) - 3.0
     return round(skew, 4), round(kurt, 4)
 
 
@@ -72,7 +71,7 @@ def analyze_feature_store(csv_path: Path, output_file: Path) -> dict[str, Any]:
     if not csv_path.is_file():
         raise FileNotFoundError(f"Feature store CSV not found: {csv_path}")
 
-    print(f"=== QUANTITATIVE FEATURE & PREDICTIVE SIGNAL ANALYSIS ===", flush=True)
+    print("=== QUANTITATIVE FEATURE & PREDICTIVE SIGNAL ANALYSIS ===", flush=True)
     print(f"Reading: {csv_path}", flush=True)
 
     rows: list[dict[str, Any]] = []
@@ -85,9 +84,20 @@ def analyze_feature_store(csv_path: Path, output_file: Path) -> dict[str, Any]:
     print(f"Loaded {total_obs:,} multi-factor observations.", flush=True)
 
     numeric_features = [
-        "ret_1d", "ret_5d", "ret_21d", "gk_vol", "park_vol", "rsi_14",
-        "ratio_sma20", "ratio_sma50", "vol_zscore", "mf_multiplier",
-        "india_vix", "nifty_ret_5d", "cs_rank_mom5d", "cs_rank_vol_surprise"
+        "ret_1d",
+        "ret_5d",
+        "ret_21d",
+        "gk_vol",
+        "park_vol",
+        "rsi_14",
+        "ratio_sma20",
+        "ratio_sma50",
+        "vol_zscore",
+        "mf_multiplier",
+        "india_vix",
+        "nifty_ret_5d",
+        "cs_rank_mom5d",
+        "cs_rank_vol_surprise",
     ]
     targets = ["fwd_ret_1d", "fwd_ret_5d", "fwd_ret_21d", "fwd_alpha_5d"]
 
@@ -125,7 +135,7 @@ def analyze_feature_store(csv_path: Path, output_file: Path) -> dict[str, Any]:
         ic_results[target] = {}
         for feat in numeric_features:
             daily_ics: list[float] = []
-            for dt, dt_rows in by_date.items():
+            for _dt, dt_rows in by_date.items():
                 valid_pairs = [
                     (float(r[feat]), float(r[target]))
                     for r in dt_rows
@@ -153,7 +163,11 @@ def analyze_feature_store(csv_path: Path, output_file: Path) -> dict[str, Any]:
     # 3. Macro Regime Analysis
     regimes: dict[str, Any] = {}
     for r_label in ["LOW_VOL", "NORMAL_VOL", "HIGH_VOL"]:
-        reg_rows = [r for r in rows if r.get("vix_regime") == r_label and r.get("fwd_ret_5d") not in ("", None)]
+        reg_rows = [
+            r
+            for r in rows
+            if r.get("vix_regime") == r_label and r.get("fwd_ret_5d") not in ("", None)
+        ]
         if reg_rows:
             fwd_rets = [float(r["fwd_ret_5d"]) for r in reg_rows]
             gk_vols = [float(r["gk_vol"]) for r in reg_rows]
@@ -161,7 +175,7 @@ def analyze_feature_store(csv_path: Path, output_file: Path) -> dict[str, Any]:
                 "observations": len(reg_rows),
                 "mean_forward_5d_return": round(calc_mean(fwd_rets) * 100, 3),
                 "mean_gk_volatility": round(calc_mean(gk_vols) * 100, 3),
-                "median_forward_5d_return": round(sorted(fwd_rets)[len(fwd_rets)//2] * 100, 3),
+                "median_forward_5d_return": round(sorted(fwd_rets)[len(fwd_rets) // 2] * 100, 3),
             }
 
     summary = {

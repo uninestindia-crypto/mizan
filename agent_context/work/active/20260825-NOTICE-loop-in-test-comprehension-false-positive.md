@@ -18,11 +18,11 @@ The rule is a per-line regex over the case body. Python writes a multi-line comp
 `for` clause at the start of its own line:
 
 ```python
-    offending = {
-        module
-        for module in _imported_modules(source_path)   # <- matches ^\s*for\b
-        if module == ADVISORY_MODULE
-    }
+offending = {
+    module
+    for module in _imported_modules(source_path)  # <- matches ^\s*for\b
+    if module == ADVISORY_MODULE
+}
 ```
 
 so every multi-line comprehension in a test body is reported as a loop.

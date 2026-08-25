@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
-import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -13,18 +11,22 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-# Add workspace path
-ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT_DIR / "src"))
-
 from quant_system.config import load_env_file
 
-load_env_file()
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 MACRO_INDICES = [
     {"symbol": "NIFTY50", "key": "NSE_INDEX|Nifty 50", "name": "NIFTY 50 Index (Market Benchmark)"},
-    {"symbol": "INDIAVIX", "key": "NSE_INDEX|India VIX", "name": "India VIX (Market Volatility Index)"},
-    {"symbol": "NIFTYBANK", "key": "NSE_INDEX|Nifty Bank", "name": "NIFTY Bank Index (Financials Benchmark)"},
+    {
+        "symbol": "INDIAVIX",
+        "key": "NSE_INDEX|India VIX",
+        "name": "India VIX (Market Volatility Index)",
+    },
+    {
+        "symbol": "NIFTYBANK",
+        "key": "NSE_INDEX|Nifty Bank",
+        "name": "NIFTY Bank Index (Financials Benchmark)",
+    },
     {"symbol": "NIFTYIT", "key": "NSE_INDEX|Nifty IT", "name": "NIFTY IT Index (Tech Benchmark)"},
 ]
 
@@ -34,13 +36,17 @@ def ingest_macro_series(
     from_date: date = date(2016, 8, 22),
     to_date: date = date(2026, 8, 21),
 ) -> dict[str, Any]:
+    load_env_file()
     output_dir.mkdir(parents=True, exist_ok=True)
     token = os.getenv("UPSTOX_ACCESS_TOKEN", "")
     if not token:
         raise RuntimeError("UPSTOX_ACCESS_TOKEN is required in environment.")
 
     results: dict[str, Any] = {}
-    print(f"=== INGESTING MACRO BENCHMARKS & VOLATILITY REGIMES ({from_date} -> {to_date}) ===", flush=True)
+    print(
+        f"=== INGESTING MACRO BENCHMARKS & VOLATILITY REGIMES ({from_date} -> {to_date}) ===",
+        flush=True,
+    )
 
     for item in MACRO_INDICES:
         sym = item["symbol"]

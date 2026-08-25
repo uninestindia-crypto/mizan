@@ -5,25 +5,20 @@ from __future__ import annotations
 import csv
 import json
 import math
-import os
-import sys
 from collections import defaultdict
-from dataclasses import asdict, dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-# Add workspace path
-ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT_DIR / "scripts"))
-sys.path.insert(0, str(ROOT_DIR / "src"))
+from cached_nifty50_evidence import historical_acquisition_from_verified
 
 from quant_system.evidence import (
     EvidenceResourceType,
     EvidenceStore,
     EvidenceStoreConfig,
 )
-from cached_nifty50_evidence import historical_acquisition_from_verified
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
 def compute_rsi(prices: list[float], period: int = 14) -> list[float]:
@@ -41,9 +36,9 @@ def compute_rsi(prices: list[float], period: int = 14) -> list[float]:
 
     for i in range(period, n):
         g = gains[i - 1]
-        l = losses[i - 1]
+        loss_val = losses[i - 1]
         avg_gain = (avg_gain * (period - 1) + g) / period
-        avg_loss = (avg_loss * (period - 1) + l) / period
+        avg_loss = (avg_loss * (period - 1) + loss_val) / period
         if avg_loss < 1e-9:
             rsi[i] = 100.0
         else:
@@ -66,7 +61,7 @@ def build_feature_store(
     # 1. Load Macro Regimes
     vix_file = macro_dir / "macro_INDIAVIX.json"
     nifty_file = macro_dir / "macro_NIFTY50.json"
-    
+
     vix_by_date: dict[str, float] = {}
     if vix_file.is_file():
         vix_data = json.loads(vix_file.read_text(encoding="utf-8"))
@@ -89,13 +84,16 @@ def build_feature_store(
         profs.sort(key=lambda x: x.get("avg_daily_turnover_inr", 0), reverse=True)
         target_symbols = {p["symbol"] for p in profs[:top_n_stocks]}
 
-    print(f"=== BUILDING MULTI-DIMENSIONAL FEATURE STORE ===", flush=True)
+    print("=== BUILDING MULTI-DIMENSIONAL FEATURE STORE ===", flush=True)
     print(f"Target Universe Size: {len(target_symbols)} Liquid Equities", flush=True)
-    print(f"Macro series loaded: India VIX ({len(vix_by_date)} days), NIFTY 50 ({len(nifty_by_date)} days)", flush=True)
+    print(
+        f"Macro series loaded: India VIX ({len(vix_by_date)} days), NIFTY 50 ({len(nifty_by_date)} days)",
+        flush=True,
+    )
 
     datasets = store.list_verified(EvidenceResourceType.DATASET)
     all_feature_rows: list[dict[str, Any]] = []
-    
+
     # Store daily rows grouped by date for cross-sectional ranking
     date_grouped_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
@@ -104,7 +102,7 @@ def build_feature_store(
         acq = historical_acquisition_from_verified(verified)
         manifest = acq.manifest
         sym = manifest.symbol
-        
+
         if target_symbols and sym not in target_symbols:
             continue
         if len(acq.records) < min_bars:
@@ -125,7 +123,7 @@ def build_feature_store(
             c = closes[i]
             o = opens[i]
             h = highs[i]
-            l = lows[i]
+            low_val = lows[i]
             v = volumes[i]
             dt = dates[i]
 
@@ -141,10 +139,12 @@ def build_feature_store(
 
             # High-Frequency Volatility Estimators
             # Garman-Klass = 0.5 * ln(H/L)^2 - (2*ln(2) - 1) * ln(C/O)^2
-            if h > 0 and l > 0 and o > 0 and c > 0:
-                log_hl = math.log(h / l)
+            if h > 0 and low_val > 0 and o > 0 and c > 0:
+                log_hl = math.log(h / low_val)
                 log_co = math.log(c / o)
-                gk_vol = math.sqrt(max(0.0, 0.5 * (log_hl ** 2) - (2.0 * math.log(2.0) - 1.0) * (log_co ** 2)))
+                gk_vol = math.sqrt(
+                    max(0.0, 0.5 * (log_hl**2) - (2.0 * math.log(2.0) - 1.0) * (log_co**2))
+                )
                 # Parkinson = ln(H/L) / sqrt(4 * ln(2))
                 park_vol = log_hl / math.sqrt(4.0 * math.log(2.0))
             else:
@@ -160,17 +160,23 @@ def build_feature_store(
             # Volume Z-score
             vol_window = volumes[i - 20 : i]
             mean_vol = sum(vol_window) / 20.0
-            std_vol = math.sqrt(sum((x - mean_vol) ** 2 for x in vol_window) / 20.0) if len(vol_window) > 1 else 1.0
+            std_vol = (
+                math.sqrt(sum((x - mean_vol) ** 2 for x in vol_window) / 20.0)
+                if len(vol_window) > 1
+                else 1.0
+            )
             vol_zscore = (v - mean_vol) / max(1.0, std_vol)
 
             # Money Flow Multiplier
-            hl_range = h - l
-            mf_multiplier = ((c - l) - (h - c)) / hl_range if hl_range > 1e-6 else 0.0
+            hl_range = h - low_val
+            mf_multiplier = ((c - low_val) - (h - c)) / hl_range if hl_range > 1e-6 else 0.0
 
             # Macro Factors
             cur_vix = vix_by_date.get(dt, 15.0)
-            vix_regime = "HIGH_VOL" if cur_vix > 20.0 else ("LOW_VOL" if cur_vix < 14.0 else "NORMAL_VOL")
-            
+            vix_regime = (
+                "HIGH_VOL" if cur_vix > 20.0 else ("LOW_VOL" if cur_vix < 14.0 else "NORMAL_VOL")
+            )
+
             cur_nifty = nifty_by_date.get(dt, 0.0)
             nifty_ret_5d = 0.0
             fwd_nifty_5d = 0.0
@@ -213,11 +219,17 @@ def build_feature_store(
 
         processed_count += 1
         if processed_count % 25 == 0:
-            print(f"[{processed_count:>3}/{len(target_symbols)}] Processed features for {sym:<12}", flush=True)
+            print(
+                f"[{processed_count:>3}/{len(target_symbols)}] Processed features for {sym:<12}",
+                flush=True,
+            )
 
     # 3. Add Point-in-Time Cross-Sectional Ranks
-    print(f"\nComputing point-in-time cross-sectional rankings across {len(date_grouped_rows):,} trading sessions...", flush=True)
-    for dt, rows in date_grouped_rows.items():
+    print(
+        f"\nComputing point-in-time cross-sectional rankings across {len(date_grouped_rows):,} trading sessions...",
+        flush=True,
+    )
+    for _dt, rows in date_grouped_rows.items():
         if not rows:
             continue
         # Sort by ret_5d
@@ -247,16 +259,25 @@ def build_feature_store(
             writer.writerows(all_feature_rows)
 
     meta_file = output_dir / "feature_store_metadata.json"
-    meta_file.write_text(json.dumps({
-        "generated_at": datetime.now(UTC).isoformat(),
-        "total_rows": len(all_feature_rows),
-        "total_symbols": processed_count,
-        "feature_count": len(fieldnames) if all_feature_rows else 0,
-        "features_list": fieldnames if all_feature_rows else [],
-        "csv_path": str(csv_file),
-    }, indent=2), encoding="utf-8")
+    meta_file.write_text(
+        json.dumps(
+            {
+                "generated_at": datetime.now(UTC).isoformat(),
+                "total_rows": len(all_feature_rows),
+                "total_symbols": processed_count,
+                "feature_count": len(fieldnames) if all_feature_rows else 0,
+                "features_list": fieldnames if all_feature_rows else [],
+                "csv_path": str(csv_file),
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
-    print(f"Feature Store written to: {csv_file} ({csv_file.stat().st_size / (1024*1024):.2f} MB)", flush=True)
+    print(
+        f"Feature Store written to: {csv_file} ({csv_file.stat().st_size / (1024 * 1024):.2f} MB)",
+        flush=True,
+    )
     return csv_file
 
 
