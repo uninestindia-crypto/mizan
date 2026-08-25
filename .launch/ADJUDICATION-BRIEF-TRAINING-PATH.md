@@ -211,7 +211,7 @@ these stores is 50, and the Q4 accounting stands.
 
 ## 4. What an adjudicator must still establish
 
-Six were posed. **Three are answered (1, 2, 4), one partially (3), one has its blocker removed (6).** Only Q5 — review of my own contributions — cannot be closed from here at all.
+Six were posed. **Three answered (1, 2, 4), one partially (3), one unblocked (6), one requested from an independent peer (5).** None is closed by my own assertion.
 
 1. ~~**Reproducibility.**~~ **Answered in 3c.** Integrity: 150 resources, zero invalid, zero
    orphans. Determinism: four independent runs, one distinct content-hash pair. Remaining gap — the
@@ -223,7 +223,14 @@ Six were posed. **Three are answered (1, 2, 4), one partially (3), one has its b
    nothing was altered after publication, not that publication was correct.
 4. ~~**Search accounting.**~~ **Answered in 3b** — understated by roughly 48%, and the verdict is
    unchanged at every count up to 110. The accounting still needs correcting.
-5. **My own contributions**, listed in the header, which no one has reviewed.
+5. **My own contributions — review REQUESTED 2026-08-25, outstanding.** Sent to the live peer
+   session `quant-system-12`, which wrote none of this. Scope given as six commits, three new files
+   and eleven repaired ones, plus five specific places I judged most likely to be wrong: the
+   `HoldoutVaultTracker` API break, the CRR gamma reasoning, the fail-closed leverage refusal, the
+   three pre-existing test expectations I rewrote, and the two-acquisition design of the promotion
+   runner. They were asked for findings only, told to decline freely, and told a refusal would be
+   recorded as honestly as a review. **Self-review is not available as a substitute and no
+   assertion of correctness should be read into this line.**
 6. **Gitignored evidence — blocker removed in 2b, decision still open.** The evidence is now
    verifiable from a clean clone against a committed inventory. Whether that is *sufficient*, or the
    evidence itself must be version-controlled, is a founder policy call.
