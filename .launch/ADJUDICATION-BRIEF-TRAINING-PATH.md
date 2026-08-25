@@ -115,16 +115,60 @@ at **none** of these counts, so "nothing promotable" is robust to a 2.2x increas
 count. The accounting should still be corrected — it flatters the candidate — but no conclusion
 rests on it.
 
+## 3c. Questions 1 and 3, answered as far as reading the evidence allows
+
+### Q1 — integrity half: **answered**
+
+`EvidenceStore.scan_integrity()` on the v2 store returns:
+
+```
+valid_resource_ids  = 150      invalid_resource_ids = ()      orphan_blob_hashes = ()
+```
+
+Those 150 are **50 models + 50 `trial_nifty50_10y_NNN` starts + 50 `_outcome` records**. Every
+resource verifies against its content hashes; nothing is corrupt; no blob is orphaned. The trial
+registry is therefore complete and its size independently corroborates the multiplicity count of 50.
+
+**Not answered:** whether the drivers are *deterministic* — that needs a re-run, which would spend
+fresh ordinals, and CURRENT.md forbids it. Integrity and determinism are different claims.
+
+### Q3 — cache integrity: **answered**
+
+The store root is nested one level deeper than the campaign directory
+(`…/nifty50-current-20160822-20260821/store/`). Scanned there:
+
+```
+valid = 100     invalid = 0     orphans = 0     DATASET resources = 100
+```
+
+100 datasets across 50 instruments is exactly **two per instrument**, which matches the bookkeeping
+artifact CURRENT.md already records ("the cache holds two DATASET resources per symbol and counting
+both doubled n"). The cache is intact and internally consistent.
+
+**Not answered:** point-in-time honesty against the provider. An intact store proves nothing was
+altered after publication; it does not prove what was published was correctly point-in-time.
+
+### A misreading worth pre-empting
+
+There are three model stores — `schema-v2`, `schema-v2-source-bound`, `schema-v2-source-bound-v2` —
+holding 50, 12 and 50 models. That looks like three campaigns and would push total multiplicity past
+110. It is not. Comparing `model_id` sets: the 50 in `schema-v2` and the 50 in `-source-bound-v2`
+**overlap completely**, the 12 are a subset of both, and the union across all three is **50 distinct
+models**. They are progressive re-publications of one campaign. Total distinct governed trials in
+these stores is 50, and the Q4 accounting stands.
+
 ## 4. What an adjudicator must still establish
 
-Six were posed. **Two are answered in 3b**; four remain.
+Six were posed. **Two are fully answered in 3b, two partially in 3c.** Two remain untouched.
 
-1. **Reproducibility.** Do the campaign drivers produce the same model hashes from the same cache?
-   Nothing here re-ran them.
+1. **Reproducibility — partially answered in 3c.** Store integrity is proven (150 resources, zero
+   invalid, zero orphans). Driver *determinism* is not: it needs a re-run, which would spend fresh
+   ordinals.
 2. ~~**Is the re-deflation real?**~~ **Answered in 3b** — real, same model, sharpe 3.2207.
    An adjudicator should still confirm the exact value with the true return-series moments.
-3. **Cache provenance.** The ten-year cache underlies every v2 result. Is it point-in-time honest,
-   and does it match the acquisition manifests?
+3. **Cache provenance — partially answered in 3c.** The cache store is intact (100 datasets, zero
+   invalid). Point-in-time honesty against the provider is still unproven; an intact store shows
+   nothing was altered after publication, not that publication was correct.
 4. ~~**Search accounting.**~~ **Answered in 3b** — understated by roughly 48%, and the verdict is
    unchanged at every count up to 110. The accounting still needs correcting.
 5. **My own contributions**, listed in the header, which no one has reviewed.
