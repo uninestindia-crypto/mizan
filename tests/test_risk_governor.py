@@ -289,3 +289,47 @@ def test_single_symbol_portfolio_needs_no_price_map() -> None:
         current_quote=_quote(),
     )
     assert decision.approved is True
+
+
+def test_multi_symbol_portfolio_approves_when_prices_are_supplied() -> None:
+    """R-3 success path: the fail-closed refusal must not make a legitimate flow unapprovable.
+
+    The other R-3 tests prove the guard refuses — an unvaluable position, and a real breach once
+    priced. Neither proves the ordinary case still works. A guard tested only for firing is how a
+    fail-closed change quietly becomes a fail-always change, and an independent reviewer named this
+    as the risk in the leverage repair.
+
+    Here TCS is held and priced, well within limits, and the order must be approved on the merits.
+    """
+    gov = PreTradeRiskGovernor(limits=RiskLimits(max_portfolio_leverage=1.0))
+    decision = gov.evaluate_order(
+        order=_buy_order(),
+        current_equity=Decimal("1000000.00"),
+        current_cash=Decimal("1000000.00"),
+        positions={"TCS": Position(symbol="TCS", quantity=100, average_price=Decimal("100.00"))},
+        current_quote=_quote(),
+        current_prices={"TCS": Decimal("105.00")},
+    )
+    assert decision.approved is True, (
+        f"a valuable, in-limit portfolio was refused: {decision.reason}"
+    )
+    # 100 * 105 = 10,500 held plus 100 * 100 = 10,000 ordered, against 1,000,000 equity.
+    assert decision.resulting_leverage < 0.1
+
+
+def test_extra_prices_for_symbols_not_held_are_harmless() -> None:
+    """A caller passing its whole price cache must not be penalised for over-supplying."""
+    gov = PreTradeRiskGovernor(limits=RiskLimits(max_portfolio_leverage=1.0))
+    decision = gov.evaluate_order(
+        order=_buy_order(),
+        current_equity=Decimal("1000000.00"),
+        current_cash=Decimal("1000000.00"),
+        positions={"TCS": Position(symbol="TCS", quantity=100, average_price=Decimal("100.00"))},
+        current_quote=_quote(),
+        current_prices={
+            "TCS": Decimal("105.00"),
+            "WIPRO": Decimal("400.00"),
+            "SBIN": Decimal("600.00"),
+        },
+    )
+    assert decision.approved is True
