@@ -45,6 +45,33 @@ data/evidence/models/nifty50-current-20160822-20260821-schema-v2-source-bound-v2
 data/evidence/market-cache/…                                                        <- ten-year cache
 ```
 
+## 2b. The evidence is now verifiable from a clean clone
+
+Question 6 asked whether gitignored research evidence is acceptable. The *decision* is the founder's,
+but the thing that made it a problem is fixed.
+
+`scripts/evidence_manifest.py` walks every store, verifies it, and writes one line per resource —
+store, type, resource id, manifest hash — to `data/evidence-inventory.txt`, which is **committed**.
+Regenerate with the script; check with `--check`, which exits 1 on any drift.
+
+```
+3,771 resources across 10 stores        all 3,771 manifest hashes populated (64 hex)
+--check round-trips: "OK: 3771 resources match the committed inventory"
+```
+
+An adjudicator on a clean clone can now diff their copy of the stores against a committed record. A
+silently mutated or re-published store becomes detectable. What it does **not** do is make the
+contents auditable or prove the evidence was correct when written — only that what is there now is
+what was there at this revision.
+
+Store discovery is by layout (`blobs/` + `active/`), not a hand-written path list, because a
+hand-written list already got this wrong once: the market-cache root sits one level below the
+campaign directory, and a scan of the wrong level reported zero resources while a store holding 100
+datasets sat inside it.
+
+**Section 2's list was incomplete.** The real surface is ten stores, including four canary
+training-runs that no record mentioned — which is how Q1 came to be answered.
+
 ## 3. What I corroborated independently, and how
 
 Read directly from the v2 store via `EvidenceStore.list_verified(MODEL)`, not from any record:
@@ -132,6 +159,31 @@ registry is therefore complete and its size independently corroborates the multi
 **Not answered:** whether the drivers are *deterministic* — that needs a re-run, which would spend
 fresh ordinals, and CURRENT.md forbids it. Integrity and determinism are different claims.
 
+### Q1 — determinism half: **answered, without spending an ordinal**
+
+I said this needed a re-run. It did not: four had already happened and nobody had looked.
+
+Building the evidence inventory (section 2b) surfaced four `training-runs/…canary-model-evidence`
+stores that neither this brief nor CURRENT.md mentions — `canary`, `indexed-canary`,
+`refactor-canary`, `cache-hit`. Each holds one MODEL and two TRIAL records, and **all four carry the
+same `model_id` as the campaign's own best-published model**, `model_6b522ca41170fee6e7bc728f`.
+
+`manifest_hash` differs across all seven stores holding that model, which looks like
+non-determinism and is not. Comparing the *content-derived* fields instead:
+
+```
+distinct (evaluation_hash, fitted_state_hash) pairs across 4 independent runs : 1
+   schema-v2 · schema-v2-source-bound-v2 · canary-model-evidence · refactor-canary-model-evidence
+```
+
+One pair. Identical fitted coefficients and identical evaluation hash across four separate
+executions, **including one taken after a refactor**. The manifest hash varies because publication
+metadata — timestamps, operation ids — legitimately varies; that is now evidenced rather than
+assumed, since the content hashes are identical while the manifest hashes are not.
+
+Determinism is corroborated for this instrument. It is not proven for all fifty, and a canary is a
+narrower claim than a full campaign re-run.
+
 ### Q3 — cache integrity: **answered**
 
 The store root is nested one level deeper than the campaign directory
@@ -159,11 +211,11 @@ these stores is 50, and the Q4 accounting stands.
 
 ## 4. What an adjudicator must still establish
 
-Six were posed. **Two are fully answered in 3b, two partially in 3c.** Two remain untouched.
+Six were posed. **Three are answered (1, 2, 4), one partially (3), one has its blocker removed (6).** Only Q5 — review of my own contributions — cannot be closed from here at all.
 
-1. **Reproducibility — partially answered in 3c.** Store integrity is proven (150 resources, zero
-   invalid, zero orphans). Driver *determinism* is not: it needs a re-run, which would spend fresh
-   ordinals.
+1. ~~**Reproducibility.**~~ **Answered in 3c.** Integrity: 150 resources, zero invalid, zero
+   orphans. Determinism: four independent runs, one distinct content-hash pair. Remaining gap — the
+   canaries cover one instrument, not all fifty.
 2. ~~**Is the re-deflation real?**~~ **Answered in 3b** — real, same model, sharpe 3.2207.
    An adjudicator should still confirm the exact value with the true return-series moments.
 3. **Cache provenance — partially answered in 3c.** The cache store is intact (100 datasets, zero
@@ -172,8 +224,9 @@ Six were posed. **Two are fully answered in 3b, two partially in 3c.** Two remai
 4. ~~**Search accounting.**~~ **Answered in 3b** — understated by roughly 48%, and the verdict is
    unchanged at every count up to 110. The accounting still needs correcting.
 5. **My own contributions**, listed in the header, which no one has reviewed.
-6. **Gitignored evidence.** Decide whether research evidence that cannot be adjudicated from a
-   clean clone is acceptable, and if not, what should change.
+6. **Gitignored evidence — blocker removed in 2b, decision still open.** The evidence is now
+   verifiable from a clean clone against a committed inventory. Whether that is *sufficient*, or the
+   evidence itself must be version-controlled, is a founder policy call.
 
 ## 5. Commands
 
