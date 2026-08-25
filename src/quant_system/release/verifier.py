@@ -72,14 +72,21 @@ def is_valid_windows_pe_binary(file_path: Path) -> bool:
 
 def stage_clean_install(bundle_dir: Path, target_install_dir: Path) -> None:
     """Stages a clean installation of the release bundle into a target directory."""
-    if target_install_dir.exists():
-        shutil.rmtree(target_install_dir, onerror=_remove_readonly)
+    for _ in range(5):
+        if target_install_dir.exists():
+            try:
+                shutil.rmtree(target_install_dir, onerror=_remove_readonly)
+                break
+            except Exception:
+                time.sleep(0.2)
+        else:
+            break
     target_install_dir.mkdir(parents=True, exist_ok=True)
 
     for item in bundle_dir.iterdir():
         dest = target_install_dir / item.name
         if item.is_dir():
-            shutil.copytree(item, dest)
+            shutil.copytree(item, dest, dirs_exist_ok=True)
         else:
             shutil.copy2(item, dest)
 
