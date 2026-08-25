@@ -76,19 +76,57 @@ published figure as the headline.
 flattering published DSR at its own low ordinal, **zero of fifty** reach the `0.95` gate. Median
 published DSR is `0.017352`.
 
+## 3b. Questions 2 and 4, answered by computation
+
+Two of the six open questions below were answerable without re-running anything. Both were computed
+by reading the store and calling `OverfittingDiagnostics.deflated_sharpe_ratio` directly. Moments
+are approximated as normal (`skew=0, kurt=3`) because the return series are not in the manifests, so
+treat the values as accurate to about two decimals, not exact.
+
+### Q2 — is the `0.217695` re-deflation real, or only a claim?
+
+**Real, and it identifies the same model.** Method validated first: recomputing the best *published*
+model at its own ordinal 1 gives `0.584056` against the stored `0.584510` — agreement to four
+decimals, so the approach is sound.
+
+Re-deflating that same model to 50 gives `0.019527`, nowhere near `0.217695`. The headline therefore
+does **not** belong to the best-published model, which is the trap here: the best model *after*
+re-deflation is a different one, because published rank depends on the ordinal a model happened to
+draw.
+
+Re-deflating all 50 against the final count gives a maximum of **`0.250826`**, on a model with
+**sharpe 3.2207** — which matches CURRENT.md's stated v2 best (`+3.2207`) exactly. Same model,
+same conclusion; the residual gap to `0.217695` is my normal-moments approximation.
+
+### Q4 — is total multiplicity understated by the ungoverned screens?
+
+**Yes, and it does not change the verdict.** The same best model, deflated against progressively
+honest attempt counts:
+
+| attempts | DSR | what is included |
+|---:|---:|---|
+| 50 | 0.250826 | v2 campaign only — what was actually used |
+| 101 | 0.176943 | + the 51-trial v1 campaign |
+| 104 | 0.174317 | + the 3 INFY trials |
+| 110 | 0.169377 | + the 6 pre-declared ungoverned screens |
+
+Using 50 rather than 110 overstates the best result by roughly 48%. But the `0.95` gate is cleared
+at **none** of these counts, so "nothing promotable" is robust to a 2.2x increase in the attempt
+count. The accounting should still be corrected — it flatters the candidate — but no conclusion
+rests on it.
+
 ## 4. What an adjudicator must still establish
 
-These are the open questions; none is answered by the above.
+Six were posed. **Two are answered in 3b**; four remain.
 
 1. **Reproducibility.** Do the campaign drivers produce the same model hashes from the same cache?
    Nothing here re-ran them.
-2. **Is the re-deflation real?** `0.217695` appears in a record. Locate the computation, or
-   recompute it from the store, and confirm the final count used was 50.
+2. ~~**Is the re-deflation real?**~~ **Answered in 3b** — real, same model, sharpe 3.2207.
+   An adjudicator should still confirm the exact value with the true return-series moments.
 3. **Cache provenance.** The ten-year cache underlies every v2 result. Is it point-in-time honest,
    and does it match the acquisition manifests?
-4. **Search accounting.** CURRENT.md records six pre-declared screens run *outside* the governed
-   store. Is total multiplicity across governed and ungoverned search correctly accounted, or is
-   the deflation understated by the screens that never spent an ordinal?
+4. ~~**Search accounting.**~~ **Answered in 3b** — understated by roughly 48%, and the verdict is
+   unchanged at every count up to 110. The accounting still needs correcting.
 5. **My own contributions**, listed in the header, which no one has reviewed.
 6. **Gitignored evidence.** Decide whether research evidence that cannot be adjudicated from a
    clean clone is acceptable, and if not, what should change.
