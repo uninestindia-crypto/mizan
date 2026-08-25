@@ -135,7 +135,61 @@ it was moved, not deleted**, which is the whole reason that rule exists.
 `dist/QuantOS_v1.0.0_portable.zip` (2026-08-20, 58 MB) is genuinely superseded by
 `dist/quantos-v1.0.0-windows-x86_64.zip` (2026-08-25, 59 MB). Flagged, not deleted.
 
+## Training-path adjudication — made adjudicable, not closed
+
+I cannot adjudicate this. Part of the scope is my own work: `promotion_pipeline.py`,
+`run_governed_promotion.py`, and repairs to `holdout.py`, `stress.py` and `ledger.py`. Self-review
+of those would be worth nothing. What I could do is narrow the surface and write the brief:
+`.launch/ADJUDICATION-BRIEF-TRAINING-PATH.md`.
+
+I did **not** write the training runner, the campaign drivers, or any research result, so reading
+their evidence is genuinely independent.
+
+### Corroborated by reading the v2 evidence store directly
+
+| CURRENT.md claim | independent reading | verdict |
+|---|---|---|
+| 50 published models | 50 MODEL resources | corroborated |
+| all schema v2 | `('quantos.ridge_technical_six', 2)` on all | corroborated |
+| all RESEARCH_ONLY | 50 of 50 | corroborated |
+| nothing promotable | **0 of 50 reach the 0.95 gate** | corroborated |
+
+### A discrepancy I found, chased, and withdrew
+
+The store's maximum published DSR is `0.584510`; CURRENT.md's headline is `0.217695`. I read that
+as a 2.7x contradiction, and it is not one.
+
+`multiplicity_count` across the 50 models runs **1, 2, 3 … 50, one model at each value**. Each was
+scored against the attempts spent at the moment it ran. The `0.584510` model carries ordinal **1** —
+the first trial, deflated against a single attempt. `0.217695` is the re-deflation against the final
+count of 50. Both are correct measurements of different quantities, and CURRENT.md already documents
+the same mechanism for v1.
+
+My first reading of `multiplicity_count = 1` on the best model was that the campaign had reproduced
+the `default=1` deflation defect a peer caught in my own runner. Checking the distribution rather
+than the single value refuted that. Recorded because the wrong version was one commit away from a
+record, and the check that settled it took one command.
+
+**The conclusion survives the most generous reading.** Even taking each model's flattering published
+DSR at its own low ordinal, zero of fifty clear the gate; median published DSR is `0.017352`.
+
+### Six questions left for a real adjudicator
+
+Reproducibility of the drivers; whether the `0.217695` re-deflation exists as a computation rather
+than a record; cache provenance; whether the six ungoverned screens are accounted in total
+multiplicity; my own contributions; and whether gitignored research evidence — unadjudicable from a
+clean clone — is acceptable at all.
+
+## Status of the four items
+
+| # | Item | Outcome |
+|---|---|---|
+| 1 | CI branch protection | **Blocked by plan** (403, private repo on free tier) — and its prerequisite never existed. CI workflow written. Founder decision required. |
+| 2 | Craft baseline | **Tooling repaired.** 98.6% / 99.7% of findings were gitignored scratch. True baseline 679 / 47. `focused-test` was 0, not 8. |
+| 3 | Stale artifact | **Rebuilt and verified at HEAD.** 125 `quant_system` modules confirmed by reading the archive TOC. |
+| 4 | Training adjudication | **Made adjudicable.** Brief written, four claims corroborated, one false alarm withdrawn, six questions posed. |
+
 ## Next safe action
 
-Major #1 — report the exact branch-protection commands for the founder. Then the training-path
-adjudication gap.
+Founder decides Major #1 (upgrade / go public / accept a non-blocking gate). An independent
+adjudicator takes the training brief. The 677 structural craft findings need their path owners.
