@@ -23,6 +23,7 @@ from quant_system.evidence.errors import (
 STORE_TIME = datetime(2026, 8, 20, 12, 10, tzinfo=UTC)
 
 
+# test-allow: loop-in-test - list comprehension inside a total `==` assertion; zero rows fails it
 def test_oversized_metadata_is_refused_without_publishing_anything(tmp_path: Path) -> None:
     """Red Team Blocker 3A: metadata past max_manifest_bytes must not brick the catalog."""
     store = _store(tmp_path)
@@ -42,6 +43,7 @@ def test_oversized_metadata_is_refused_without_publishing_anything(tmp_path: Pat
     assert store.rebuild_index().invalid_resource_ids == ()
 
 
+# test-allow: loop-in-test - list comprehension inside a total `==` assertion; zero rows fails it
 def test_boolean_schema_version_is_refused_at_write_time(tmp_path: Path) -> None:
     """Red Team Blocker 3B: bool subclasses int, so `!= 1` alone let True through."""
     store = _store(tmp_path)

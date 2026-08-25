@@ -72,6 +72,7 @@ def test_registering_spends_one_ordinal(registry: HypothesisRegistry) -> None:
     assert registry.next_ordinal() == 2
 
 
+# test-allow: loop-in-test - list comprehension, not a loop; `ordinals == [1, 2, 3]` below fails on zero rows
 def test_ordinals_increase_across_registrations(registry: HypothesisRegistry) -> None:
     ordinals = [
         registry.register(_hypothesis(f"idea {n}", rule=f"rule {n}"), RECORDED_AT)[0].trial_ordinal
@@ -133,6 +134,7 @@ def test_a_registered_hypothesis_may_be_backtested(registry: HypothesisRegistry)
 # --- tamper resistance ------------------------------------------------------------------------
 
 
+# test-allow: loop-in-test - fixed-range setup loop; `attempt_count() == 3` below fails if it ran zero times
 def test_deleting_a_row_cannot_lower_the_attempt_count(registry: HypothesisRegistry) -> None:
     """The load-bearing property: a shrinking count would weaken every future deflation."""
     for n in range(1, 4):

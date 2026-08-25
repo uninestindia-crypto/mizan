@@ -53,6 +53,7 @@ def test_the_governed_packages_were_actually_found() -> None:
 
 
 @pytest.mark.parametrize("source_path", _governed_files(), ids=lambda path: path.name)
+# test-allow: loop-in-test - set comprehension, not a loop; the case is already parametrized per source file
 def test_no_governed_module_imports_the_advisory_layer(source_path: Path) -> None:
     offending = {
         module
@@ -66,6 +67,7 @@ def test_no_governed_module_imports_the_advisory_layer(source_path: Path) -> Non
 
 
 @pytest.mark.parametrize("source_path", _python_files("advisory"), ids=lambda path: path.name)
+# test-allow: loop-in-test - set comprehension, not a loop; the case is already parametrized per source file
 def test_advisory_does_not_import_governed_modules(source_path: Path) -> None:
     forbidden = {f"quant_system.{package}" for package in GOVERNED_PACKAGES}
     offending = {
@@ -91,6 +93,7 @@ _JOURNAL_READ_APIS = ("read_entries", "verify_chain", "records")
 
 
 @pytest.mark.parametrize("source_path", _python_files("strategies"), ids=lambda path: path.name)
+# test-allow: loop-in-test - set comprehension, not a loop; the case is already parametrized per source file
 def test_strategies_use_the_journal_write_only(source_path: Path) -> None:
     tree = ast.parse(source_path.read_text(encoding="utf-8"), filename=str(source_path))
     called = {

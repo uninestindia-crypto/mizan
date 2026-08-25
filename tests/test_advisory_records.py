@@ -360,14 +360,18 @@ def test_rule_based_advisors_declare_themselves_as_rules() -> None:
     from quant_system.alpha.ai_advisor import SignalStrengthRuleAdvisor, TrendDivergenceRuleAdvisor
     from quant_system.core.domain import Side
 
-    for advisor in (TrendDivergenceRuleAdvisor(), SignalStrengthRuleAdvisor()):
-        opinion = advisor.evaluate_opportunity(
-            symbol="INFY",
-            quant_side=Side.BUY,
-            quant_strength=0.7,
-            technical_summary={"sma_distance_pct": 0.01, "return_5d": 0.01},
+    def mode_of(advisor: AdvisorInterface) -> ExecutionMode | None:
+        return infer_execution_mode(
+            advisor.evaluate_opportunity(
+                symbol="INFY",
+                quant_side=Side.BUY,
+                quant_strength=0.7,
+                technical_summary={"sma_distance_pct": 0.01, "return_5d": 0.01},
+            )
         )
-        assert infer_execution_mode(opinion) is ExecutionMode.DETERMINISTIC_RULE
+
+    assert mode_of(TrendDivergenceRuleAdvisor()) is ExecutionMode.DETERMINISTIC_RULE
+    assert mode_of(SignalStrengthRuleAdvisor()) is ExecutionMode.DETERMINISTIC_RULE
 
 
 def test_infer_execution_mode_reads_the_tagged_branch() -> None:

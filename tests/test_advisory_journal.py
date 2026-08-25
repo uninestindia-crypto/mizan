@@ -111,6 +111,7 @@ def test_both_record_types_share_one_journal(journal: AdvisoryJournal) -> None:
     assert [entry["record_type"] for entry in records] == ["OPINION", "STRATEGY_HYPOTHESIS"]
 
 
+# test-allow: loop-in-test - fixed 3-symbol setup loop; the append-order assertion below is total and outside it
 def test_records_are_returned_in_append_order(journal: AdvisoryJournal) -> None:
     for symbol in ("INFY", "TCS", "WIPRO"):
         journal.append(_record(symbol=symbol))
@@ -233,6 +234,7 @@ def test_journal_never_rewrites_existing_bytes(journal: AdvisoryJournal) -> None
 # These cover the external witness that closes that gap.
 
 
+# test-allow: loop-in-test - fixed-tuple setup loop; the truncation assertion below is outside it
 def test_truncating_the_tail_is_detected(journal: AdvisoryJournal) -> None:
     for symbol in ("INFY", "TCS", "WIPRO"):
         journal.append(_record(symbol=symbol))
@@ -246,6 +248,7 @@ def test_truncating_the_tail_is_detected(journal: AdvisoryJournal) -> None:
     assert "1 entry was removed" in str(excinfo.value)
 
 
+# test-allow: loop-in-test - fixed-tuple setup loop; the truncation-count assertion below is outside it
 def test_truncating_several_rows_reports_how_many(journal: AdvisoryJournal) -> None:
     for symbol in ("INFY", "TCS", "WIPRO", "HCLTECH"):
         journal.append(_record(symbol=symbol))

@@ -277,9 +277,11 @@ def test_advisor_key_material_never_reaches_the_journal(tmp_path: Path) -> None:
         tmp_path,
         _ScriptedAdvisor("A", metadata={"key_id": "k-1", "masked_key": "sk-***", "mode": "X"}),
     )
-    for record in records:
-        assert "key_id" not in record["metadata"]
-        assert "masked_key" not in record["metadata"]
+    assert records, "no records were captured, so a leak assertion over them would be vacuous"
+    leaked = {
+        key for record in records for key in ("key_id", "masked_key") if key in record["metadata"]
+    }
+    assert not leaked, f"advisor key material reached the journal: {sorted(leaked)}"
 
 
 def test_the_aggregate_still_carries_individual_opinions(tmp_path: Path) -> None:
