@@ -59,6 +59,10 @@ const SKIP_DIR = new Set([
   "out", "coverage", "vendor", ".turbo", ".cache", "target", "__pycache__",
   ".venv", "venv", "env", ".gradle", "bin", "obj", "Pods", ".terraform",
   "migrations", "generated", "__generated__", ".idea", ".vscode",
+  // Gitignored scratch. It holds whole stale copies of this repository left by mutation and
+  // verifier runs, so scanning it counted every real finding again per copy: 46,824 of 47,503
+  // code findings came from here, drowning the 679 that are actually in the repository.
+  "tmp",
 ]);
 
 /** Generated or vendored code is not craftsmanship's business. */

@@ -55,6 +55,9 @@ const SKIP_DIR = new Set([
   "node_modules", ".git", "dist", "build", ".next", ".nuxt", "out", "coverage",
   "vendor", ".turbo", ".cache", "target", "__pycache__", ".venv", "venv",
   "fixtures", "__snapshots__", "testdata", "golden",
+  // See check-code.mjs: gitignored scratch holding stale repo copies. 15,924 of 15,971 test
+  // findings came from here against 47 real ones.
+  "tmp",
 ]);
 
 /* ---------------------------------------------------------------- languages
