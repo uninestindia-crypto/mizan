@@ -83,12 +83,39 @@ repository at all.
 
 ### What remains is structural debt, not defects
 
-`long-line`, `deep-nesting`, `long-function` and `god-file` are 677 of the 679. These are shape
-findings across `modeling/**`, `execution/**`, `server/**` and `analytics/**` — files owned by
-several live records. They are not repaired here: doing so would mean reshaping other agents'
-active files for style, which PROTOCOL section 4 puts under single-owner coordination, and a
-reformat of live work is the highest-risk low-value action available. The measurement is now
-truthful, which is the part that was blocking anyone from acting on it.
+`long-line`, `deep-nesting`, `long-function` and `god-file` are 677 of the 679. Characterised
+rather than left as a number, because the composition decides the remedy:
+
+**Concentration.** `server/ui/journeys.py` (59), `server/security.py` (27), `server/ui/templates.py`
+(12), `server/supervisor.py` (10) — 108 of them in four files, all arriving with the
+`codex/real-journey-api` merge.
+
+**Those four are freshly adjudicated.** They carry the independent PASS at `474795f`. Reshaping
+adjudicated source for style would mean the adjudicated artifact no longer matches the adjudicated
+code, which trades the programme's only genuine certification for a lint count. That is a bad trade
+and the reason is substantive, not procedural.
+
+**`long-line` is largely not debt.** The checker's `maxLineLength` is 120 while ruff formats to 100
+and does not enforce E501, so these are lines the formatter cannot break. Sampling the largest
+offender shows what they are:
+
+```
+152 chars:     <section id="tab-ingestion" class="tab-panel active" data-test="journey-ingestion" …
+142 chars:       <p class="journey-subtitle">Point-in-time NSE equity data acquisition, SHA-256 …
+```
+
+Embedded HTML markup in a UI renderer. Breaking those lines would hurt readability and risk changing
+rendered output. The checker's own instruction covers this case — `craft-allow: <rule-id> — <reason>`
+or a `.code-craft.json` threshold — and 44 of `journeys.py`'s findings are this shape.
+
+**What I deliberately did not do.** Raising `maxLineLength` in `.code-craft.json` would clear a large
+share of the 382 in one line. I did not, because a threshold changed to make a count go down is
+goalpost-moving, and this repository has enough of that in its history. The threshold should move
+only if an owner decides 120 is wrong for a UI renderer, and that is their call with their reasons
+recorded.
+
+The measurement is now truthful and the composition is known. That is what was blocking anyone from
+acting; the acting itself belongs to the path owners.
 
 ## Major #3 — rebuilt and verified (COMPLETE)
 
