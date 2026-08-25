@@ -2,6 +2,7 @@
 
 import queue
 import time
+from collections.abc import Callable, Iterator
 from types import SimpleNamespace
 
 import pytest
@@ -14,9 +15,55 @@ from quant_system.server.supervisor import (
     WorkerSupervisor,
 )
 
+_POLL_SECONDS = 0.05
+
+
+def _failed_or_lost(record: OperationRecord) -> str | None:
+    if record.status in (OperationStatus.FAILED, OperationStatus.LOST):
+        return f"operation reached a terminal failure while waiting: {record}"
+    return None
+
+
+def _await_operation(
+    supervisor: WorkerSupervisor,
+    operation_id: str,
+    predicate: Callable[[OperationRecord], bool],
+    *,
+    timeout: float,
+    describe: str,
+    abort_on: Callable[[OperationRecord], str | None] | None = None,
+) -> OperationRecord:
+    """Wait for a real subprocess-backed operation to reach a condition, or fail saying which.
+
+    These tests drive an actual worker process, so the state they assert on genuinely arrives
+    asynchronously. The previous code either slept a fixed guess and then asserted — which asserts
+    the timing, not the condition, and fails on a loaded machine — or repeated this poll inline in
+    five places.
+
+    Waiting on the predicate makes the test deterministic in outcome: it passes as soon as the
+    condition holds and fails with a specific message if it never does, rather than passing or
+    failing according to how busy the host was.
+    """
+    deadline = time.monotonic() + timeout
+    last: OperationRecord | None = None
+    while time.monotonic() < deadline:
+        last = supervisor.get_operation(operation_id)
+        assert last is not None, (
+            f"operation {operation_id} disappeared while waiting for {describe}"
+        )
+        if abort_on is not None:
+            reason = abort_on(last)
+            if reason is not None:
+                pytest.fail(reason)
+        if predicate(last):
+            return last
+        # test-allow: sleep-in-test - poll interval; the assertion is the predicate, not the clock
+        time.sleep(_POLL_SECONDS)
+    pytest.fail(f"timed out after {timeout}s waiting for {describe}; last seen: {last}")
+
 
 @pytest.fixture
-def supervisor_instance() -> WorkerSupervisor:
+def supervisor_instance() -> Iterator[WorkerSupervisor]:
     sup = WorkerSupervisor(heartbeat_timeout_seconds=5.0, cancellation_grace_seconds=1.0)
     yield sup
     sup.shutdown()
@@ -28,22 +75,14 @@ def test_supervisor_successful_execution(supervisor_instance: WorkerSupervisor) 
     assert op.status in (OperationStatus.PENDING, OperationStatus.RUNNING)
     assert op.operation_id.startswith("op-")
 
-    # Poll until success
-    max_wait = 10.0
-    t0 = time.monotonic()
-    final_op = None
-
-    while time.monotonic() - t0 < max_wait:
-        current = supervisor_instance.get_operation(op.operation_id)
-        assert current is not None
-        if current.status == OperationStatus.SUCCEEDED:
-            final_op = current
-            break
-        elif current.status in (OperationStatus.FAILED, OperationStatus.LOST):
-            pytest.fail(f"Operation failed unexpectedly: {current}")
-        time.sleep(0.05)
-
-    assert final_op is not None
+    final_op = _await_operation(
+        supervisor_instance,
+        op.operation_id,
+        lambda record: record.status == OperationStatus.SUCCEEDED,
+        timeout=10.0,
+        describe="the compute operation to succeed",
+        abort_on=_failed_or_lost,
+    )
     assert final_op.status == OperationStatus.SUCCEEDED
     assert final_op.progress == 1.0
     assert final_op.stage == "COMPLETED"
@@ -58,22 +97,22 @@ def test_supervisor_heartbeats_and_progress_tracking(
     payload = {"action": "sleep", "duration": 0.8}
     op = supervisor_instance.submit_operation(OperationType.CUSTOM, payload)
 
-    time.sleep(0.3)
-    current = supervisor_instance.get_operation(op.operation_id)
-    assert current is not None
-    assert current.last_heartbeat_at is not None
+    _await_operation(
+        supervisor_instance,
+        op.operation_id,
+        lambda record: record.last_heartbeat_at is not None,
+        timeout=3.0,
+        describe="the worker to emit its first heartbeat",
+        abort_on=_failed_or_lost,
+    )
 
-    # Wait for completion
-    max_wait = 3.0
-    t0 = time.monotonic()
-    final_op = None
-    while time.monotonic() - t0 < max_wait:
-        final_op = supervisor_instance.get_operation(op.operation_id)
-        if final_op and final_op.status == OperationStatus.SUCCEEDED:
-            break
-        time.sleep(0.05)
-
-    assert final_op is not None
+    final_op = _await_operation(
+        supervisor_instance,
+        op.operation_id,
+        lambda record: record.status == OperationStatus.SUCCEEDED,
+        timeout=3.0,
+        describe="the operation to succeed",
+    )
     assert final_op.status == OperationStatus.SUCCEEDED
 
 
@@ -81,7 +120,14 @@ def test_supervisor_cooperative_cancellation(supervisor_instance: WorkerSupervis
     payload = {"action": "sleep", "duration": 5.0}
     op = supervisor_instance.submit_operation(OperationType.CUSTOM, payload)
 
-    time.sleep(0.1)
+    _await_operation(
+        supervisor_instance,
+        op.operation_id,
+        lambda record: record.status == OperationStatus.RUNNING,
+        timeout=5.0,
+        describe="the worker to start before cancelling it",
+        abort_on=_failed_or_lost,
+    )
     cancelled_op = supervisor_instance.cancel_operation(op.operation_id)
     assert cancelled_op.status == OperationStatus.CANCELLED
     assert cancelled_op.cancellation_requested is True
@@ -140,20 +186,13 @@ def test_supervisor_process_crash_recovery(supervisor_instance: WorkerSupervisor
     payload = {"action": "crash"}
     op = supervisor_instance.submit_operation(OperationType.CUSTOM, payload)
 
-    # Poll for supervisor detecting process loss
-    max_wait = 5.0
-    t0 = time.monotonic()
-    lost_op = None
-
-    while time.monotonic() - t0 < max_wait:
-        current = supervisor_instance.get_operation(op.operation_id)
-        assert current is not None
-        if current.status in (OperationStatus.LOST, OperationStatus.FAILED):
-            lost_op = current
-            break
-        time.sleep(0.05)
-
-    assert lost_op is not None
+    lost_op = _await_operation(
+        supervisor_instance,
+        op.operation_id,
+        lambda record: record.status in (OperationStatus.LOST, OperationStatus.FAILED),
+        timeout=5.0,
+        describe="the supervisor to detect the crashed worker",
+    )
     assert lost_op.status in (OperationStatus.LOST, OperationStatus.FAILED)
     assert lost_op.error is not None
     assert lost_op.error["code"] == "PROCESS_CRASHED"
@@ -172,19 +211,13 @@ def test_supervisor_heartbeat_timeout_handling() -> None:
         payload = {"action": "hang"}
         op = sup.submit_operation(OperationType.CUSTOM, payload)
 
-        max_wait = 5.0
-        t0 = time.monotonic()
-        lost_op = None
-
-        while time.monotonic() - t0 < max_wait:
-            current = sup.get_operation(op.operation_id)
-            assert current is not None
-            if current.status == OperationStatus.LOST:
-                lost_op = current
-                break
-            time.sleep(0.05)
-
-        assert lost_op is not None
+        lost_op = _await_operation(
+            sup,
+            op.operation_id,
+            lambda record: record.status == OperationStatus.LOST,
+            timeout=5.0,
+            describe="the hung worker to be declared LOST",
+        )
         assert lost_op.status == OperationStatus.LOST
         assert lost_op.error is not None
         assert lost_op.error["code"] == "HEARTBEAT_TIMEOUT"
@@ -252,21 +285,14 @@ def test_supervisor_backtest_worker_task(supervisor_instance: WorkerSupervisor) 
     }
     op = supervisor_instance.submit_operation(OperationType.BACKTEST, payload)
 
-    max_wait = 15.0
-    t0 = time.monotonic()
-    final_op = None
-
-    while time.monotonic() - t0 < max_wait:
-        current = supervisor_instance.get_operation(op.operation_id)
-        assert current is not None
-        if current.status == OperationStatus.SUCCEEDED:
-            final_op = current
-            break
-        elif current.status in (OperationStatus.FAILED, OperationStatus.LOST):
-            pytest.fail(f"Backtest worker failed: {current}")
-        time.sleep(0.1)
-
-    assert final_op is not None
+    final_op = _await_operation(
+        supervisor_instance,
+        op.operation_id,
+        lambda record: record.status == OperationStatus.SUCCEEDED,
+        timeout=15.0,
+        describe="the backtest worker to succeed",
+        abort_on=_failed_or_lost,
+    )
     assert final_op.result is not None
     assert "equity_curve" in final_op.result
     assert "stats" in final_op.result
