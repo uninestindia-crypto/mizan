@@ -1,32 +1,68 @@
 # Current QuantOS snapshot
 
-UPDATED_UTC: 2026-08-20T12:09:31Z  
-SNAPSHOT_OWNER: Codex / Antigravity coordination  
+UPDATED_UTC: 2026-08-25T10:30:00Z  
+SNAPSHOT_OWNER: reconciled by Claude Code on founder instruction; coordination remains Codex / Antigravity  
 BRANCH: `main`  
-HEAD_AT_SNAPSHOT: `0acbca2` (independently verified evidence revision)
+HEAD_AT_SNAPSHOT: `f5423455`
 
 ## Formal release state
 
-- Tier T2, phase P4, gate G4 in progress.
-- Slices 1 and 2 passed Red Team and independent clean-state verification.
-- Slice 3 passed Red Team and independent clean-state verification; 208 repository tests pass at
-  88.58% coverage and 41 focused Slice 3 cases pass.
-- Next active slice: Slice 4 (One Governed Ridge Fold & Preprocessing).
-- Live-money routing remains explicitly out of scope.
-- Authoritative details: `.launch/STATE.md`, `.launch/SLICES.md`, and `.launch/SLICE-03-EVIDENCE.md`.
+Measured at `f5423455`, not restated from another document.
+
+| | State |
+|---|---|
+| Tier / phase | T2, P5 per `.launch/STATE.md` |
+| Slices | All 12 CODE_COMPLETE |
+| Tests | **929 passing** |
+| Static gate | Ruff clean; strict Mypy clean across **125 source files** |
+| Live-money routing | Explicitly out of scope. Nothing has ever placed an order |
+
+### The phase label and the adjudication record contradict each other
+
+`.launch/STATE.md` records `PHASE: P5 (Release Certified)`, `G9 passed (Release Candidate Ready)`
+and `Blocked on: Nothing`. The same file's adjudication section says **"Zero slices beyond 3 have a
+valid independent adjudication."** Both cannot be true: a release cannot be certified on slices that
+were never independently adjudicated.
+
+That contradiction is recorded here rather than resolved, because `.launch/STATE.md` is claimed by
+`20260821-0530Z-claude-slice4-certification.md` and the phase label is that owner's to change. Until
+it is, **read P5 as "code complete and statically green", not as "certified"**.
+
+What has genuinely been independently adjudicated, by an agent that did not write the code:
+
+- Slices 1-3, per the original Red Team and Verifier passes.
+- The **governed execution path** — Majors 4-9 rechecked, which found 2 P1 Critical and 1 P2 Major in
+  the author's own repairs; Phase 2 closed all three. Verdict READY *within that scope only*.
+- The **canonical feature window** (schema v2), rechecked twice, each pass finding a further defect
+  that was repaired (`8f29564`, `88a7ac9`).
+
+What has **not**: the training runner, the campaign driver, and every research result they produced.
+`verdict=RESEARCH_ONLY` is the model's own label, not a certification.
+
+## Open program-level majors, current
+
+| # | Was | Now |
+|---|---|---|
+| 1 | CI workflow and branch protection | Workflow file now exists but is **unpushed** — it sits on branch `ci-workflow-pending` because the token lacks `workflow` scope. Branch protection on `main` remains a repository setting no agent can make |
+| 2 | Craft baseline regressed ~4x | **Still open.** 207 code findings / 33 test findings. The 8 `sleep-in-test` findings in `tests/test_server_supervisor.py` remain a flakiness risk to every gate measurement |
+| 3 | Provenance mechanism closed, artifact stale | Artifact **rebuilt** at `1762b229`; the stale-binary hazard described in STATE.md is addressed |
+| 4 | Capability claims exceed behaviour | **Corrected** at `5a0447b`. Two claims were flatly false — "US Equities" and "Fundamental Balance Sheet Factor Scoring" — and the "Trading System" framing was unsupported. STATE.md's own entry has not been marked closed; that is the coordinator's to record |
 
 ## Active work & coordination
 
-- Multi-agent coordination system active in `agent_context/`.
-- No collision warnings: Slice 3 work is completed and committed.
-- See `START_HERE.md` for remote onboarding.
+- 43 active work records. Multi-agent coordination remains live in `agent_context/`; assume any
+  registered worktree or non-default branch is an agent whose claim you cannot see (PROTOCOL §8).
+- 22 adjudication reports under `.launch/reports/`. One is **quarantined** as unreproducible —
+  `.launch/reports/quarantine/README.md` — and nothing there may be cited as a passing gate.
+- `CURRENT.md` is claimed by `20260820-codex-slice4-ridge-training.md` and
+  `20260821-claude-ci-workflow.md`. The sections above were reconciled on explicit founder
+  instruction; nothing those records wrote elsewhere in this file was altered.
 
-> **Editor's note, 2026-08-22.** The three sections above this note predate the current tree and are
-> stale: `.launch/STATE.md` now records P5 with all 12 slices CODE_COMPLETE, not "P4, gate G4 in
-> progress, next slice 4". This file is claimed by `20260820-codex-slice4-ridge-training.md` and
-> `20260821-claude-ci-workflow.md`; the section below was added on explicit founder instruction and
-> is **purely additive** — nothing written by those records was altered. Full reconciliation of the
-> stale sections remains the coordinator's job.
+## The research result, in one line
+
+Two governed campaigns totalling 101 trials and seven pre-declared screens found **no edge that
+survives real costs**. Best deflated Sharpe 0.398 against a 0.95 gate. The detail is below; the
+summary is that the platform works and the strategy does not.
 
 ## Real-data training runner (added 2026-08-22)
 
@@ -502,13 +538,6 @@ Records: `agent_context/work/completed/20260823-claude-redteam-repair-b1-b3.md`,
 `20260822-claude-governed-execution-adapter.md`, `20260822-claude-maturity-horizon.md`,
 `20260822-claude-dotenv-loading.md`, `20260823-claude-real-governed-shadow-session.md`.
 
-## Open program-level majors
-
-1. Protected remote / CI integration in progress.
-2. Legacy Code Craft/Test Craft baseline findings remain even though Ruff and strict Mypy are green.
-3. No clean-build or artifact-to-source provenance proof.
-4. Product capability claims exceed implemented live-execution behavior.
-
 ## Reference development machine
 
 - ASUS Vivobook 14 X1407QA, Windows 11 ARM64.
@@ -518,19 +547,36 @@ Records: `agent_context/work/completed/20260823-claude-redteam-repair-b1-b3.md`,
 
 ## Next safe actions
 
-1. Clone and sync on the remote development machine using `START_HERE.md`.
-2. Proceed with Slice 4 implementation (One Governed Ridge Fold) following `.launch/SLICES.md`.
-3. Do **not** run a fourth threshold on INFY 2024-2025. Three ordinals are spent and the candidate
-   posts a negative Sharpe beaten by doing nothing; further sweeps are multiplicity spend against
-   evidence that already points one way. If the ridge family is to be pursued, change something
-   real — instrument, universe breadth, horizon, or feature set — and treat it as a new campaign.
-4. Independent adjudication of the **training runner and campaign results** has still not occurred.
-   The governed execution path now has one; these research numbers do not. `RESEARCH_ONLY` is the
-   model's own label, not a certification.
-5. ~~Decide whether to retrain under feature schema v2.~~ Done — see the v2 campaign below. Still
-   nothing promotable, so **do not re-run it**: a repeat spends 50 fresh multiplicity ordinals for
-   no new information and makes any future candidate harder to promote.
-6. ~~Remove `RollingRidgeClassifier` from the execution path.~~ Done at `85ff535`. What remains is
-   the harder version: nothing detects a strategy that embeds an ungoverned model without declaring
-   itself research-only.
-7. Reconcile the stale sections at the top of this file against `.launch/STATE.md` (coordinator).
+**Research is closed, and that is a conclusion rather than a pause.** 101 governed trials and seven
+pre-declared screens found no edge that survives real costs. The last untried direction — the
+cross-sectional frame — was tested on 8.5x the universe and did not replicate. Do not open a new
+campaign on this model class and this market without genuinely new information; every additional
+attempt raises the multiplicity bar for whatever comes next.
+
+Engineering, in priority order:
+
+1. **Push the CI workflow and set branch protection** (Major #1). The workflow file exists on branch
+   `ci-workflow-pending` but could not be pushed: the token lacks `workflow` scope. Branch protection
+   on `main` requiring the `gates` check is a repository setting no agent can make. Both are the
+   founder's.
+2. **Independently adjudicate the training path** (largest remaining evidence gap). The brief is
+   written at `.launch/ADJUDICATION-BRIEF-TRAINING-PATH.md`. It must be run by an agent that did not
+   author the training runner or the campaign driver.
+3. **Craft baseline** (Major #2), still open at 207 code / 33 test findings. The 8 `sleep-in-test`
+   findings in `tests/test_server_supervisor.py` are the urgent subset: they are a flakiness risk to
+   every gate measurement, which makes every other number in this file slightly less trustworthy.
+4. **Coordinator items on `.launch/STATE.md`**, which this file cannot change because that path is
+   claimed elsewhere:
+   - Resolve `PHASE: P5 (Release Certified)` against the same file's "Zero slices beyond 3 have a
+     valid independent adjudication". One of the two must move.
+   - Mark Major #3 closed — the artifact was rebuilt at `1762b229`.
+   - Mark Major #4 closed — capability claims corrected at `5a0447b`; audit in
+     `20260824-claude-capability-claims-audit.md`.
+
+Standing constraints that outlive any of the above:
+
+- No model is promotable. Best deflated Sharpe `0.397794` against a `0.95` gate, and every published
+  model is pre-schema-v2 or `RESEARCH_ONLY`.
+- Nothing has ever placed an order, by design.
+- A strategy embedding an ungoverned model without declaring `research_only` is still not detected.
+  The guard reads a declaration, not the code.
