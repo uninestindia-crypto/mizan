@@ -68,3 +68,31 @@ the v3 names. Nothing in `modeling/` depends on the Mīzān work; deleting
 `data/evidence/models/mizan-*` removes it entirely.
 
 Filed against: `agent_context/work/active/20260825-1500Z-claude-mizan-pooled-model.md`
+
+## Second change set: the label horizon (2026-08-26)
+
+Same founder authorization. Measurement in
+`agent_context/decisions/20260826-label-horizon-is-a-declared-parameter.md`.
+
+| File | Change | Existing behaviour |
+|---|---|---|
+| `rows.py` | `label_contract_version_for(horizon)`; `LabelDatasetV1.label_horizon_sessions` field defaulting to 2 | `label_contract_version_for(2)` returns `next-open-net-return-v1` **verbatim**, so every existing label dataset hashes exactly as before |
+| `labels.py` (unclaimed) | `build_label_dataset(..., horizon_sessions=...)`; exit is `ordinal + horizon_sessions` | Default 2 reproduces the original entry/exit pair exactly |
+| `partitions.py` | `build_purged_fold(..., label_horizon_sessions=...)`; the "next two eligible opens" check generalises to the declared horizon | Identical at the default |
+| `validation.py` | Fold horizon is checked against the label dataset's declared horizon instead of the constant | Identical at the default |
+| `errors.py` | Added `LABEL_HORIZON_INVALID` | Additive enum member |
+
+Also changed, both unclaimed: `scripts/cached_nifty50_costs.py` (`round_trip_cost_quotes` prices the
+declared horizon) and `scripts/run_governed_ridge_training.py` (`_fold_from_tail` forwards it).
+
+**The default is deliberately unchanged.** Every prior governed result was measured at horizon 2;
+moving the default would make 101 published trials incomparable to anything produced afterwards.
+
+Verification after this change set: **953 tests pass**, Ruff clean, `ruff format --check` clean,
+strict Mypy clean across 21 modeling source files, `audit-agent-claims` PASS, `audit-disk-layout`
+PASS.
+
+One flaky failure was observed and is not a regression:
+`tests/test_evidence_publish_atomicity.py::test_a_permanently_held_lease_still_fails_closed` budgets
+0.2 seconds of wall clock for a threaded lease wait and slips under machine load. It passed 4/4 in
+isolation and 953/953 on an immediate re-run.
