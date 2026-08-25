@@ -181,8 +181,32 @@ executions, **including one taken after a refactor**. The manifest hash varies b
 metadata — timestamps, operation ids — legitimately varies; that is now evidenced rather than
 assumed, since the content hashes are identical while the manifest hashes are not.
 
-Determinism is corroborated for this instrument. It is not proven for all fifty, and a canary is a
-narrower claim than a full campaign re-run.
+**DOWNGRADED 2026-08-25 on reviewer objection. State it as: deterministic on one instrument, four
+repetitions. Nothing broader.**
+
+The objection is measured, not stylistic, and it is correct. The most instructive defect this
+repository has produced was *instrument-dependent* numeric behaviour: the `multiplicity.py`
+Pearson-bound guard tested a strict inequality against an exact algebraic tie, **exactly one NIFTY 50
+constituent out of fifty hit it**, and it killed the whole sweep. Measured afterwards, roughly 40% of
+the legitimate two-point parameter space would have fired, and the same distribution at a different
+location and scale — mathematically identical moments — produced substantially different rejection
+sets. Float residue in the arithmetic path decided it.
+
+That is precisely the class of thing a `(evaluation_hash, fitted_state_hash)` comparison exists to
+catch, and **one instrument cannot catch it**. Four canaries on one instrument prove the pipeline is
+deterministic given one fold geometry, one label balance and one return series. They do not exercise
+different fold boundaries, different UP/DOWN balances, the `DEGENERATE_RETURN_SERIES` path, or the
+two-point boundary — and **11 of the 51 v1 trials took a terminal-failure path rather than the
+published one**. A determinism claim that never visits the failure paths is a claim about the happy
+path.
+
+So the defensible sentence is "deterministic on one instrument, four repetitions", with the
+denominator stated so a reader can price it. The general sentence is not defensible and has been
+withdrawn.
+
+**To upgrade it properly:** re-run the canary across enough instruments to cover at least one
+degenerate outcome and one published outcome, and state the count. If hashes agree across
+instruments *and* across a failure path, that is a claim worth making.
 
 ### Q3 — cache integrity: **answered**
 
@@ -239,6 +263,22 @@ Six were posed. **Three answered (1, 2, 4), one partially (3), one unblocked (6)
    a non-dividend American *call* shows **no** premium, without which a stable put number would
    prove only that the lattice is steady, not that it tracks early exercise. Both are now
    regressions, so a reviewer checks a test rather than trusting a commit message.
+
+   **Item 4 cleared by the reviewer's own criterion.** They asked whether the three rewritten
+   expectations were derivable from a stated rule or only from the old implementation's output, and
+   whether any appears as a pinned figure in `.launch/`, an ADR, or a Red Team report — in which
+   case the rewrite invalidates a citation and owes a notice under PROTOCOL 8.4. Checked: `1502.51`,
+   `301.00`, `1501.26` and `1549.22` appear in **none** of those. The old values were
+   ROUND_UP-per-unit outputs, and the test comment described the implementation's rounding step
+   rather than any cost requirement. They encoded behaviour, not a requirement. No notice is owed.
+
+   **Reviewer's declared conflict of interest, recorded as they asked.** The responding session
+   authored `run_governed_ridge_training.py` and `run_universe_ridge_campaign.py` and owns
+   `execution/**` and `modeling/**`. They are therefore **adjacent, not independent**, on my items 3
+   (leverage refusal), 4 (test rewrites) and 5 (promotion pipeline design), and said so unprompted
+   before giving any verdict. They are a fair reviewer on `holdout.py`, `greeks.py`, `governor.py`
+   and the CRR lattice, which they did not write. Their full pass on the remaining items awaits
+   their own founder's approval.
 6. **Gitignored evidence — blocker removed in 2b, decision still open.** The evidence is now
    verifiable from a clean clone against a committed inventory. Whether that is *sufficient*, or the
    evidence itself must be version-controlled, is a founder policy call.

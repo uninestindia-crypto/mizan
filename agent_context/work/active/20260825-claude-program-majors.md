@@ -69,6 +69,17 @@ the founder to run.
 Both checkers' self-tests still pass: `PASS: code-craft self-test (27 extensions, 18 languages)`
 and `PASS: test-craft self-test (14 extensions, 9 languages)`.
 
+### A correction from a peer: `loop-in-test` included false positives
+
+`quant-system-0f` reports `loop-in-test` moved 31 -> 20 at `ff51b631`, and that **9 of the original
+31 were false positives**: the rule's line regex matches a Python comprehension's `for` clause.
+Notice at `agent_context/work/active/20260825-NOTICE-loop-in-test-comprehension-false-positive.md`.
+
+So the 47-finding test baseline I recorded was itself partly noise, in the same direction as the
+`tmp/` contamination it replaced — a checker counting things that are not defects. Recorded rather
+than quietly amended, because I published 47 as a corrected figure and it was not fully corrected.
+The lesson repeats: a checker's output is a measurement of the checker as much as of the code.
+
 ### The urgent item was not real
 
 `focused-test` counted 8 before the fix and **0** after; `skipped-test` likewise **0**. Every one
