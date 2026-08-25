@@ -347,3 +347,43 @@ def test_holdout_vault_requires_a_durable_store(tmp_path: Path) -> None:
     """H-2: an optional store would leave the default construction exactly as unsafe."""
     with pytest.raises(TypeError):
         HoldoutVaultTracker()  # type: ignore[call-arg]
+
+
+def test_a_failed_consumption_commit_leaves_the_holdout_unconsumed(tmp_path: Path) -> None:
+    """H-2 durability: the vault must never believe a use it failed to record.
+
+    `record_start` publishes to the store *before* mutating memory, and a comment claims that a
+    failed commit therefore leaves nothing marked consumed. That claim shipped without a test,
+    which an independent reviewer identified as the weakest part of the change. If the ordering
+    were reversed, a crash mid-publish would burn the holdout: memory would refuse a second
+    unlock while the store held no record of the first, so the single most important governance
+    property would fail closed in the wrong direction — unusable rather than protected.
+    """
+    store = _vault_store(tmp_path / "evidence")
+    tracker = HoldoutVaultTracker(store)
+
+    def _refuse(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("simulated store failure during consumption publish")
+
+    tracker._store.commit = _refuse  # type: ignore[method-assign]
+
+    start = HoldoutEvaluationStartV1(
+        evaluation_id="holdout_eval_durability_001",
+        holdout_id="holdout_durability_001",
+        candidate_id="cand_ridge_v1",
+        model_id="model_durability_0001",
+        trial_id="trial_durability_001",
+        started_at=datetime(2026, 8, 25, tzinfo=UTC),
+        token_hash="a" * 64,
+    )
+
+    with pytest.raises(RuntimeError, match="simulated store failure"):
+        tracker.record_start(start)
+
+    assert tracker.is_consumed("holdout_durability_001") is False, (
+        "the vault marked a holdout consumed after the durable record failed to publish"
+    )
+    assert tracker.is_token_consumed("a" * 64) is False
+
+    # And a fresh tracker over the same store must agree: nothing was ever recorded.
+    assert HoldoutVaultTracker(store).is_consumed("holdout_durability_001") is False
