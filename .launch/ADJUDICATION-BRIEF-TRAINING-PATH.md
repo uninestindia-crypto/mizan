@@ -231,6 +231,14 @@ Six were posed. **Three answered (1, 2, 4), one partially (3), one unblocked (6)
    runner. They were asked for findings only, told to decline freely, and told a refusal would be
    recorded as honestly as a review. **Self-review is not available as a substitute and no
    assertion of correctness should be read into this line.**
+
+   **One of the five has since been converted from a claim into a test.** I had asserted that the
+   American put's ~22% gamma deviation from the European analytic value is the early-exercise
+   premium rather than lattice error. Refining the tree from 100 to 1000 steps moves gamma by
+   **0.6%** — it has converged — while the gap to European stays above 15%. A control test pins that
+   a non-dividend American *call* shows **no** premium, without which a stable put number would
+   prove only that the lattice is steady, not that it tracks early exercise. Both are now
+   regressions, so a reviewer checks a test rather than trusting a commit message.
 6. **Gitignored evidence — blocker removed in 2b, decision still open.** The evidence is now
    verifiable from a clean clone against a committed inventory. Whether that is *sufficient*, or the
    evidence itself must be version-controlled, is a founder policy call.

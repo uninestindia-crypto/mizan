@@ -242,3 +242,55 @@ def test_validate_quantity_still_accepts_a_correct_index_lot() -> None:
     """The repair must not refuse quantities that are genuinely valid."""
     assert NSEContractConventions.validate_quantity("NIFTY", 75, date(2024, 11, 25)) is True
     assert NSEContractConventions.validate_quantity("NIFTY", 70, date(2024, 11, 25)) is False
+
+
+def test_american_put_gamma_converges_so_its_premium_is_real() -> None:
+    """The American put's gamma differs from the European analytic value by ~22%.
+
+    That is a large gap, and the honest question is whether it is the early-exercise premium or
+    simply lattice error. Convergence separates the two: if refining the tree twentyfold barely
+    moves the value, the number is what the model says and the gap is the premium.
+
+    Written because this claim was flagged for independent review as one I was most likely to have
+    got wrong. A converging value is evidence; an assertion in a commit message is not.
+    """
+    spot, strike, t, vol, r = 100.0, 100.0, 1.0, 0.20, 0.05
+
+    coarse = BinomialOptionModel.calculate_greeks(
+        spot, strike, t, vol, r, InstrumentType.OPTION_PUT, ExerciseStyle.AMERICAN, 100
+    ).gamma
+    fine = BinomialOptionModel.calculate_greeks(
+        spot, strike, t, vol, r, InstrumentType.OPTION_PUT, ExerciseStyle.AMERICAN, 1000
+    ).gamma
+
+    drift = abs(fine - coarse) / fine
+    assert drift < 0.01, (
+        f"a tenfold refinement moved gamma by {drift:.2%}; the lattice has not converged, "
+        "so no claim about the early-exercise premium can rest on it"
+    )
+
+    european = BlackScholes.calculate_greeks(
+        spot, strike, t, vol, r, InstrumentType.OPTION_PUT
+    ).gamma
+    premium = abs(fine - european) / european
+    assert premium > 0.15, (
+        f"American put gamma is only {premium:.2%} from the European value; if early exercise "
+        "carried no premium here the comparison in the record would be wrong"
+    )
+
+
+def test_american_call_gamma_has_no_premium_over_european() -> None:
+    """The control for the test above: a non-dividend American call is never exercised early.
+
+    Without this, a converging American *put* number proves only that the lattice is stable, not
+    that it is tracking early exercise. The call must show no premium for the put's premium to mean
+    what the record says it means.
+    """
+    spot, strike, t, vol, r = 100.0, 100.0, 1.0, 0.20, 0.05
+    american = BinomialOptionModel.calculate_greeks(
+        spot, strike, t, vol, r, InstrumentType.OPTION_CALL, ExerciseStyle.AMERICAN, 1000
+    ).gamma
+    european = BlackScholes.calculate_greeks(
+        spot, strike, t, vol, r, InstrumentType.OPTION_CALL
+    ).gamma
+    assert abs(american - european) / european < 0.02
