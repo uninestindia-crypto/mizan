@@ -546,7 +546,17 @@ class MizanModel:
 
     @classmethod
     def default_model(cls) -> MizanModel:
-        """Returns the default certified Mizan-V1 model."""
+        """Return the default Mizan-V1 weights.
+
+        **These are RESEARCH_ONLY weights and are not certified.** They are the coefficients
+        published by `model_1f936eadcb8d44154f28af13` (`trial_mizan_h11_002`), whose own evidence
+        records `verdict=RESEARCH_ONLY`, a deflated Sharpe of 0.175990 against a 0.95 gate, a RIDGE
+        Sharpe of -0.410755, and a max drawdown of 0.732650. The returned card carries that verdict.
+
+        Nothing here enforces the verdict -- it is carried as data. Enforcement lives at the
+        execution boundary, so this model is legitimate for research, packaging and backtesting and
+        is refused for execution.
+        """
         config = MizanConfig(
             candidate_id="cand_mizan_v1",
             model_id="mizan-v1",

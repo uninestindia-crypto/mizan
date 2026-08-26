@@ -6,6 +6,7 @@ Zero filesystem-write, zero shell-execution, and zero code-mutation capabilities
 
 from __future__ import annotations
 
+import importlib
 import logging
 from decimal import Decimal
 from typing import Any
@@ -185,32 +186,69 @@ class PlatformActionExecutor:
 
     @classmethod
     def _handle_inspect_risk_limits(cls, action_id: str) -> ActionExecutionResult:
-        limits = RiskLimits(
-            max_position_weight=0.25,
-            max_daily_drawdown_pct=0.03,
-            max_total_drawdown_pct=0.10,
-            max_portfolio_leverage=1.0,
-            min_cash_buffer_pct=0.05,
-            max_allowed_spread_pct=0.02,
-            max_order_value=Decimal("500000.00"),
-        )
+        """Report the risk limits actually in force, or say plainly that defaults are shown.
+
+        This previously built a fresh ``RiskLimits`` from hardcoded constants and rendered it under
+        the heading "Active Pre-Trade Risk Governor Limits", including a "Max Single Order Cap:
+        Rs 500,000.00" that no live configuration ever set (``max_order_value`` defaults to
+        ``None``) and a "Price Collar Protection: Active" line that checked nothing. An operator
+        asking which limits protect them received a confident answer that was a literal. That is
+        the same class as Major #4 -- capability claims exceeding implemented behaviour.
+
+        The live value is ``server.app._CURRENT_RISK_LIMITS``: the risk governor reads it and
+        ``POST /api/v1/risk/limits`` mutates it. The import is deferred because ``server.app``
+        imports this module's router at import time, so a module-level import would be circular.
+        """
+        limits: RiskLimits
+        live: bool
+        try:
+            # `from quant_system.server import app` binds the FastAPI *instance*, because the
+            # package re-exports it and that attribute shadows the submodule. Import the module by
+            # path so the module-level state is what gets read.
+            _server_app = importlib.import_module("quant_system.server.app")
+
+            limits = _server_app._CURRENT_RISK_LIMITS
+            live = True
+        except Exception:
+            # No server process in this context (CLI, tests, notebook). Defaults are still
+            # meaningful, but they must not be presented as the active configuration.
+            limits = RiskLimits()
+            live = False
+
         limits_data = {
+            "source": "live" if live else "defaults",
+            "limits_id": limits.limits_id,
             "max_position_weight": f"{limits.max_position_weight * 100:.1f}%",
             "max_daily_drawdown_pct": f"{limits.max_daily_drawdown_pct * 100:.1f}%",
             "max_total_drawdown_pct": f"{limits.max_total_drawdown_pct * 100:.1f}%",
             "max_portfolio_leverage": f"{limits.max_portfolio_leverage:.1f}x",
             "min_cash_buffer_pct": f"{limits.min_cash_buffer_pct * 100:.1f}%",
+            "max_allowed_spread_pct": f"{limits.max_allowed_spread_pct * 100:.1f}%",
+            "allow_naked_short": str(limits.allow_naked_short),
+            # None is the real default. Printing a number here would invent a cap that nothing
+            # enforces, which is precisely the defect this handler carried.
             "max_order_value": (
-                f"₹{limits.max_order_value:,.2f}" if limits.max_order_value else "None"
+                f"Rs {limits.max_order_value:,.2f}"
+                if limits.max_order_value is not None
+                else "not configured"
             ),
         }
+        heading = (
+            "**Active Pre-Trade Risk Governor Limits**"
+            if live
+            else "**Default Pre-Trade Risk Governor Limits** (no live governor in this context; "
+            "library defaults, not the running configuration)"
+        )
         msg = (
-            "🛡️ **Active Pre-Trade Risk Governor Limits**:\n"
+            f"🛡️ {heading} [`{limits_data['limits_id']}`]:\n"
             f"- **Max Single Order Cap**: {limits_data['max_order_value']}\n"
             f"- **Max Position Weight**: {limits_data['max_position_weight']}\n"
             f"- **Max Daily Drawdown Stop**: {limits_data['max_daily_drawdown_pct']}\n"
             f"- **Max Trailing Drawdown Limit**: {limits_data['max_total_drawdown_pct']}\n"
-            "- **Price Collar Protection**: Active (±5% hard band)"
+            f"- **Max Portfolio Leverage**: {limits_data['max_portfolio_leverage']}\n"
+            f"- **Min Cash Buffer**: {limits_data['min_cash_buffer_pct']}\n"
+            f"- **Max Allowed Spread**: {limits_data['max_allowed_spread_pct']}\n"
+            f"- **Naked Short Allowed**: {limits_data['allow_naked_short']}"
         )
         return ActionExecutionResult(
             action_id=action_id,

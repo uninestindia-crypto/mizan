@@ -31,6 +31,21 @@ class MizanStrategy(BaseStrategy):
     - Cross-sectional percentile momentum & volume surprise ranks
     """
 
+    #: This strategy computes its own features and scores them with a model that carries no
+    #: promotion verdict check, no purging, no multiplicity accounting and no evidence binding.
+    #: `MizanModel.default_model()` is the published RESEARCH_ONLY model
+    #: `model_1f936eadcb8d44154f28af13` (Sharpe -0.410755, deflated Sharpe 0.175990 against a 0.95
+    #: gate, max drawdown 0.732650), so without this declaration an operator selecting "Mizan" from
+    #: `strategies.registry` could drive a shadow session with a model this repository's own gate
+    #: refuses -- a second calculation path, which SLICES.md slice rule 2 forbids.
+    #:
+    #: Research and backtest use are deliberately unaffected: the refusal lives at the execution
+    #: boundary (`execution/realtime_shadow._refuse_ungoverned_strategy`), not on the model. To
+    #: execute a Mizan model, promote it and use
+    #: `execution/cross_sectional_strategy.CrossSectionalModelStrategy`, which binds a published
+    #: manifest and enforces the verdict.
+    research_only = True
+
     def __init__(
         self,
         name: str = "MizanStrategy",
