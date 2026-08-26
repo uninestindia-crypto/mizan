@@ -1,0 +1,83 @@
+# QuantOS repository gates.
+#
+# Every command here is one this repository already runs by hand, at the same strictness. The
+# point of CI is not to invent standards but to stop a green claim resting on someone having
+# remembered to run them.
+#
+# Windows is the build target (the release artifact is a PyInstaller Windows x64 bundle), so the
+# gates run on windows-latest rather than a cheaper Linux runner that would not represent it.
+
+name: gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: gates-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.13
+
+      - name: Install dependencies from the lock file
+        # --frozen fails if uv.lock and pyproject disagree, which is the point: a build whose
+        # dependencies were resolved fresh is not the build that was tested.
+        run: uv sync --frozen --extra dev
+        env:
+          UV_PROJECT_ENVIRONMENT: .venv
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format
+        run: uv run ruff format --check .
+
+      - name: Strict mypy
+        run: uv run mypy src launcher.py scripts
+
+      - name: Tests, normal order
+        run: uv run pytest tests/ -q
+
+      - name: Tests, reverse file order
+        # Reverse order catches tests that only pass because an earlier test left state behind.
+        # A suite that is green forwards and red backwards is not green.
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem tests/test_*.py | Sort-Object Name -Descending | ForEach-Object { $_.FullName }
+          uv run pytest @files -q
+
+      - name: Craft checker self-tests
+        # The checkers gate the repository, so a broken checker is a silent gate failure.
+        run: |
+          node scripts/check-code.mjs --self-test
+          node scripts/check-tests.mjs --self-test
+
+      - name: Agent claim and disk layout audits
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File scripts/audit-agent-claims.ps1
+          powershell -ExecutionPolicy Bypass -File scripts/audit-disk-layout.ps1

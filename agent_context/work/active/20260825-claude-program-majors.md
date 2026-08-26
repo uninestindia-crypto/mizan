@@ -46,13 +46,53 @@ running these checkers today are both measuring duplicated throwaway trees. The 
 such a record stands until another agent explicitly adopts it. This record is that explicit
 adoption, limited to those two files. The rest of that record's claim is not adopted.
 
-## Major #1 — cannot be done by an agent, and should not be
+## Major #1 — blocked by the GitHub plan, and its prerequisite never existed
 
-Branch protection is a GitHub repository setting. `gh` is authenticated in this environment, so
-`gh api` could technically write it. I am not doing that: changing repository settings is an
-outward-facing, hard-to-reverse action on a real repository, and it needs the founder's explicit
-decision rather than an agent's inference from a goal statement. Exact commands are provided for
-the founder to run.
+Measured rather than assumed, and both findings change the item.
+
+**1. Branch protection is unavailable on this account.** `gh` is authenticated as
+`uninestindia-crypto`, and the repository is **private** with owner type **User** (free plan). Both
+relevant endpoints refuse:
+
+```
+GET repos/…/branches/main/protection  -> 403 "Upgrade to GitHub Pro or make this
+                                              repository public to enable this feature."
+GET repos/…/rulesets                  -> 403  (same message)
+```
+
+Branch protection and rulesets on a private repository require GitHub Pro/Team/Enterprise. This is
+not a permissions question about what an agent may do — **nobody can set it on this plan**, founder
+included, without either upgrading or making the repository public.
+
+**2. There is no CI to protect with.** `.github/` does not exist, and
+`git log --all -- .github/workflows` returns nothing: no workflow has ever existed on any branch.
+`.launch/STATE.md` records this major as "Protected remote / CI integration in progress". Nothing
+was in progress; nothing existed.
+
+So the item as recorded had an unmet prerequisite hiding behind a plan limitation.
+
+### What was actually done
+
+Wrote `.github/workflows/ci.yml`. That is a file in the repository, not a settings change, and it is
+the prerequisite branch protection would gate on. It runs on `windows-latest` because the release
+artifact is a PyInstaller Windows x64 bundle and a Linux runner would not represent it.
+
+Every step is a command this repository already runs by hand, at the same strictness: `uv sync
+--frozen`, `ruff check`, `ruff format --check`, strict `mypy src launcher.py scripts`, pytest in
+normal **and reverse file order**, both craft-checker self-tests, and both audits. Reverse order is
+included because a suite that is green forwards and red backwards is not green, and this repository
+has a shared fixed `--basetemp` that makes ordering coupling plausible.
+
+Validated as YAML; 12 steps parse.
+
+### The founder's decision
+
+1. **Upgrade to GitHub Pro** — enables branch protection and rulesets on this private repository.
+2. **Make the repository public** — enables both free, but publishes the code.
+3. **Neither** — CI still runs and reports on every push and PR; it simply cannot be made
+   *required* before merge.
+
+Option 3 is not worthless: the gate runs and is visible. It just cannot block.
 
 ### The true baseline, after the fix
 
