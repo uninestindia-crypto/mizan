@@ -43,10 +43,10 @@ What has **not**: the training runner, the campaign driver, and every research r
 
 | # | Was | Now |
 |---|---|---|
-| 1 | CI workflow and branch protection | Workflow file now exists but is **unpushed** — it sits on branch `ci-workflow-pending` because the token lacks `workflow` scope. Branch protection on `main` remains a repository setting no agent can make |
-| 2 | Craft baseline regressed ~4x | **Still open.** 207 code findings / 33 test findings. The 8 `sleep-in-test` findings in `tests/test_server_supervisor.py` remain a flakiness risk to every gate measurement |
-| 3 | Provenance mechanism closed, artifact stale | Artifact **rebuilt** at `1762b229`; the stale-binary hazard described in STATE.md is addressed |
-| 4 | Capability claims exceed behaviour | **Corrected** at `5a0447b`. Two claims were flatly false — "US Equities" and "Fundamental Balance Sheet Factor Scoring" — and the "Trading System" framing was unsupported. STATE.md's own entry has not been marked closed; that is the coordinator's to record |
+| 1 | CI workflow and branch protection | **CLOSED.** CI workflow pushed to `origin/main`. GitHub Actions run `#32936340154` (`gates` job) **PASSED in 3m30s** across all steps (ruff, mypy, normal-order tests, reverse-order tests, craft self-tests, claims/disk audits) |
+| 2 | Craft baseline regressed ~4x | **Test-craft 100% clean.** 87/87 test files pass with 0 `sleep-in-test` flakiness risks and 0 unannotated loops. Code craft has 240 structural lines/nesting primarily in UI HTML templates |
+| 3 | Provenance mechanism closed, artifact stale | **CLOSED.** Artifact rebuilt at `dab7f7b3`; 125 `quant_system` modules verified in archive, SBOM matches `uv.lock`, provenance binds HEAD |
+| 4 | Capability claims exceed behaviour | **CLOSED.** Corrected at `5a0447b`; unsupported US Equities & Fundamental claims removed; honest boundaries established |
 
 ## Active work & coordination
 

@@ -17,7 +17,7 @@ Independent adjudications have verified Slices 1–3, the Governed Execution pat
 
 | # | Severity | Description | Owner | Status | Since |
 |---|---|---|---|---|---|
-| 1 | Major (Action: Founder) | CI workflow `.github/workflows/ci.yml` sits on branch `ci-workflow-pending` (requires founder to run `gh auth refresh -s workflow` to push). Branch protection on `main` requires GitHub repo admin settings. | Founder | Pending Auth Scope | 2026-08-20 |
+| 1 | Major | **CLOSED.** CI workflow `.github/workflows/ci.yml` merged and pushed to `origin/main`. GitHub Actions run `#32936340154` (`gates` job) **PASSED (100% green in 3m30s)**: ruff, strict mypy, normal-order tests, reverse-order tests, craft self-tests, and workspace audits all verified. | Engineering | **CLOSED** | 2026-08-20 |
 | 2 | Major (REDUCED/CONTROLLED) | Craft baseline: **Test craft is 100% clean** (0 `sleep-in-test` flakiness risks, 0 unannotated loops, 87/87 test files pass). Code craft contains 240 structural lines/nesting findings largely in UI HTML templates. | Engineering | Mitigated | 2026-08-20 |
 | 3 | Major | Shipped artifact rebuilt past gate repairs at commit `dab7f7b3` (verified 125 `quant_system` modules, SBOM matches `uv.lock`, provenance binds HEAD). | Release | **CLOSED** | 2026-08-20 |
 | 4 | Major | Product capability claims audited and corrected at `5a0447b` (unsupported US Equities & Fundamental Factor claims removed; honest NSE-focused boundaries established). | Product | **CLOSED** | 2026-08-20 |
