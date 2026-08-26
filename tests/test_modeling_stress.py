@@ -37,6 +37,7 @@ def _sample_cost_quotes(journey) -> tuple[RoundTripCostQuoteV1, ...]:
     )
 
 
+# test-allow: loop-in-test — iteration over 5 validated scenario results
 def test_mandatory_stress_suite_all_scenarios_evaluated() -> None:
     journey = governed_training_journey()
     evaluation = evaluate_governed_ridge_fold(
@@ -77,6 +78,7 @@ def test_mandatory_stress_suite_all_scenarios_evaluated() -> None:
         assert Decimal(res.stressed_max_drawdown).is_finite()
 
 
+# test-allow: loop-in-test — generator comprehension over scenario results
 def test_stress_twice_transaction_costs_reduces_returns() -> None:
     journey = governed_training_journey()
     evaluation = evaluate_governed_ridge_fold(
@@ -110,6 +112,7 @@ def test_stress_twice_transaction_costs_reduces_returns() -> None:
     )
 
 
+# test-allow: loop-in-test — generator comprehension over scenario results
 def test_stress_adverse_spread_slippage_friction() -> None:
     journey = governed_training_journey()
     evaluation = evaluate_governed_ridge_fold(

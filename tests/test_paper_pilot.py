@@ -1,3 +1,4 @@
+# test-allow: huge-test-file — comprehensive vertical slice 10 paper pilot test suite
 """Comprehensive test suite for Slice 10: Quote-Driven Paper Pilot.
 
 Verifies:
@@ -984,6 +985,7 @@ def test_reconciliation_reports_the_slippage_actually_charged() -> None:
     )
 
 
+# test-allow: loop-in-test — iteration over 3 mutated proposal variations
 def test_idempotency_conflict_notices_a_changed_decision_time() -> None:
     """S10-M6: the conflict check ignored decision_at, strategy_name and model_artifact_id.
 

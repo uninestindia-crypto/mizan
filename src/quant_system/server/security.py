@@ -159,6 +159,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         "/api/v1/csrf-token",
         "/api/auth/csrf",
         "/api/csrf-token",
+        "/api/v1/assistant/chat",
+        "/api/v1/assistant/capabilities",
     }
 
     # State-mutating HTTP methods

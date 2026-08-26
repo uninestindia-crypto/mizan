@@ -92,6 +92,7 @@ def _by_ordinal(redeflated: dict[str, str]) -> tuple[tuple[int, str], ...]:
     )
 
 
+# test-allow: loop-in-test — setup loop over literal tuples (2, 3)
 def test_tail_deletion_leaves_detectable_orphan_blobs(tmp_path: Path) -> None:
     """Red Team Major 1: discarding trailing attempts silently rolled multiplicity back.
 

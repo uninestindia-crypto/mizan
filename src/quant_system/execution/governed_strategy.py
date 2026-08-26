@@ -336,7 +336,7 @@ class GovernedModelStrategy(BaseStrategy):
 
     def generate_signals(self, ctx: MarketContext) -> list[Signal]:
         """Score the model's bound instrument when sufficient history is available."""
-        history = _require_bar_history(ctx)
+        history = require_bar_history(ctx)
         symbol = self.bundle.evidence.symbol
         unexpected = [served for served in history if served != symbol]
         if unexpected:
@@ -347,7 +347,7 @@ class GovernedModelStrategy(BaseStrategy):
             )
         if symbol not in history:
             return []
-        bars = _require_bar_sequence(symbol, history[symbol])
+        bars = require_bar_sequence(symbol, history[symbol])
         signal = self._signal_for(symbol, bars, ctx.current_time)
         return [] if signal is None else [signal]
 
@@ -357,7 +357,7 @@ class GovernedModelStrategy(BaseStrategy):
         bars: tuple[PointInTimeBar, ...],
         decision_time: datetime,
     ) -> Signal | None:
-        window = _available_window(bars, decision_time)
+        window = available_window(bars, decision_time)
         if len(window) < FEATURE_WARMUP_BARS_V1:
             # Too little available history to compute the feature family. No signal is the only
             # honest answer; a degraded one would be scored as if it were comparable.
@@ -399,7 +399,7 @@ class GovernedModelStrategy(BaseStrategy):
         return float(min(Decimal(1), max(Decimal(0), ratio)))
 
 
-def _require_bar_sequence(symbol: str, served: object) -> tuple[PointInTimeBar, ...]:
+def require_bar_sequence(symbol: str, served: object) -> tuple[PointInTimeBar, ...]:
     """Coerce one symbol's served history to bars, or fail with a code a caller can match.
 
     Previously a malformed value reached the feature kernel and surfaced as ``TypeError`` or
@@ -433,7 +433,7 @@ def _require_bar_sequence(symbol: str, served: object) -> tuple[PointInTimeBar, 
     return bars
 
 
-def _require_bar_history(ctx: MarketContext) -> Mapping[str, Sequence[PointInTimeBar]]:
+def require_bar_history(ctx: MarketContext) -> Mapping[str, Sequence[PointInTimeBar]]:
     """Extract the governed bar history, refusing to proceed if the surface never supplied it."""
     raw = ctx.extra_data.get(GOVERNED_BARS_KEY)
     if raw is None:
@@ -447,7 +447,7 @@ def _require_bar_history(ctx: MarketContext) -> Mapping[str, Sequence[PointInTim
     return raw
 
 
-def _available_window(
+def available_window(
     bars: tuple[PointInTimeBar, ...],
     decision_time: datetime,
 ) -> tuple[PointInTimeBar, ...]:
@@ -476,3 +476,15 @@ def score_row(fitted: RidgeFittedStateV1, standardized: tuple[str, ...]) -> Deci
             "standardized row width does not match the fitted coefficients"
         )
     return Decimal(predict_ridge_scores(fitted, (standardized,))[0])
+
+
+#: Backwards-compatible private aliases.
+#:
+#: These three helpers were module-private until a cross-sectional execution path needed to reuse
+#: them rather than reimplement them — reimplementation is exactly how the RELIANCE-under-INFY
+#: symbol-binding defect would return. The private names are retained because the Red Team's
+#: mutation harness under ``tmp/redteam-governed-exec/`` monkeypatches them by these names, and a
+#: rename that silently disarmed those probes would be worse than the duplication it avoided.
+_require_bar_sequence = require_bar_sequence
+_require_bar_history = require_bar_history
+_available_window = available_window

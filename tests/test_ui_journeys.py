@@ -521,6 +521,7 @@ def test_journey_7_paper_pilot_dom_and_api(
 # =============================================================================
 
 
+# test-allow: loop-in-test — iteration over regex matched DOM elements with non-empty assertions
 def test_accessibility_tab_panel_relationships(client: TestClient) -> None:
     res = client.get("/")
     html = res.text
@@ -531,12 +532,14 @@ def test_accessibility_tab_panel_relationships(client: TestClient) -> None:
         html,
     )
     assert len(tab_matches) >= 7, "Expected at least 7 journey tab buttons"
+    # test-allow: loop-in-test — iteration over regex matched DOM elements
     for btn_id, data_tab, _aria_sel, aria_ctrl in tab_matches:
         assert data_tab == aria_ctrl
         assert f'id="{aria_ctrl}"' in html, f"Missing target panel for tab {btn_id}"
 
     # 2. Verify all inputs with IDs have matching label for attributes
     input_ids = re.findall(r'<(?:input|select)\s+[^>]*id="([^"]+)"', html)
+    # test-allow: loop-in-test — iteration over extracted DOM input IDs
     for inp_id in input_ids:
         # Check label for
         assert f'for="{inp_id}"' in html, f"Missing accessible label for element id='{inp_id}'"

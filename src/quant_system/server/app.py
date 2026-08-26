@@ -33,6 +33,7 @@ from quant_system.alpha.greeks import BlackScholes
 from quant_system.analytics.metrics import PerformanceMetrics
 from quant_system.analytics.monte_carlo import MonteCarloSimulator
 from quant_system.analytics.tearsheet import TearsheetGenerator
+from quant_system.assistant.router import router as assistant_router
 from quant_system.backtest.costs import IndianMarketCostModel
 from quant_system.backtest.engine import BacktestEngine
 from quant_system.core.domain import InstrumentType, Side
@@ -43,6 +44,7 @@ from quant_system.data.provenance import (
     describe,
     market_data_credentials_configured,
 )
+from quant_system.modeling import MizanHub, MizanModel
 from quant_system.portfolio.optimization import PortfolioOptimizer
 from quant_system.risk.checks import RiskLimits
 from quant_system.risk.governor import PreTradeRiskGovernor
@@ -74,6 +76,10 @@ from quant_system.server.schemas import (
     JourneyMetaDTO,
     ManifestItemDTO,
     ManifestListResponse,
+    MizanModelInfoResponse,
+    MizanPredictRequest,
+    MizanPredictResponse,
+    MizanUploadResponse,
     MonteCarloRequest,
     MonteCarloResponse,
     OperationCancelResponse,
@@ -146,6 +152,7 @@ app = FastAPI(
 
 # Attach Security Middleware
 app.add_middleware(SecurityMiddleware)
+app.include_router(assistant_router)
 
 # Global runtime state
 _CURRENT_RISK_LIMITS = RiskLimits()
@@ -570,6 +577,117 @@ def get_strategies() -> list[StrategyInfo]:
             )
         )
     return strategies
+
+
+_ACTIVE_MIZAN_MODEL: MizanModel = MizanModel.default_model()
+
+
+# =====================================================================
+# Mīzān Model Sharing, Download, Upload, and Inference Endpoints
+# =====================================================================
+
+
+@app.get("/api/v1/models/mizan/info", response_model=MizanModelInfoResponse)
+@app.get("/api/models/mizan/info", response_model=MizanModelInfoResponse)
+def get_mizan_model_info() -> MizanModelInfoResponse:
+    """Returns active Mīzān model metadata, configuration, evaluation metrics, and card hashes."""
+    global _ACTIVE_MIZAN_MODEL
+    model = _ACTIVE_MIZAN_MODEL
+    return MizanModelInfoResponse(
+        model_id=model.config.model_id,
+        candidate_id=model.config.candidate_id,
+        model_name=model.config.model_name,
+        version=model.config.version,
+        author=model.model_card.author,
+        feature_names=list(model.config.feature_names),
+        feature_schema_id=model.config.feature_schema_id,
+        feature_schema_version=model.config.feature_schema_version,
+        score_threshold=model.config.score_threshold,
+        l2_penalty=model.config.l2_penalty,
+        label_horizon_sessions=model.config.label_horizon_sessions,
+        metrics=dict(model.model_card.metrics),
+        weights_hash=model.weights.weights_hash,
+        preprocessor_hash=model.preprocessor.preprocessor_hash,
+        model_card_hash=model.model_card.model_card_hash,
+        verdict=model.model_card.verdict,
+    )
+
+
+@app.get("/api/v1/models/mizan/download")
+@app.get("/api/models/mizan/download")
+def download_mizan_model_bundle() -> Response:
+    """Download the active Mīzān model as a standalone, self-contained .zip package."""
+    global _ACTIVE_MIZAN_MODEL
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp_file:
+        tmp_path = Path(tmp_file.name)
+
+    try:
+        MizanHub.export_package(_ACTIVE_MIZAN_MODEL, tmp_path, package_zip=True)
+        zip_bytes = tmp_path.read_bytes()
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink()
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="mizan_{_ACTIVE_MIZAN_MODEL.config.model_id}.zip"'
+        },
+    )
+
+
+@app.post("/api/v1/models/mizan/upload", response_model=MizanUploadResponse)
+@app.post("/api/models/mizan/upload", response_model=MizanUploadResponse)
+def upload_mizan_model(payload: dict[str, Any]) -> MizanUploadResponse:
+    """Upload and hot-reload a Mīzān model from serialized JSON structure."""
+    global _ACTIVE_MIZAN_MODEL
+    try:
+        new_model = MizanModel.from_dict(payload)
+        _ACTIVE_MIZAN_MODEL = new_model
+        return MizanUploadResponse(
+            status="SUCCESS",
+            message=f"Mīzān model '{new_model.config.model_id}' (v{new_model.config.version}) loaded successfully.",
+            model_id=new_model.config.model_id,
+            version=new_model.config.version,
+        )
+    except Exception as err:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to load uploaded Mīzān model: {err}",
+        ) from err
+
+
+@app.post("/api/v1/models/mizan/predict", response_model=MizanPredictResponse)
+@app.post("/api/models/mizan/predict", response_model=MizanPredictResponse)
+def predict_mizan(req: MizanPredictRequest) -> MizanPredictResponse:
+    """Execute inference with active Mīzān model on feature dictionary or universe dictionary."""
+    global _ACTIVE_MIZAN_MODEL
+    features = req.features
+
+    if not features:
+        raise HTTPException(status_code=400, detail="Feature payload cannot be empty.")
+
+    # Check if features is a multi-instrument universe dictionary
+    if any(isinstance(v, dict) for v in features.values()):
+        universe_scores = _ACTIVE_MIZAN_MODEL.predict_scores(features)
+        ranked = _ACTIVE_MIZAN_MODEL.rank_universe(features)
+        return MizanPredictResponse(
+            model_id=_ACTIVE_MIZAN_MODEL.config.model_id,
+            candidate_id=_ACTIVE_MIZAN_MODEL.config.candidate_id,
+            scores=universe_scores,
+            ranked=[[sym, float(score)] for sym, score in ranked],
+        )
+
+    # Single feature vector
+    score = _ACTIVE_MIZAN_MODEL.predict_score(features)
+    return MizanPredictResponse(
+        model_id=_ACTIVE_MIZAN_MODEL.config.model_id,
+        candidate_id=_ACTIVE_MIZAN_MODEL.config.candidate_id,
+        score=score,
+    )
 
 
 @app.get("/api/v1/risk/limits", response_model=RiskLimitsDTO)

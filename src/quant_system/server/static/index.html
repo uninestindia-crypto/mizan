@@ -1357,6 +1357,65 @@
 
   <div id="toast" role="alert" aria-live="assertive"></div>
 
+  <!-- QuantOS Copilot — Floating Launcher Button -->
+  <button id="copilot-trigger-btn" aria-label="Open QuantOS Copilot AI Assistant">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"></path>
+      <rect x="4" y="8" width="16" height="12" rx="2"></rect>
+      <circle cx="9" cy="13" r="1.5"></circle>
+      <circle cx="15" cy="13" r="1.5"></circle>
+      <path d="M9 17h6"></path>
+    </svg>
+    <span>Ask Copilot 🤖</span>
+  </button>
+
+  <!-- QuantOS Copilot — Slide-Out Drawer & Backdrop -->
+  <div id="copilot-backdrop" aria-hidden="true"></div>
+  <aside id="copilot-drawer" role="dialog" aria-modal="true" aria-label="QuantOS Copilot Assistant">
+    <div class="copilot-header">
+      <div class="copilot-header-brand">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" aria-hidden="true">
+          <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"></path>
+          <rect x="4" y="8" width="16" height="12" rx="2"></rect>
+          <circle cx="9" cy="13" r="1.5"></circle>
+          <circle cx="15" cy="13" r="1.5"></circle>
+          <path d="M9 17h6"></path>
+        </svg>
+        <span>QuantOS Copilot</span>
+        <span class="copilot-badge">Platform Actions</span>
+      </div>
+      <button class="icon-btn" id="copilot-close-btn" aria-label="Close Assistant">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div id="copilot-messages" role="log" aria-live="polite">
+      <div class="copilot-msg copilot-msg-assistant">
+        <div class="copilot-msg-content">
+          👋 <strong>Hello! I am your QuantOS Copilot.</strong><br>
+          I can help you navigate journeys, run system diagnostics, calculate option Greeks, configure backtests, and inspect risk governor limits.<br><br>
+          <em>Ask me anything or choose a quick prompt below:</em>
+        </div>
+      </div>
+    </div>
+
+    <div class="copilot-chips-container" id="copilot-chips"></div>
+
+    <div class="copilot-input-area">
+      <input type="text" id="copilot-input" class="copilot-input-field" placeholder="Ask Copilot or request an action..." aria-label="Message to QuantOS Copilot">
+      <button type="button" id="copilot-send-btn" class="copilot-send-btn" aria-label="Send Message">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
   <script src="/static/app.js"></script>
+  <script src="/static/assistant.js"></script>
 </body>
 </html>

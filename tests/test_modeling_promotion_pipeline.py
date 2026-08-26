@@ -95,6 +95,7 @@ def _run(tmp_path: Path) -> tuple[EvidenceStore, Any]:
     return store, result
 
 
+# test-allow: loop-in-test — iteration over fixed tuple of required schema strings
 def test_promotion_pipeline_publishes_every_slice5_evidence_kind(tmp_path: Path) -> None:
     """X-1: holdout, stress and promotion evidence was never published by anything.
 

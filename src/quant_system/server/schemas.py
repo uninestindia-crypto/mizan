@@ -535,3 +535,42 @@ class PaperOrderSubmitRequest(BaseModel):
 class PaperOrderSubmitResponse(SyntheticSourcedResponse):
     order: PaperOrderDTO
     message: str
+
+
+# Mizan Model Sharing and Inference Schemas
+class MizanModelInfoResponse(BaseModel):
+    model_id: str
+    candidate_id: str
+    model_name: str
+    version: str
+    author: str
+    feature_names: list[str]
+    feature_schema_id: str
+    feature_schema_version: int
+    score_threshold: str
+    l2_penalty: str
+    label_horizon_sessions: int
+    metrics: dict[str, str]
+    weights_hash: str
+    preprocessor_hash: str
+    model_card_hash: str
+    verdict: str
+
+
+class MizanPredictRequest(BaseModel):
+    features: dict[str, Any]
+
+
+class MizanPredictResponse(BaseModel):
+    model_id: str
+    candidate_id: str
+    score: float | None = None
+    scores: dict[str, float] | None = None
+    ranked: list[list[Any]] | None = None
+
+
+class MizanUploadResponse(BaseModel):
+    status: str
+    message: str
+    model_id: str
+    version: str

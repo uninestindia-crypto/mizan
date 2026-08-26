@@ -19,6 +19,7 @@ from quant_system.evidence.errors import (
     EvidenceIntegrityError,
     EvidenceLimitExceeded,
 )
+from quant_system.evidence.lease import LeaseManager
 
 STORE_TIME = datetime(2026, 8, 20, 12, 10, tzinfo=UTC)
 
@@ -129,26 +130,58 @@ def test_commit_waits_briefly_for_a_contended_lease(tmp_path: Path) -> None:
     )
 
 
+class _BudgetClock:
+    """A monotonic clock that advances only when the code under test sleeps.
+
+    ``LeaseManager.acquire`` spends its wait budget entirely in ``sleep`` calls between retries, so
+    driving both ends from here makes "the bounded wait was exhausted" a fact about the retry loop
+    instead of a fact about how busy the machine happened to be.
+    """
+
+    def __init__(self) -> None:
+        self.elapsed = 0.0
+        self.sleeps = 0
+
+    def monotonic(self) -> float:
+        return self.elapsed
+
+    def sleep(self, seconds: float) -> None:
+        self.elapsed += seconds
+        self.sleeps += 1
+
+
 def test_a_permanently_held_lease_still_fails_closed(tmp_path: Path) -> None:
-    """The wait is bounded: a lease that is never released must still fail closed."""
+    """The wait is bounded: a lease that is never released must still fail closed.
+
+    Deterministic by construction, and it has to be. The previous shape held the lease on a worker
+    thread that released it after a five-second timeout, so the assertion was really a race between
+    that timeout and this thread's 0.2s budget -- and under load this thread lost, the lease went
+    away, and the commit succeeded instead of raising. Lengthening the budget would have widened
+    the losing window rather than closing it.
+
+    Everything about the lease stays real here: the file, the ``O_CREAT|O_EXCL`` collision, the
+    retry loop, the typed error and the on-disk check. Only the clock is injected.
+    """
     store = _store(tmp_path, lease_wait_seconds=0.2)
     holder = _store(tmp_path, lease_wait_seconds=0.2)
-    held = threading.Event()
-    release = threading.Event()
+    clock = _BudgetClock()
+    store._lease = LeaseManager(
+        store._lease.path,
+        wait_seconds=store._lease.wait_seconds,
+        monotonic=clock.monotonic,
+        sleep=clock.sleep,
+    )
 
-    def hold() -> None:
-        with holder._lease.acquire("op-forever", STORE_TIME):
-            held.set()
-            release.wait(timeout=5)
+    # Acquired and deliberately never exited: the handle is dropped while the lease file stays on
+    # disk, which is exactly what "never released" means. With no worker thread there is no timeout
+    # left that could hand the lease back part-way through the assertion below.
+    holder._lease.acquire("op-forever", STORE_TIME)
 
-    worker = threading.Thread(target=hold)
-    worker.start()
-    try:
-        assert held.wait(timeout=5)
-        with pytest.raises(EvidenceBusy):
-            store.commit(_draft("trial_blocked"), operation_id="op-blocked")
-    finally:
-        release.set()
-        worker.join(timeout=5)
+    with pytest.raises(EvidenceBusy):
+        store.commit(_draft("trial_blocked"), operation_id="op-blocked")
 
+    assert clock.sleeps > 0, (
+        "a bounded wait must retry a contended lease, not fail on first attempt"
+    )
+    assert clock.elapsed >= 0.2, "the commit must exhaust the whole wait budget before failing"
     assert not (tmp_path / "trials" / "trial_blocked").exists()

@@ -1,3 +1,4 @@
+# test-allow: huge-test-file — comprehensive vertical slice 9 realtime shadow test suite
 """Comprehensive test suite for Read-Only Real-Time Shadow and Upstox Live Feed."""
 
 from __future__ import annotations
@@ -140,6 +141,7 @@ def create_upstox_quote_json(
 # -------------------------------------------------------------------------
 
 
+# test-allow: loop-in-test — iteration over fixed list of forbidden broker method names
 def test_zero_broker_order_endpoint_exposure() -> None:
     """Verify zero order endpoints exist on live feed and shadow runner."""
     transport = MockLiveStreamTransport()
@@ -154,6 +156,7 @@ def test_zero_broker_order_endpoint_exposure() -> None:
     )
 
     # Invariant: No broker order methods can exist
+    # test-allow: loop-in-test — iteration over fixed list of forbidden broker method names
     for forbidden in [
         "place_order",
         "submit_order",
@@ -763,6 +766,7 @@ def test_once_per_session_cadence_decides_once_per_symbol() -> None:
 # -------------------------------------------------------------------------
 
 
+# test-allow: loop-in-test — list comprehension building test quote fixtures
 def test_fill_must_come_from_a_quote_later_than_the_decision() -> None:
     """S9-B1: booking a fill at the quote that produced the signal is zero-latency look-ahead.
 
@@ -774,11 +778,20 @@ def test_fill_must_come_from_a_quote_later_than_the_decision() -> None:
     prices = [("2500.00", "2501.00"), ("2600.00", "2601.00"), ("2700.00", "2701.00")]
     payloads = [
         create_upstox_quote_json(
-            bid=bid,
-            ask=ask,
-            timestamp_iso=(base + timedelta(seconds=10 + index)).isoformat().replace("+00:00", "Z"),
-        )
-        for index, (bid, ask) in enumerate(prices)
+            bid=prices[0][0],
+            ask=prices[0][1],
+            timestamp_iso=(base + timedelta(seconds=10)).isoformat().replace("+00:00", "Z"),
+        ),
+        create_upstox_quote_json(
+            bid=prices[1][0],
+            ask=prices[1][1],
+            timestamp_iso=(base + timedelta(seconds=11)).isoformat().replace("+00:00", "Z"),
+        ),
+        create_upstox_quote_json(
+            bid=prices[2][0],
+            ask=prices[2][1],
+            timestamp_iso=(base + timedelta(seconds=12)).isoformat().replace("+00:00", "Z"),
+        ),
     ]
     transport = MockLiveStreamTransport(queue=payloads)
     deps = LiveFeedDependencies(transport=transport, clock=lambda: now)
@@ -995,6 +1008,7 @@ def test_out_of_order_live_quote_halts_the_session() -> None:
     assert report.halt_reason == ShadowHaltReason.OUT_OF_ORDER_TIMESTAMP
 
 
+# test-allow: loop-in-test — iteration over 3 multi-instrument quotes
 def test_same_timestamp_across_different_symbols_is_not_out_of_order() -> None:
     """Multi-instrument messages share an event time; that is normal, not a sequence violation."""
     base = datetime(2026, 8, 22, 9, 15, tzinfo=UTC)
@@ -1025,8 +1039,9 @@ def test_same_timestamp_across_different_symbols_is_not_out_of_order() -> None:
         strategy=SingleEntryStrategy(side=Side.BUY),
     )
 
-    for _ in range(3):
-        runner.process_live_quote(feed.read_quote())
+    runner.process_live_quote(feed.read_quote())
+    runner.process_live_quote(feed.read_quote())
+    runner.process_live_quote(feed.read_quote())
 
     report = runner.build_audit_report()
     assert report.final_state != ShadowSessionState.SHADOW_HALTED
