@@ -43,7 +43,7 @@ def render_nav_tabs(active_tab_id: str = JOURNEY_INGESTION_ID) -> str:
             f'tabindex="{tab_index}">{meta["nav_label"]}</button>'
         )
 
-    # Secondary tabs: Straddle, Monte Carlo, Risk Governor, Diagnostics
+    # Secondary tabs: Straddle, Monte Carlo, Risk Governor, Diagnostics, Live Trading
     secondary = [
         ("straddle", "⚡ Options Lab"),
         ("montecarlo", "🎲 Monte Carlo"),
@@ -61,6 +61,12 @@ def render_nav_tabs(active_tab_id: str = JOURNEY_INGESTION_ID) -> str:
             f'role="tab" aria-selected="{aria_selected}" aria-controls="tab-{sid}" '
             f'tabindex="{tab_index}">{label}</button>'
         )
+
+    # Direct link to Live Trading & P&L Monitor screen
+    tab_html.append(
+        '<a href="/live" class="tab-btn" style="text-decoration:none; color: var(--accent-cyan, #06b6d4); font-weight:600;" '
+        'title="Open Live Trading & P&L Monitor Screen">📈 Live Trading & P&L</a>'
+    )
 
     tab_html.append("</nav>")
     return "\n".join(tab_html)

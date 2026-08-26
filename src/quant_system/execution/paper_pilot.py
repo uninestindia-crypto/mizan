@@ -390,6 +390,7 @@ class PaperPilotEngine:
                 current_cash=self.ledger.cash,
                 positions=self.ledger.positions,
                 current_quote=quote_for_risk,
+                current_prices=self._price_cache,
             )
         else:
             # Staged valuation: check non-price constraints (kill switch, naked short)

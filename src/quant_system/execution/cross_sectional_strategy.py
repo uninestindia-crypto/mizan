@@ -46,6 +46,7 @@ from quant_system.execution.governed_strategy import (
     score_row,
 )
 from quant_system.modeling import ModelCardV1
+from quant_system.modeling.pooled import MIZAN_WINDOW_BARS
 from quant_system.modeling.preprocessing import (
     StandardizationStateV1,
     standardize_feature_values,
@@ -54,9 +55,14 @@ from quant_system.modeling.ridge import RidgeFittedStateV1
 from quant_system.modeling.rows import feature_names_for
 from quant_system.strategies.base import BaseStrategy, MarketContext
 
-#: Minimum bars a cross-sectional row consumes. Mizan's training builder uses a 21-bar window
-#: (``modeling.pooled.MIZAN_WINDOW_BARS``); a shorter window is refused rather than scored degraded.
-CROSS_SECTIONAL_WINDOW_BARS: Final = 21
+#: Minimum bars a cross-sectional row consumes, imported rather than restated.
+#:
+#: An earlier version of this module hardcoded 21 while citing ``MIZAN_WINDOW_BARS`` in the same
+#: comment. ``MIZAN_WINDOW_BARS`` is **51** -- the Mizan builder needs a 50-bar warmup for its
+#: 50-session SMA plus the decision bar. A 21-bar window would therefore have been accepted and
+#: scored, producing feature values no training row ever held, silently. Importing the constant
+#: makes that class of drift impossible.
+CROSS_SECTIONAL_WINDOW_BARS: Final = MIZAN_WINDOW_BARS
 
 #: Verdicts that may execute on *some* surface. SHADOW is the most permissive surface, so its
 #: allowed set is exactly the set of verdicts that are executable anywhere. Naming it here keeps one

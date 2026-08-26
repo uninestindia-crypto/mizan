@@ -1223,6 +1223,19 @@ def submit_paper_order(
     )
 
 
+@app.get("/api/paper-pilot/live-status")
+def get_paper_pilot_live_status() -> dict[str, Any]:
+    """Returns the active paper trading execution status, real-time P&L, and Mīzān alpha predictions."""
+    status_file = PROJECT_ROOT / "logs" / "paper_runs" / "live_paper_status.json"
+    if status_file.exists():
+        try:
+            with open(status_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as err:
+            return {"status": "ERROR", "error": str(err)}
+    return {"status": "NOT_RUNNING", "message": "No active live paper trading session found."}
+
+
 # =====================================================================
 # UI Views & Static Asset Delivery
 # =====================================================================
@@ -1242,6 +1255,15 @@ def serve_index() -> HTMLResponse:
 def serve_ui() -> HTMLResponse:
     """Serves the full UI dashboard."""
     return HTMLResponse(content=render_full_dashboard_html(), status_code=200)
+
+
+@app.get("/ui/trading-live", response_class=HTMLResponse)
+@app.get("/trading-live", response_class=HTMLResponse)
+@app.get("/live", response_class=HTMLResponse)
+def serve_trading_live_screen() -> HTMLResponse:
+    """Serves the live Trading & P&L Monitor screen integrated directly into QuantOS."""
+    from scripts.serve_live_dashboard import HTML_DASHBOARD
+    return HTMLResponse(content=HTML_DASHBOARD, status_code=200)
 
 
 @app.get("/ui/journeys")

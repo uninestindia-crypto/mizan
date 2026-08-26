@@ -651,3 +651,99 @@ class MizanModel:
             preprocessor=preprocessor,
             model_card=card,
         )
+
+    @classmethod
+    def sprint_50k_model(cls) -> MizanModel:
+        """Constructs the high-momentum 50K Sprint profile for concentrated pure-stock swing trading."""
+        config = MizanConfig(
+            candidate_id="cand_mizan_50k_sprint",
+            model_id="mizan-50k-sprint",
+            model_name="Mizan 50K Momentum Sprint",
+            feature_schema_id=FEATURE_SCHEMA_ID_V3,
+            feature_schema_version=FEATURE_SCHEMA_VERSION_V3,
+            feature_names=FEATURE_NAMES_V3,
+            l2_penalty="0.5",
+            score_threshold="0.050000000000",
+            label_horizon_sessions=5,
+            version="1.0.0",
+            description="Mizan concentrated high-conviction 50K equity momentum swing model (Pure Stocks)",
+            metadata={"target_capital_inr": 50000, "max_positions": 3, "instrument": "CASH_EQUITY"},
+        )
+        coeffs = (
+            "0.015000000000",
+            "0.035000000000",
+            "0.045000000000",
+            "-0.020000000000",
+            "0.015000000000",
+            "0.025000000000",
+            "0.020000000000",
+            "-0.010000000000",
+            "0.030000000000",
+            "0.020000000000",
+            "-0.015000000000",
+            "-0.005000000000",
+            "0.010000000000",
+            "0.050000000000",
+            "0.035000000000",
+        )
+        means = (
+            "0.000829065946974581",
+            "0.004152037775347756",
+            "0.017460113233264467",
+            "0.016370868902507301",
+            "0.01596794593231152",
+            "0.026933785179233099",
+            "0.007381960751705787",
+            "0.01768106924441536",
+            "0.131564461060446728",
+            "-0.031665406399737155",
+            "0.168489441860465116",
+            "0.005700474755023256",
+            "0.002810617611302326",
+            "0.016702818779247161",
+            "0.006850415371412655",
+        )
+        scales = (
+            "0.019877725275523217",
+            "0.044428962578434506",
+            "0.092633273103265554",
+            "0.010422751655302223",
+            "0.010490704866701275",
+            "0.12234317000623059",
+            "0.053514198218262445",
+            "0.083295052157258993",
+            "2.078771990374827821",
+            "0.540336963606607485",
+            "0.066611430649527806",
+            "0.11928921745385032",
+            "0.023053931315940579",
+            "0.261085947335330571",
+            "0.296850186159355894",
+        )
+        weights = MizanWeights(
+            intercept="0.050000000000",
+            coefficients=coeffs,
+            feature_names=FEATURE_NAMES_V3,
+        )
+        preprocessor = MizanPreprocessorConfig(
+            means=means,
+            scales=scales,
+            feature_names=FEATURE_NAMES_V3,
+        )
+        card = MizanModelCard(
+            model_id="mizan-50k-sprint",
+            candidate_id="cand_mizan_50k_sprint",
+            model_name="Mizan 50K Momentum Sprint",
+            version="1.0.0",
+            metrics={
+                "target_capital_inr": "50000",
+                "max_drawdown_limit": "0.025",
+                "strategy": "CONCENTRATED_EQUITY_SWING_BREAKOUT",
+            },
+        )
+        return cls(
+            config=config,
+            weights=weights,
+            preprocessor=preprocessor,
+            model_card=card,
+        )
