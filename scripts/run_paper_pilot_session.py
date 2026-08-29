@@ -319,12 +319,22 @@ from quant_system.execution.mizan_live_features import (  # noqa: E402
     refuse_extreme_rows,
     select_top_fraction,
 )
+from quant_system.execution.paper_portfolio import (  # noqa: E402
+    PaperPortfolioState,
+    load_portfolio,
+    save_portfolio,
+    state_from_ledger,
+)
 
 ALLOWED_SYMBOLS = NIFTY500_SYMBOLS
 
 #: A cross-sectional rank divides by the number of names present, so a shrunk cross-section changes
 #: every rank. Below this the session refuses to trade rather than ranking whatever it could load.
 MIN_CROSS_SECTION_COVERAGE = 0.90
+
+#: Where the running portfolio persists between sessions. A single file, hash-checked, so an
+#: unattended weekday schedule resumes from real state or refuses outright.
+PORTFOLIO_STATE_PATH = PROJECT_ROOT / "logs/paper_runs/portfolio_state.json"
 
 #: Caches searched for completed daily bars, cheapest first.
 _BAR_CACHES = (
@@ -620,58 +630,90 @@ def run_paper_session(
         model.config.label_horizon_sessions,
     )
 
+    # 2a-bis. Resume the running portfolio.
+    #
+    # A fresh engine every weekday would open ~55 names at the open and close them at 15:30, paying
+    # a full round trip daily by construction. The model was measured entering at an open, holding
+    # `label_horizon_sessions`, then re-ranking - so the portfolio holds between rebalances and only
+    # re-ranks when the position has aged past that horizon.
+    portfolio = load_portfolio(PORTFOLIO_STATE_PATH) or PaperPortfolioState(cash=initial_cash)
+    horizon = int(model.config.label_horizon_sessions)
+    rebalancing = portfolio.rebalance_due(horizon)
+    logger.info(
+        "Portfolio: cash Rs %s, %d holding(s), session %d, %d since rebalance (horizon %d) -> %s",
+        portfolio.cash,
+        len(portfolio.holdings),
+        portfolio.sessions_completed + 1,
+        portfolio.sessions_since_rebalance,
+        horizon,
+        "REBALANCING" if rebalancing else "HOLDING",
+    )
+
     # 2b. Mizan decision for this session, computed once from completed daily bars.
     #
     # Every feature comes from `modeling.mizan_features`, the kernel verified bit-identical against
     # the published training store. The selection rule is the model's own recorded
     # `score_threshold` plus a declared top fraction -- not the hardcoded 0.035 and `[:2]` this
     # runner used before, which produced zero proposals on every realistic universe.
-    mizan_cross_section, mizan_coverage = load_mizan_cross_section(universe, as_of=session_date)
-    logger.info("Mizan cross-section: %s", mizan_coverage.summary())
-    if mizan_coverage.fraction < MIN_CROSS_SECTION_COVERAGE:
-        raise RuntimeError(
-            f"only {mizan_coverage.fraction:.1%} of the universe could be scored; a cross-sectional "
-            f"rank divides by the number of names present, so a shrunk cross-section changes every "
-            f"rank. Minimum is {MIN_CROSS_SECTION_COVERAGE:.0%}"
-        )
-    mizan_cross_section, refused = refuse_extreme_rows(
-        mizan_cross_section,
-        # `means` and `scales` are decimal text on the preprocessor config, matching how the
-        # evidence stores them; the guard works in float alongside the scorer.
-        means={
-            n: float(v)
-            for n, v in zip(model.preprocessor.feature_names, model.preprocessor.means, strict=True)
-        },
-        scales={
-            n: float(v)
-            for n, v in zip(
-                model.preprocessor.feature_names, model.preprocessor.scales, strict=True
+    # On a hold session the ranking is not consulted at all, so the cross-section is not built:
+    # computing a decision that will not be acted on invites reading it as one.
+    if not rebalancing:
+        mizan_scores: dict[str, float] = {}
+        mizan_ranked: tuple[str, ...] = ()
+        mizan_picks: tuple[str, ...] = ()
+        logger.info("Holding: no re-ranking this session")
+    else:
+        mizan_cross_section, mizan_coverage = load_mizan_cross_section(universe, as_of=session_date)
+        logger.info("Mizan cross-section: %s", mizan_coverage.summary())
+        if mizan_coverage.fraction < MIN_CROSS_SECTION_COVERAGE:
+            raise RuntimeError(
+                f"only {mizan_coverage.fraction:.1%} of the universe could be scored; a cross-sectional "
+                f"rank divides by the number of names present, so a shrunk cross-section changes every "
+                f"rank. Minimum is {MIN_CROSS_SECTION_COVERAGE:.0%}"
             )
-        },
-    )
-    if refused:
-        logger.warning(
-            "Refused %d name(s) whose standardized features exceed the model's working range: %s",
-            len(refused),
-            ", ".join(refused),
+        mizan_cross_section, refused = refuse_extreme_rows(
+            mizan_cross_section,
+            # `means` and `scales` are decimal text on the preprocessor config, matching how the
+            # evidence stores them; the guard works in float alongside the scorer.
+            means={
+                n: float(v)
+                for n, v in zip(
+                    model.preprocessor.feature_names, model.preprocessor.means, strict=True
+                )
+            },
+            scales={
+                n: float(v)
+                for n, v in zip(
+                    model.preprocessor.feature_names, model.preprocessor.scales, strict=True
+                )
+            },
         )
-    mizan_scores = model.predict_scores(
-        {sym: {k: float(v) for k, v in feats.items()} for sym, feats in mizan_cross_section.items()}
-    )
-    mizan_ranked = tuple(sorted(mizan_scores, key=lambda s: (-mizan_scores[s], s)))
-    mizan_picks = select_top_fraction(
-        mizan_scores,
-        selection_fraction,
-        score_threshold=float(model.config.score_threshold),
-    )
-    logger.info(
-        "Mizan picks: %d of %d ranked (top %.0f%% then score > %s): %s",
-        len(mizan_picks),
-        len(mizan_scores),
-        selection_fraction * 100.0,
-        model.config.score_threshold,
-        ", ".join(f"{s} {mizan_scores[s]:+.5f}" for s in mizan_picks) or "none",
-    )
+        if refused:
+            logger.warning(
+                "Refused %d name(s) whose standardized features exceed the model's working range: %s",
+                len(refused),
+                ", ".join(refused),
+            )
+        mizan_scores = model.predict_scores(
+            {
+                sym: {k: float(v) for k, v in feats.items()}
+                for sym, feats in mizan_cross_section.items()
+            }
+        )
+        mizan_ranked = tuple(sorted(mizan_scores, key=lambda s: (-mizan_scores[s], s)))
+        mizan_picks = select_top_fraction(
+            mizan_scores,
+            selection_fraction,
+            score_threshold=float(model.config.score_threshold),
+        )
+        logger.info(
+            "Mizan picks: %d of %d ranked (top %.0f%% then score > %s): %s",
+            len(mizan_picks),
+            len(mizan_scores),
+            selection_fraction * 100.0,
+            model.config.score_threshold,
+            ", ".join(f"{s} {mizan_scores[s]:+.5f}" for s in mizan_picks) or "none",
+        )
 
     # 2c. Position sizing.
     #
@@ -707,12 +749,27 @@ def run_paper_session(
 
     # 5. Initialize Paper Pilot Engine
     engine = PaperPilotEngine(
-        initial_cash=initial_cash,
+        # Funded with cash plus the carried holdings' cost basis, so the replay below debits
+        # exactly that basis back out and leaves cash at its true carried figure.
+        initial_cash=portfolio.ledger_funding(),
         risk_governor=governor,
         sim_config=sim_config,
         allow_short=False,
         session_id=session_id,
     )
+
+    # Reconstruct the carried positions in the fresh ledger. Without this a SELL of something held
+    # since a previous session is refused as a short, because the ledger has never seen it.
+    # Zero fee: that cost was paid on the session that opened the position.
+    carry_fills = portfolio.carry_forward_fills(current_ist)
+    for carry_fill in carry_fills:
+        engine.ledger.process_fill(carry_fill)
+    if carry_fills:
+        logger.info(
+            "Carried %d position(s) into the ledger; cash now Rs %s",
+            len(carry_fills),
+            _paisa_str(engine.cash),
+        )
 
     # 6. Open Session at current IST time
     engine.start_session(session_date=session_date, timestamp=current_ist)
@@ -891,9 +948,13 @@ def run_paper_session(
                             decision.reason or "OK",
                         )
 
-            # 5e. Exit positions dropping below threshold
-            for sym, pos in list(engine.positions.items()):
-                if pos.quantity > 0 and scores.get(sym, 0.0) < 0.01 and sym not in top_picks:
+            # 5e. On a rebalance, exit whatever is no longer selected.
+            #
+            # Gated on `rebalancing`: on a hold session `scores` is empty, so the old condition
+            # `scores.get(sym, 0.0) < 0.01 and sym not in top_picks` was true for *every* holding
+            # and would have liquidated the entire portfolio on the first day it held.
+            for sym, pos in list(engine.positions.items()) if rebalancing else []:
+                if pos.quantity > 0 and sym not in top_picks:
                     prop_id = f"prop_{session_id}_{step}_{sym}_SELL"
                     proposal = PaperProposal(
                         proposal_id=prop_id,
@@ -1052,6 +1113,32 @@ def run_paper_session(
 
     # 7. End Trading Session & Penny-Exact Reconciliation
     reconciliation = engine.end_session(timestamp=final_now, close_prices=final_prices)
+
+    # 7b. Persist the running portfolio for the next session.
+    #
+    # Written after reconciliation so a session that fails to reconcile does not advance the
+    # portfolio. Fees counted are today's real fills only - the carry-forward replay is zero-fee
+    # and must not be added again.
+    todays_fees = sum(
+        (f.fee for f in engine.fills if not f.fill_id.startswith("carry_")), Decimal("0.00")
+    )
+    portfolio = state_from_ledger(
+        portfolio,
+        cash=engine.cash,
+        positions={sym: (pos.quantity, pos.average_price) for sym, pos in engine.positions.items()},
+        session_date=session_date,
+        realized_pnl=engine.ledger.realized_pnl,
+        fees_paid=todays_fees,
+        rebalanced=rebalancing,
+    )
+    save_portfolio(PORTFOLIO_STATE_PATH, portfolio)
+    logger.info(
+        "Portfolio saved: cash Rs %s, %d holding(s), realized Rs %s, fees to date Rs %s",
+        portfolio.cash,
+        len(portfolio.holdings),
+        portfolio.realized_pnl,
+        portfolio.total_fees,
+    )
     total_net_pnl = reconciliation.total_realized_pnl + reconciliation.total_unrealized_pnl
     return_pct = float(total_net_pnl / initial_cash * Decimal("100.0"))
 
