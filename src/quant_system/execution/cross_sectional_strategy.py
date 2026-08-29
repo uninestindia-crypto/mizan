@@ -15,13 +15,12 @@ promoted to public names.
 
 What this module deliberately does NOT do:
 
-* **It does not compute the cross-sectional feature family.** Two of the fifteen Mizan features are
-  cross-sectional ranks, which are by definition not functions of one instrument's history --
-  ``modeling.pooled.build_mizan_feature_dataset`` takes its values as an argument for exactly this
-  reason. A kernel that recomputed them here would be a second calculation path, the defect class
-  ``agent_context/decisions/20260824-canonical-feature-window.md`` exists to prevent. Feature values
-  arrive through :class:`CrossSectionalFeatureProvider`, and binding that to a live source is
-  separate, named work.
+* **It does not compute the cross-sectional feature family itself.** Two of the fifteen Mizan
+  features are cross-sectional ranks, which are by definition not functions of one instrument's
+  history. Values arrive through :class:`CrossSectionalFeatureProvider`. The one implementation that
+  provider should wrap is ``modeling.mizan_features`` -- the shared kernel both training and
+  execution call. Recomputing the family here instead would be a second calculation path, the defect
+  class ``agent_context/decisions/20260824-canonical-feature-window.md`` exists to prevent.
 * **It does not promote anything.** The verdict gate is identical to the single-instrument one.
   ``RESEARCH_ONLY`` and ``REJECT`` execute on no surface, here as everywhere.
 """
@@ -46,7 +45,7 @@ from quant_system.execution.governed_strategy import (
     score_row,
 )
 from quant_system.modeling import ModelCardV1
-from quant_system.modeling.pooled import MIZAN_WINDOW_BARS
+from quant_system.modeling.mizan_features import MIZAN_CANONICAL_WINDOW_BARS
 from quant_system.modeling.preprocessing import (
     StandardizationStateV1,
     standardize_feature_values,
@@ -55,14 +54,25 @@ from quant_system.modeling.ridge import RidgeFittedStateV1
 from quant_system.modeling.rows import feature_names_for
 from quant_system.strategies.base import BaseStrategy, MarketContext
 
-#: Minimum bars a cross-sectional row consumes, imported rather than restated.
+#: Bars a symbol must have before this surface will score it, imported rather than restated.
+#:
+#: Two constants exist and they are not interchangeable. ``MIZAN_WINDOW_BARS`` (51) is the *minimum*
+#: from which a row is computable at all, and the training kernel accepts it because early rows in a
+#: symbol's history legitimately had only that much prefix.
+#: ``MIZAN_CANONICAL_WINDOW_BARS`` (400) is the trailing history the kernel consumes once it exists,
+#: sized by ``rsi_14_centered``, which is an EMA with no bounded window -- at 51 bars it is wrong by
+#: up to 0.246 of its own standard deviation, at 400 by 1.71e-12.
+#:
+#: **Execution requires the canonical window, not the minimum.** Training replays a symbol's early
+#: life, where a short prefix is the honest answer. Execution is always at the present, where every
+#: listed name has years of history, so a name served with 60 bars would be ranked against names
+#: served with 400 while carrying a systematically different RSI convergence state. Ranking those
+#: together is not a comparison the model was fitted to make. ``min_coverage`` remains the declared
+#: way to admit a partial cross-section deliberately.
 #:
 #: An earlier version of this module hardcoded 21 while citing ``MIZAN_WINDOW_BARS`` in the same
-#: comment. ``MIZAN_WINDOW_BARS`` is **51** -- the Mizan builder needs a 50-bar warmup for its
-#: 50-session SMA plus the decision bar. A 21-bar window would therefore have been accepted and
-#: scored, producing feature values no training row ever held, silently. Importing the constant
-#: makes that class of drift impossible.
-CROSS_SECTIONAL_WINDOW_BARS: Final = MIZAN_WINDOW_BARS
+#: comment -- wrong twice over, and it would have scored silently. Importing makes that impossible.
+CROSS_SECTIONAL_WINDOW_BARS: Final = MIZAN_CANONICAL_WINDOW_BARS
 
 #: Verdicts that may execute on *some* surface. SHADOW is the most permissive surface, so its
 #: allowed set is exactly the set of verdicts that are executable anywhere. Naming it here keeps one
