@@ -12,6 +12,7 @@ Runs continuously from current time until market close (15:30 IST) with penny-ex
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import logging
 import os
@@ -297,13 +298,174 @@ def fetch_upstox_live_quotes(
     return results
 
 
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+from collections.abc import Sequence  # noqa: E402
+
+from cached_nifty50_evidence import historical_acquisition_from_verified  # noqa: E402
+
 from quant_system.data.universe import (  # noqa: E402
     NIFTY50_SYMBOLS,
     NIFTY500_SYMBOLS,
     get_universe_symbols,
 )
+from quant_system.evidence import (  # noqa: E402
+    EvidenceResourceType,
+    EvidenceStore,
+    EvidenceStoreConfig,
+)
+from quant_system.execution.mizan_live_features import (  # noqa: E402
+    CrossSectionCoverage,
+    build_live_cross_section,
+    refuse_extreme_rows,
+    select_top_fraction,
+)
 
 ALLOWED_SYMBOLS = NIFTY500_SYMBOLS
+
+#: A cross-sectional rank divides by the number of names present, so a shrunk cross-section changes
+#: every rank. Below this the session refuses to trade rather than ranking whatever it could load.
+MIN_CROSS_SECTION_COVERAGE = 0.90
+
+#: Caches searched for completed daily bars, cheapest first.
+_BAR_CACHES = (
+    # Freshest first. The refresh cache is rebuilt by `ingest_all_market_data.py` and carries the
+    # most recent completed sessions; the older stores are the fallback and stop at 2026-08-21.
+    PROJECT_ROOT / "data/evidence/market-cache/nifty500-refresh-20230828-20260827/store",
+    PROJECT_ROOT / "data/evidence/market-cache/nifty50-refresh-20230828-20260827/store",
+    PROJECT_ROOT / "data/evidence/market-cache/nifty50-current-20160822-20260821/store",
+    PROJECT_ROOT / "data/evidence/market-cache/all-market-20160822-20260821/store",
+)
+#: Macro is searched freshest-first for the same reason as the bar caches: the original store
+#: stops at 2026-08-21, and a decision date past that leaves every row uncomputable.
+_MACRO_DIRS = (
+    PROJECT_ROOT / "data/evidence/market-cache/macro-refresh-20230828-20260827",
+    PROJECT_ROOT / "data/evidence/market-cache/macro-regimes-20160822-20260821",
+)
+
+
+#: Index constituents by name, as published authorities rather than hardcoded lists.
+#:
+#: `quant_system.data.universe` carries the index memberships as literals and they have drifted:
+#: NIFTY50_SYMBOLS is 5 names stale, and NIFTY500_SYMBOLS holds 488 names of which 167 are no longer
+#: in the index while 179 current members are absent. Trading the literal list means holding names
+#: that left the index and missing ones that joined.
+_UNIVERSE_AUTHORITIES = {
+    "NIFTY50": PROJECT_ROOT / "data/authorities/nse-nifty50-constituents.csv",
+    "NIFTY500": PROJECT_ROOT / "data/authorities/nse-nifty500-constituents.csv",
+}
+
+
+def resolve_universe(universe_name: str) -> list[str]:
+    """Index members from the published authority, falling back to the in-code list.
+
+    The fallback is deliberate rather than silent: an authority file that is missing is a real
+    condition, and refusing outright would strand a caller asking for an index that has no CSV.
+    The chosen source is logged so a session's universe is always attributable.
+    """
+    authority = _UNIVERSE_AUTHORITIES.get(universe_name.upper())
+    if authority is not None and authority.is_file():
+        with open(authority, encoding="utf-8-sig") as handle:
+            symbols = sorted(
+                {
+                    (row.get("Symbol") or "").strip()
+                    for row in csv.DictReader(handle)
+                    if (row.get("Symbol") or "").strip()
+                }
+            )
+        if symbols:
+            logger.info(
+                "Universe %s: %d names from authority %s",
+                universe_name,
+                len(symbols),
+                authority.name,
+            )
+            return symbols
+    logger.warning(
+        "Universe %s: no authority file; falling back to the in-code list, which may be stale",
+        universe_name,
+    )
+    return list(get_universe_symbols(universe_name))
+
+
+def load_mizan_cross_section(
+    symbols: Sequence[str],
+    *,
+    as_of: date,
+) -> tuple[dict[str, dict[str, str]], CrossSectionCoverage]:
+    """Completed daily bars plus real macro, through the shared Mizan kernel.
+
+    Bars come from the market-cache evidence stores; macro from the cached India VIX and NIFTY 50
+    series. Every feature value is produced by ``modeling.mizan_features`` -- this function only
+    gathers inputs.
+
+    ``as_of`` is the session being traded; the decision uses bars strictly **before** it, because
+    the model decides on a completed close and enters at the next open.
+    """
+    wanted = set(symbols)
+    bars: dict[str, Any] = {}
+    for cache_root in _BAR_CACHES:
+        # Stop once the caches scanned so far already clear the coverage floor. Requiring a full
+        # `issubset` meant one absent name -- 499 of 500 -- sent this on to enumerate the
+        # 3,267-symbol all-market store, which takes over ten minutes to find nothing useful.
+        if not cache_root.exists() or len(bars) >= MIN_CROSS_SECTION_COVERAGE * len(wanted):
+            continue
+        store = EvidenceStore(EvidenceStoreConfig(root=cache_root))
+        for verified in store.list_verified(EvidenceResourceType.DATASET):
+            acquisition = historical_acquisition_from_verified(verified)
+            symbol = acquisition.manifest.symbol
+            if symbol not in wanted or not acquisition.records:
+                continue
+            # Prefer the series ending latest, then the longer one. Selecting by length alone
+            # let a stale 10-year cache beat a freshly ingested 3-year one, so the session
+            # silently decided on week-old bars.
+            existing = bars.get(symbol)
+            candidate_end = acquisition.records[-1].exchange_date
+            if existing:
+                existing_end = existing[-1].exchange_date
+                if (candidate_end, len(acquisition.records)) <= (
+                    existing_end,
+                    len(existing),
+                ):
+                    continue
+            bars[symbol] = acquisition.records
+        logger.info("Bars: %d/%d symbols after %s", len(bars), len(wanted), cache_root.parent.name)
+        if wanted.issubset(bars):
+            break
+
+    if not bars:
+        raise RuntimeError(
+            f"no completed daily bars found for any of {len(wanted)} symbols in {_BAR_CACHES}"
+        )
+
+    # Symbols the cache had nothing for must still count against coverage. Reporting 49/49 for a
+    # 50-name universe would let the floor pass on a cache holding 5 of 50, which is exactly the
+    # shrunk cross-section the floor exists to catch. An empty series is "not enough bars", which
+    # is what it is.
+    for missing in wanted - set(bars):
+        bars[missing] = ()
+
+    vix: dict[str, float] = {}
+    nifty: dict[str, float] = {}
+    for macro_dir in reversed(_MACRO_DIRS):
+        # Reversed so the freshest directory is applied last and wins on overlapping dates.
+        vix.update(load_macro_series(macro_dir, "INDIAVIX"))
+        nifty.update(load_macro_series(macro_dir, "NIFTY50"))
+    decision_day = as_of - timedelta(days=1)
+    return build_live_cross_section(
+        bars,
+        india_vix_by_date=vix,
+        nifty_by_date=nifty,
+        as_of=decision_day,
+    )
+
+
+def load_macro_series(macro_dir: Path, name: str) -> dict[str, float]:
+    """Close-by-date for one macro series, matching the training store builder exactly."""
+    path = macro_dir / f"macro_{name}.json"
+    if not path.is_file():
+        return {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return {candle[0][:10]: float(candle[4]) for candle in payload.get("candles", [])}
 
 
 def run_paper_session(
@@ -318,13 +480,14 @@ def run_paper_session(
     end_time_str: str = "15:30:00",
     upstox_token: str | None = None,
     output_dir: Path | None = None,
+    selection_fraction: float = 0.20,
 ) -> dict[str, Any]:
     """Runs a complete quote-driven paper trading session in IST from start time until market close (15:30 IST)."""
     current_ist = now_ist()
     if session_date is None:
         session_date = current_ist.date()
     if universe is None:
-        universe = get_universe_symbols(universe_name)
+        universe = resolve_universe(universe_name)
     if output_dir is None:
         output_dir = PROJECT_ROOT / "logs" / "paper_runs"
 
@@ -454,6 +617,59 @@ def run_paper_session(
         model.config.l2_penalty,
         len(model.config.feature_names),
         model.config.label_horizon_sessions,
+    )
+
+    # 2b. Mizan decision for this session, computed once from completed daily bars.
+    #
+    # Every feature comes from `modeling.mizan_features`, the kernel verified bit-identical against
+    # the published training store. The selection rule is the model's own recorded
+    # `score_threshold` plus a declared top fraction -- not the hardcoded 0.035 and `[:2]` this
+    # runner used before, which produced zero proposals on every realistic universe.
+    mizan_cross_section, mizan_coverage = load_mizan_cross_section(universe, as_of=session_date)
+    logger.info("Mizan cross-section: %s", mizan_coverage.summary())
+    if mizan_coverage.fraction < MIN_CROSS_SECTION_COVERAGE:
+        raise RuntimeError(
+            f"only {mizan_coverage.fraction:.1%} of the universe could be scored; a cross-sectional "
+            f"rank divides by the number of names present, so a shrunk cross-section changes every "
+            f"rank. Minimum is {MIN_CROSS_SECTION_COVERAGE:.0%}"
+        )
+    mizan_cross_section, refused = refuse_extreme_rows(
+        mizan_cross_section,
+        # `means` and `scales` are decimal text on the preprocessor config, matching how the
+        # evidence stores them; the guard works in float alongside the scorer.
+        means={
+            n: float(v)
+            for n, v in zip(model.preprocessor.feature_names, model.preprocessor.means, strict=True)
+        },
+        scales={
+            n: float(v)
+            for n, v in zip(
+                model.preprocessor.feature_names, model.preprocessor.scales, strict=True
+            )
+        },
+    )
+    if refused:
+        logger.warning(
+            "Refused %d name(s) whose standardized features exceed the model's working range: %s",
+            len(refused),
+            ", ".join(refused),
+        )
+    mizan_scores = model.predict_scores(
+        {sym: {k: float(v) for k, v in feats.items()} for sym, feats in mizan_cross_section.items()}
+    )
+    mizan_ranked = tuple(sorted(mizan_scores, key=lambda s: (-mizan_scores[s], s)))
+    mizan_picks = select_top_fraction(
+        mizan_scores,
+        selection_fraction,
+        score_threshold=float(model.config.score_threshold),
+    )
+    logger.info(
+        "Mizan picks: %d of %d ranked (top %.0f%% then score > %s): %s",
+        len(mizan_picks),
+        len(mizan_scores),
+        selection_fraction * 100.0,
+        model.config.score_threshold,
+        ", ".join(f"{s} {mizan_scores[s]:+.5f}" for s in mizan_picks) or "none",
     )
 
     # 3. Risk Governor Setup
@@ -588,58 +804,30 @@ def run_paper_session(
                             _paisa_str(fill.fee),
                         )
 
-            # 5b. Generate feature matrix from real NSE price movements for Mīzān model
+            # 5b. Mizan decisions are computed once per session, before the loop, from
+            # completed daily bars through the shared feature kernel. They deliberately do not
+            # change intraday: the model was validated deciding at a session close and entering at
+            # the next open, so re-scoring on a partially formed bar would execute a rule nobody
+            # measured. The previous version rebuilt all fifteen features here from that step's
+            # quote alone -- `return_5 = return_1 * 1.5`, macro pinned to constants, and
+            # `rsi_14_centered` clamped to +/-50 against a trained range of +/-0.45.
+            scores = mizan_scores
+            ranked_symbols = list(mizan_ranked)
+            top_picks = list(mizan_picks)
+
+            # Intraday percentage move, for the dashboard's gainers/losers panel only. This is
+            # deliberately NOT a model input: the decision above came from completed daily bars
+            # through the shared kernel. Conflating the two is what the old code did.
             returns_map = {}
             for sym in universe:
-                m_state = base_market[sym]
-                p = float(m_state["price"])
-                prev_c = float(m_state.get("previous_close", p))
-                returns_map[sym] = (p - prev_c) / prev_c if prev_c > 0 else 0.0
-
-            sorted_by_ret = sorted(universe, key=lambda s: returns_map[s])
-            n_syms = max(1, len(universe))
-            cs_ranks = {
-                sym: (i / (n_syms - 1) if n_syms > 1 else 0.5) - 0.5
-                for i, sym in enumerate(sorted_by_ret)
-            }
-
-            universe_features = {}
-            for sym in universe:
-                r1 = returns_map[sym]
-                r5 = r1 * 1.5
-                r21 = r1 * 2.5
-                cs_rank = cs_ranks[sym]
-                vol = float(base_market[sym].get("volume", 500000))
-                vol_zscore = min(3.0, max(-3.0, (vol - 500000) / 300000))
-
-                universe_features[sym] = {
-                    "return_1": r1,
-                    "return_5": r5,
-                    "return_21": r21,
-                    "garman_klass_volatility": max(0.01, abs(r1) * 1.5),
-                    "parkinson_volatility": max(0.008, abs(r1) * 1.2),
-                    "rsi_14_centered": min(50.0, max(-50.0, r5 * 200.0)),
-                    "sma_20_distance": r21 * 0.8,
-                    "sma_50_distance": r21 * 1.2,
-                    "volume_zscore": vol_zscore,
-                    "money_flow_multiplier": 0.5 if r1 > 0 else -0.5,
-                    "india_vix_level": 0.145,
-                    "india_vix_change_5": 0.005,
-                    "nifty_return_5": 0.008,
-                    "cs_rank_momentum_5": cs_rank,
-                    "cs_rank_volume_surprise": vol_zscore * 0.2,
-                }
-
-            # 5c. Score and Rank universe
-            scores = model.predict_scores(universe_features)
-            ranked_pairs = model.rank_universe(universe_features)
-            ranked_symbols = [sym for sym, _ in ranked_pairs]
-            logger.info(
-                "  Mīzān Alpha Scores: %s", {s: round(scores[s], 4) for s in ranked_symbols}
-            )
-
-            # 5d. Model Decision: Top 2 alpha picks with score > 0.035
-            top_picks = [sym for sym in ranked_symbols[:2] if scores[sym] > 0.035]
+                # Not named `quote`: that name is bound to a `Quote` object later in this
+                # function, and reusing it made mypy infer dict[str, Any] for both.
+                quote_state = base_market[sym]
+                price = float(quote_state["price"])
+                previous_close = float(quote_state.get("previous_close", price))
+                returns_map[sym] = (
+                    (price - previous_close) / previous_close if previous_close > 0 else 0.0
+                )
 
             for sym in top_picks:
                 current_held = engine.positions[sym].quantity if sym in engine.positions else 0
