@@ -481,6 +481,7 @@ def run_paper_session(
     upstox_token: str | None = None,
     output_dir: Path | None = None,
     selection_fraction: float = 0.20,
+    sizing: str = "equal-weight",
 ) -> dict[str, Any]:
     """Runs a complete quote-driven paper trading session in IST from start time until market close (15:30 IST)."""
     current_ist = now_ist()
@@ -672,6 +673,28 @@ def run_paper_session(
         ", ".join(f"{s} {mizan_scores[s]:+.5f}" for s in mizan_picks) or "none",
     )
 
+    # 2c. Position sizing.
+    #
+    # Equal-weight is the default because it is how the model was measured: the out-of-sample
+    # screen averaged the forward target across the selected top 20% (`statistics.fmean`), giving
+    # every chosen name the same weight. The previous fixed stake of Rs 150,000 per name meant 56
+    # picks against Rs 1,000,000 filled only the first ~6 in rank order and left the other 50
+    # unexpressed -- a concentrated bet on the head of a ranking, which nobody validated.
+    #
+    # `fixed` remains available because the sprint profile deliberately concentrates into 2-3 names
+    # and equal-weighting would silently undo that intent.
+    if sizing == "equal-weight" and mizan_picks:
+        usable = initial_cash * (Decimal("1") - Decimal(str(risk_limits.min_cash_buffer_pct)))
+        per_name_alloc = (usable / Decimal(len(mizan_picks))).quantize(_PAISA)
+        logger.info(
+            "Sizing: equal-weight, Rs %s per name across %d picks (%.0f%% cash buffer held back)",
+            per_name_alloc,
+            len(mizan_picks),
+            risk_limits.min_cash_buffer_pct * 100,
+        )
+    else:
+        logger.info("Sizing: fixed, Rs %s per name", per_name_alloc)
+
     # 3. Risk Governor Setup
     governor = PreTradeRiskGovernor(limits=risk_limits)
 
@@ -836,6 +859,15 @@ def run_paper_session(
                     target_alloc = min(per_name_alloc, avail_cash * Decimal("0.95"))
                     price = base_market[sym]["price"]
                     qty = int(target_alloc / price)
+                    if qty == 0:
+                        # One share costs more than the allocation. Saying so beats a silent skip:
+                        # under equal weight this is how a high-priced name drops out.
+                        logger.info(
+                            "  %s: skipped, 1 share costs Rs %s against an allocation of Rs %s",
+                            sym,
+                            _paisa_str(price),
+                            _paisa_str(target_alloc),
+                        )
                     if qty > 0:
                         prop_id = f"prop_{session_id}_{step}_{sym}_BUY"
                         proposal = PaperProposal(
@@ -1230,6 +1262,12 @@ def main() -> int:
         choices=["NIFTY50", "NIFTY100", "NIFTY200", "NIFTY500"],
         help="Universe preset (NIFTY50, NIFTY100, NIFTY200, NIFTY500)",
     )
+    parser.add_argument(
+        "--sizing",
+        choices=["equal-weight", "fixed"],
+        default="equal-weight",
+        help="equal-weight matches how the model was measured; fixed keeps a per-name stake",
+    )
     parser.add_argument("--universe", type=str, nargs="+", default=None, help="Universe symbols")
     parser.add_argument("--output-dir", type=str, default=None, help="Output directory")
 
@@ -1248,6 +1286,7 @@ def main() -> int:
     try:
         res = run_paper_session(
             session_date=s_date,
+            sizing=args.sizing,
             universe=args.universe,
             universe_name=args.universe_name,
             model_profile=args.model_profile,

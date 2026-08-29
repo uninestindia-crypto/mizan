@@ -22,3 +22,10 @@
 *.ico binary
 *.exe binary
 *.dll binary
+
+# Evidence stores are content-addressed. Each resource's COMMITTED marker holds the manifest hash
+# and is compared byte-for-byte, so ANY line-ending conversion corrupts the store: with
+# core.autocrlf=true the marker checks out as CRLF and every resource fails integrity. The caches
+# already committed are LF on disk only because they have never been through a checkout cycle -- a
+# fresh clone on Windows would break all of them, and no test opens these stores so CI stays green.
+data/evidence/** -text
