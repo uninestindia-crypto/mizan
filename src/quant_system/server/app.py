@@ -13,6 +13,7 @@ Features:
 # craft-allow: god-file — Unified QuantOS desktop server application routing and error envelopes
 from __future__ import annotations
 
+import json
 import platform
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -123,6 +124,7 @@ from quant_system.server.ui import (
     render_full_dashboard_html,
     render_standalone_journey_html,
 )
+from quant_system.server.ui.live_dashboard import HTML_DASHBOARD
 from quant_system.strategies.registry import StrategyRegistry
 
 
@@ -156,6 +158,10 @@ app.include_router(assistant_router)
 
 # Global runtime state
 _CURRENT_RISK_LIMITS = RiskLimits()
+#: Install root. From ``src/quant_system/server/app.py`` that is four levels up. Named here rather
+#: than inline because `/api/paper-pilot/live-status` referenced it without it ever being defined,
+#: so every call to that endpoint raised NameError.
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 STATIC_DIR = Path(__file__).parent / "static"
 
 
@@ -1229,8 +1235,10 @@ def get_paper_pilot_live_status() -> dict[str, Any]:
     status_file = PROJECT_ROOT / "logs" / "paper_runs" / "live_paper_status.json"
     if status_file.exists():
         try:
-            with open(status_file, "r", encoding="utf-8") as f:
-                return json.load(f)
+            with open(status_file, encoding="utf-8") as f:
+                # json.load returns Any; bind it so the declared return type is actually checked.
+                status: dict[str, Any] = json.load(f)
+            return status
         except Exception as err:
             return {"status": "ERROR", "error": str(err)}
     return {"status": "NOT_RUNNING", "message": "No active live paper trading session found."}
@@ -1262,7 +1270,6 @@ def serve_ui() -> HTMLResponse:
 @app.get("/live", response_class=HTMLResponse)
 def serve_trading_live_screen() -> HTMLResponse:
     """Serves the live Trading & P&L Monitor screen integrated directly into QuantOS."""
-    from scripts.serve_live_dashboard import HTML_DASHBOARD
     return HTMLResponse(content=HTML_DASHBOARD, status_code=200)
 
 

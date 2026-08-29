@@ -6,15 +6,12 @@ formatting invariants, and error prevention.
 from __future__ import annotations
 
 import re
-from decimal import Decimal
-import pytest
 
 from quant_system.data.universe import (
     NIFTY50_SYMBOLS,
     NIFTY100_SYMBOLS,
     NIFTY200_SYMBOLS,
     NIFTY500_SYMBOLS,
-    get_universe_symbols,
 )
 from quant_system.modeling import MizanModel
 
@@ -87,6 +84,7 @@ def test_mizan_scoring_across_nifty500_universe():
 
 def test_number_formatting_no_double_sign():
     """Ensure string formatting helper never produces '+-' or '-+' signs."""
+
     def format_score(score: float) -> str:
         sign = "+" if score >= 0 else ""
         return f"{sign}{score:.4f}"

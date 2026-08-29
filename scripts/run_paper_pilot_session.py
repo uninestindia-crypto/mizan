@@ -14,10 +14,10 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import signal
 import sys
 import time
-import os
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -39,29 +39,22 @@ if env_file.exists():
             if k and k not in os.environ:
                 os.environ[k] = v
 
-from quant_system.core.domain import (
-    Fill,
-    Order,
-    OrderStatus,
+from quant_system.core.domain import (  # noqa: E402
     OrderType,
     Quote,
     Side,
 )
-from quant_system.execution.orderbook_sim import (
+from quant_system.execution.orderbook_sim import (  # noqa: E402
     OrderBookSimConfig,
-    OrderBookSimulator,
     OrderBookSnapshot,
 )
-from quant_system.execution.paper_pilot import (
-    PaperAuditRecord,
+from quant_system.execution.paper_pilot import (  # noqa: E402
     PaperPilotEngine,
     PaperProposal,
-    SessionReconciliationReport,
-    SessionStatus,
 )
-from quant_system.modeling import MizanModel
-from quant_system.risk.checks import RiskLimits
-from quant_system.risk.governor import PreTradeRiskGovernor
+from quant_system.modeling import MizanModel  # noqa: E402
+from quant_system.risk.checks import RiskLimits  # noqa: E402
+from quant_system.risk.governor import PreTradeRiskGovernor  # noqa: E402
 
 # Indian Standard Time (UTC+05:30)
 _IST = timezone(timedelta(hours=5, minutes=30), name="IST")
@@ -84,10 +77,11 @@ def now_ist() -> datetime:
     return datetime.now(_IST)
 
 
-import os
-import urllib.request
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from quant_system.data.universe import NIFTY50_SYMBOLS
+import os  # noqa: E402
+import urllib.request  # noqa: E402
+from concurrent.futures import ThreadPoolExecutor, as_completed  # noqa: E402
+
+from quant_system.data.universe import NIFTY50_SYMBOLS  # noqa: E402
 
 ALLOWED_SYMBOLS = NIFTY50_SYMBOLS
 
@@ -105,26 +99,59 @@ UPSTOX_INSTRUMENT_KEYS = {
 }
 
 
-import urllib.parse
+import urllib.parse  # noqa: E402
 
 DEFAULT_NIFTY_PRICES = {
-    "ADANIENT": Decimal("2450.00"), "ADANIPORTS": Decimal("1180.00"), "APOLLOHOSP": Decimal("6850.00"),
-    "ASIANPAINT": Decimal("2380.00"), "AXISBANK": Decimal("1120.00"), "BAJAJ-AUTO": Decimal("8950.00"),
-    "BAJFINANCE": Decimal("6720.00"), "BAJAJFINSV": Decimal("1580.00"), "BEL": Decimal("285.00"),
-    "BPCL": Decimal("320.00"), "BHARTIARTL": Decimal("1650.00"), "BRITANNIA": Decimal("5250.00"),
-    "CIPLA": Decimal("1480.00"), "COALINDIA": Decimal("405.00"), "DRREDDY": Decimal("6420.00"),
-    "EICHERMOT": Decimal("8080.00"), "GRASIM": Decimal("3270.00"), "HCLTECH": Decimal("1300.00"),
-    "HDFCBANK": Decimal("728.50"), "HDFCLIFE": Decimal("561.00"), "HEROMOTOCO": Decimal("5650.00"),
-    "HINDALCO": Decimal("1045.00"), "HINDUNILVR": Decimal("2025.00"), "ICICIBANK": Decimal("1438.00"),
-    "INDUSINDBK": Decimal("1003.00"), "INFY": Decimal("1121.00"), "ITC": Decimal("271.50"),
-    "JSWSTEEL": Decimal("1324.00"), "KOTAKBANK": Decimal("415.50"), "LT": Decimal("4050.00"),
-    "M&M": Decimal("3424.00"), "MARUTI": Decimal("13610.00"), "NESTLEIND": Decimal("1454.00"),
-    "NTPC": Decimal("337.00"), "ONGC": Decimal("233.00"), "POWERGRID": Decimal("267.00"),
-    "RELIANCE": Decimal("1305.00"), "SBILIFE": Decimal("1780.00"), "SBIN": Decimal("1055.00"),
-    "SHRIRAMFIN": Decimal("1114.00"), "SUNPHARMA": Decimal("1920.00"), "TATACONSUM": Decimal("1045.00"),
-    "TATAMOTORS": Decimal("720.00"), "TATASTEEL": Decimal("185.50"), "TCS": Decimal("2272.00"),
-    "TECHM": Decimal("1568.00"), "TITAN": Decimal("5098.00"), "TRENT": Decimal("2914.00"),
-    "ULTRACEMCO": Decimal("11672.00"), "WIPRO": Decimal("177.50")
+    "ADANIENT": Decimal("2450.00"),
+    "ADANIPORTS": Decimal("1180.00"),
+    "APOLLOHOSP": Decimal("6850.00"),
+    "ASIANPAINT": Decimal("2380.00"),
+    "AXISBANK": Decimal("1120.00"),
+    "BAJAJ-AUTO": Decimal("8950.00"),
+    "BAJFINANCE": Decimal("6720.00"),
+    "BAJAJFINSV": Decimal("1580.00"),
+    "BEL": Decimal("285.00"),
+    "BPCL": Decimal("320.00"),
+    "BHARTIARTL": Decimal("1650.00"),
+    "BRITANNIA": Decimal("5250.00"),
+    "CIPLA": Decimal("1480.00"),
+    "COALINDIA": Decimal("405.00"),
+    "DRREDDY": Decimal("6420.00"),
+    "EICHERMOT": Decimal("8080.00"),
+    "GRASIM": Decimal("3270.00"),
+    "HCLTECH": Decimal("1300.00"),
+    "HDFCBANK": Decimal("728.50"),
+    "HDFCLIFE": Decimal("561.00"),
+    "HEROMOTOCO": Decimal("5650.00"),
+    "HINDALCO": Decimal("1045.00"),
+    "HINDUNILVR": Decimal("2025.00"),
+    "ICICIBANK": Decimal("1438.00"),
+    "INDUSINDBK": Decimal("1003.00"),
+    "INFY": Decimal("1121.00"),
+    "ITC": Decimal("271.50"),
+    "JSWSTEEL": Decimal("1324.00"),
+    "KOTAKBANK": Decimal("415.50"),
+    "LT": Decimal("4050.00"),
+    "M&M": Decimal("3424.00"),
+    "MARUTI": Decimal("13610.00"),
+    "NESTLEIND": Decimal("1454.00"),
+    "NTPC": Decimal("337.00"),
+    "ONGC": Decimal("233.00"),
+    "POWERGRID": Decimal("267.00"),
+    "RELIANCE": Decimal("1305.00"),
+    "SBILIFE": Decimal("1780.00"),
+    "SBIN": Decimal("1055.00"),
+    "SHRIRAMFIN": Decimal("1114.00"),
+    "SUNPHARMA": Decimal("1920.00"),
+    "TATACONSUM": Decimal("1045.00"),
+    "TATAMOTORS": Decimal("720.00"),
+    "TATASTEEL": Decimal("185.50"),
+    "TCS": Decimal("2272.00"),
+    "TECHM": Decimal("1568.00"),
+    "TITAN": Decimal("5098.00"),
+    "TRENT": Decimal("2914.00"),
+    "ULTRACEMCO": Decimal("11672.00"),
+    "WIPRO": Decimal("177.50"),
 }
 
 
@@ -134,7 +161,7 @@ def _fetch_single_nse_quote(sym: str) -> tuple[str, dict[str, Any] | None]:
     try:
         req = urllib.request.Request(
             url,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode("utf-8"))
@@ -144,7 +171,13 @@ def _fetch_single_nse_quote(sym: str) -> tuple[str, dict[str, Any] | None]:
             low = Decimal(str(round(meta.get("regularMarketDayLow", price), 2)))
             prev_close = Decimal(str(round(meta.get("previousClose", price), 2)))
             volume = int(meta.get("regularMarketVolume", 100000))
-            spread = Decimal("0.05") if price < Decimal("500") else Decimal("0.10") if price < Decimal("1500") else Decimal("0.25")
+            spread = (
+                Decimal("0.05")
+                if price < Decimal("500")
+                else Decimal("0.10")
+                if price < Decimal("1500")
+                else Decimal("0.25")
+            )
             return sym, {
                 "price": price,
                 "high": high,
@@ -192,7 +225,9 @@ def fetch_live_nse_quotes(symbols: list[str]) -> dict[str, dict[str, Any]]:
     return results
 
 
-def fetch_upstox_live_quotes(symbols: list[str], access_token: str | None = None) -> dict[str, dict[str, Any]]:
+def fetch_upstox_live_quotes(
+    symbols: list[str], access_token: str | None = None
+) -> dict[str, dict[str, Any]]:
     """Fetch real-time live market quotes directly from Upstox Market Quote API in high-speed batches."""
     token = access_token or os.getenv("UPSTOX_ACCESS_TOKEN", "")
     if not token:
@@ -238,7 +273,9 @@ def fetch_upstox_live_quotes(symbols: list[str], access_token: str | None = None
                             if buy_depth and sell_depth:
                                 best_bid = Decimal(str(buy_depth[0].get("price", price)))
                                 best_ask = Decimal(str(sell_depth[0].get("price", price)))
-                                spread = max(Decimal("0.05"), (best_ask - best_bid).quantize(_PAISA))
+                                spread = max(
+                                    Decimal("0.05"), (best_ask - best_bid).quantize(_PAISA)
+                                )
 
                             results[sym] = {
                                 "price": price,
@@ -260,10 +297,8 @@ def fetch_upstox_live_quotes(symbols: list[str], access_token: str | None = None
     return results
 
 
-from quant_system.data.universe import (
+from quant_system.data.universe import (  # noqa: E402
     NIFTY50_SYMBOLS,
-    NIFTY100_SYMBOLS,
-    NIFTY200_SYMBOLS,
     NIFTY500_SYMBOLS,
     get_universe_symbols,
 )
@@ -301,7 +336,15 @@ def run_paper_session(
 
     # Parse market close time in IST (Default 15:30:00 IST)
     end_hour, end_min, end_sec = map(int, end_time_str.split(":"))
-    close_dt_ist = datetime(session_date.year, session_date.month, session_date.day, end_hour, end_min, end_sec, tzinfo=_IST)
+    close_dt_ist = datetime(
+        session_date.year,
+        session_date.month,
+        session_date.day,
+        end_hour,
+        end_min,
+        end_sec,
+        tzinfo=_IST,
+    )
 
     logger.info("=" * 80)
     logger.info("QuantOS Paper Pilot Execution Session (IST) -- %s", session_id)
@@ -310,8 +353,17 @@ def run_paper_session(
     logger.info("Universe           : %s (%d assets)", universe_name, len(universe))
     logger.info("Initial Capital    : Rs %s", _paisa_str(initial_cash))
     logger.info("Model Profile      : %s", model_profile.upper())
-    logger.info("Upstox API Token   : %s", "CONFIGURED" if bool(os.getenv("UPSTOX_ACCESS_TOKEN")) else "NOT CONFIGURED (Using Live Exchange Feed)")
-    logger.info("Execution Mode     : %s (Interval: %.1fs)", "REALTIME_STREAM" if realtime else "INTRADAY_SEQUENCE", interval_seconds)
+    logger.info(
+        "Upstox API Token   : %s",
+        "CONFIGURED"
+        if bool(os.getenv("UPSTOX_ACCESS_TOKEN"))
+        else "NOT CONFIGURED (Using Live Exchange Feed)",
+    )
+    logger.info(
+        "Execution Mode     : %s (Interval: %.1fs)",
+        "REALTIME_STREAM" if realtime else "INTRADAY_SEQUENCE",
+        interval_seconds,
+    )
     logger.info("=" * 80)
 
     # 1. Fetch initial real live quotes from Upstox / NSE
@@ -320,41 +372,89 @@ def run_paper_session(
     if not base_market:
         logger.warning("Could not reach live exchange feed. Using fallback baseline.")
         base_market = {
-            "INFY": {"price": Decimal("1121.10"), "previous_close": Decimal("1120.00"), "spread": Decimal("0.10"), "depth": 500, "source": "FALLBACK"},
-            "TCS": {"price": Decimal("2270.20"), "previous_close": Decimal("2265.00"), "spread": Decimal("0.25"), "depth": 400, "source": "FALLBACK"},
-            "RELIANCE": {"price": Decimal("1306.00"), "previous_close": Decimal("1300.00"), "spread": Decimal("0.10"), "depth": 600, "source": "FALLBACK"},
-            "HDFCBANK": {"price": Decimal("728.80"), "previous_close": Decimal("725.00"), "spread": Decimal("0.10"), "depth": 700, "source": "FALLBACK"},
-            "ICICIBANK": {"price": Decimal("1437.80"), "previous_close": Decimal("1430.00"), "spread": Decimal("0.15"), "depth": 550, "source": "FALLBACK"},
+            "INFY": {
+                "price": Decimal("1121.10"),
+                "previous_close": Decimal("1120.00"),
+                "spread": Decimal("0.10"),
+                "depth": 500,
+                "source": "FALLBACK",
+            },
+            "TCS": {
+                "price": Decimal("2270.20"),
+                "previous_close": Decimal("2265.00"),
+                "spread": Decimal("0.25"),
+                "depth": 400,
+                "source": "FALLBACK",
+            },
+            "RELIANCE": {
+                "price": Decimal("1306.00"),
+                "previous_close": Decimal("1300.00"),
+                "spread": Decimal("0.10"),
+                "depth": 600,
+                "source": "FALLBACK",
+            },
+            "HDFCBANK": {
+                "price": Decimal("728.80"),
+                "previous_close": Decimal("725.00"),
+                "spread": Decimal("0.10"),
+                "depth": 700,
+                "source": "FALLBACK",
+            },
+            "ICICIBANK": {
+                "price": Decimal("1437.80"),
+                "previous_close": Decimal("1430.00"),
+                "spread": Decimal("0.15"),
+                "depth": 550,
+                "source": "FALLBACK",
+            },
         }
     for sym, m in base_market.items():
-        logger.info("  [REAL NSE FEED] %-10s : Rs %s (Day Range: Rs %s - Rs %s | Vol: %s)",
-                    sym, _paisa_str(m['price']), _paisa_str(m.get('low', m['price'])), _paisa_str(m.get('high', m['price'])), m.get('volume', 'N/A'))
+        logger.info(
+            "  [REAL NSE FEED] %-10s : Rs %s (Day Range: Rs %s - Rs %s | Vol: %s)",
+            sym,
+            _paisa_str(m["price"]),
+            _paisa_str(m.get("low", m["price"])),
+            _paisa_str(m.get("high", m["price"])),
+            m.get("volume", "N/A"),
+        )
 
     # 2. Initialize Mizan Model based on Profile
     if model_profile == "sprint_50k":
         model = MizanModel.sprint_50k_model()
-        per_name_alloc = (initial_cash * Decimal("0.45")).quantize(_PAISA)  # 45% per name for 2-3 names
+        per_name_alloc = (initial_cash * Decimal("0.45")).quantize(
+            _PAISA
+        )  # 45% per name for 2-3 names
         risk_limits = RiskLimits(
-            max_position_weight=0.50,      # Max 50% capital in single name
-            max_daily_drawdown_pct=0.03,   # 3% daily drawdown kill switch
-            max_total_drawdown_pct=0.08,   # 8% total drawdown kill switch
-            min_cash_buffer_pct=0.05,      # 5% minimum cash buffer
-            allow_naked_short=False,       # Strict long-only / no naked shorting
+            max_position_weight=0.50,  # Max 50% capital in single name
+            max_daily_drawdown_pct=0.03,  # 3% daily drawdown kill switch
+            max_total_drawdown_pct=0.08,  # 8% total drawdown kill switch
+            min_cash_buffer_pct=0.05,  # 5% minimum cash buffer
+            allow_naked_short=False,  # Strict long-only / no naked shorting
         )
     else:
         model = MizanModel.default_model()
         per_name_alloc = Decimal("150000.00")
         risk_limits = RiskLimits(
-            max_position_weight=0.30,      # Max 30% capital in single name
-            max_daily_drawdown_pct=0.04,   # 4% daily drawdown kill switch
-            max_total_drawdown_pct=0.12,   # 12% total drawdown kill switch
-            min_cash_buffer_pct=0.05,      # 5% minimum cash buffer
-            allow_naked_short=False,       # Strict long-only / no naked shorting
+            max_position_weight=0.30,  # Max 30% capital in single name
+            max_daily_drawdown_pct=0.04,  # 4% daily drawdown kill switch
+            max_total_drawdown_pct=0.12,  # 12% total drawdown kill switch
+            min_cash_buffer_pct=0.05,  # 5% minimum cash buffer
+            allow_naked_short=False,  # Strict long-only / no naked shorting
         )
 
-    logger.info("Loaded Model: %s (%s, v%s)", model.config.model_name, model.config.model_id, model.config.version)
-    logger.info("Score Threshold: %s | L2 Penalty: %s | Features: %d | Horizon: %d sessions",
-                model.config.score_threshold, model.config.l2_penalty, len(model.config.feature_names), model.config.label_horizon_sessions)
+    logger.info(
+        "Loaded Model: %s (%s, v%s)",
+        model.config.model_name,
+        model.config.model_id,
+        model.config.version,
+    )
+    logger.info(
+        "Score Threshold: %s | L2 Penalty: %s | Features: %d | Horizon: %d sessions",
+        model.config.score_threshold,
+        model.config.l2_penalty,
+        len(model.config.feature_names),
+        model.config.label_horizon_sessions,
+    )
 
     # 3. Risk Governor Setup
     governor = PreTradeRiskGovernor(limits=risk_limits)
@@ -385,7 +485,9 @@ def run_paper_session(
 
     def handle_sigint(signum: int, frame: Any) -> None:
         nonlocal shutdown_requested
-        logger.warning("Interrupt signal received. Initiating clean session close and reconciliation...")
+        logger.warning(
+            "Interrupt signal received. Initiating clean session close and reconciliation..."
+        )
         shutdown_requested = True
 
     signal.signal(signal.SIGINT, handle_sigint)
@@ -427,10 +529,17 @@ def run_paper_session(
 
             # Check if market close time reached
             if loop_now >= close_dt_ist:
-                logger.info("Market close reached at %s. Finalizing session...", loop_now.strftime("%H:%M:%S IST"))
+                logger.info(
+                    "Market close reached at %s. Finalizing session...",
+                    loop_now.strftime("%H:%M:%S IST"),
+                )
                 break
 
-            logger.info("--- [IST %s] Interval %02d | Active Trading Loop ---", loop_now.strftime("%H:%M:%S"), step)
+            logger.info(
+                "--- [IST %s] Interval %02d | Active Trading Loop ---",
+                loop_now.strftime("%H:%M:%S"),
+                step,
+            )
 
             # Fetch fresh real-time quotes from Upstox / NSE
             if realtime:
@@ -470,9 +579,14 @@ def run_paper_session(
                 fills_from_quote = engine.process_quote(book, current_time=loop_now)
                 if fills_from_quote:
                     for fill in fills_from_quote:
-                        logger.info("  [FILL EXECUTED] %s: %s %d @ Rs %s (Statutory Fee: Rs %s)",
-                                    fill.symbol, fill.side.value, fill.quantity, _paisa_str(fill.price),
-                                    _paisa_str(fill.fee))
+                        logger.info(
+                            "  [FILL EXECUTED] %s: %s %d @ Rs %s (Statutory Fee: Rs %s)",
+                            fill.symbol,
+                            fill.side.value,
+                            fill.quantity,
+                            _paisa_str(fill.price),
+                            _paisa_str(fill.fee),
+                        )
 
             # 5b. Generate feature matrix from real NSE price movements for Mīzān model
             returns_map = {}
@@ -484,7 +598,10 @@ def run_paper_session(
 
             sorted_by_ret = sorted(universe, key=lambda s: returns_map[s])
             n_syms = max(1, len(universe))
-            cs_ranks = {sym: (i / (n_syms - 1) if n_syms > 1 else 0.5) - 0.5 for i, sym in enumerate(sorted_by_ret)}
+            cs_ranks = {
+                sym: (i / (n_syms - 1) if n_syms > 1 else 0.5) - 0.5
+                for i, sym in enumerate(sorted_by_ret)
+            }
 
             universe_features = {}
             for sym in universe:
@@ -517,7 +634,9 @@ def run_paper_session(
             scores = model.predict_scores(universe_features)
             ranked_pairs = model.rank_universe(universe_features)
             ranked_symbols = [sym for sym, _ in ranked_pairs]
-            logger.info("  Mīzān Alpha Scores: %s", {s: round(scores[s], 4) for s in ranked_symbols})
+            logger.info(
+                "  Mīzān Alpha Scores: %s", {s: round(scores[s], 4) for s in ranked_symbols}
+            )
 
             # 5d. Model Decision: Top 2 alpha picks with score > 0.035
             top_picks = [sym for sym in ranked_symbols[:2] if scores[sym] > 0.035]
@@ -543,8 +662,14 @@ def run_paper_session(
                         )
                         order, decision = engine.submit_proposal(proposal)
                         proposals_submitted.append((proposal, decision))
-                        logger.info("  [PROPOSAL SUBMITTED] %s BUY %d %s (Risk: %s, Reason: %s)",
-                                    prop_id, qty, sym, "APPROVED" if decision.approved else "REJECTED", decision.reason or "OK")
+                        logger.info(
+                            "  [PROPOSAL SUBMITTED] %s BUY %d %s (Risk: %s, Reason: %s)",
+                            prop_id,
+                            qty,
+                            sym,
+                            "APPROVED" if decision.approved else "REJECTED",
+                            decision.reason or "OK",
+                        )
 
             # 5e. Exit positions dropping below threshold
             for sym, pos in list(engine.positions.items()):
@@ -562,8 +687,13 @@ def run_paper_session(
                     )
                     order, decision = engine.submit_proposal(proposal)
                     proposals_submitted.append((proposal, decision))
-                    logger.info("  [EXIT PROPOSAL SUBMITTED] %s SELL %d %s (Risk: %s)",
-                                prop_id, pos.quantity, sym, "APPROVED" if decision.approved else "REJECTED")
+                    logger.info(
+                        "  [EXIT PROPOSAL SUBMITTED] %s SELL %d %s (Risk: %s)",
+                        prop_id,
+                        pos.quantity,
+                        sym,
+                        "APPROVED" if decision.approved else "REJECTED",
+                    )
 
             # Update rolling status file for live monitoring
             snapshot_prices = {sym: state["price"] for sym, state in base_market.items()}
@@ -576,19 +706,29 @@ def run_paper_session(
                     pos_val = (cur_p * Decimal(pos.quantity)).quantize(_PAISA)
                     cost_basis = (pos.average_price * Decimal(pos.quantity)).quantize(_PAISA)
                     u_pnl = (pos_val - cost_basis).quantize(_PAISA)
-                    u_pct = float(u_pnl / cost_basis * Decimal("100.0")) if cost_basis > Decimal("0") else 0.0
-                    alloc_pct = float(pos_val / snap.total_equity * Decimal("100.0")) if snap.total_equity > Decimal("0") else 0.0
-                    positions_detail.append({
-                        "symbol": sym,
-                        "quantity": pos.quantity,
-                        "entry_price": _paisa_str(pos.average_price),
-                        "current_price": _paisa_str(cur_p),
-                        "cost_basis": _paisa_str(cost_basis),
-                        "market_value": _paisa_str(pos_val),
-                        "unrealized_pnl": _paisa_str(u_pnl),
-                        "unrealized_pnl_pct": round(u_pct, 2),
-                        "allocation_pct": round(alloc_pct, 2),
-                    })
+                    u_pct = (
+                        float(u_pnl / cost_basis * Decimal("100.0"))
+                        if cost_basis > Decimal("0")
+                        else 0.0
+                    )
+                    alloc_pct = (
+                        float(pos_val / snap.total_equity * Decimal("100.0"))
+                        if snap.total_equity > Decimal("0")
+                        else 0.0
+                    )
+                    positions_detail.append(
+                        {
+                            "symbol": sym,
+                            "quantity": pos.quantity,
+                            "entry_price": _paisa_str(pos.average_price),
+                            "current_price": _paisa_str(cur_p),
+                            "cost_basis": _paisa_str(cost_basis),
+                            "market_value": _paisa_str(pos_val),
+                            "unrealized_pnl": _paisa_str(u_pnl),
+                            "unrealized_pnl_pct": round(u_pct, 2),
+                            "allocation_pct": round(alloc_pct, 2),
+                        }
+                    )
 
             fills_detail = [
                 {
@@ -652,7 +792,9 @@ def run_paper_session(
                 "net_pnl": _paisa_str(net_pnl),
                 "net_pnl_pct": round(net_pnl_pct, 3),
                 "total_fees_paid": _paisa_str(total_fees),
-                "open_positions": {s: p.quantity for s, p in engine.positions.items() if p.quantity != 0},
+                "open_positions": {
+                    s: p.quantity for s, p in engine.positions.items() if p.quantity != 0
+                },
                 "positions_detail": positions_detail,
                 "fills_count": len(engine.fills),
                 "recent_fills": fills_detail,
@@ -660,7 +802,9 @@ def run_paper_session(
                 "top_gainers": top_gainers_list,
                 "top_losers": top_losers_list,
                 "risk_governor": {
-                    "kill_switch_active": governor.limits.kill_switch_triggered,
+                    # `RiskLimits` carries no kill-switch field; the state lives on the governor as the
+                    # public `is_killed` property. The old attribute raised AttributeError.
+                    "kill_switch_active": governor.is_killed,
                     "max_position_weight": f"{int(governor.limits.max_position_weight * 100)}%",
                     "min_cash_buffer": f"{int(governor.limits.min_cash_buffer_pct * 100)}%",
                     "daily_drawdown_limit": f"{int(governor.limits.max_daily_drawdown_pct * 100)}%",
@@ -692,15 +836,35 @@ def run_paper_session(
     return_pct = float(total_net_pnl / initial_cash * Decimal("100.0"))
 
     logger.info("=" * 80)
-    logger.info("Session Concluded & Reconciled: %s", "SUCCESS" if reconciliation.reconciled else "FAILED")
+    logger.info(
+        "Session Concluded & Reconciled: %s", "SUCCESS" if reconciliation.reconciled else "FAILED"
+    )
     logger.info("Closure Time (IST)   : %s", final_now.strftime("%Y-%m-%d %H:%M:%S IST"))
     logger.info("Initial Capital      : Rs %s", _paisa_str(reconciliation.initial_cash))
     logger.info("Final Cash           : Rs %s", _paisa_str(reconciliation.final_cash))
-    logger.info("Total Equity         : Rs %s (Net P&L: Rs %s, %+.2f%%)", _paisa_str(reconciliation.total_equity), _paisa_str(total_net_pnl), return_pct)
-    logger.info("Statutory NSE Fees   : Rs %s | Slippage: Rs %s", _paisa_str(reconciliation.total_fees_paid), _paisa_str(reconciliation.total_slippage_cost))
-    logger.info("Orders Summary       : %d submitted | %d filled | %d cancelled | %d rejected",
-                reconciliation.orders_submitted, reconciliation.orders_filled, reconciliation.orders_cancelled, reconciliation.orders_rejected)
-    logger.info("Total Fills          : %d | Discrepancy: Rs %s", reconciliation.total_fills_count, _paisa_str(reconciliation.discrepancy_paisa))
+    logger.info(
+        "Total Equity         : Rs %s (Net P&L: Rs %s, %+.2f%%)",
+        _paisa_str(reconciliation.total_equity),
+        _paisa_str(total_net_pnl),
+        return_pct,
+    )
+    logger.info(
+        "Statutory NSE Fees   : Rs %s | Slippage: Rs %s",
+        _paisa_str(reconciliation.total_fees_paid),
+        _paisa_str(reconciliation.total_slippage_cost),
+    )
+    logger.info(
+        "Orders Summary       : %d submitted | %d filled | %d cancelled | %d rejected",
+        reconciliation.orders_submitted,
+        reconciliation.orders_filled,
+        reconciliation.orders_cancelled,
+        reconciliation.orders_rejected,
+    )
+    logger.info(
+        "Total Fills          : %d | Discrepancy: Rs %s",
+        reconciliation.total_fills_count,
+        _paisa_str(reconciliation.discrepancy_paisa),
+    )
     logger.info("=" * 80)
 
     # 8. Compile Comprehensive Audit & Feedback Report in IST
@@ -777,8 +941,10 @@ def run_paper_session(
     with open(md_path, "w", encoding="utf-8") as f:
         f.write(f"# QuantOS Paper Trading Session Report (IST) -- {session_id}\n\n")
         f.write(f"- **Session Date**: `{session_date}`\n")
-        f.write(f"- **Timezone**: `Indian Standard Time (IST, UTC+05:30)`\n")
-        f.write(f"- **Execution Interval**: `{current_ist.strftime('%H:%M:%S IST')}` to `{final_now.strftime('%H:%M:%S IST')}` (Market Close: `{close_dt_ist.strftime('%H:%M:%S IST')}`)\n")
+        f.write("- **Timezone**: `Indian Standard Time (IST, UTC+05:30)`\n")
+        f.write(
+            f"- **Execution Interval**: `{current_ist.strftime('%H:%M:%S IST')}` to `{final_now.strftime('%H:%M:%S IST')}` (Market Close: `{close_dt_ist.strftime('%H:%M:%S IST')}`)\n"
+        )
         f.write(f"- **Execution Model**: `{model.config.model_name}` (`{model.config.model_id}`)\n")
         f.write(f"- **Architecture**: `{model.config.model_type}`\n")
         rec_status = "PASS (0.00 Paisa Discrepancy)" if reconciliation.reconciled else "FAIL"
@@ -792,29 +958,47 @@ def run_paper_session(
         f.write(f"| Unrealized P&L | Rs {_paisa_str(reconciliation.total_unrealized_pnl)} |\n")
         f.write(f"| Total Net P&L | Rs {_paisa_str(total_net_pnl)} ({return_pct:+.2f}%) |\n")
         f.write(f"| Total Statutory Fees | Rs {_paisa_str(reconciliation.total_fees_paid)} |\n")
-        f.write(f"| Total Slippage Cost | Rs {_paisa_str(reconciliation.total_slippage_cost)} |\n\n")
+        f.write(
+            f"| Total Slippage Cost | Rs {_paisa_str(reconciliation.total_slippage_cost)} |\n\n"
+        )
 
         f.write("## 2. Order Execution & Fills (IST)\n\n")
         f.write(f"- **Orders Submitted**: `{reconciliation.orders_submitted}`\n")
         f.write(f"- **Orders Filled**: `{reconciliation.orders_filled}`\n")
         f.write(f"- **Total Fills**: `{reconciliation.total_fills_count}`\n\n")
-        f.write("| Fill ID | Symbol | Side | Quantity | Price (Rs) | Statutory Fee (Rs) | Execution Time (IST) |\n|---|---|---|---:|---:|---:|---|\n")
+        f.write(
+            "| Fill ID | Symbol | Side | Quantity | Price (Rs) | Statutory Fee (Rs) | Execution Time (IST) |\n|---|---|---|---:|---:|---:|---|\n"
+        )
         for f_item in engine.fills:
             fill_ts_ist = f_item.timestamp.astimezone(_IST).strftime("%H:%M:%S IST")
-            f.write(f"| `{f_item.fill_id}` | `{f_item.symbol}` | **{f_item.side.value}** | {f_item.quantity} | Rs {_paisa_str(f_item.price)} | Rs {_paisa_str(f_item.fee)} | `{fill_ts_ist}` |\n")
+            f.write(
+                f"| `{f_item.fill_id}` | `{f_item.symbol}` | **{f_item.side.value}** | {f_item.quantity} | Rs {_paisa_str(f_item.price)} | Rs {_paisa_str(f_item.fee)} | `{fill_ts_ist}` |\n"
+            )
 
         f.write("\n## 3. Ending Open Positions at Market Close\n\n")
         if reconciliation.open_positions:
-            f.write("| Symbol | Quantity | Close Price (Rs) | Market Value (Rs) |\n|---|---:|---:|---:|\n")
+            f.write(
+                "| Symbol | Quantity | Close Price (Rs) | Market Value (Rs) |\n|---|---:|---:|---:|\n"
+            )
             for sym, qty in reconciliation.open_positions.items():
                 p = final_prices.get(sym, Decimal("0.00"))
-                f.write(f"| `{sym}` | {qty} | Rs {_paisa_str(p)} | Rs {_paisa_str(p * Decimal(qty))} |\n")
+                f.write(
+                    f"| `{sym}` | {qty} | Rs {_paisa_str(p)} | Rs {_paisa_str(p * Decimal(qty))} |\n"
+                )
         else:
             f.write("*(All positions closed / flat)*\n")
 
     # Update live status file to COMPLETED
     with open(status_file, "w", encoding="utf-8") as f:
-        json.dump({**rolling_status, "status": "COMPLETED", "closed_at_ist": final_now.strftime("%Y-%m-%d %H:%M:%S IST")}, f, indent=2)
+        json.dump(
+            {
+                **rolling_status,
+                "status": "COMPLETED",
+                "closed_at_ist": final_now.strftime("%Y-%m-%d %H:%M:%S IST"),
+            },
+            f,
+            indent=2,
+        )
 
     logger.info("Feedback JSON saved: %s", json_path)
     logger.info("Markdown Report saved: %s", md_path)
@@ -826,13 +1010,38 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="QuantOS Quote-Driven Paper Pilot Runner (IST)")
     parser.add_argument("--date", type=str, default=None, help="Session date YYYY-MM-DD")
     parser.add_argument("--capital", type=float, default=1000000.0, help="Initial cash in INR")
-    parser.add_argument("--slippage-bps", type=float, default=5.0, help="Adverse slippage in basis points")
-    parser.add_argument("--realtime", action="store_true", help="Run in continuous real-time mode until 15:30 IST")
-    parser.add_argument("--interval-seconds", type=float, default=10.0, help="Seconds between trading loop iterations in realtime mode")
-    parser.add_argument("--end-time-ist", type=str, default="15:30:00", help="Market close time in IST (HH:MM:SS)")
-    parser.add_argument("--upstox-token", type=str, default=None, help="Upstox API Bearer Access Token")
-    parser.add_argument("--model-profile", type=str, default="default", choices=["default", "sprint_50k"], help="Model profile (default or sprint_50k)")
-    parser.add_argument("--universe-name", type=str, default="NIFTY500", choices=["NIFTY50", "NIFTY100", "NIFTY200", "NIFTY500"], help="Universe preset (NIFTY50, NIFTY100, NIFTY200, NIFTY500)")
+    parser.add_argument(
+        "--slippage-bps", type=float, default=5.0, help="Adverse slippage in basis points"
+    )
+    parser.add_argument(
+        "--realtime", action="store_true", help="Run in continuous real-time mode until 15:30 IST"
+    )
+    parser.add_argument(
+        "--interval-seconds",
+        type=float,
+        default=10.0,
+        help="Seconds between trading loop iterations in realtime mode",
+    )
+    parser.add_argument(
+        "--end-time-ist", type=str, default="15:30:00", help="Market close time in IST (HH:MM:SS)"
+    )
+    parser.add_argument(
+        "--upstox-token", type=str, default=None, help="Upstox API Bearer Access Token"
+    )
+    parser.add_argument(
+        "--model-profile",
+        type=str,
+        default="default",
+        choices=["default", "sprint_50k"],
+        help="Model profile (default or sprint_50k)",
+    )
+    parser.add_argument(
+        "--universe-name",
+        type=str,
+        default="NIFTY500",
+        choices=["NIFTY50", "NIFTY100", "NIFTY200", "NIFTY500"],
+        help="Universe preset (NIFTY50, NIFTY100, NIFTY200, NIFTY500)",
+    )
     parser.add_argument("--universe", type=str, nargs="+", default=None, help="Universe symbols")
     parser.add_argument("--output-dir", type=str, default=None, help="Output directory")
 
@@ -867,9 +1076,13 @@ def main() -> int:
         print(f"Timezone: {res['timezone']}")
         print(f"Active Period: {res['started_at_ist']} -> {res['closed_at_ist']}")
         print(f"Reconciliation: {rec_str} (0.00 Paisa Discrepancy)")
-        print(f"Total Equity: Rs {res['capital']['total_equity']} (Net P&L: Rs {res['performance']['total_net_pnl']})")
+        print(
+            f"Total Equity: Rs {res['capital']['total_equity']} (Net P&L: Rs {res['performance']['total_net_pnl']})"
+        )
         print(f"Fills Executed: {res['order_statistics']['total_fills_count']}")
-        print(f"Evidence Report: logs/paper_runs/paper_session_{res['session_date']}_{res['session_id']}.md")
+        print(
+            f"Evidence Report: logs/paper_runs/paper_session_{res['session_date']}_{res['session_id']}.md"
+        )
         return 0
     except Exception as err:
         logger.exception("Paper session failed with error: %s", err)
