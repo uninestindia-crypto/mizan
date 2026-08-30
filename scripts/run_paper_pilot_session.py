@@ -803,11 +803,51 @@ def run_paper_session(
     # both, and the daily check then measured multi-session declines against the 4% limit. The
     # total switch became unreachable, and a session that opened flat and never moved intraday
     # could halt the book on the first order, which is the exit.
-    opening_equity = portfolio.ledger_funding()
+    # `ledger_funding()` is the wrong quantity here and using it was the previous defect wearing a
+    # new hat. It is cash + holdings **at cost** + carried fees: a cost figure, invariant to market
+    # price. Seeding the daily peak with it meant the 4% daily rule measured cumulative unrealized
+    # loss since the position was opened, so a book that drifted 5.6% down over ten sessions -- with
+    # exactly zero intraday movement -- halted on the first order of the first rebalance. That order
+    # is the exit, so the losing book was then held with nothing able to sell it. Which is verbatim
+    # the failure the previous commit claimed to have fixed.
+    #
+    # The daily peak has to be equity **marked at this session's open**, so it moves with the market
+    # the way the thing it is measuring does.
+    opening_marks = {
+        symbol: base_market[symbol]["price"]
+        for symbol in portfolio.holdings
+        if symbol in base_market
+    }
+    unpriced = sorted(set(portfolio.holdings) - set(opening_marks))
+    if unpriced:
+        # Cost basis for these, stated rather than silent. It is a baseline for a risk limit, not a
+        # P&L figure, and refusing the whole session because one carried name is unquoted would be
+        # worse than a bounded approximation that is logged.
+        logger.warning(
+            "No opening quote for %d carried name(s); their cost basis is used in the risk "
+            "baseline: %s",
+            len(unpriced),
+            ", ".join(unpriced),
+        )
+    marked_opening_equity = (
+        portfolio.cash
+        + sum(
+            (
+                Decimal(holding.quantity) * opening_marks.get(holding.symbol, holding.average_cost)
+                for holding in portfolio.holdings.values()
+            ),
+            Decimal("0.00"),
+        )
+    ).quantize(_PAISA)
+    logger.info(
+        "Risk baseline: opening equity Rs %s (marked), carried peak Rs %s",
+        _paisa_str(marked_opening_equity),
+        _paisa_str(portfolio.peak_equity),
+    )
     governor = PreTradeRiskGovernor(
         limits=risk_limits,
-        initial_equity=opening_equity,
-        all_time_peak_equity=max(portfolio.peak_equity, opening_equity),
+        initial_equity=marked_opening_equity,
+        all_time_peak_equity=max(portfolio.peak_equity, marked_opening_equity),
     )
 
     # 4. Order Book Simulator Configuration
@@ -1332,6 +1372,19 @@ def run_paper_session(
             "discrepancy_paisa": _paisa_str(reconciliation.discrepancy_paisa),
             "reconciliation_errors": list(reconciliation.reconciliation_errors),
         },
+        # The kill switch, surfaced in the payload so the exit path and the report can see it. A
+        # halting session reconciles perfectly -- it refuses every order rather than mis-booking
+        # one -- so a caller branching on `reconciled` alone reports the session that killed the
+        # pilot as a success.
+        "risk": {
+            "kill_switch_active": governor.is_killed,
+            "halt_reason": (
+                governor.kill_events[-1].reason
+                if governor.is_killed and governor.kill_events
+                else ""
+            ),
+            "orders_rejected": reconciliation.orders_rejected,
+        },
         "fills": [
             {
                 "fill_id": f.fill_id,
@@ -1504,7 +1557,16 @@ def main() -> int:
         # one number that would have revealed the failure was the one replaced by a constant.
         reconciled = bool(res["reconciliation"]["reconciled"])
         discrepancy = res["reconciliation"]["discrepancy_paisa"]
-        banner = "[PAPER PILOT SUCCESS]" if reconciled else "[PAPER PILOT RECONCILIATION FAILED]"
+        # A halting session reconciles cleanly, so branching on `reconciled` alone printed
+        # SUCCESS and exited 0 for the session that permanently stopped the pilot. On an
+        # unattended schedule that green exit was the operator's only signal.
+        halted = bool(res.get("risk", {}).get("kill_switch_active"))
+        if not reconciled:
+            banner = "[PAPER PILOT RECONCILIATION FAILED]"
+        elif halted:
+            banner = "[PAPER PILOT HALTED BY RISK KILL SWITCH]"
+        else:
+            banner = "[PAPER PILOT SUCCESS]"
         print(f"\n{banner} Session {res['session_id']}.")
         print(f"Timezone: {res['timezone']}")
         print(f"Active Period: {res['started_at_ist']} -> {res['closed_at_ist']}")
@@ -1522,6 +1584,12 @@ def main() -> int:
             for error in res["reconciliation"]["reconciliation_errors"]:
                 print(f"  - {error}")
             return 7
+        if halted:
+            print(f"RISK HALT: {res['risk']['halt_reason']}")
+            print(f"Orders refused this session: {res['risk']['orders_rejected']}")
+            print("Every later session is refused until this is reviewed and cleared:")
+            print("    python scripts/clear_paper_halt.py --i-have-reviewed-the-book")
+            return 9
         return 0
     except Exception as err:
         logger.exception("Paper session failed with error: %s", err)

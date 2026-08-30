@@ -295,3 +295,74 @@ def test_reconciliation_can_actually_report_failure() -> None:
     assert any("POSITION_MISMATCH" in error for error in report.reconciliation_errors), (
         f"expected a position mismatch, got {report.reconciliation_errors}"
     )
+
+
+def test_the_governor_is_seeded_from_marked_equity_not_a_cost_figure() -> None:
+    """`ledger_funding()` is cash + holdings **at cost** + fees, and does not move with the market.
+
+    Seeding the daily peak with it made the 4% daily rule measure cumulative unrealized loss since
+    the position was opened. A book that drifted 5.63% down over ten sessions -- with exactly zero
+    intraday movement -- halted on the first order of its first rebalance, and that order is the
+    exit, so the losing book was then held with nothing able to sell it.
+
+    That is verbatim the failure the commit before this one claimed to have fixed, which is why
+    this is a detector on the argument rather than a test of `max()`.
+    """
+    source = (
+        Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    ).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+
+    constructions = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "PreTradeRiskGovernor"
+    ]
+    assert constructions, "the runner no longer builds a governor; this detector has gone blind"
+
+    for call in constructions:
+        seeds = [kw.value for kw in call.keywords if kw.arg == "initial_equity"]
+        assert seeds, "the governor is built without an explicit opening equity"
+        for seed in seeds:
+            rendered = ast.unparse(seed)
+            assert "ledger_funding" not in rendered, (
+                f"initial_equity is seeded from a cost figure ({rendered!r}). It must be equity "
+                "marked at this session's open, or the daily drawdown rule measures the whole "
+                "unrealized loss since inception instead of the day."
+            )
+
+
+def test_a_risk_halt_is_reported_as_a_halt_not_a_success() -> None:
+    """A halting session reconciles perfectly, so `reconciled` alone said SUCCESS and exited 0.
+
+    It refuses every order rather than mis-booking one, which is exactly why the reconciliation
+    passes. On an unattended weekday schedule that green exit was the operator's only signal that
+    the pilot had permanently stopped.
+    """
+    source = (
+        Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    ).read_text(encoding="utf-8")
+
+    assert '"kill_switch_active": governor.is_killed' in source, (
+        "the session payload no longer carries the kill-switch state, so no caller can see a halt"
+    )
+    assert "HALTED BY RISK KILL SWITCH" in source, "the banner cannot distinguish a halt"
+    assert "return 9" in source, "a halting session must not exit 0"
+
+
+def test_the_scheduler_wrapper_propagates_the_exit_code() -> None:
+    """Task Scheduler recorded LastTaskResult 0 for every run, whatever the session returned.
+
+    Confirmed against the real task: a Saturday run that must have returned 2 from the trading-day
+    guard was recorded as 0. The one place an operator would look for trouble always showed
+    success.
+    """
+    wrapper = (
+        Path(__file__).resolve().parent.parent / "scripts/run_scheduled_paper_session.cmd"
+    ).read_text(encoding="utf-8")
+
+    assert "exit /b %RC%" in wrapper, (
+        "the wrapper swallows the session's exit code; every scheduled run will look successful"
+    )
