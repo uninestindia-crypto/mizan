@@ -23,8 +23,10 @@ retained.
 
 from __future__ import annotations
 
+import ast
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
@@ -230,21 +232,66 @@ def test_a_quiet_session_does_not_lift_a_halt() -> None:
     assert later.halted_on == date(2026, 8, 20), "the original halt date must not be overwritten"
 
 
-def test_the_peak_records_marked_equity_not_only_cost() -> None:
-    """A book that rises during a hold must raise the high-water mark it is later measured against.
+def test_the_runner_feeds_the_peak_from_marked_equity_not_the_governor_alone() -> None:
+    """A source-level detector, because the previous version of this test proved nothing.
+
+    It asserted `max()` behaves like `max()` -- `session_peak_equity` was already a parameter, so it
+    passed verbatim against the parent commit. What actually changed is *which arguments the runner
+    passes*, and that is what this checks: reverting to `governor.all_time_peak_equity` alone fails
+    here.
 
     `update_peaks` is reachable only from `evaluate_order`, and a hold session proposes no orders,
-    so the peak moved only via `max(previous, ledger_funding())` -- a cost figure. A book that rose
-    25% and then fell 20% from that high recorded no drawdown at all.
+    so without the marked figure the peak moves only via `max(previous, ledger_funding())` -- a cost
+    figure. A book that rose 25% during a hold and then fell 20% from that high recorded no drawdown
+    at all.
     """
-    rose = state_from_ledger(
-        PaperPortfolioState(cash=Decimal("1000000.00"), peak_equity=Decimal("1000000.00")),
-        cash=Decimal("50000.00"),
-        positions={"ACME": (100, Decimal("1000.00"))},
-        session_date=SESSION_DATE,
-        session_realized_pnl=Decimal("0.00"),
-        fees_paid=Decimal("0.00"),
-        rebalanced=False,
-        session_peak_equity=Decimal("1250000.00"),
+    source = (
+        Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    ).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "state_from_ledger"
+    ]
+    assert calls, "the runner no longer calls state_from_ledger; this detector has gone blind"
+
+    peak_args = [
+        kw.value for call in calls for kw in call.keywords if kw.arg == "session_peak_equity"
+    ]
+    assert peak_args, "no session_peak_equity is passed, so the carried peak is whatever cost says"
+
+    for expression in peak_args:
+        rendered = ast.unparse(expression)
+        assert "total_equity" in rendered, (
+            "session_peak_equity is computed without marked equity "
+            f"({rendered!r}). A hold session proposes no orders, so the governor's own peak never "
+            "moves and the high-water mark degenerates to a cost figure."
+        )
+
+
+def test_reconciliation_can_actually_report_failure() -> None:
+    """Guards the verdict itself, which nothing did.
+
+    Round three found that forcing `reconciled=True` unconditionally left all 1,166 tests passing:
+    every test asserted a *successful* reconciliation, so the check could have been stubbed out
+    entirely and the suite would not have noticed. This drives `end_session` into a genuine
+    mismatch and requires it to say so.
+    """
+    state = _carried()
+    engine = _engine(state)
+    # Move the ledger behind the engine's back, so positions and the recorded baseline disagree.
+    engine.ledger.process_fill(
+        Fill("x", "xo", "ACME", Side.BUY, 25, Decimal("1000.00"), Decimal("0.00"), AT)
     )
-    assert rose.peak_equity == Decimal("1250000.00")
+    engine.start_session(session_date=SESSION_DATE, timestamp=AT)
+
+    report = engine.end_session(timestamp=CLOSE, close_prices=CLOSE_PRICES)
+
+    assert report.reconciled is False
+    assert any("POSITION_MISMATCH" in error for error in report.reconciliation_errors), (
+        f"expected a position mismatch, got {report.reconciliation_errors}"
+    )

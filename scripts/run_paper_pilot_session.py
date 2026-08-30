@@ -784,17 +784,30 @@ def run_paper_session(
         # the only honest option left: resetting it would make the switch decorative, and
         # liquidating on its own would execute a rule nobody measured. Clearing it is a human act.
         logger.error(
-            "REFUSING TO TRADE: the risk kill switch fired on %s and has not been cleared. Reason: "
-            "%s. Review the book, then clear `risk_halted` in %s deliberately.",
+            "REFUSING TO TRADE: the risk kill switch fired on %s and has not been cleared. "
+            "Reason: %s. Review the book, then run:  "
+            "python scripts/clear_paper_halt.py --i-have-reviewed-the-book  "
+            "Do NOT hand-edit or delete %s: it is hash-protected, so an edit is refused on the "
+            "next load, and deleting it invents a fresh portfolio and discards the real book.",
             portfolio.halted_on,
             portfolio.halt_reason or "not recorded",
             PORTFOLIO_STATE_PATH,
         )
         raise SystemExit(8)
 
+    # Two peaks, two meanings. `initial_equity` is *this session's* opening equity, so the 4% daily
+    # limit measures an intraday decline; `all_time_peak_equity` is the carried high-water mark, so
+    # the 12% total limit measures a multi-session one.
+    #
+    # Passing the carried peak as `initial_equity` -- which is what this line used to do -- seeded
+    # both, and the daily check then measured multi-session declines against the 4% limit. The
+    # total switch became unreachable, and a session that opened flat and never moved intraday
+    # could halt the book on the first order, which is the exit.
+    opening_equity = portfolio.ledger_funding()
     governor = PreTradeRiskGovernor(
         limits=risk_limits,
-        initial_equity=max(portfolio.peak_equity, portfolio.ledger_funding()),
+        initial_equity=opening_equity,
+        all_time_peak_equity=max(portfolio.peak_equity, opening_equity),
     )
 
     # 4. Order Book Simulator Configuration

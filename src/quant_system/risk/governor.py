@@ -20,12 +20,37 @@ class PreTradeRiskGovernor:
         self,
         limits: RiskLimits | None = None,
         initial_equity: Decimal | None = None,
+        all_time_peak_equity: Decimal | None = None,
     ) -> None:
+        """Create a governor for one session.
+
+        Args:
+            limits: The risk policy. Defaults to `RiskLimits()`.
+            initial_equity: Equity at **this session's open**. Seeds the daily peak, so the daily
+                drawdown limit measures an intraday decline from where the session started.
+            all_time_peak_equity: The highest equity this portfolio has *ever* reached, carried
+                across sessions. Seeds the trailing peak, so the total drawdown limit measures a
+                multi-session decline. Defaults to `initial_equity`, which is correct for a
+                portfolio with no history.
+
+        The two peaks are separate parameters because conflating them is a live defect rather than a
+        hypothetical one. Both used to be seeded from `initial_equity`, and `reset_session_peak` --
+        which exists to set the daily peak at each open -- has no caller anywhere in the repository.
+        Once a caller began passing the persisted all-time peak as `initial_equity` to make the
+        total-drawdown switch work across sessions, the **daily** check inherited it too and started
+        measuring multi-session declines against a 4% limit. `TOTAL_MAX_DRAWDOWN_BREACHED` became
+        unreachable: every breach at 5%, 10%, 14% or 20% below the all-time peak reported the daily
+        reason, and a session that opened flat and never moved intraday could halt the book.
+        """
         self.limits: RiskLimits = limits or RiskLimits()
         self._is_killed: bool = False
         init_eq = initial_equity if initial_equity is not None else Decimal("0.00")
         self._daily_peak_equity: Decimal = init_eq
-        self._all_time_peak_equity: Decimal = init_eq
+        # A trailing peak below today's open would make the total check weaker than the daily one,
+        # so the carried figure is a floor rather than a replacement.
+        self._all_time_peak_equity: Decimal = (
+            max(init_eq, all_time_peak_equity) if all_time_peak_equity is not None else init_eq
+        )
         self._kill_events: list[KillSwitchEvent] = []
 
     @property
