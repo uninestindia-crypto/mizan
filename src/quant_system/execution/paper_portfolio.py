@@ -55,10 +55,11 @@ from quant_system.data.market_data_evidence import canonical_sha256
 #: silently misread as the current one.
 PORTFOLIO_SCHEMA_ID = "quantos.paper_portfolio"
 
-#: Version 2 adds ``entry_fee`` to each holding and renames ``sessions_since_rebalance`` to
-#: ``sessions_held``. No migration from v1 is written: no v1 state file was ever produced, because
-#: the scheduled session was disabled before its first run. A v1 file is refused on load.
-PORTFOLIO_SCHEMA_VERSION = 2
+#: Version 2 added ``entry_fee`` per holding and renamed ``sessions_since_rebalance`` to
+#: ``sessions_held``. Version 3 adds the risk halt, so a tripped kill switch survives the session
+#: boundary. No migration is written for either: no state file has ever been produced, because the
+#: scheduled session was disabled before its first run. An older file is refused on load.
+PORTFOLIO_SCHEMA_VERSION = 3
 
 
 class PaperPortfolioError(RuntimeError):
@@ -118,6 +119,20 @@ class PaperPortfolioState:
     #: because each session's decline was measured against that session's own high. Making the
     #: portfolio persistent is what made the switch inert; carrying the peak is what restores it.
     peak_equity: Decimal = Decimal("0.00")
+
+    #: Whether the risk governor's kill switch has fired and not been cleared by a human.
+    #:
+    #: A fresh `PreTradeRiskGovernor` is constructed every session with `_is_killed = False`, and
+    #: nothing restored it, so a total-drawdown breach halted trading for the remainder of *one*
+    #: session and was forgotten the next morning. In the same session the halt also refused the
+    #: exits -- the kill fires on the first order, and the first order is a SELL -- so the losing
+    #: book was retained while the breach that should have stopped it was erased.
+    #:
+    #: Deliberately not cleared by any automatic condition. A kill switch that resets itself is not
+    #: a kill switch, and one that liquidates on its own would implement a rule nobody measured.
+    risk_halted: bool = False
+    halted_on: date | None = None
+    halt_reason: str = ""
 
     #: Sessions the current holding will have been held for as of the *next* session's check.
     #:
@@ -220,6 +235,9 @@ class PaperPortfolioState:
                 for h in sorted(self.holdings.values(), key=lambda h: h.symbol)
             ],
             "peak_equity": str(self.peak_equity),
+            "risk_halted": self.risk_halted,
+            "halted_on": self.halted_on.isoformat() if self.halted_on else None,
+            "halt_reason": self.halt_reason,
             "last_rebalance_on": (
                 self.last_rebalance_on.isoformat() if self.last_rebalance_on else None
             ),
@@ -298,6 +316,9 @@ def load_portfolio(path: Path) -> PaperPortfolioState | None:
         sessions_completed=int(payload["sessions_completed"]),
         sessions_held=int(payload["sessions_held"]),
         peak_equity=Decimal(payload["peak_equity"]),
+        risk_halted=bool(payload["risk_halted"]),
+        halted_on=(date.fromisoformat(payload["halted_on"]) if payload.get("halted_on") else None),
+        halt_reason=str(payload.get("halt_reason", "")),
     )
 
 
@@ -312,6 +333,8 @@ def state_from_ledger(
     rebalanced: bool,
     open_entry_fees: dict[str, Decimal] | None = None,
     session_peak_equity: Decimal | None = None,
+    risk_halted: bool = False,
+    halt_reason: str = "",
 ) -> PaperPortfolioState:
     """The state to persist after a session, from the ledger's closing view.
 
@@ -356,6 +379,10 @@ def state_from_ledger(
         peak_equity=max(previous.peak_equity, session_peak_equity or Decimal("0.00")).quantize(
             Decimal("0.01")
         ),
+        # Sticky. Once halted, only a human clears it; a later quiet session must not lift it.
+        risk_halted=previous.risk_halted or risk_halted,
+        halted_on=previous.halted_on or (session_date if risk_halted else None),
+        halt_reason=previous.halt_reason or (halt_reason if risk_halted else ""),
         # 1, not 0, on the rebalance session: a position entered today is one session old when the
         # next session opens, and the check happens at the open.
         sessions_held=1 if rebalanced else previous.sessions_held + 1,

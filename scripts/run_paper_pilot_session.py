@@ -779,6 +779,19 @@ def run_paper_session(
     # against its own falling baseline and the total-drawdown kill switch could never trip. The
     # peak is the larger of what the portfolio has ever reached and what it is funded with today,
     # so a first run establishes a real baseline rather than starting at zero.
+    if portfolio.risk_halted:
+        # A tripped kill switch is not cleared by time passing. Refusing here rather than trading is
+        # the only honest option left: resetting it would make the switch decorative, and
+        # liquidating on its own would execute a rule nobody measured. Clearing it is a human act.
+        logger.error(
+            "REFUSING TO TRADE: the risk kill switch fired on %s and has not been cleared. Reason: "
+            "%s. Review the book, then clear `risk_halted` in %s deliberately.",
+            portfolio.halted_on,
+            portfolio.halt_reason or "not recorded",
+            PORTFOLIO_STATE_PATH,
+        )
+        raise SystemExit(8)
+
     governor = PreTradeRiskGovernor(
         limits=risk_limits,
         initial_equity=max(portfolio.peak_equity, portfolio.ledger_funding()),
@@ -806,9 +819,11 @@ def run_paper_session(
     # since a previous session is refused as a short, because the ledger has never seen it. The
     # fills carry their original entry fee, which `ledger_funding` has already covered, so the
     # eventual sale nets both legs instead of only the exit.
+    # Through the engine, not the ledger directly. Going straight to `ledger.process_fill` left the
+    # engine's own reconciliation baseline flat, so `end_session` compared the ledger's carried
+    # positions against today's fills alone and mismatched on every one of them.
     carry_fills = portfolio.carry_forward_fills(current_ist)
-    for carry_fill in carry_fills:
-        engine.ledger.process_fill(carry_fill)
+    engine.carry_in_positions(carry_fills)
     if carry_fills:
         logger.info(
             "Carried %d position(s) into the ledger; cash now Rs %s",
@@ -1203,7 +1218,15 @@ def run_paper_session(
         fees_paid=todays_fees,
         rebalanced=rebalancing,
         open_entry_fees=open_entry_fees,
-        session_peak_equity=governor.all_time_peak_equity,
+        # Marked equity, not the governor's peak alone. `update_peaks` is reachable only from
+        # `evaluate_order`, and a hold session proposes no orders, so nine sessions in ten never
+        # touched the peak -- and the fallback seed was `ledger_funding()`, a *cost* figure. A book
+        # that rose 25% during a hold and then fell 20% from that high recorded no drawdown at all.
+        session_peak_equity=max(governor.all_time_peak_equity, reconciliation.total_equity),
+        risk_halted=governor.is_killed,
+        halt_reason=(
+            governor.kill_events[-1].reason if governor.is_killed and governor.kill_events else ""
+        ),
     )
     save_portfolio(PORTFOLIO_STATE_PATH, portfolio)
     logger.info(

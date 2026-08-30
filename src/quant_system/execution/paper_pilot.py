@@ -11,7 +11,7 @@ Enforces financial-model-craft and nse-execution-craft standards.
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
@@ -174,6 +174,16 @@ class PaperPilotEngine:
         self._fill_by_id: dict[str, Fill] = {}
         self._fill_cost_breakdowns: dict[str, TransactionCostBreakdown] = {}
 
+        # Positions this session *opened with*, seeded by `carry_in_positions`.
+        #
+        # `end_session` reconciles `ledger.positions` against the fills in `self._fills`, an
+        # invariant that assumes the session starts flat. Once the runner began carrying a portfolio
+        # between sessions that stopped being true, and every session holding anything reported
+        # POSITION_MISMATCH. Tracking the opening quantities separately keeps the reconciliation
+        # exact without pretending the carried positions were traded today -- which would inflate
+        # today's fee total and trade count with costs paid on an earlier session.
+        self._carried_positions: dict[str, int] = defaultdict(int)
+
         # Market data & clock cache
         self._price_cache: dict[str, Decimal] = {}
         self._last_quote_timestamp: dict[str, datetime] = {}
@@ -195,6 +205,38 @@ class PaperPilotEngine:
     @property
     def positions(self) -> Mapping[str, Position]:
         return self.ledger.positions
+
+    @property
+    def carried_positions(self) -> Mapping[str, int]:
+        """Quantities this session opened with, by symbol. Empty for a session that started flat."""
+        return dict(self._carried_positions)
+
+    def carry_in_positions(self, fills: Sequence[Fill]) -> None:
+        """Seed positions held from an earlier session, before the session opens.
+
+        The fills are replayed through the ledger's own `process_fill`, so lot accounting, cost
+        basis and each lot's `entry_fee` are reconstructed by the ledger rather than asserted. They
+        are deliberately **not** added to `self._fills`: that list is what the session reports as
+        today's trading, and counting a position opened last week as a fill today would inflate
+        `total_fees`, `total_trades_count` and `total_fills_count` with costs already paid.
+
+        What it does record is the opening quantity, so `end_session` can reconcile
+        `ledger.positions` against `opening + net fills today` instead of against fills alone.
+        Without that the reconciliation mismatched on every carried holding.
+        """
+        if self._session_status is not SessionStatus.INITIALIZED:
+            raise RuntimeError(
+                "positions must be carried in before the session opens; the reconciliation baseline "
+                f"cannot move once trading has started (status is {self._session_status.value})"
+            )
+        for fill in fills:
+            if fill.side is not Side.BUY:
+                raise ValueError(
+                    f"carried position {fill.symbol} must be replayed as a BUY, got "
+                    f"{fill.side.value}; this portfolio is long-only"
+                )
+            self.ledger.process_fill(fill)
+            self._carried_positions[fill.symbol] += fill.quantity
 
     @property
     def fills(self) -> list[Fill]:
@@ -789,15 +831,37 @@ class PaperPilotEngine:
             )
 
         # (b) Position balance integrity
+        #
+        # Measured against what the session opened with plus what it filled today. A session that
+        # carries a portfolio in does not start flat, and comparing against today's fills alone
+        # mismatched on every carried holding.
         for sym, pos in self.ledger.positions.items():
             net_filled_qty = sum(
                 f.quantity if f.side == Side.BUY else -f.quantity
                 for f in self._fills
                 if f.symbol == sym
             )
-            if pos.quantity != net_filled_qty:
+            expected_qty = self._carried_positions.get(sym, 0) + net_filled_qty
+            if pos.quantity != expected_qty:
                 errors.append(
-                    f"POSITION_MISMATCH for {sym}: Ledger {pos.quantity} != Net Fills {net_filled_qty}"
+                    f"POSITION_MISMATCH for {sym}: Ledger {pos.quantity} != Carried "
+                    f"{self._carried_positions.get(sym, 0)} + Net Fills {net_filled_qty}"
+                )
+
+        # A carried name the ledger no longer holds must have been sold down to exactly zero. The
+        # loop above cannot see it, because the ledger drops a flat position entirely.
+        for sym, carried_qty in self._carried_positions.items():
+            if sym in self.ledger.positions:
+                continue
+            net_filled_qty = sum(
+                f.quantity if f.side == Side.BUY else -f.quantity
+                for f in self._fills
+                if f.symbol == sym
+            )
+            if carried_qty + net_filled_qty != 0:
+                errors.append(
+                    f"POSITION_MISMATCH for {sym}: Ledger holds nothing but Carried {carried_qty} "
+                    f"+ Net Fills {net_filled_qty} is not flat"
                 )
 
         # (c) Open orders integrity
