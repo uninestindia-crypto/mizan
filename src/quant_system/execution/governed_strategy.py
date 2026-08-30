@@ -65,12 +65,15 @@ from quant_system.strategies.base import BaseStrategy, MarketContext
 __all__ = [
     "GOVERNED_BARS_KEY",
     "ModelEvidenceIdentityV1",
+    "RESEARCH_PAPER_DECISION_RECORD",
+    "ResearchPaperExemptionV1",
     "score_row",
     "ExecutionSurface",
     "GovernedExecutionError",
     "GovernedModelStrategy",
     "PromotedModelBundleV1",
     "SURFACE_ALLOWED_VERDICTS",
+    "require_surface_admits",
 ]
 
 #: ``MarketContext.extra_data`` key carrying ``Mapping[str, Sequence[PointInTimeBar]]``.
@@ -100,19 +103,101 @@ class ExecutionSurface(StrEnum):
     PAPER_PILOT = "PAPER_PILOT"
     PAPER = "PAPER"
 
+    #: Observation of an *unpromotable* model against live prices. Admits `RESEARCH_ONLY` and
+    #: nothing else, and is reachable only by presenting a `ResearchPaperExemptionV1`. See
+    #: `agent_context/decisions/20260830-paper-surface-research-only-exemption.md`.
+    RESEARCH_PAPER = "RESEARCH_PAPER"
+
 
 #: Which promotion verdicts may drive which surface.
 #:
 #: A verdict is a ceiling, not a label. A SHADOW-verdict model may only ever run in shadow; it must
-#: not be silently promoted by being handed to the paper pilot. REJECT and RESEARCH_ONLY appear
-#: nowhere, so they cannot execute anywhere.
+#: not be silently promoted by being handed to the paper pilot.
+#:
+#: `RESEARCH_ONLY` appears on exactly one surface, `RESEARCH_PAPER`, under the declared exemption
+#: recorded at `agent_context/decisions/20260830-paper-surface-research-only-exemption.md`. That
+#: surface admits nothing else -- a *promotable* model must not run there either, because its
+#: results would be filed as research observation rather than as a pilot.
+#:
+#: `REJECT` appears nowhere and may not execute on any surface. That is the line the exemption does
+#: not cross: a rejected model failed a gate it was measured against, whereas a `RESEARCH_ONLY`
+#: model was never eligible for one.
 SURFACE_ALLOWED_VERDICTS: Final[Mapping[ExecutionSurface, frozenset[PromotionState]]] = {
     ExecutionSurface.SHADOW: frozenset(
         {PromotionState.SHADOW, PromotionState.PAPER_PILOT, PromotionState.PAPER}
     ),
     ExecutionSurface.PAPER_PILOT: frozenset({PromotionState.PAPER_PILOT, PromotionState.PAPER}),
     ExecutionSurface.PAPER: frozenset({PromotionState.PAPER}),
+    ExecutionSurface.RESEARCH_PAPER: frozenset({PromotionState.RESEARCH_ONLY}),
 }
+
+#: The decision an exemption must cite. A literal rather than a free-text field so that a reader of
+#: any exemption instance can find the reasoning, and so `grep` locates every use in one search.
+RESEARCH_PAPER_DECISION_RECORD: Final = (
+    "agent_context/decisions/20260830-paper-surface-research-only-exemption.md"
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ResearchPaperExemptionV1:
+    """A caller's acknowledgement that it is running an unpromotable model, and why.
+
+    This exists so that executing a `RESEARCH_ONLY` model is a *stated* act. The defect it replaces
+    was not a gate that failed -- it was a gate that no live path ever reached, which is
+    indistinguishable from an intentional decision when read from the outside.
+
+    The exemption is deliberately awkward to obtain: it is required on `RESEARCH_PAPER` and refused
+    on every other surface, so it cannot drift into general use as a way past the ceilings.
+    """
+
+    decision_record: str
+    acknowledged_by: str
+    reason: str
+
+    def __post_init__(self) -> None:
+        if self.decision_record != RESEARCH_PAPER_DECISION_RECORD:
+            raise GovernedExecutionError(
+                f"a research-paper exemption must cite {RESEARCH_PAPER_DECISION_RECORD!r}, got "
+                f"{self.decision_record!r}; the citation is what makes the exemption auditable"
+            )
+        if not self.acknowledged_by.strip() or not self.reason.strip():
+            raise GovernedExecutionError(
+                "a research-paper exemption must name who acknowledged it and why; an unattributed "
+                "exemption records nothing"
+            )
+
+
+def require_surface_admits(
+    verdict: PromotionState,
+    surface: ExecutionSurface,
+    exemption: ResearchPaperExemptionV1 | None = None,
+) -> None:
+    """Refuse a verdict the surface does not admit, and police the exemption in both directions.
+
+    Both directions matter. Omitting the exemption on `RESEARCH_PAPER` would let the surface become
+    a silent bypass; accepting one on any other surface would let it become a general skeleton key.
+
+    The verdict is checked *before* the exemption, so that a promotable model offered to
+    `RESEARCH_PAPER` is told the verdict is wrong for that surface rather than being told to supply
+    an exemption -- which would not have helped and would have sent the reader down a dead end.
+    """
+    allowed = SURFACE_ALLOWED_VERDICTS[surface]
+    if verdict not in allowed:
+        raise GovernedExecutionError(
+            f"a {verdict.value} model may not drive the {surface.value} surface; permitted "
+            f"verdicts are {sorted(state.value for state in allowed)}"
+        )
+    if surface is ExecutionSurface.RESEARCH_PAPER:
+        if exemption is None:
+            raise GovernedExecutionError(
+                f"the {surface.value} surface runs models that failed promotion, so it requires an "
+                f"explicit ResearchPaperExemptionV1 citing {RESEARCH_PAPER_DECISION_RECORD}"
+            )
+    elif exemption is not None:
+        raise GovernedExecutionError(
+            f"a research-paper exemption does not apply to the {surface.value} surface; it exists "
+            "only to admit RESEARCH_ONLY to RESEARCH_PAPER"
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -302,12 +387,10 @@ class GovernedModelStrategy(BaseStrategy):
             strength_full_scale: Score distance above the threshold that maps to full strength 1.0.
                 Ridge scores are unbounded, so the map saturates rather than normalising.
         """
-        allowed = SURFACE_ALLOWED_VERDICTS[surface]
-        if bundle.model_card.verdict not in allowed:
-            raise GovernedExecutionError(
-                f"verdict {bundle.model_card.verdict.value} may not drive surface {surface.value}; "
-                f"allowed here: {sorted(state.value for state in allowed)}"
-            )
+        # No exemption parameter here, deliberately. The research-paper exemption is declared for
+        # the cross-sectional observation surface only, so this single-instrument path can never
+        # satisfy RESEARCH_PAPER and a RESEARCH_ONLY model cannot reach execution through it.
+        require_surface_admits(bundle.model_card.verdict, surface)
         band = _require_canonical_decimal(abstain_band, "abstain_band")
         if band < 0:
             raise GovernedExecutionError("abstain_band cannot be negative")

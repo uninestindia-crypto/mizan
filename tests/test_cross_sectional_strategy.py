@@ -208,14 +208,38 @@ def _strategy(bundle=None, **kwargs) -> CrossSectionalModelStrategy:
 # --------------------------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("verdict", [PromotionState.RESEARCH_ONLY, PromotionState.REJECT])
-def test_unpromotable_verdict_cannot_be_bundled(verdict: PromotionState) -> None:
+def test_a_rejected_verdict_cannot_be_bundled() -> None:
     """A model no surface accepts must not assemble into a bundle at all.
 
-    This is the check that stops the Mizan models, both of which publish RESEARCH_ONLY.
+    `REJECT` is now the only such verdict. `RESEARCH_ONLY` became bundleable when the observation
+    surface was declared at
+    `agent_context/decisions/20260830-paper-surface-research-only-exemption.md`; the test below
+    pins what still stops it. The distinction is deliberate: a REJECT model failed a gate it was
+    measured against, whereas a RESEARCH_ONLY model was never eligible for one.
     """
     with pytest.raises(GovernedExecutionError, match="not executable on any surface"):
-        _bundle(verdict=verdict)
+        _bundle(verdict=PromotionState.REJECT)
+
+
+def test_a_research_only_bundle_assembles_but_drives_no_promotion_surface() -> None:
+    """Bundling is no longer where RESEARCH_ONLY stops -- the surface is.
+
+    Before the exemption existed this verdict could not form a bundle, so nothing downstream had to
+    hold. Now it can, which makes the per-surface rule load-bearing rather than a second line of
+    defence, and that is what this pins.
+    """
+    bundle = _bundle(verdict=PromotionState.RESEARCH_ONLY)
+
+    for surface in (ExecutionSurface.SHADOW, ExecutionSurface.PAPER_PILOT, ExecutionSurface.PAPER):
+        with pytest.raises(GovernedExecutionError, match="may not drive the"):
+            _strategy(bundle, surface=surface)
+
+
+def test_a_research_only_bundle_needs_the_exemption_even_on_its_own_surface() -> None:
+    bundle = _bundle(verdict=PromotionState.RESEARCH_ONLY)
+
+    with pytest.raises(GovernedExecutionError, match="requires an explicit"):
+        _strategy(bundle, surface=ExecutionSurface.RESEARCH_PAPER)
 
 
 def test_shadow_verdict_may_not_drive_the_paper_surface() -> None:
@@ -497,12 +521,14 @@ def test_selection_count_is_exact_at_the_boundaries(
 
 # test-allow: skipped-test — conditional skip when optional local evidence store is absent
 @pytest.mark.skipif(not _MIZAN_MANIFEST.exists(), reason="Mizan evidence store not present")
-def test_the_real_mizan_model_reconstructs_and_is_then_refused_as_research_only() -> None:
+def test_the_real_mizan_model_reconstructs_and_is_gated_at_the_surface() -> None:
     """The gate that matters, exercised against the model this work was actually asked about.
 
     The fitted state is reconstructed from the published manifest and must rehash to the recorded
     ``fitted_state_hash`` -- otherwise this test would be asserting against a model the trial never
-    published. It then fails to bundle, because both Mizan models are RESEARCH_ONLY.
+    published. It then assembles -- RESEARCH_ONLY became bundleable when the observation surface
+    was declared -- and is refused by every promotion surface, and by its own surface until an
+    exemption is presented. That refusal is now the only thing stopping it.
     """
     metadata = json.loads(_MIZAN_MANIFEST.read_text(encoding="utf-8"))["metadata"]
     published = metadata["fitted_state"]
@@ -537,23 +563,29 @@ def test_the_real_mizan_model_reconstructs_and_is_then_refused_as_research_only(
         halt_and_rollback_policy="halt on breach and roll back to the previous active model",
         limitations=("research evidence only",),
     )
-    with pytest.raises(GovernedExecutionError, match="not executable on any surface"):
-        PromotedCrossSectionalBundleV1(
+    bundle = PromotedCrossSectionalBundleV1(
+        candidate_id=metadata["candidate_id"],
+        model_card=card,
+        fitted=fitted,
+        standardization=standardization,
+        score_threshold="0",
+        selection_rule=CrossSectionalSelectionRuleV1("0.2"),
+        evidence=CrossSectionalEvidenceIdentityV1(
+            model_id=metadata["model_id"],
             candidate_id=metadata["candidate_id"],
-            model_card=card,
-            fitted=fitted,
-            standardization=standardization,
+            trial_id=metadata["trial_id"],
+            symbols=("AAA",),
+            fitted_state_hash=fitted.fitted_state_hash,
+            preprocessing_state_hash=standardization.state_hash,
             score_threshold="0",
-            selection_rule=CrossSectionalSelectionRuleV1("0.2"),
-            evidence=CrossSectionalEvidenceIdentityV1(
-                model_id=metadata["model_id"],
-                candidate_id=metadata["candidate_id"],
-                trial_id=metadata["trial_id"],
-                symbols=("AAA",),
-                fitted_state_hash=fitted.fitted_state_hash,
-                preprocessing_state_hash=standardization.state_hash,
-                score_threshold="0",
-                feature_schema_id=metadata["feature_schema_id"],
-                feature_schema_version=metadata["feature_schema_version"],
-            ),
-        )
+            feature_schema_id=metadata["feature_schema_id"],
+            feature_schema_version=metadata["feature_schema_version"],
+        ),
+    )
+
+    for surface in (ExecutionSurface.SHADOW, ExecutionSurface.PAPER_PILOT, ExecutionSurface.PAPER):
+        with pytest.raises(GovernedExecutionError, match="may not drive the"):
+            _strategy(bundle, surface=surface)
+
+    with pytest.raises(GovernedExecutionError, match="requires an explicit"):
+        _strategy(bundle, surface=ExecutionSurface.RESEARCH_PAPER)

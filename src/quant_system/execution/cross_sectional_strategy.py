@@ -39,9 +39,11 @@ from quant_system.execution.governed_strategy import (
     SURFACE_ALLOWED_VERDICTS,
     ExecutionSurface,
     GovernedExecutionError,
+    ResearchPaperExemptionV1,
     available_window,
     require_bar_history,
     require_bar_sequence,
+    require_surface_admits,
     score_row,
 )
 from quant_system.modeling import ModelCardV1
@@ -50,6 +52,7 @@ from quant_system.modeling.preprocessing import (
     StandardizationStateV1,
     standardize_feature_values,
 )
+from quant_system.modeling.promotion import PromotionState
 from quant_system.modeling.ridge import RidgeFittedStateV1
 from quant_system.modeling.rows import feature_names_for
 from quant_system.strategies.base import BaseStrategy, MarketContext
@@ -74,11 +77,15 @@ from quant_system.strategies.base import BaseStrategy, MarketContext
 #: comment -- wrong twice over, and it would have scored silently. Importing makes that impossible.
 CROSS_SECTIONAL_WINDOW_BARS: Final = MIZAN_CANONICAL_WINDOW_BARS
 
-#: Verdicts that may execute on *some* surface. SHADOW is the most permissive surface, so its
-#: allowed set is exactly the set of verdicts that are executable anywhere. Naming it here keeps one
-#: source of truth: a bundle refuses what no surface would accept, and the strategy then applies the
-#: narrower per-surface rule on top.
-_EXECUTABLE_VERDICTS: Final = SURFACE_ALLOWED_VERDICTS[ExecutionSurface.SHADOW]
+#: Verdicts that may execute on *some* surface, as the union over every surface. Naming it here
+#: keeps one source of truth: a bundle refuses what no surface would accept, and the strategy then
+#: applies the narrower per-surface rule on top.
+#:
+#: This was previously SHADOW's set alone, on the reasoning that SHADOW was the most permissive
+#: surface. That stopped being true when `RESEARCH_PAPER` was added: it admits `RESEARCH_ONLY`,
+#: which SHADOW does not, so the union is now strictly larger than any single surface. `REJECT` is
+#: in no surface's set and so remains executable nowhere.
+_EXECUTABLE_VERDICTS: Final = frozenset[PromotionState]().union(*SURFACE_ALLOWED_VERDICTS.values())
 
 
 @runtime_checkable
@@ -361,13 +368,9 @@ class CrossSectionalModelStrategy(BaseStrategy):
         *,
         min_coverage: str = "1",
         name: str = "governed_cross_sectional",
+        research_exemption: ResearchPaperExemptionV1 | None = None,
     ) -> None:
-        allowed = SURFACE_ALLOWED_VERDICTS[surface]
-        if bundle.model_card.verdict not in allowed:
-            raise GovernedExecutionError(
-                f"a {bundle.model_card.verdict.value} model may not drive the {surface.value} "
-                f"surface; permitted verdicts are {sorted(state.value for state in allowed)}"
-            )
+        require_surface_admits(bundle.model_card.verdict, surface, research_exemption)
         coverage = _require_canonical_decimal(min_coverage, "min_coverage")
         if not Decimal(0) < coverage <= Decimal(1):
             raise GovernedExecutionError(f"min_coverage must lie in (0, 1], got {min_coverage!r}")
@@ -381,6 +384,17 @@ class CrossSectionalModelStrategy(BaseStrategy):
                 "min_coverage": min_coverage,
                 "model_card_hash": bundle.model_card.model_card_hash,
                 "model_id": bundle.model_id,
+                # Present only under the declared exemption, so a session report shows on its face
+                # whether an unpromotable model produced it.
+                "research_exemption": (
+                    None
+                    if research_exemption is None
+                    else {
+                        "acknowledged_by": research_exemption.acknowledged_by,
+                        "decision_record": research_exemption.decision_record,
+                        "reason": research_exemption.reason,
+                    }
+                ),
                 "score_threshold": bundle.score_threshold,
                 "selection_fraction": bundle.selection_rule.selection_fraction,
                 "surface": surface.value,
@@ -390,6 +404,7 @@ class CrossSectionalModelStrategy(BaseStrategy):
         )
         self.bundle = bundle
         self.surface = surface
+        self.research_exemption = research_exemption
         self._provider = feature_provider
         self._threshold = Decimal(bundle.score_threshold)
         self._min_coverage = coverage

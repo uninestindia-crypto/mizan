@@ -261,15 +261,27 @@ def test_shadow_verdict_may_not_drive_the_paper_pilot(journey: object) -> None:
     """A verdict is a ceiling. Handing a shadow model to the pilot must not silently promote it."""
     bundle = _bundle(journey, verdict=PromotionState.SHADOW)
 
-    with pytest.raises(GovernedExecutionError, match="may not drive surface"):
+    with pytest.raises(GovernedExecutionError, match="may not drive the"):
         GovernedModelStrategy(bundle, ExecutionSurface.PAPER_PILOT)
 
 
-def test_paper_verdict_may_drive_every_surface(journey: object) -> None:
+def test_paper_verdict_may_drive_every_promotion_surface(journey: object) -> None:
     bundle = _bundle(journey, verdict=PromotionState.PAPER)
 
     assert GovernedModelStrategy(bundle, ExecutionSurface.SHADOW).surface is ExecutionSurface.SHADOW
     assert GovernedModelStrategy(bundle, ExecutionSurface.PAPER).surface is ExecutionSurface.PAPER
+
+
+def test_a_promotable_model_may_not_drive_the_research_observation_surface(journey: object) -> None:
+    """RESEARCH_PAPER is not "the most permissive surface" -- it is a different purpose.
+
+    A promotable model running there would file its results as research observation rather than as
+    a pilot, which is the opposite of the mistake the exemption exists to prevent.
+    """
+    bundle = _bundle(journey, verdict=PromotionState.PAPER)
+
+    with pytest.raises(GovernedExecutionError, match="may not drive the RESEARCH_PAPER"):
+        GovernedModelStrategy(bundle, ExecutionSurface.RESEARCH_PAPER)
 
 
 def test_bundle_refuses_a_card_describing_a_different_candidate(journey: object) -> None:

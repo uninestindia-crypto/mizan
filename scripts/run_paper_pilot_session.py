@@ -53,7 +53,6 @@ from quant_system.execution.paper_pilot import (  # noqa: E402
     PaperPilotEngine,
     PaperProposal,
 )
-from quant_system.modeling import MizanModel  # noqa: E402
 from quant_system.risk.checks import RiskLimits  # noqa: E402
 from quant_system.risk.governor import PreTradeRiskGovernor  # noqa: E402
 
@@ -312,6 +311,11 @@ from quant_system.evidence import (  # noqa: E402
     EvidenceResourceType,
     EvidenceStore,
     EvidenceStoreConfig,
+)
+from quant_system.execution.governed_strategy import ExecutionSurface  # noqa: E402
+from quant_system.execution.mizan_execution import (  # noqa: E402
+    PAPER_OBSERVATION_EXEMPTION,
+    load_mizan_for_execution,
 )
 from quant_system.execution.mizan_live_features import (  # noqa: E402
     CrossSectionCoverage,
@@ -593,8 +597,16 @@ def run_paper_session(
         )
 
     # 2. Initialize Mizan Model based on Profile
+    # Both profiles carry verdict=RESEARCH_ONLY, so both are admitted only by the RESEARCH_PAPER
+    # surface and only under the declared exemption. Acquiring the model through
+    # `load_mizan_for_execution` is what makes that check unavoidable: the previous direct
+    # `MizanModel.default_model()` call reached no gate at all.
     if model_profile == "sprint_50k":
-        model = MizanModel.sprint_50k_model()
+        model = load_mizan_for_execution(
+            ExecutionSurface.RESEARCH_PAPER,
+            PAPER_OBSERVATION_EXEMPTION,
+            profile="sprint_50k",
+        )
         per_name_alloc = (initial_cash * Decimal("0.45")).quantize(
             _PAISA
         )  # 45% per name for 2-3 names
@@ -606,7 +618,10 @@ def run_paper_session(
             allow_naked_short=False,  # Strict long-only / no naked shorting
         )
     else:
-        model = MizanModel.default_model()
+        model = load_mizan_for_execution(
+            ExecutionSurface.RESEARCH_PAPER,
+            PAPER_OBSERVATION_EXEMPTION,
+        )
         per_name_alloc = Decimal("150000.00")
         risk_limits = RiskLimits(
             max_position_weight=0.30,  # Max 30% capital in single name
