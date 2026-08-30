@@ -1,48 +1,48 @@
 # Red Team round four — risk-governor repairs adjudication
 
-STATUS: ACTIVE
+STATUS: COMPLETED
 AGENT: Claude Code (Red Team, fourth independent pass)
 STARTED_UTC: 2026-08-30
 STARTING_REVISION: 46c7bb67
+ENDING_REVISION: d6f421e3 (HEAD moved mid-run; the author repaired both Blockers this report opened)
 WORKTREE_OR_BRANCH: install root `D:\quant_system`, branch `main` (read-only adjudication; no source edits, no commits)
 
 ## Objective
 
-Adjudicate the eight claims in `.launch/RED-TEAM-BRIEF-20260830-ROUND4.md` against commit
-`46c7bb67`. Report only; repair nothing.
+Adjudicate the claims in `.launch/RED-TEAM-BRIEF-20260830-ROUND4.md` against `46c7bb67`, extended
+by the coordinator to cover `d6f421e3` and a ninth claim on the three new detectors. Report only.
 
 ## OWNED_PATHS
 
 - `.launch/reports/RED-TEAM-20260830-ROUND4.md`  (exclusive write claim)
 - `agent_context/work/active/20260830-redteam-round4.md`  (this record)
 
-No other path is claimed or will be written. Explicitly NOT touched: any file under `src/`,
-`scripts/`, `tests/`, `data/evidence/`, `logs/paper_runs/`.
+No other path was written. Explicitly untouched: everything under `src/`, `scripts/`, `tests/`,
+`data/evidence/`, `logs/paper_runs/`. `git status` at completion shows one modified file, the report.
 
-## NON_GOALS
+## Outcome
 
-- No repairs, no commits, no staging.
-- No modification of `data/evidence/` or `logs/paper_runs/` (tomorrow's scheduled session writes
-  there; creating `portfolio_state.json` would change what it does).
-- Not re-adjudicating known-open items listed in the brief.
+All nine claims adjudicated. **Verdict: NOT READY — 1 P1 open, 7 P2, 4 P3.**
 
-## Plan
-
-1. Report skeleton with all eight claims NOT TESTED (done first).
-2. Claim 5 (tomorrow's session), then 1, then 8 — brief's triage order if budget is short.
-3. Remaining claims 2, 3, 4, 6, 7.
-4. Rewrite the report section immediately after each claim. Never hold more than one claim
-   unwritten (three earlier runs hit API limits; batched writes lost everything).
-
-## Current step
-
-Step 1 complete. Beginning claim 5.
+- Today's 09:00 IST session is safe to run: it is a first run, and that path was driven end-to-end.
+- P1-1 and P1-2 were opened by this report against `46c7bb67` and are **repaired and verified** at
+  `d6f421e3`.
+- P1-3 (a refused rebalance persisted as a rebalance that happened) remains open and is confirmed
+  live at `d6f421e3`.
+- `d6f421e3`'s message claims "Three detectors added, all of which fail against this commit's
+  parent." One passes. Fourth false commit-message claim from this author.
 
 ## Commands and outcomes
 
-- `git log --oneline -8` -> HEAD `46c7bb67`, prior `bd996541` (auto-sync), `86d1769c`.
-- `git status --short --branch` -> clean but for the untracked round-4 brief.
+- `pytest -q` at `d6f421e3`: 1176 passed. `ruff check .`: clean. `mypy src`: clean, 141 files.
+- Two mutation runs of the full suite (`reconciled = True` via `sitecustomize.py` on `PYTHONPATH`):
+  exactly one test kills the mutant.
+- ~90 paper sessions driven through the real `run_paper_session` across seven scenarios, with
+  `PORTFOLIO_STATE_PATH` and `output_dir` redirected into the scratchpad.
+- Probes retained under the session scratchpad `probes/` directory; each is named in the report's
+  Coverage section next to the finding it supports.
 
 ## Stop point / next action
 
-In progress.
+Complete. Next action is the author's: the report's Findings table is ordered for triage. Nothing in
+it blocks today's session.

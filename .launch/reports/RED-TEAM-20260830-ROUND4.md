@@ -1,31 +1,95 @@
-# Red Team round four — the risk-governor repairs (2026-08-30)
+# Red Team round four — the risk-governor repairs (2026-08-30/31)
 
-STATUS: IN PROGRESS
-COMMIT IN SCOPE: `46c7bb67` — "fix(risk): the daily limit measures the day, and a halt can actually be cleared"
+STATUS: COMPLETE — all nine claims adjudicated
+COMMITS IN SCOPE: `46c7bb67` "the daily limit measures the day, and a halt can actually be cleared",
+then `d6f421e3` "seed the daily limit from marked equity, and stop a halt reporting success", which
+the author wrote in response to claims 1-6 of this report while it was still open.
 ADJUDICATOR: Claude Code (fourth independent pass). **Wrote none of the work under test.**
 BRIEF: `.launch/RED-TEAM-BRIEF-20260830-ROUND4.md`
-REPO HEAD AT START: `46c7bb67`
+HEAD AT START: `46c7bb67`  ·  HEAD AT FINISH: `d6f421e3`
+
+**How to read this report.** Claims 1-6 were adjudicated against `46c7bb67` and are left as written:
+they are the evidence that produced `d6f421e3`, and rewriting them would erase the record of what
+was wrong. Claims 7, 8 and 9 are adjudicated against `d6f421e3` and state explicitly which of the
+earlier findings that commit closed. Where a claim-5 Blocker has since been repaired, the claims
+table says so.
 
 ## Verdict
 
-PENDING.
+**NOT READY. One Blocker remains open; the two Blockers this report opened are repaired and
+verified.**
+
+**Today's session is safe to run.** The scheduled task fires at 09:00 IST on 2026-08-31 with no
+`portfolio_state.json` on disk, so it is a first run. That path was driven end-to-end through the
+real runner and it reconciles, persists a valid schema-v3 file, advances the hold clock and sets the
+peak. Nothing found here fires on session 1.
+
+The open Blocker and the two new Majors fire at **session 11**, the first rebalance — roughly
+2026-09-14 on a weekday schedule. There is time to repair them before they matter, and no reason to
+disable tomorrow's run.
+
+| | Count |
+|---|---|
+| P1 Critical open | **1** (P1-3) |
+| P1 Critical opened by this report and repaired at `d6f421e3` | 2 (P1-1, P1-2) |
+| P2 Major open | **7** |
+| P3 Minor open | **4** |
 
 ## Findings
 
-PENDING.
+### P1 Critical — open
+
+| # | Finding | Claim |
+|---|---|---|
+| P1-3 | A rebalance in which **every order was refused** is persisted as a rebalance that happened: `last_rebalance_on` advances and `sessions_held` resets to 1 with zero fills. The hold clock is reset by an event that did not occur, the stale book is held another nine sessions, and the halt-recovery tool hands the operator back a pilot that looks healthy. Confirmed still live at `d6f421e3` (session 21: 228 rejections, 0 fills, `sh=1`) | 3, 8 |
+
+### P1 Critical — opened by this report, repaired at `d6f421e3`, repair verified
+
+| # | Finding | Claim |
+|---|---|---|
+| P1-1 | The 4% **daily** limit was seeded from `ledger_funding()`, a cost figure, so it measured cumulative unrealized loss since inception. A 5.63% drift over ten sessions with **zero** intraday movement halted the book on the first order of the first rebalance — which is the exit. **Repaired**: the same 13-session run now completes; a deeper decline halts at session 21 with `TOTAL_MAX_DRAWDOWN_BREACHED: 14.20% >= 12.00%` | 5, 8 |
+| P1-2 | The session that permanently halted the pilot reconciled cleanly, printed `[PAPER PILOT SUCCESS]` and exited 0; the scheduler wrapper recorded `LastTaskResult: 0` regardless. **Repaired**: exit 9, distinct banner, halt reason and recovery command; `endlocal & exit /b %RC%` | 5, 8 |
+
+### P2 Major — open
+
+| # | Finding | Claim |
+|---|---|---|
+| P2-1 | An unreachable quote falls back to a hardcoded `Rs 1000.00`, tagged `REAL_NSE_ESTIMATE` and logged as `[REAL NSE FEED]`. Observed once in 500 names on a live fetch tonight; 451 of 500 NIFTY500 names have no real default | 5 |
+| P2-2 | `clear_paper_halt.py` reports "Not halted. Nothing to do." for a book that is halting right now, because the halt is persisted only at session end. No lock, no PID check, no in-progress marker | 3 |
+| P2-3 | Nothing tests what the runner passes as `initial_equity` — the argument `46c7bb67` changed and got wrong. The detector added for it does not work (P2-7) | 4, 9 |
+| P2-4 | The session report's capital table does not balance: `Initial Capital + Net P&L != Total Equity`, off by exactly the carried entry fees, on every session holding a position. Always flattering | 6 |
+| P2-5 | **New at `d6f421e3`.** The risk baseline is now marked to market but the position sizing still uses `ledger_funding()`, so a drawn-down book over-allocates and silently drops a selected name (`TMPV`), ending with 9.87% cash against a declared 5% buffer | 8 |
+| P2-6 | **New at `d6f421e3`.** The halt reaches the exit code and the console but not the markdown report (`Reconciliation Status: PASS`, zero mentions of halt or kill) or `live_paper_status.json` (`status: COMPLETED`) | 8 |
+| P2-7 | **New at `d6f421e3`.** `test_the_governor_is_seeded_from_marked_equity_not_a_cost_figure` **passes** against `46c7bb67`, the commit it names. Four of five mutants survive, including a verbatim reintroduction of P1-1 and a seed of zero | 9 |
+
+### P3 Minor — open
+
+| # | Finding | Claim |
+|---|---|---|
+| P3-1 | One fixed staging filename per state path; concurrent writers crash rather than corrupt on Windows, but the crash discards the whole session | 3 |
+| P3-2 | The comment claiming exit proceeds fund the same step's entries is false; the entries land one interval later | 6 |
+| P3-3 | A carried holding with no quote is marked at cost for the **whole session**, not just the risk baseline. Measured: 9.48% true drawdown reported as 8.54% with one name of ten unquoted. The bias is toward blindness, not toward a spurious halt | 8 |
+| P3-4 | In realtime mode the daily baseline is anchored to a quote snapshot taken ~2.5 minutes before the first drawdown check, inside the most volatile window of the session. One-sided | 8 |
+
+### One false claim in a commit message
+
+`d6f421e3` states "Three detectors added, all of which fail against this commit's parent." One of the
+three passes. Round 2 found three false claims in this author's messages; they remain uncorrected,
+and this is a fourth — in the commit that responded to a report about exactly this pattern.
 
 ## Claims
 
 | # | Claim | Status |
 |---|---|---|
-| 1 | The governor change is safe for every other caller | **PROVEN** for other callers; the floor makes the total switch structurally weaker (see P2-2) |
-| 2 | The daily limit now measures the day | **PART DISPROVEN** — fires on a multi-session decline with zero intraday move |
+| 1 | The governor change is safe for every other caller | **PROVEN** for other callers; the `max()` floor makes the total switch structurally weaker than the daily one (quantified in claim 2) |
+| 2 | The daily limit now measures the day | **PART DISPROVEN at `46c7bb67`** — fired on a multi-session decline with zero intraday move. **Repaired at `d6f421e3`**, verified in claim 8 |
 | 3 | `clear_paper_halt.py` cannot lose or corrupt the book | **PROVEN for the tool**; the recovery it belongs to is not — 1 new P1, 1 P2, 1 P3 |
 | 4 | The two replaced tests are worth something | **PROVEN** — both kill their mutants; detector is loose; 1 new P2 |
-| 5 | Tomorrow's session completes correctly | **DISPROVEN** — 2 new P1, 1 new P2 |
+| 5 | Tomorrow's session completes correctly | **Session 1 PROVEN**; session 11 DISPROVEN at `46c7bb67` — 2 P1 (both **repaired at `d6f421e3`**), 1 P2 open |
 | 6 | The first-run and second-run boundary | **PROVEN** for peak/halt/clock/fees; 1 new P2, 1 new P3 |
-| 7 | Regression against rounds 2 and 3 | NOT TESTED |
-| 8 | Anything `46c7bb67` introduced, overstated, or broke | NOT TESTED |
+| 7 | Regression against rounds 2 and 3 | **PROVEN** at `d6f421e3` — nothing disturbed, 1176 green |
+| 8 | Anything `46c7bb67` / `d6f421e3` introduced, overstated, or broke | **PART DISPROVEN** — both Blockers repaired; 2 new P2, 2 new P3, 1 false message claim, P1-3 still open |
+| 9 | The three new detectors fail against `46c7bb67` | **DISPROVEN** — one of the three passes against the commit it names |
 
 ### Claim 1 — the governor change is safe for every other caller
 
@@ -689,12 +753,423 @@ SEVERITY  P3 Minor
 
 ### Claim 7 — regression against rounds 2 and 3
 
-NOT TESTED.
+**PROVEN at `d6f421e3`.** Everything rounds 2 and 3 established still holds, and the two repairs in
+`d6f421e3` did not disturb the money path.
 
-### Claim 8 — anything `46c7bb67` introduced, overstated, or broke
+#### Gates at the new HEAD
 
-NOT TESTED.
+```
+$ .venv/Scripts/python.exe -m ruff check .
+All checks passed!
+$ .venv/Scripts/python.exe -m mypy src
+Success: no issues found in 141 source files
+$ .venv/Scripts/python.exe -m pytest -q
+1176 passed, 1 warning in 83.95s (0:01:23)
+```
+
+1176 = 1173 at `46c7bb67` plus the three new detectors. No test was lost or weakened.
+
+#### The money path, twelve real sessions, flat market, real rebalance at session 11
+
+`scratchpad/probes/drive_sessions3.py --sessions 12 --fresh --drift-pct 0` at `d6f421e3`, against
+the identical run at `46c7bb67`:
+
+```
+                                 46c7bb67                    d6f421e3
+session 10   fills= 0 rejected= 0 equity=998416.95   ==   fills= 0 rejected= 0 equity=998416.95
+session 11   fills=20 rejected=10 equity=995223.48   ==   fills=20 rejected=10 equity=995223.48
+             state: sh=1 realized=-3128.65 fees=3246.92 cash=64057.48   (identical)
+session 12   fills= 0 rejected= 0 equity=995223.48   ==   fills= 0 rejected= 0 equity=995223.48
+             state: sh=2 realized=-3128.65 fees=3246.92 cash=64057.48   (identical)
+```
+
+Byte-identical on every number. The `d6f421e3` change to the risk baseline is inert when opening
+marks equal cost, which is the correct null result.
+
+| Round 2 / 3 finding | Status at `d6f421e3` | Evidence |
+|---|---|---|
+| **Carry-forward P&L nets both legs** | holds | `realized=-3128.65` on a round trip in a **flat** market: gross spread+slippage ≈ -993.62, plus the carried entry fee 1086.41, plus the exit fee. The entry leg is charged. |
+| **Cash exact** | holds | persisted `cash 62195.95 + cost basis 936717.64 + entry fees 1086.41 = 1000000.00` exactly, every session |
+| **Hold exactly 10** | holds | `sh` runs 1,2,...,10, rebalance on session 11, then 1,2 |
+| **Round-2 P1-A** (carried session fails reconciliation) | closed | all twelve sessions `reconciled=True discrepancy=0.00`, including the two that carry ten positions across the boundary |
+| **Round-2 P1-B** (halt not persisted) | closed | `state_from_ledger` stickiness: after a quiet session `risk_halted=True halted_on=2026-08-31 reason='TOTAL_MAX_DRAWDOWN_BREACHED: 14%'` |
+| **`INITIALIZED` guard** | holds | `carry_in_positions` after `start_session` raises `RuntimeError: positions must be carried in before the session opens; the reconciliation baseline cannot move once trading has started (status is ACTIVE)` |
+| **v2 files refused** | holds | and so is every other declaration: v1, v2, v4 and a foreign `schema_id` all refused with the expected-vs-declared message |
+| **Round-3 P1-2** (halt recovery impossible) | closed | claim 3 |
+| **Round-3 P1-1** (daily rule on a multi-session decline) | **closed at `d6f421e3`**, was still open at `46c7bb67` | claim 8 |
+| Known-open: `reset_session_peak` has no caller | unchanged | `git grep` finds only its own definition and two docstrings |
+
+### Claim 8 — anything `46c7bb67` / `d6f421e3` introduced, overstated, or broke
+
+**The two Blockers are genuinely repaired. Three new defects, one still-open Blocker, and one false
+claim in the `d6f421e3` message.**
+
+#### The claim-5 reproduction, re-run against `d6f421e3`. The halt is gone and it moved to the right place.
+
+`scratchpad/probes/drive_sessions2.py --sessions 13 --fresh --drift-pct -0.6`, identical to the run
+that halted at session 11 under `46c7bb67`:
+
+```
+                        46c7bb67                              d6f421e3
+session 11   fills= 0 rejected=240 HALTED=True      fills=19 rejected=20 HALTED=False
+             DAILY_DRAWDOWN_LIMIT_BREACHED 5.63%    exits fill, realized -57723.33 booked
+session 12   SystemExit(8)                          reconciled=True, holds normally
+session 13   SystemExit(8)                          reconciled=True, holds normally
+```
+
+Pushed deeper (`--sessions 23 --drift-pct -0.8`) to find where it now lands:
+
+```
+session 11  fills=19 rejected=20  equity=923222.32   HALTED=False   <- rebalance proceeds
+session 12  ... session 20        equity=864300.24   HALTED=False   <- holds
+session 21  fills= 0 rejected=228 equity=858012.97   HALTED=True
+            reason='TOTAL_MAX_DRAWDOWN_BREACHED: 14.20% >= 12.00%'
+session 22  SystemExit(8)
+session 23  SystemExit(8)
+```
+
+**The right switch, at the right depth, ten sessions later.** Round 3's P1-1 and my claim-5 P1-1 are
+both closed. `TOTAL_MAX_DRAWDOWN_BREACHED` is not merely reachable in theory — it is what a real
+multi-session decline now produces end-to-end.
+
+`main()`'s branching, exercised directly (`scratchpad/probes/p11_exit_code.py`):
+
+```
+--- clean session                    exit 0   [PAPER PILOT SUCCESS]
+--- RISK HALT (reconciles cleanly)   exit 9   [PAPER PILOT HALTED BY RISK KILL SWITCH]
+                                             RISK HALT: TOTAL_MAX_DRAWDOWN_BREACHED: 14.20% >= 12.00%
+                                             Orders refused this session: 228
+                                             Every later session is refused until this is reviewed and cleared:
+                                                 python scripts/clear_paper_halt.py --i-have-reviewed-the-book
+--- reconciliation failure           exit 7   [PAPER PILOT RECONCILIATION FAILED]
+```
+
+Claim-5 P1-2 is closed at the exit code and the console. Not everywhere — see P2-6.
+
+---
+
+#### P1-3 is still open at `d6f421e3`, and the commit message's "still open" list omits it
+
+The deep-decline run's session 21: `fills=0 rejected=228`, book unchanged at nine holdings, and the
+state records `sh=1` with `last_rebalance_on` advanced to 2026-09-28. A rebalance in which every
+order was refused is still persisted as a rebalance that happened (claim 3, P1-3;
+`run_paper_pilot_session.py:1232`).
+
+The `d6f421e3` message lists what remains open as "its P2s stand" and names three P2s. P1-3 is a
+Blocker, it was at line 245 of the report the author read, and it is not mentioned.
+
+---
+
+#### P2-5 (new, created by `d6f421e3`) — the risk baseline is marked to market, the position sizing is not, so a drawn-down book silently drops a selected name
+
+```
+FINDING   d6f421e3 changed the governor seed from ledger_funding() to marked opening equity but
+          left run_paper_pilot_session.py:763 `deployable = portfolio.ledger_funding()`. Risk now
+          measures market; sizing still measures cost. Under 46c7bb67 both were cost -- wrong, but
+          consistent. They now disagree by the whole unrealized loss.
+FAMILY    Assumption archaeology / money and counting
+REPRO     scratchpad/probes/drive_sessions2.py --sessions 11 --fresh --drift-pct -0.6
+          Session 11, book marked at 943735.66 after a 5.6% drift:
+            Sizing: equal-weight, Rs 95000.00 per name across 10 picks (5% cash buffer held back)
+            Risk baseline: opening equity Rs 943735.66 (marked), carried peak Rs 1000000.00
+          95000 x 10 = 950000 targeted against a 943735.66 book whose 5% buffer leaves ~896548
+          spendable. Nine of the ten picks fund; the tenth does not.
+OBSERVED  MISSING FROM THE SELECTION: ['TMPV']
+          cash 92937.17, cost basis 848328.41 -> 9.87% in cash against a declared 5% buffer.
+          Repeated at -0.8% drift: hold=9, cash=78345.64 (8.4%).
+          The executed book is not the decided book. The drop is reported only as one more
+          INSUFFICIENT_CASH line among the ten expected step-1 rejections, so `orders_rejected: 20`
+          is the only trace and it looks like the normal pattern.
+EXPECTED  `deployable` is the same marked opening equity the governor is seeded with, so ten
+          allocations fit inside the book they are drawn from.
+BLAST     Every rebalance on a book that has drawn down -- which is the expected state of this
+          strategy. It is the concentration defect the comment at :757-762 says equal-weight sizing
+          was introduced to remove, reintroduced by the same cost-versus-mark confusion the commit
+          fixed forty lines below.
+SEVERITY  P2 Major (Minor, escalated one level: silent, and it changes which positions the pilot
+          actually holds)
+```
+
+---
+
+#### P2-6 (new, residual of the `d6f421e3` repair) — the halt reaches the exit code but not the two artifacts a human reads
+
+```
+FINDING   The `risk` block was added to the JSON payload and the console banner. The markdown
+          report and live_paper_status.json were not changed.
+FAMILY    Operability
+REPRO     The halted session 21 from the deep-decline run:
+            $ head -12 .../paper_session_2026-09-28_*.md
+            - **Reconciliation Status**: **`PASS (0.00 paisa discrepancy)`**
+            $ grep -ci "halt|kill" .../paper_session_2026-09-28_*.md
+            0
+            $ live_paper_status.json -> {'status': 'COMPLETED', ...}
+          while the JSON payload correctly carries
+            {"kill_switch_active": true,
+             "halt_reason": "TOTAL_MAX_DRAWDOWN_BREACHED: 14.20% >= 12.00%",
+             "orders_rejected": 228}
+OBSERVED  The markdown evidence file for the session that permanently stopped the pilot says PASS
+          and never uses the words halt or kill. The dashboard status field says COMPLETED. The
+          truth is present only in the JSON and in a console banner that, on a scheduled run, is
+          buried in a log file.
+EXPECTED  The markdown header names the halt; the status file says HALTED.
+BLAST     Anyone reading the session evidence rather than the exit code -- which is the artifact
+          the repository treats as authoritative.
+SEVERITY  P2 Major
+```
+
+Also noted: `main()` reads `res.get("risk", {})`, so a payload without a `risk` block reports
+SUCCESS and exits 0. Verified — the "older shape" case in `p11_exit_code.py` exits 0. The guard is a
+lookup with a permissive default, not a contract.
+
+---
+
+#### The unpriced-carried-name fallback: attacked, and the hypothesis is the wrong way round
+
+The concern put to me was that a carried name losing its quote could understate the opening equity
+and make the daily rule fire **early**. **It cannot, and the real effect is the opposite.**
+
+`marked_opening_equity` falls back to `holding.average_cost`
+(`run_paper_pilot_session.py:833`). The engine's `current_equity` falls back to
+`p.average_price` (`paper_pilot.py:412`) — the same number, because the carry replay sets the
+ledger's average price to the holding's average cost. `_price_cache` is populated only from
+`base_market` symbols, so a name absent from `base_market` is absent from both sides. The error
+therefore cancels exactly in the numerator `P - E` and survives only in the denominator.
+
+End-to-end (`scratchpad/probes/p10_unpriced.py`): session 1 buys ten names; session 2 runs with
+RELIANCE removed from the feed entirely while the market falls 10%.
+
+```
+No opening quote for 1 carried name(s); their cost basis is used in the risk baseline: RELIANCE
+Risk baseline: opening equity Rs 914241.25 (marked), carried peak Rs 1000000.00
+
+  carried book at cost      : 936717.64   (RELIANCE 94010.40, others 842707.24)
+  TRUE equity at -10%       : 905241.83
+  equity the risk rule sees : 914642.87   (RELIANCE marked at cost)
+  understated loss          : 9401.04
+  true total drawdown vs peak 1000000.00 : 9.48%
+  measured total drawdown                : 8.54%
+```
+
+An unpriced name that has **fallen** inflates the denominator, so the measured drawdown is
+**smaller** than the truth and the rule fires **late**. The bias is toward blindness, not toward a
+spurious halt. Reported as P3-3 below rather than as a Blocker.
+
+```
+FINDING   A carried holding with no quote is marked at cost for the entire session -- in the risk
+          baseline, in every current_equity, in get_portfolio_snapshot, in
+          reconciliation.total_equity, and therefore in the persisted peak_equity and in the
+          session report. Its loss is invisible to both drawdown rules.
+FAMILY    Data integrity
+REPRO     as above. The warning says the cost basis is used "in the risk baseline"; it is used for
+          the whole session.
+OBSERVED  9.48% true drawdown reported as 8.54% with one name of ten unquoted.
+EXPECTED  Either the last known price is carried across sessions, or a carried name that cannot be
+          valued refuses the session the way PORTFOLIO_VALUATION_UNAVAILABLE already refuses an
+          order for exactly this reason (governor.py:379-392).
+BLAST     Reachable whenever a held name leaves the resolved universe -- NSE rebalances the NIFTY
+          indices on a published schedule, and the runner resolves its universe from the current
+          authority CSV every session. Not reachable from a quote-fetch failure, because the
+          fallback at :211-224 guarantees every universe symbol has an entry.
+SEVERITY  P3 Minor (pre-existing for current_equity; d6f421e3 extends it to the baseline and, to
+          its credit, is the first code to log it)
+```
+
+---
+
+#### P3-4 (new) — in realtime mode the daily baseline is anchored ~2.5 minutes before the first drawdown check
+
+```
+FINDING   marked_opening_equity is computed from the base_market fetched at :549. In realtime mode
+          the loop refetches at :915 and process_quote refills _price_cache before the first
+          proposal, so the first daily_dd compares two different market snapshots.
+FAMILY    Concurrency and ordering
+REPRO     Measured on this machine, NIFTY500: fetch_live_nse_quotes(500 names) took 45.6s then
+          72.6s; load_mizan_cross_section took 37.1s for 50 names over the same store scan. The
+          sequence :549 fetch -> model load -> cross-section -> sizing -> :915 fetch is therefore
+          roughly 2-3 minutes of market time, all of it inside 09:00-09:05 IST.
+OBSERVED  A fall between the two snapshots is counted against the 4% daily limit as though it had
+          happened after the session's own measurement began. A rise self-corrects, because
+          update_peaks ratchets the daily peak up at the first order -- so the bias is one-sided.
+EXPECTED  The baseline is taken from the same snapshot the first check uses, or the daily peak is
+          re-seeded at the first order.
+BLAST     Only bites when the book moves >4% in that window, which needs a gap-down open. Bounded
+          and rare, but it is the same class of defect as P1-1 one layer along, and its consequence
+          is the same: the exits are the first orders, so they are what gets refused.
+SEVERITY  P3 Minor
+```
+
+---
+
+#### The commit messages, claim by claim
+
+`46c7bb67`:
+
+| Claim | Verdict |
+|---|---|
+| "The 4% daily limit was measuring multi-session declines" | true of its parent, and **still true of itself** — the repair was incomplete and `d6f421e3` says so |
+| "`reset_session_peak` has no caller anywhere in the repository" | **true** — `git grep` finds only its definition and two docstrings |
+| "`TOTAL_MAX_DRAWDOWN_BREACHED` became unreachable" | true of its parent; made reachable only in a narrow band by `46c7bb67`, genuinely reachable at `d6f421e3` |
+| Simulation "NEW (daily = session open) ... all TOTAL" | **not reproducible as a description of the shipped code** — the runner did not pass the session open. Every row simulated code that did not exist |
+| "That also closes the third P1 [the peak ratchet]" | **true** in its own terms: once the ratchet feeds only the trailing rule, it no longer makes the daily halt likelier |
+| "clear_paper_halt.py ... reloads to prove the write is readable and the book unchanged" | **true**; the reload checks only holdings count and cash, but claim 3 T6 shows every field is in fact preserved |
+| "ruff clean; mypy clean on 141 files; 1173 tests passing" | **all three verified** |
+| Residual: "the drawdown is still evaluated only inside `evaluate_order`, so a hold session never tests it" | **true and confirmed** — sessions 2-20 of the deep-decline run propose no orders and cannot halt at any depth |
+
+`d6f421e3`:
+
+| Claim | Verdict |
+|---|---|
+| "session 1 completes ... the failure it found arrives at session 11" | **true**, and correctly attributed |
+| "The daily peak is now equity marked at the session open" | **true** |
+| The three-line OLD/NEW table | **reproduced**, and independently confirmed end-to-end rather than in isolation |
+| "A carried name with no opening quote falls back to its cost basis and is logged by name" | **true**; the log line understates the scope — the fallback governs the whole session, not just the baseline (P3-3) |
+| "The payload now carries a `risk` block, the banner distinguishes a halt, and the exit code is 9" | **true** — exits 0/7/9 verified distinct |
+| "Now `endlocal & exit /b %RC%`" | **true** |
+| **"Three detectors added, all of which fail against this commit's parent."** | **FALSE.** One of the three passes against `46c7bb67`. See claim 9 |
+| "Still open: ... its P2s stand" | **incomplete** — P1-3, a Blocker in the same report, is not listed |
+| "ruff clean; mypy clean on 141 files; 1176 tests passing (was 1173)" | **all three verified** |
+
+Round 2 found three false claims in this author's commit messages and they remain uncorrected. The
+detector claim is a fourth, in the commit that responded to a report about exactly this pattern.
+
+### Claim 9 — do the three new detectors actually fail against `46c7bb67`?
+
+**DISPROVEN. One of the three passes against the commit it was written to catch.** The
+`d6f421e3` message states "Three detectors added, all of which fail against this commit's parent."
+
+Method: the `46c7bb67` sources were extracted with `git show` into the scratchpad and each
+detector's assertions replayed byte-for-byte (`scratchpad/probes/p9_detectors.py`). No repository
+file was modified.
+
+```
+D1 governor seeded from marked equity
+   at d6f421e3 (HEAD)  : PASS   accepted initial_equity='marked_opening_equity'
+   at 46c7bb67 (parent): PASS   accepted initial_equity='opening_equity'
+                                <-- DETECTOR DOES NOT CATCH THE DEFECT IT NAMES
+
+D2 a halt is reported as a halt
+   at d6f421e3 (HEAD)  : PASS   all three assertions hold
+   at 46c7bb67 (parent): FAIL   failed: banner distinguishes a halt; halting session exits 9
+
+D3 wrapper propagates the exit code
+   at d6f421e3 (HEAD)  : PASS   found 'exit /b %RC%'
+   at 46c7bb67 (parent): FAIL   wrapper swallows the exit code
+```
+
+#### P2-7 — `test_the_governor_is_seeded_from_marked_equity_not_a_cost_figure` passes against `46c7bb67`
+
+```
+FINDING   The detector asserts "ledger_funding" not in ast.unparse(initial_equity). At 46c7bb67 the
+          defect was written through a local:
+              opening_equity = portfolio.ledger_funding()
+              governor = PreTradeRiskGovernor(..., initial_equity=opening_equity, ...)
+          ast.unparse of that argument is 'opening_equity', which does not contain the substring.
+          The detector only sees an inlined call.
+FAMILY    Assumption archaeology
+REPRO     scratchpad/probes/p9_detectors.py. Mutants applied to the CURRENT source:
+            TEST PASSES (mutant survives)  <- unmodified HEAD
+            TEST PASSES (mutant survives)  <- reintroduce the exact 46c7bb67 defect via a local
+                 (marked_opening_equity = portfolio.ledger_funding())
+            TEST FAILS  (mutant killed)    <- inline the cost figure at the call site
+            TEST PASSES (mutant survives)  <- seed from zero      (initial_equity=Decimal('0.00'))
+            TEST PASSES (mutant survives)  <- seed from the CLI nominal (initial_equity=initial_cash)
+OBSERVED  Four of five mutants survive, including a verbatim reintroduction of the Blocker the test
+          is named for and a seed of zero, which disables the daily rule entirely
+          (governor.py:213 guards on `> Decimal("0")`).
+EXPECTED  A detector that fails against the commit it was written for. Round 3 rejected
+          test_the_peak_records_marked_equity_not_only_cost for exactly this -- passing verbatim
+          against its parent -- and the replacement has the same property one level of indirection
+          away.
+BLAST     The suite is 1176 green and cannot detect a reintroduction of claim 5's P1-1 written the
+          way it was originally written. This is the third worthless-or-near-worthless test from
+          this author in two rounds, and the second where the failure mode is a substring check
+          standing in for a semantic one.
+SEVERITY  P2 Major
+```
+
+#### D2 is sound overall, but a third of it is inert
+
+`'"kill_switch_active": governor.is_killed' in source` is **already true at `46c7bb67`** — at line
+1182, inside the `rolling_status` dict, which predates this work:
+
+```
+where the string lives at 46c7bb67:
+   line 1182: "kill_switch_active": governor.is_killed,
+```
+
+The docstring says the assertion guards "the session payload". It does not distinguish the payload
+from the live-status dict, so deleting the new `risk` block while leaving the dashboard line intact
+would not fail it. The detector as a whole still fails at `46c7bb67` on its other two assertions,
+so it has real value; one of its three assertions has none.
+
+**D3 is correct.** It fails at the parent for the right reason and its assertion is exact.
+
+## Coverage
+
+Twelve failure families walked. Probes under
+`<scratchpad>/probes/`: `p1_cost_vs_mark.py`, `p2_which_switch.py`, `p3_intraday.py`,
+`p4_clear_halt.py`, `p5_staging_race.py`, `p6_mutate_tests.py`, `p7_mutate_recon.py`,
+`p8_regression.py`, `p9_detectors.py`, `p10_unpriced.py`, `p11_exit_code.py`,
+`drive_sessions.py`, `drive_sessions2.py`, `drive_sessions3.py`.
+
+Targets: `scripts/run_paper_pilot_session.py`, `scripts/clear_paper_halt.py`,
+`scripts/run_scheduled_paper_session.py`, `scripts/run_scheduled_paper_session.cmd`,
+`src/quant_system/risk/governor.py`, `src/quant_system/execution/paper_portfolio.py`,
+`src/quant_system/execution/paper_pilot.py`, `tests/test_risk_governor_session_peaks.py`,
+`tests/test_paper_pilot_carried_session.py`, the live Windows scheduled task, and the real
+bar/macro caches.
+
+Roughly 90 real paper sessions were driven end-to-end through `run_paper_session` across seven
+scenarios (first run, flat hold, -0.6% drift, -0.8% drift to 23 sessions, rotating re-rank,
+post-halt recovery, unpriced carried name). Two mutation runs of the full 1173/1176-test suite.
+Nothing under `logs/paper_runs/` or `data/evidence/` was written at any point; every run redirected
+`PORTFOLIO_STATE_PATH` and `output_dir` into the scratchpad, and the two source mutations were
+applied to string copies or through a `sitecustomize.py` on `PYTHONPATH`.
 
 ## NOT PROBED
 
-PENDING.
+This is the most important section: it converts unknown unknowns into known ones.
+
+1. **The real 09:00 IST session itself.** Everything here is a redirected replay. The live run will
+   use real Upstox/Yahoo quotes, the real 500-name universe, realtime mode with 30-second intervals
+   and ~780 loop iterations. My end-to-end runs used **NIFTY50 in sequence mode with synthetic
+   prices**, because a NIFTY500 realtime run cannot be compressed. The differences that matter and
+   were not exercised: intraday price movement within a session, the realtime refetch path
+   (`:915-917`), and ~250-310 status-file writes.
+2. **The refresh stage of `run_scheduled_paper_session.py`.** `refresh_bars` shells out to
+   `ingest_all_market_data.py` against the live Upstox API. I did not run it — it would write to
+   `data/evidence/market-cache/`. So the `subprocess.run(check=True)` failure path, the
+   `MAX_BAR_STALENESS_DAYS` boundary, and the behaviour when the ingester exits 0 having ingested
+   nothing are all unverified. I did confirm by arithmetic that a **completely failed refresh on
+   2026-08-31 passes the staleness gate at exactly 4 days** (newest cached bar 2026-08-27), which
+   means the session would decide on Thursday's bars while Friday's exist. Not demonstrated,
+   because demonstrating it requires breaking the token.
+3. **The Upstox path in `fetch_upstox_live_quotes`.** `UPSTOX_INSTRUMENT_KEYS` holds 10 of 500
+   symbols and the fallback key `NSE_EQ|{symbol}` is not a valid instrument key, so I expect the
+   Upstox branch to return almost nothing and fall through to Yahoo. I did not verify this with a
+   real token — doing so would have required reading `.env`, which the context-safety rule forbids.
+4. **Concurrency between two real sessions.** P3-1 was demonstrated with threads in one process.
+   Two OS processes racing on `portfolio_state.json`, and round 3's P2-5 lost update, were not
+   reproduced. Doing so needs two live runners.
+5. **Whether `TMPV` being dropped (P2-5) changes over a long horizon.** I showed one name dropped at
+   two drift levels. I did not measure how the drop-count scales with drawdown depth, nor whether
+   the dropped name is always the last by rank.
+6. **The 12% total switch at NIFTY500 scale.** All drawdown work used a 10-name NIFTY50 book.
+   A 99-name NIFTY500 book has different per-name weights, different rounding, and 99 orders per
+   step against the 5% cash buffer. The `INSUFFICIENT_CASH` cascade at :1034-1071 could behave
+   differently at that width.
+7. **`restore_state` / `get_state` round-tripping the two peaks.** Neither has a production caller,
+   so I read them and did not exercise them.
+8. **The server and backtest callers of `PreTradeRiskGovernor`.** Verified by inspection that all
+   nine use the default `all_time_peak_equity=None` and are therefore unchanged, and by the full
+   suite passing. Not exercised individually.
+9. **The markdown report's body** beyond the header and the fills table.
+10. **Anything about the model.** Selection, features, scores, the `RESEARCH_ONLY` exemption and the
+    cross-section coverage gate were all out of scope for this brief and are untested here.
+11. **The `%DATE%` parsing in `run_scheduled_paper_session.cmd`.** `logs\paper_runs\scheduled_*.log`
+    does not exist despite a recorded task run at 8/29 22:05. I did not determine whether the log
+    was written and removed, or never written. Worth one minute from someone who can look at the
+    machine.
+12. **Round 3's five P2s and eight P3s**, and the three uncorrected false commit-message claims from
+    round 2. The brief marked them known-open and I did not re-litigate them.
