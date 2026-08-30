@@ -649,18 +649,20 @@ def run_paper_session(
     #
     # A fresh engine every weekday would open ~55 names at the open and close them at 15:30, paying
     # a full round trip daily by construction. The model was measured entering at an open, holding
-    # `label_horizon_sessions`, then re-ranking - so the portfolio holds between rebalances and only
-    # re-ranks when the position has aged past that horizon.
+    # `label_horizon_sessions - 1` sessions, then re-ranking - a label horizon counts
+    # decision -> entry -> exit, so the card's 11 is the screen's 10. `rebalance_due` takes the
+    # card's convention and does that conversion itself; passing the raw value here and comparing it
+    # directly was half of why the executed hold was 12 sessions rather than 10.
     portfolio = load_portfolio(PORTFOLIO_STATE_PATH) or PaperPortfolioState(cash=initial_cash)
     horizon = int(model.config.label_horizon_sessions)
     rebalancing = portfolio.rebalance_due(horizon)
     logger.info(
-        "Portfolio: cash Rs %s, %d holding(s), session %d, %d since rebalance (horizon %d) -> %s",
+        "Portfolio: cash Rs %s, %d holding(s), session %d, held %d of %d sessions -> %s",
         portfolio.cash,
         len(portfolio.holdings),
         portfolio.sessions_completed + 1,
-        portfolio.sessions_since_rebalance,
-        horizon,
+        portfolio.sessions_held,
+        horizon - 1,
         "REBALANCING" if rebalancing else "HOLDING",
     )
 
@@ -716,17 +718,21 @@ def run_paper_session(
             }
         )
         mizan_ranked = tuple(sorted(mizan_scores, key=lambda s: (-mizan_scores[s], s)))
-        mizan_picks = select_top_fraction(
-            mizan_scores,
-            selection_fraction,
-            score_threshold=float(model.config.score_threshold),
-        )
+        # No score floor. The out-of-sample screen this path exists to reproduce applies none -
+        # `screen_mizan_out_of_sample.py:199` is `take = max(1, int(len(scores) * FRACTION))` with
+        # no score filter anywhere in the file - so a floor here is an unmeasured rule that changes
+        # what is being executed.
+        #
+        # It was also dangerous. Scores cluster near zero against a 0.0715 floor, so an ordinary
+        # session could clear nothing; `top_picks` came back empty while `rebalancing` stayed True,
+        # and the exit loop then sold every holding. A go-to-cash rule nobody measured, firing
+        # silently, on a book that had just paid to enter.
+        mizan_picks = select_top_fraction(mizan_scores, selection_fraction)
         logger.info(
-            "Mizan picks: %d of %d ranked (top %.0f%% then score > %s): %s",
+            "Mizan picks: %d of %d ranked (top %.0f%%, no score floor - the screen applies none): %s",
             len(mizan_picks),
             len(mizan_scores),
             selection_fraction * 100.0,
-            model.config.score_threshold,
             ", ".join(f"{s} {mizan_scores[s]:+.5f}" for s in mizan_picks) or "none",
         )
 
@@ -741,7 +747,13 @@ def run_paper_session(
     # `fixed` remains available because the sprint profile deliberately concentrates into 2-3 names
     # and equal-weighting would silently undo that intent.
     if sizing == "equal-weight" and mizan_picks:
-        usable = initial_cash * (Decimal("1") - Decimal(str(risk_limits.min_cash_buffer_pct)))
+        # Sized from the portfolio's actual funding, not from the `initial_cash` nominal. Sizing
+        # from the constant survived the change that made the portfolio persistent, so a book that
+        # had drawn down kept allocating as though it still held its opening capital -- which funds
+        # only the head of the ranking and leaves the tail unexpressed. That is precisely the
+        # concentration defect equal-weight sizing was introduced to remove.
+        deployable = portfolio.ledger_funding()
+        usable = deployable * (Decimal("1") - Decimal(str(risk_limits.min_cash_buffer_pct)))
         per_name_alloc = (usable / Decimal(len(mizan_picks))).quantize(_PAISA)
         logger.info(
             "Sizing: equal-weight, Rs %s per name across %d picks (%.0f%% cash buffer held back)",
@@ -753,7 +765,16 @@ def run_paper_session(
         logger.info("Sizing: fixed, Rs %s per name", per_name_alloc)
 
     # 3. Risk Governor Setup
-    governor = PreTradeRiskGovernor(limits=risk_limits)
+    #
+    # Seeded with the carried all-time peak, not left at zero. A fresh governor each session took
+    # its peak from whatever that session opened at, so a multi-session decline was measured
+    # against its own falling baseline and the total-drawdown kill switch could never trip. The
+    # peak is the larger of what the portfolio has ever reached and what it is funded with today,
+    # so a first run establishes a real baseline rather than starting at zero.
+    governor = PreTradeRiskGovernor(
+        limits=risk_limits,
+        initial_equity=max(portfolio.peak_equity, portfolio.ledger_funding()),
+    )
 
     # 4. Order Book Simulator Configuration
     sim_config = OrderBookSimConfig(
@@ -764,8 +785,8 @@ def run_paper_session(
 
     # 5. Initialize Paper Pilot Engine
     engine = PaperPilotEngine(
-        # Funded with cash plus the carried holdings' cost basis, so the replay below debits
-        # exactly that basis back out and leaves cash at its true carried figure.
+        # Funded with cash plus the carried holdings' cost basis and their entry fees, so the
+        # replay below debits exactly that back out and leaves cash at its true carried figure.
         initial_cash=portfolio.ledger_funding(),
         risk_governor=governor,
         sim_config=sim_config,
@@ -774,8 +795,9 @@ def run_paper_session(
     )
 
     # Reconstruct the carried positions in the fresh ledger. Without this a SELL of something held
-    # since a previous session is refused as a short, because the ledger has never seen it.
-    # Zero fee: that cost was paid on the session that opened the position.
+    # since a previous session is refused as a short, because the ledger has never seen it. The
+    # fills carry their original entry fee, which `ledger_funding` has already covered, so the
+    # eventual sale nets both legs instead of only the exit.
     carry_fills = portfolio.carry_forward_fills(current_ist)
     for carry_fill in carry_fills:
         engine.ledger.process_fill(carry_fill)
@@ -924,7 +946,56 @@ def run_paper_session(
                     (price - previous_close) / previous_close if previous_close > 0 else 0.0
                 )
 
-            for sym in top_picks:
+            # 5e. On a rebalance, exit whatever is no longer selected.
+            #
+            # Gated on `rebalancing`: on a hold session `scores` is empty, so the old condition
+            # `scores.get(sym, 0.0) < 0.01 and sym not in top_picks` was true for *every* holding
+            # and would have liquidated the entire portfolio on the first day it held.
+            #
+            # Also gated on a non-empty selection. Removing the invented score floor made an empty
+            # `top_picks` much less likely, but "sell everything" must never be reachable by the
+            # selection simply failing to produce names -- a shrunk cross-section or a scoring
+            # failure would otherwise present as a deliberate go-to-cash decision. Going flat is a
+            # rule the screen does not contain, so it should not be an outcome the code can reach
+            # by accident.
+            if rebalancing and not top_picks:
+                logger.error(
+                    "Rebalance selected no names from %d scored. Holding the existing book rather "
+                    "than liquidating: going to cash is not a rule the screen contains.",
+                    len(scores),
+                )
+            for sym, pos in list(engine.positions.items()) if rebalancing and top_picks else []:
+                if pos.quantity > 0 and sym not in top_picks:
+                    prop_id = f"prop_{session_id}_{step}_{sym}_SELL"
+                    proposal = PaperProposal(
+                        proposal_id=prop_id,
+                        symbol=sym,
+                        side=Side.SELL,
+                        quantity=pos.quantity,
+                        order_type=OrderType.MARKET,
+                        decision_at=loop_now,
+                        strategy_name="Mizan_Alpha_ExitLowRank",
+                        model_artifact_id=model.config.model_id,
+                    )
+                    order, decision = engine.submit_proposal(proposal)
+                    proposals_submitted.append((proposal, decision))
+                    logger.info(
+                        "  [EXIT PROPOSAL SUBMITTED] %s SELL %d %s (Risk: %s)",
+                        prop_id,
+                        pos.quantity,
+                        sym,
+                        "APPROVED" if decision.approved else "REJECTED",
+                    )
+
+            # 5f. On a rebalance, enter the selection. Exits above run first, in the same step, so
+            # the proceeds are available to fund these buys: sizing every entry against pre-exit
+            # cash meant a fully invested book could only spend its ~5% buffer, and the tail of the
+            # ranking went unfilled for a reason that had nothing to do with the model.
+            #
+            # Explicitly gated on `rebalancing`. It used to rely on `top_picks` happening to be
+            # empty on a hold session -- the invariant "act only on a rebalance session" enforced
+            # explicitly in one loop and by coincidence in the other, forty lines apart.
+            for sym in top_picks if rebalancing else []:
                 current_held = engine.positions[sym].quantity if sym in engine.positions else 0
                 if current_held == 0:
                     avail_cash = engine.cash
@@ -962,34 +1033,6 @@ def run_paper_session(
                             "APPROVED" if decision.approved else "REJECTED",
                             decision.reason or "OK",
                         )
-
-            # 5e. On a rebalance, exit whatever is no longer selected.
-            #
-            # Gated on `rebalancing`: on a hold session `scores` is empty, so the old condition
-            # `scores.get(sym, 0.0) < 0.01 and sym not in top_picks` was true for *every* holding
-            # and would have liquidated the entire portfolio on the first day it held.
-            for sym, pos in list(engine.positions.items()) if rebalancing else []:
-                if pos.quantity > 0 and sym not in top_picks:
-                    prop_id = f"prop_{session_id}_{step}_{sym}_SELL"
-                    proposal = PaperProposal(
-                        proposal_id=prop_id,
-                        symbol=sym,
-                        side=Side.SELL,
-                        quantity=pos.quantity,
-                        order_type=OrderType.MARKET,
-                        decision_at=loop_now,
-                        strategy_name="Mizan_Alpha_ExitLowRank",
-                        model_artifact_id=model.config.model_id,
-                    )
-                    order, decision = engine.submit_proposal(proposal)
-                    proposals_submitted.append((proposal, decision))
-                    logger.info(
-                        "  [EXIT PROPOSAL SUBMITTED] %s SELL %d %s (Risk: %s)",
-                        prop_id,
-                        pos.quantity,
-                        sym,
-                        "APPROVED" if decision.approved else "REJECTED",
-                    )
 
             # Update rolling status file for live monitoring
             snapshot_prices = {sym: state["price"] for sym, state in base_market.items()}
@@ -1137,14 +1180,22 @@ def run_paper_session(
     todays_fees = sum(
         (f.fee for f in engine.fills if not f.fill_id.startswith("carry_")), Decimal("0.00")
     )
+    # The entry cost still attributable to each open position, so a name carried into tomorrow does
+    # not have its entry fee dropped on the way through the state file.
+    open_entry_fees = {
+        symbol: sum((lot.entry_fee for lot in lots), Decimal("0.00"))
+        for symbol, lots in engine.ledger.lots.items()
+    }
     portfolio = state_from_ledger(
         portfolio,
         cash=engine.cash,
         positions={sym: (pos.quantity, pos.average_price) for sym, pos in engine.positions.items()},
         session_date=session_date,
-        realized_pnl=engine.ledger.realized_pnl,
+        session_realized_pnl=engine.ledger.realized_pnl,
         fees_paid=todays_fees,
         rebalanced=rebalancing,
+        open_entry_fees=open_entry_fees,
+        session_peak_equity=governor.all_time_peak_equity,
     )
     save_portfolio(PORTFOLIO_STATE_PATH, portfolio)
     logger.info(
@@ -1269,7 +1320,11 @@ def run_paper_session(
         )
         f.write(f"- **Execution Model**: `{model.config.model_name}` (`{model.config.model_id}`)\n")
         f.write(f"- **Architecture**: `{model.config.model_type}`\n")
-        rec_status = "PASS (0.00 Paisa Discrepancy)" if reconciliation.reconciled else "FAIL"
+        rec_status = (
+            f"PASS ({_paisa_str(reconciliation.discrepancy_paisa)} paisa discrepancy)"
+            if reconciliation.reconciled
+            else f"FAIL ({_paisa_str(reconciliation.discrepancy_paisa)} paisa discrepancy)"
+        )
         f.write(f"- **Reconciliation Status**: **`{rec_status}`**\n\n")
         f.write("## 1. Capital & Financial Summary (IST)\n\n")
         f.write("| Metric | Value (Rs) |\n|---|---:|\n")
@@ -1400,11 +1455,18 @@ def main() -> int:
             upstox_token=args.upstox_token,
             output_dir=out_p,
         )
-        rec_str = "PASS" if res["reconciliation"]["reconciled"] else "FAIL"
-        print(f"\n[PAPER PILOT SUCCESS] Session {res['session_id']} completed successfully.")
+        # A failed reconciliation used to print SUCCESS and exit 0, next to a hardcoded
+        # "(0.00 Paisa Discrepancy)" that was printed whether or not the discrepancy was zero. The
+        # one number that would have revealed the failure was the one replaced by a constant.
+        reconciled = bool(res["reconciliation"]["reconciled"])
+        discrepancy = res["reconciliation"]["discrepancy_paisa"]
+        banner = "[PAPER PILOT SUCCESS]" if reconciled else "[PAPER PILOT RECONCILIATION FAILED]"
+        print(f"\n{banner} Session {res['session_id']}.")
         print(f"Timezone: {res['timezone']}")
         print(f"Active Period: {res['started_at_ist']} -> {res['closed_at_ist']}")
-        print(f"Reconciliation: {rec_str} (0.00 Paisa Discrepancy)")
+        print(
+            f"Reconciliation: {'PASS' if reconciled else 'FAIL'} ({discrepancy} paisa discrepancy)"
+        )
         print(
             f"Total Equity: Rs {res['capital']['total_equity']} (Net P&L: Rs {res['performance']['total_net_pnl']})"
         )
@@ -1412,6 +1474,10 @@ def main() -> int:
         print(
             f"Evidence Report: logs/paper_runs/paper_session_{res['session_date']}_{res['session_id']}.md"
         )
+        if not reconciled:
+            for error in res["reconciliation"]["reconciliation_errors"]:
+                print(f"  - {error}")
+            return 7
         return 0
     except Exception as err:
         logger.exception("Paper session failed with error: %s", err)

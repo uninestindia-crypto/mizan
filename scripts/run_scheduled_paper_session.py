@@ -3,14 +3,22 @@
 A scheduled run has nobody watching it, so every step that could silently produce a plausible-but-
 wrong session is checked and made to fail loudly instead:
 
-* **Bars must be fresh.** The decision uses the last *completed* session. If the refresh cannot
-  advance past the newest bar already cached, the run stops rather than deciding on stale data --
-  which is exactly the failure mode that made an earlier version of the loader rank week-old prices.
+* **Bars must be fresh.** The decision uses the last *completed* session, and the run refuses if the
+  newest cached bar is more than `MAX_BAR_STALENESS_DAYS` old -- deciding on stale data is the
+  failure mode that made an earlier version of the loader rank week-old prices. This is a staleness
+  bound rather than the "did the refresh advance?" test it replaces, because that test was the
+  off-by-one described below.
 * **Macro must cover the same date.** Missing India VIX or NIFTY makes every feature row
   uncomputable, and the session would report a clean 0-proposal run that looked like a decision.
-* **Today must be a trading day.** This repository holds no NSE holiday calendar, so that cannot be
-  asserted in advance. It is inferred after the fact: if the provider has no bar for the previous
-  session, or the refresh returns nothing new, the run stops.
+* **Today must be a trading day**, decided against the published NSE holiday calendar rather than
+  inferred. The inference this replaces asked "did the previous calendar day trade?", which differs
+  from "does today trade?" on exactly the days that matter: it ran a full session **on** the first
+  holiday after a trading day, filling orders at stale prices and advancing the portfolio, and then
+  refused the genuine trading day after it. One off-by-one, two wrong outcomes, both silent.
+
+  The calendar is `data/authorities/nse-trading-holidays.json`, fetched from the NSE public API. It
+  covers a bounded set of years; a date outside them is refused rather than assumed, because a
+  calendar that silently stops being authoritative is worse than none.
 
 None of this makes the session *correct* -- it makes it honest about when it should not run.
 """
@@ -35,9 +43,51 @@ UNIVERSE_CSV = PROJECT_ROOT / "data/evidence/market-cache/scheduled-universe-ins
 #: comfortable headroom, and it stays clear of the provider's ten-year retrieval limit.
 LOOKBACK_DAYS = 3 * 365
 
+#: How old the newest completed bar may be before the run refuses. Four calendar days covers a
+#: Friday session read on the Tuesday after a Monday holiday, and nothing longer.
+MAX_BAR_STALENESS_DAYS = 4
+
+
+#: The published NSE trading-holiday calendar, committed so the decision is auditable.
+HOLIDAY_AUTHORITY = PROJECT_ROOT / "data/authorities/nse-trading-holidays.json"
+
 
 def log(message: str) -> None:
     print(f"{datetime.now(IST):%Y-%m-%d %H:%M:%S IST} | {message}", flush=True)
+
+
+class NotATradingDay(Exception):
+    """Today is a weekend, a published holiday, or outside the calendar's coverage."""
+
+
+def require_trading_day(day: date) -> None:
+    """Refuse unless `day` is a genuine NSE trading session.
+
+    Fail-closed on every uncertainty. An absent calendar, a malformed one, or a year it does not
+    cover all refuse: assuming a day trades because nothing said otherwise is how the previous
+    version came to run a full session on a closed market.
+    """
+    if day.weekday() >= 5:
+        raise NotATradingDay(f"{day:%Y-%m-%d %A}: NSE does not trade at weekends")
+    if not HOLIDAY_AUTHORITY.is_file():
+        raise NotATradingDay(
+            f"the trading-holiday authority is missing at {HOLIDAY_AUTHORITY}; refusing rather "
+            "than assuming the market is open"
+        )
+    import json
+
+    document = json.loads(HOLIDAY_AUTHORITY.read_text(encoding="utf-8"))
+    covered = set(document.get("covers_years", []))
+    if str(day.year) not in covered:
+        raise NotATradingDay(
+            f"the trading-holiday authority covers {sorted(covered)} and not {day.year}; refresh "
+            f"it from {document.get('source_url', 'the NSE holiday API')} before running again"
+        )
+    for holiday in document.get("holidays", []):
+        if holiday.get("date") == day.isoformat():
+            raise NotATradingDay(
+                f"{day:%Y-%m-%d %A} is an NSE trading holiday: {holiday.get('description')}"
+            )
 
 
 def newest_cached_bar_date() -> date | None:
@@ -149,39 +199,49 @@ def main() -> int:
     parser.add_argument("--capital", default="1000000.0")
     parser.add_argument("--end-time-ist", default="15:30:00")
     parser.add_argument("--interval-seconds", default="30")
-    parser.add_argument(
-        "--skip-refresh",
-        action="store_true",
-        help="use the cache as-is; for rehearsing the wiring outside market hours",
-    )
     args = parser.parse_args()
 
     today = datetime.now(IST).date()
     log(f"scheduled paper session for {today:%Y-%m-%d %A}")
-    if today.weekday() >= 5:
-        log("refusing: NSE does not trade at weekends")
+    try:
+        require_trading_day(today)
+    except NotATradingDay as refusal:
+        log(f"refusing: {refusal}")
         return 2
 
     before = newest_cached_bar_date()
     log(f"newest cached bar before refresh: {before}")
 
-    if not args.skip_refresh:
-        target = today - timedelta(days=1)
-        refresh_bars(args.universe_name, target)
-        refresh_macro(target)
-        after = newest_cached_bar_date()
-        log(f"newest cached bar after refresh : {after}")
-        if after is None:
-            log("refusing: the bars cache is empty after a refresh")
-            return 3
-        if before is not None and after <= before:
-            # A public holiday, a provider outage, or an expired token all land here. Deciding on
-            # unchanged data would still produce a full session report, which is the dangerous part.
-            log(f"refusing: refresh did not advance past {before}; treating today as non-trading")
-            return 4
-        if not macro_covers(after):
-            log(f"refusing: macro does not cover {after}; every feature row would be uncomputable")
-            return 5
+    # There is deliberately no `--skip-refresh`. It used to wrap every guard below and still run
+    # the real session: live quotes, filled orders, a full markdown report, and a permanent advance
+    # of `sessions_completed` and the rebalance clock -- all on whatever happened to be cached. A
+    # rehearsal that leaves artifacts identical to a session is not a rehearsal. To exercise the
+    # wiring, run `scripts/run_paper_pilot_session.py` directly and read what it writes.
+    target = today - timedelta(days=1)
+    refresh_bars(args.universe_name, target)
+    refresh_macro(target)
+    after = newest_cached_bar_date()
+    log(f"newest cached bar after refresh : {after}")
+    if after is None:
+        log("refusing: the bars cache is empty after a refresh")
+        return 3
+    if before is not None and after < before:
+        log(f"refusing: the newest cached bar went backwards, {before} -> {after}")
+        return 4
+    # Staleness, not "did it advance". The advance test was the off-by-one: on the first holiday
+    # after a trading day the refresh *does* advance, because it collects the previous session's
+    # bar that the previous run had not yet seen. Today being a trading day is now decided by the
+    # calendar above; what remains to check is that the data is actually recent.
+    staleness = (today - after).days
+    if staleness > MAX_BAR_STALENESS_DAYS:
+        log(
+            f"refusing: newest bar {after} is {staleness} days old, over the "
+            f"{MAX_BAR_STALENESS_DAYS}-day limit; the provider or the token is likely broken"
+        )
+        return 4
+    if not macro_covers(after):
+        log(f"refusing: macro does not cover {after}; every feature row would be uncomputable")
+        return 5
 
     log("starting paper session ...")
     session = [

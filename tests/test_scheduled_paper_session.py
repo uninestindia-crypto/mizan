@@ -1,0 +1,116 @@
+"""The unattended scheduled session's refusal rules.
+
+A Red Team pass found the trading-day guard **inverted**: it ran a full session on the first holiday
+after a trading day -- filling orders at stale prices, charging real statutory fees, writing a full
+report and advancing the portfolio -- and then refused the genuine trading day after it. One
+off-by-one, two wrong outcomes, both silent, and no test existed to catch either.
+
+The cause was semantic rather than arithmetic. The guard asked "did the previous calendar day
+trade?" by watching whether a refresh advanced the newest cached bar. On the first holiday it does
+advance, because the refresh collects the previous session's bar that the previous run had not yet
+seen. The question that needed answering was "does *today* trade?", and no amount of looking at
+historical bars answers it -- so it is now answered from the published NSE calendar.
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from datetime import date
+from pathlib import Path
+
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
+
+from run_scheduled_paper_session import (  # noqa: E402
+    HOLIDAY_AUTHORITY,
+    MAX_BAR_STALENESS_DAYS,
+    NotATradingDay,
+    require_trading_day,
+)
+
+AUTHORITY = json.loads(HOLIDAY_AUTHORITY.read_text(encoding="utf-8"))
+HOLIDAYS = {entry["date"]: entry["description"] for entry in AUTHORITY["holidays"]}
+COVERED_YEAR = int(sorted(AUTHORITY["covers_years"])[0])
+
+
+def test_the_holiday_authority_is_real_and_says_where_it_came_from() -> None:
+    """An authority nobody can trace is not an authority."""
+    assert AUTHORITY["source_url"].startswith("https://www.nseindia.com/")
+    assert AUTHORITY["source_segment"] == "CM"
+    assert AUTHORITY["holiday_count"] == len(AUTHORITY["holidays"]) > 0
+    assert all(date.fromisoformat(day) for day in HOLIDAYS)
+
+
+def test_a_weekend_is_refused() -> None:
+    saturday = date(2026, 8, 29)
+    assert saturday.weekday() == 5
+    with pytest.raises(NotATradingDay, match="does not trade at weekends"):
+        require_trading_day(saturday)
+
+
+def test_an_ordinary_weekday_is_a_trading_day() -> None:
+    monday = date(2026, 8, 31)
+    assert monday.isoformat() not in HOLIDAYS
+    require_trading_day(monday)
+
+
+def test_every_published_holiday_is_refused() -> None:
+    """The exact failure: the session used to run on these days and fill against stale prices."""
+    weekday_holidays = [day for day in HOLIDAYS if date.fromisoformat(day).weekday() < 5]
+    assert weekday_holidays, "the calendar lists no weekday holidays, so this proves nothing"
+    for day in weekday_holidays:
+        with pytest.raises(NotATradingDay, match="trading holiday"):
+            require_trading_day(date.fromisoformat(day))
+
+
+def test_the_day_after_a_holiday_is_not_refused() -> None:
+    """The other half of the same off-by-one: a real session was silently skipped.
+
+    Under the old inference the bar date had not advanced on the day after a holiday, so the run
+    logged "treating today as non-trading" and stopped -- on a day the exchange was open.
+    """
+    for day in sorted(HOLIDAYS):
+        after = date.fromisoformat(day)
+        for _ in range(5):
+            after = date.fromordinal(after.toordinal() + 1)
+            if after.weekday() < 5 and after.isoformat() not in HOLIDAYS:
+                break
+        else:  # pragma: no cover - only if a week were entirely non-trading
+            continue
+        require_trading_day(after)
+
+
+def test_a_year_the_calendar_does_not_cover_is_refused_not_assumed() -> None:
+    """Fail-closed. A calendar that silently stops being authoritative is worse than none."""
+    uncovered = date(COVERED_YEAR + 5, 3, 1)
+    while uncovered.weekday() >= 5:  # the weekend check fires first, so land on a weekday
+        uncovered = date.fromordinal(uncovered.toordinal() + 1)
+    with pytest.raises(NotATradingDay, match="covers"):
+        require_trading_day(uncovered)
+
+
+def test_a_missing_calendar_is_refused(monkeypatch, tmp_path) -> None:
+    import run_scheduled_paper_session as runner
+
+    monkeypatch.setattr(runner, "HOLIDAY_AUTHORITY", tmp_path / "absent.json")
+    with pytest.raises(NotATradingDay, match="missing"):
+        runner.require_trading_day(date(COVERED_YEAR, 8, 31))
+
+
+def test_the_rehearsal_flag_is_gone() -> None:
+    """`--skip-refresh` disabled every data guard and still traded and persisted state.
+
+    A rehearsal whose artifacts are identical to a real session is not a rehearsal. It is removed
+    rather than fixed, because the honest rehearsal is to run the session script directly.
+    """
+    source = (REPO_ROOT / "scripts/run_scheduled_paper_session.py").read_text(encoding="utf-8")
+    assert "args.skip_refresh" not in source
+    assert '"--skip-refresh"' not in source
+
+
+def test_the_staleness_bound_is_short_enough_to_catch_a_broken_provider() -> None:
+    """Long enough for a Friday bar read after a Monday holiday, and no longer."""
+    assert 2 <= MAX_BAR_STALENESS_DAYS <= 5
