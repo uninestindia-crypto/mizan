@@ -681,13 +681,10 @@ def run_paper_session(
         logger.info("Holding: no re-ranking this session")
     else:
         mizan_cross_section, mizan_coverage = load_mizan_cross_section(universe, as_of=session_date)
-        logger.info("Mizan cross-section: %s", mizan_coverage.summary())
-        if mizan_coverage.fraction < MIN_CROSS_SECTION_COVERAGE:
-            raise RuntimeError(
-                f"only {mizan_coverage.fraction:.1%} of the universe could be scored; a cross-sectional "
-                f"rank divides by the number of names present, so a shrunk cross-section changes every "
-                f"rank. Minimum is {MIN_CROSS_SECTION_COVERAGE:.0%}"
-            )
+        # The coverage gate runs *after* the extreme-row refusals below, not before. Checking first
+        # measured a cross-section the session was not going to use: refusals shrink it further, and
+        # a rank divides by the number of names present, so the gate would have passed on a
+        # population that no longer existed by the time anything was ranked.
         mizan_cross_section, refused = refuse_extreme_rows(
             mizan_cross_section,
             # `means` and `scales` are decimal text on the preprocessor config, matching how the
@@ -710,6 +707,17 @@ def run_paper_session(
                 "Refused %d name(s) whose standardized features exceed the model's working range: %s",
                 len(refused),
                 ", ".join(refused),
+            )
+        # Recorded on the coverage object rather than only logged. `skipped_extreme` existed as a
+        # field and was never populated by anything, so the refusals the guard exists to make
+        # visible were absent from the very report meant to show them.
+        mizan_coverage = mizan_coverage.with_extreme_refusals(refused)
+        logger.info("Mizan cross-section: %s", mizan_coverage.summary())
+        if mizan_coverage.fraction < MIN_CROSS_SECTION_COVERAGE:
+            raise RuntimeError(
+                f"only {mizan_coverage.fraction:.1%} of the universe could be scored; a "
+                f"cross-sectional rank divides by the number of names present, so a shrunk "
+                f"cross-section changes every rank. Minimum is {MIN_CROSS_SECTION_COVERAGE:.0%}"
             )
         mizan_scores = model.predict_scores(
             {

@@ -7,9 +7,32 @@ was `volume_zscore * 0.2`, and `rsi_14_centered` was clamped to ±50 when its tr
 universes it was pointed at produced **zero** proposals.
 
 This module exists so the live path calls the same kernel training calls —
-`modeling.mizan_features`, verified bit-identical against the published feature store — rather than
-approximating it. It does no arithmetic on features itself; it only gathers the inputs the kernel
-needs and hands them over.
+`modeling.mizan_features` — rather than approximating it. It does no arithmetic on features itself;
+it only gathers the inputs the kernel needs and hands them over.
+
+## What "matches the published store" does and does not mean
+
+This docstring previously said the kernel was "verified bit-identical against the published feature
+store". That was a one-off manual run restated as a standing property, no test stood behind it, and
+a Red Team sweep of all 1,015,831 published rows showed it was **false**: `cs_rank_momentum_5`
+differed on 244 rows across 115 of 2,427 dates, because the ranks were sorted after a 10-decimal
+text round trip while the builder sorted raw floats.
+
+That sort now takes the raw floats, so the live path follows the builder's procedure, and
+`tests/test_mizan_store_fidelity.py` checks it against the committed store — the property is
+measured rather than asserted. It does not make those 244 rows reproducible: both names carry
+byte-identical published text, so the order the builder derived from raw floats cannot be recovered
+from the store at all. Three residual exposures remain, none closed:
+
+* The 244 published rows stay unreproducible, permanently. The test bounds the divergence to the
+  tie class rather than eliminating it.
+
+* `math.log` and `math.sqrt` are libm calls. The store, its verification and the paper runner all
+  ran on the same Windows ARM64 machine; CI runs on x86-64. A 1-ULP difference is ~1e-18 relative
+  against a 1e-10 text quantum, so it can only bite at an exact rounding boundary — but nothing
+  measures it, and the store cannot be rebuilt to check.
+* The fidelity test samples the store rather than sweeping all of it, so it bounds the claim rather
+  than proving it everywhere.
 
 ## Why a completed-bar decision
 
@@ -57,6 +80,24 @@ class CrossSectionCoverage:
     @property
     def fraction(self) -> float:
         return len(self.scored) / len(self.requested) if self.requested else 0.0
+
+    def with_extreme_refusals(self, refused: Sequence[str]) -> CrossSectionCoverage:
+        """Coverage after the extreme-row guard has dropped names, with those names recorded.
+
+        `skipped_extreme` was declared here and populated by nothing: the refusals were logged and
+        then absent from the coverage report, so the guard's stated advantage over clipping -- "a
+        refusal is visible in the coverage report" -- was not true. The refused names also stayed
+        counted as `scored`, so the coverage fraction described a cross-section that no longer
+        existed by the time anything was ranked.
+        """
+        dropped = frozenset(refused)
+        return CrossSectionCoverage(
+            requested=self.requested,
+            scored=tuple(s for s in self.scored if s not in dropped),
+            skipped_short_history=self.skipped_short_history,
+            skipped_not_computable=self.skipped_not_computable,
+            skipped_extreme=tuple(sorted(dropped)),
+        )
 
     def summary(self) -> str:
         return (
@@ -175,10 +216,24 @@ def _require_one_decision_date(windows: Mapping[str, Sequence[PointInTimeBar]]) 
 
 #: How far a standardized feature may sit from the training mean before the row is refused.
 #:
-#: Chosen from measurement, not taste. Across a live 499-name NIFTY 500 cross-section the largest
-#: standardized deviation per name has median 1.5, p90 2.1 and p99 7.0; the training partition's
-#: own p99.9 lands near 16. A limit of 25 sits clear of all of them. It is also insensitive: on the
-#: cross-section that motivated it, every limit from 25 to 200 refused exactly the same single name.
+#: **This is a percentile choice, roughly p99.95 of the training distribution.** It is not a measured
+#: point at which the linear model stops working, and nothing here measures that. Across the full
+#: published store, 25 refuses about 0.05% of rows -- 511 of 1,015,831, on 421 of 2,427 dates -- and
+#: the large majority are volume spikes.
+#:
+#: Two earlier justifications for this constant were wrong and are recorded rather than deleted,
+#: because both are the same error and it has now been made three times in this repository:
+#:
+#: * "A limit of 25 sits clear of" the training distribution. It does not. **511 training rows sit
+#:   above 25**, the largest at 84,131 sd. The model was fitted on data this guard would refuse; the
+#:   limit cuts into the training tail rather than sitting clear of it.
+#: * "It is also insensitive: every limit from 25 to 200 refused exactly the same single name." True
+#:   of the one cross-section that motivated it, false generally. Limits 25 and 200 disagree on
+#:   **411 of 2,427 dates**, refusing 511 rows against 10 -- a 51x difference. A property of one
+#:   sampled day was restated as a property of the constant.
+#:
+#: That is exactly what `agent_context/work/completed/20260822-NOTICE-dsr-two-point-boundary-crash.md`
+#: concluded after being caught twice: cite the proportion and the mechanism, never a single sample.
 MAX_STANDARDIZED_DEVIATION: Final = 25.0
 
 

@@ -14,6 +14,11 @@ corrupted all of them.
 **No test opened a committed store, so CI was green throughout.** These tests exist so that cannot
 happen again: they read what is actually on disk, which after a clone or a branch switch is what
 git wrote, not what was authored.
+
+A later Red Team pass found the first version of this file was still too narrowly scoped: it checked
+`COMMITTED` markers and claimed "repository-wide coverage", while 264 tracked evidence files sat
+CRLF against LF blobs and none of them was a marker. Those files have been restored and
+`test_no_tracked_evidence_file_differs_from_its_committed_blob` now covers the payloads too.
 """
 
 from __future__ import annotations
@@ -51,6 +56,10 @@ def test_no_committed_marker_carries_a_carriage_return() -> None:
 
     Checked at the byte level rather than by opening every store, because it is the same failure
     for all 4,000+ of them and this runs in well under a second.
+
+    Scope note, because this docstring previously overstated it: this covers **markers only**. The
+    test below is what covers every tracked evidence file, and it exists because 264 of them were
+    corrupted while this one passed.
     """
     markers = _tracked_committed_markers()
     assert markers, "no committed evidence markers found; the store layout has moved"
@@ -63,6 +72,53 @@ def test_no_committed_marker_carries_a_carriage_return() -> None:
         f"{len(corrupted)} of {len(markers)} COMMITTED markers contain a carriage return, so their "
         f"stores will fail integrity. This is line-ending conversion on checkout; "
         f"`data/evidence/** -text` in .gitattributes prevents it. First: {corrupted[:3]}"
+    )
+
+
+def test_no_tracked_evidence_file_differs_from_its_committed_blob() -> None:
+    """The scope the marker test above does not have, and was wrongly believed to have.
+
+    That test checks `COMMITTED` markers only. A Red Team pass found **264 tracked files** under
+    `data/evidence/` sitting CRLF on disk against an LF blob -- including all five macro inputs the
+    live feature path reads -- and **none of them was a marker**, so the test passed throughout. Its
+    docstring claimed the byte-level check "gives repository-wide coverage"; the coverage was over
+    markers, not payloads.
+
+    `git status` reported clean the whole time, because the index's cached stat matched and git will
+    not re-hash until an mtime change. That is what made it dangerous rather than cosmetic:
+    `scripts/daily_auto_sync.ps1` runs `git add -A`, so the first operation to touch any of those
+    files would have committed the corrupted bytes.
+    """
+    result = subprocess.run(
+        ["git", "ls-files", "--eol", "data/evidence/"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        pytest.skip("git is unavailable, so tracked files cannot be enumerated")
+
+    mismatched = []
+    for line in result.stdout.splitlines():
+        # `i/<index-eol> w/<worktree-eol> attr/<attr>\t<path>`
+        fields = line.split("\t", 1)
+        if len(fields) != 2:
+            continue
+        flags, path = fields
+        parts = flags.split()
+        # The `i/` and `w/` prefixes are labels, not part of the value: comparing them unstripped
+        # makes every line look mismatched.
+        index_eol = parts[0].removeprefix("i/")
+        worktree_eol = parts[1].removeprefix("w/")
+        if index_eol != worktree_eol:
+            mismatched.append(f"{path} (index {index_eol}, worktree {worktree_eol})")
+
+    assert not mismatched, (
+        f"{len(mismatched)} tracked evidence file(s) hold different bytes on disk than the "
+        f"repository committed. `git status` will not show this until something touches them, and "
+        f"`daily_auto_sync.ps1` would then commit the converted version. Restore them with "
+        f"`git checkout-index -f`. First: {mismatched[:3]}"
     )
 
 

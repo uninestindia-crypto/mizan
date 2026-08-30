@@ -115,13 +115,18 @@ def canonical_mizan_window(
     return tuple(records[start : index + 1])
 
 
-def compute_mizan_feature_values(
+def compute_mizan_feature_floats(
     window: Sequence[PointInTimeBar],
     *,
     india_vix_by_date: Mapping[str, float],
     nifty_by_date: Mapping[str, float],
-) -> dict[str, str] | None:
-    """The thirteen instrument-level features for the last bar of ``window``.
+) -> dict[str, float] | None:
+    """The thirteen instrument-level features as raw floats, before text quantisation.
+
+    Exists so the cross-sectional ranks can be computed on the same values the store builder ranked
+    on. ``build_mizan_feature_store.py:174`` sorts raw floats; ranking after the 10-decimal text
+    round trip makes two names a tie that the builder ordered, which left 244 published rows on 115
+    dates unreproducible from the published columns.
 
     Returns ``None`` when the row is not computable — a non-positive price, or macro data missing for
     the decision date or its 5-session lag. The store builder skips such rows rather than
@@ -192,21 +197,62 @@ def compute_mizan_feature_values(
         0.0,  # cs_rank_momentum_5, filled once the cross-section is complete
         0.0,  # cs_rank_volume_surprise, likewise
     ]
-    return {
-        name: _VALUE_FORMAT.format(value)
-        # strict: the family and the value list are built together above, so a length mismatch
-        # would mean a feature was added in one place and not the other.
-        for name, value in zip(FEATURE_NAMES_V3, values, strict=True)
-    }
+    # strict: the family and the value list are built together above, so a length mismatch would
+    # mean a feature was added in one place and not the other.
+    return dict(zip(FEATURE_NAMES_V3, values, strict=True))
 
 
-def apply_cross_sectional_ranks(cross_section: dict[str, dict[str, str]]) -> None:
+def compute_mizan_feature_values(
+    window: Sequence[PointInTimeBar],
+    *,
+    india_vix_by_date: Mapping[str, float],
+    nifty_by_date: Mapping[str, float],
+) -> dict[str, str] | None:
+    """The thirteen instrument-level features for the last bar of ``window``, as canonical text.
+
+    Returns ``None`` when the row is not computable — a non-positive price, or macro data missing
+    for the decision date or its 5-session lag. The store builder skips such rows rather than
+    substituting a value, and so does this.
+
+    The two cross-sectional ranks are left at ``0.0``; they are not functions of one instrument's
+    history and are filled by :func:`apply_cross_sectional_ranks` once the whole cross-section for
+    the date is known.
+    """
+    raw = compute_mizan_feature_floats(
+        window, india_vix_by_date=india_vix_by_date, nifty_by_date=nifty_by_date
+    )
+    if raw is None:
+        return None
+    return {name: _VALUE_FORMAT.format(value) for name, value in raw.items()}
+
+
+def apply_cross_sectional_ranks(
+    cross_section: dict[str, dict[str, str]],
+    raw_values: Mapping[str, Mapping[str, float]] | None = None,
+) -> None:
     """Fill both rank features in place, ranking each name against that date's cross-section.
 
     Uses only contemporaneous information: every row shares one decision date. The rank is
     ``(position + 1) / count - 0.5``, so it depends on **how many names are present** — which is why
     an execution surface must serve the same cross-section the model was fitted over, and why
     ``execution.cross_sectional_strategy`` refuses a partial one by default.
+
+    ``raw_values`` supplies the pre-quantisation floats, and supplying it is what makes this follow
+    the same procedure as the store builder. The comment here used to claim the sort matched
+    ``build_mizan_feature_store.py:174``; it did not. The builder sorts raw floats, while this sorted
+    values round-tripped through the 10-decimal text, so two names differing below ``1e-10`` were a
+    tie here — broken alphabetically — and ordered there. A sweep of all 1,015,831 published rows
+    found **244 rows on 115 of 2,427 dates** the kernel could not reproduce.
+
+    Passing ``raw_values`` does **not** repair those 244 rows, and it is worth being exact about
+    why: both names carry byte-identical published text, so the ordering the builder derived from
+    raw floats is not recoverable from anything the store contains. What this fixes is the live
+    path, which holds the real floats and now ranks on them as the builder did. The published rows
+    stay unreproducible, and ``tests/test_mizan_store_fidelity.py`` pins that the divergence is
+    exactly the tie class and nothing wider.
+
+    Without ``raw_values`` the text is used and those ties resolve alphabetically, which is a real
+    if small divergence rather than an equivalent path. Callers holding the floats should pass them.
     """
     if not cross_section:
         return
@@ -216,9 +262,15 @@ def apply_cross_sectional_ranks(cross_section: dict[str, dict[str, str]]) -> Non
     ):
         symbols = sorted(cross_section)
         count = len(symbols)
-        # Sort by the source value, matching the builder. `sorted` is stable, and the pre-sort by
-        # symbol makes ties resolve identically on every run rather than by dict insertion order.
-        order = sorted(symbols, key=lambda s: float(cross_section[s][source]))
+
+        def sort_key(symbol: str, source: str = source) -> float:
+            if raw_values is not None and symbol in raw_values:
+                return raw_values[symbol][source]
+            return float(cross_section[symbol][source])
+
+        # `sorted` is stable and the pre-sort by symbol makes any remaining tie resolve identically
+        # on every run rather than by dict insertion order.
+        order = sorted(symbols, key=sort_key)
         for rank, symbol in enumerate(order):
             cross_section[symbol][target] = _VALUE_FORMAT.format((rank + 1) / count - 0.5)
 
@@ -237,16 +289,19 @@ def compute_mizan_cross_section(
     cross-section rather than ranking the remainder, because a missing name moves every rank.
     """
     cross_section: dict[str, dict[str, str]] = {}
+    raw_values: dict[str, Mapping[str, float]] = {}
     for symbol in sorted(bars_by_symbol):
         window = canonical_mizan_window(list(bars_by_symbol[symbol]))
-        values = compute_mizan_feature_values(
+        raw = compute_mizan_feature_floats(
             window,
             india_vix_by_date=india_vix_by_date,
             nifty_by_date=nifty_by_date,
         )
-        if values is not None:
-            cross_section[symbol] = values
-    apply_cross_sectional_ranks(cross_section)
+        if raw is not None:
+            cross_section[symbol] = {name: _VALUE_FORMAT.format(v) for name, v in raw.items()}
+            raw_values[symbol] = raw
+    # The raw floats are passed so the ranks sort on the same values the store builder sorted on.
+    apply_cross_sectional_ranks(cross_section, raw_values)
     return cross_section
 
 
