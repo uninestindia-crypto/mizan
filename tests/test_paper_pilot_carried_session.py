@@ -298,41 +298,61 @@ def test_reconciliation_can_actually_report_failure() -> None:
     )
 
 
-def test_the_governor_is_seeded_from_marked_equity_not_a_cost_figure() -> None:
-    """`ledger_funding()` is cash + holdings **at cost** + fees, and does not move with the market.
+def test_a_cost_seeded_daily_peak_halts_a_book_that_never_moved_intraday() -> None:
+    """The behaviour, not the spelling. The previous version of this test was worthless.
 
-    Seeding the daily peak with it made the 4% daily rule measure cumulative unrealized loss since
-    the position was opened. A book that drifted 5.63% down over ten sessions -- with exactly zero
-    intraday movement -- halted on the first order of its first rebalance, and that order is the
-    exit, so the losing book was then held with nothing able to sell it.
+    It asserted `"ledger_funding" not in ast.unparse(...)`. At `46c7bb67` the defect was written
+    through a local -- `opening_equity = portfolio.ledger_funding()` then
+    `initial_equity=opening_equity` -- so `ast.unparse` returned `'opening_equity'` and the check
+    passed against the very commit it named. Four of five mutants survived it, including a verbatim
+    reintroduction of the defect and `initial_equity=Decimal("0.00")`, which disables the daily rule
+    outright.
 
-    That is verbatim the failure the commit before this one claimed to have fixed, which is why
-    this is a detector on the argument rather than a test of `max()`.
+    This drives the governor the way the runner does and asserts the outcome instead: a book 5.63%
+    below its cost basis, with **zero** intraday movement, must not trip a 4% *daily* limit. Seed it
+    from a cost figure and it does -- on the first order, which is the exit, so the losing book is
+    then held with nothing able to sell it.
     """
-    source = (
-        Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
-    ).read_text(encoding="utf-8")
-    tree = ast.parse(source)
+    from quant_system.core.domain import Order
+    from quant_system.risk.checks import RiskLimits
+    from quant_system.risk.governor import PreTradeRiskGovernor
 
-    constructions = [
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id == "PreTradeRiskGovernor"
-    ]
-    assert constructions, "the runner no longer builds a governor; this detector has gone blind"
+    limits = RiskLimits(max_daily_drawdown_pct=0.04, max_total_drawdown_pct=0.12)
+    cost_basis = Decimal("1000000.00")  # what ledger_funding() returns: invariant to price
+    marked_open = Decimal("943735.66")  # equity marked at this session's open, 5.63% below
 
-    for call in constructions:
-        seeds = [kw.value for kw in call.keywords if kw.arg == "initial_equity"]
-        assert seeds, "the governor is built without an explicit opening equity"
-        for seed in seeds:
-            rendered = ast.unparse(seed)
-            assert "ledger_funding" not in rendered, (
-                f"initial_equity is seeded from a cost figure ({rendered!r}). It must be equity "
-                "marked at this session's open, or the daily drawdown rule measures the whole "
-                "unrealized loss since inception instead of the day."
-            )
+    def first_order_of_the_session(seed: Decimal):
+        governor = PreTradeRiskGovernor(
+            limits=limits,
+            initial_equity=seed,
+            all_time_peak_equity=max(cost_basis, seed),
+        )
+        return governor.evaluate_order(
+            Order(
+                order_id="exit1",
+                symbol="ACME",
+                side=Side.SELL,
+                quantity=10,
+                order_type=OrderType.MARKET,
+                created_at=AT,
+            ),
+            current_equity=marked_open,
+            current_cash=Decimal("62195.95"),
+            positions={},
+            current_quote=None,
+            current_prices={},
+        )
+
+    from_cost = first_order_of_the_session(cost_basis)
+    assert "DAILY_DRAWDOWN_LIMIT_BREACHED" in (from_cost.reason or ""), (
+        "seeding the daily peak from a cost figure should reproduce the defect; if it no longer "
+        "does, this test has stopped exercising the thing it exists to catch"
+    )
+
+    from_marked = first_order_of_the_session(marked_open)
+    assert "DRAWDOWN" not in (from_marked.reason or ""), (
+        f"a book that did not move intraday tripped a daily limit: {from_marked.reason}"
+    )
 
 
 def test_a_risk_halt_is_reported_as_a_halt_not_a_success() -> None:

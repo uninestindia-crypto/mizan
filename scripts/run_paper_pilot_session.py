@@ -733,65 +733,15 @@ def run_paper_session(
             ", ".join(f"{s} {mizan_scores[s]:+.5f}" for s in mizan_picks) or "none",
         )
 
-    # 2c. Position sizing.
+    # 2b-bis. Equity marked at this session's open.
     #
-    # Equal-weight is the default because it is how the model was measured: the out-of-sample
-    # screen averaged the forward target across the selected top 20% (`statistics.fmean`), giving
-    # every chosen name the same weight. The previous fixed stake of Rs 150,000 per name meant 56
-    # picks against Rs 1,000,000 filled only the first ~6 in rank order and left the other 50
-    # unexpressed -- a concentrated bet on the head of a ranking, which nobody validated.
-    #
-    # `fixed` remains available because the sprint profile deliberately concentrates into 2-3 names
-    # and equal-weighting would silently undo that intent.
-    if sizing == "equal-weight" and mizan_picks:
-        # Sized from the portfolio's actual funding, not from the `initial_cash` nominal. Sizing
-        # from the constant survived the change that made the portfolio persistent, so a book that
-        # had drawn down kept allocating as though it still held its opening capital -- which funds
-        # only the head of the ranking and leaves the tail unexpressed. That is precisely the
-        # concentration defect equal-weight sizing was introduced to remove.
-        deployable = portfolio.ledger_funding()
-        usable = deployable * (Decimal("1") - Decimal(str(risk_limits.min_cash_buffer_pct)))
-        per_name_alloc = (usable / Decimal(len(mizan_picks))).quantize(_PAISA)
-        logger.info(
-            "Sizing: equal-weight, Rs %s per name across %d picks (%.0f%% cash buffer held back)",
-            per_name_alloc,
-            len(mizan_picks),
-            risk_limits.min_cash_buffer_pct * 100,
-        )
-    else:
-        logger.info("Sizing: fixed, Rs %s per name", per_name_alloc)
-
-    # 3. Risk Governor Setup
-    #
-    # Seeded with the carried all-time peak, not left at zero. A fresh governor each session took
-    # its peak from whatever that session opened at, so a multi-session decline was measured
-    # against its own falling baseline and the total-drawdown kill switch could never trip. The
-    # peak is the larger of what the portfolio has ever reached and what it is funded with today,
-    # so a first run establishes a real baseline rather than starting at zero.
-    if portfolio.risk_halted:
-        # A tripped kill switch is not cleared by time passing. Refusing here rather than trading is
-        # the only honest option left: resetting it would make the switch decorative, and
-        # liquidating on its own would execute a rule nobody measured. Clearing it is a human act.
-        logger.error(
-            "REFUSING TO TRADE: the risk kill switch fired on %s and has not been cleared. "
-            "Reason: %s. Review the book, then run:  "
-            "python scripts/clear_paper_halt.py --i-have-reviewed-the-book  "
-            "Do NOT hand-edit or delete %s: it is hash-protected, so an edit is refused on the "
-            "next load, and deleting it invents a fresh portfolio and discards the real book.",
-            portfolio.halted_on,
-            portfolio.halt_reason or "not recorded",
-            PORTFOLIO_STATE_PATH,
-        )
-        raise SystemExit(8)
-
-    # Two peaks, two meanings. `initial_equity` is *this session's* opening equity, so the 4% daily
-    # limit measures an intraday decline; `all_time_peak_equity` is the carried high-water mark, so
-    # the 12% total limit measures a multi-session one.
-    #
-    # Passing the carried peak as `initial_equity` -- which is what this line used to do -- seeded
-    # both, and the daily check then measured multi-session declines against the 4% limit. The
-    # total switch became unreachable, and a session that opened flat and never moved intraday
-    # could halt the book on the first order, which is the exit.
+    # One number, used by both the position sizing below and the risk baseline further down. They
+    # used to derive their own: the risk baseline was corrected to a marked figure while sizing was
+    # left on `ledger_funding()` -- cash + holdings **at cost** + carried fees, invariant to market
+    # price -- forty lines apart. On a drawn-down book that over-allocates, funding the head of the
+    # ranking and silently dropping names off the tail: measured at 9.87% cash held against a
+    # declared 5% buffer, with a selected name absent entirely. That is the concentration defect
+    # equal-weight sizing exists to prevent, reintroduced by fixing only one of the two callers.
     # `ledger_funding()` is the wrong quantity here and using it was the previous defect wearing a
     # new hat. It is cash + holdings **at cost** + carried fees: a cost figure, invariant to market
     # price. Seeding the daily peak with it meant the 4% daily rule measured cumulative unrealized
@@ -833,6 +783,67 @@ def run_paper_session(
         _paisa_str(marked_opening_equity),
         _paisa_str(portfolio.peak_equity),
     )
+
+    # 2c. Position sizing.
+    #
+    # Equal-weight is the default because it is how the model was measured: the out-of-sample
+    # screen averaged the forward target across the selected top 20% (`statistics.fmean`), giving
+    # every chosen name the same weight. The previous fixed stake of Rs 150,000 per name meant 56
+    # picks against Rs 1,000,000 filled only the first ~6 in rank order and left the other 50
+    # unexpressed -- a concentrated bet on the head of a ranking, which nobody validated.
+    #
+    # `fixed` remains available because the sprint profile deliberately concentrates into 2-3 names
+    # and equal-weighting would silently undo that intent.
+    if sizing == "equal-weight" and mizan_picks:
+        # Sized from the portfolio's actual funding, not from the `initial_cash` nominal. Sizing
+        # from the constant survived the change that made the portfolio persistent, so a book that
+        # had drawn down kept allocating as though it still held its opening capital -- which funds
+        # only the head of the ranking and leaves the tail unexpressed. That is precisely the
+        # concentration defect equal-weight sizing was introduced to remove.
+        usable = marked_opening_equity * (
+            Decimal("1") - Decimal(str(risk_limits.min_cash_buffer_pct))
+        )
+        per_name_alloc = (usable / Decimal(len(mizan_picks))).quantize(_PAISA)
+        logger.info(
+            "Sizing: equal-weight, Rs %s per name across %d picks (%.0f%% cash buffer held back)",
+            per_name_alloc,
+            len(mizan_picks),
+            risk_limits.min_cash_buffer_pct * 100,
+        )
+    else:
+        logger.info("Sizing: fixed, Rs %s per name", per_name_alloc)
+
+    # 3. Risk Governor Setup
+    #
+    # Seeded with the carried all-time peak, not left at zero. A fresh governor each session took
+    # its peak from whatever that session opened at, so a multi-session decline was measured
+    # against its own falling baseline and the total-drawdown kill switch could never trip. The
+    # peak is the larger of what the portfolio has ever reached and what it is funded with today,
+    # so a first run establishes a real baseline rather than starting at zero.
+    if portfolio.risk_halted:
+        # A tripped kill switch is not cleared by time passing. Refusing here rather than trading is
+        # the only honest option left: resetting it would make the switch decorative, and
+        # liquidating on its own would execute a rule nobody measured. Clearing it is a human act.
+        logger.error(
+            "REFUSING TO TRADE: the risk kill switch fired on %s and has not been cleared. "
+            "Reason: %s. Review the book, then run:  "
+            "python scripts/clear_paper_halt.py --i-have-reviewed-the-book  "
+            "Do NOT hand-edit or delete %s: it is hash-protected, so an edit is refused on the "
+            "next load, and deleting it invents a fresh portfolio and discards the real book.",
+            portfolio.halted_on,
+            portfolio.halt_reason or "not recorded",
+            PORTFOLIO_STATE_PATH,
+        )
+        raise SystemExit(8)
+
+    # Two peaks, two meanings. `initial_equity` is *this session's* opening equity, so the 4% daily
+    # limit measures an intraday decline; `all_time_peak_equity` is the carried high-water mark, so
+    # the 12% total limit measures a multi-session one.
+    #
+    # Passing the carried peak as `initial_equity` -- which is what this line used to do -- seeded
+    # both, and the daily check then measured multi-session declines against the 4% limit. The
+    # total switch became unreachable, and a session that opened flat and never moved intraday
+    # could halt the book on the first order, which is the exit.
     governor = PreTradeRiskGovernor(
         limits=risk_limits,
         initial_equity=marked_opening_equity,
@@ -1306,6 +1317,30 @@ def run_paper_session(
         symbol: sum((lot.entry_fee for lot in lots), Decimal("0.00"))
         for symbol, lots in engine.ledger.lots.items()
     }
+    # Did a rebalance actually happen, or was one merely intended?
+    #
+    # `rebalanced=rebalancing` recorded the intent. A rebalance in which every order was refused --
+    # 228 rejections, zero fills, the book unchanged -- was persisted as one that happened,
+    # resetting the hold clock and advancing `last_rebalance_on` on a portfolio nobody had touched.
+    #
+    # The obvious repair, "did anything fill?", is wrong in the other direction: a rebalance whose
+    # new selection equals the current book legitimately fills nothing, and that IS a completed
+    # rebalance -- the model re-ranked and chose to keep what it held. Resetting its clock is
+    # correct. So the test is whether the selection was *executed*, which means a rebalance session
+    # that reached the point of acting: either something traded, or nothing needed to.
+    executed_rebalance = rebalancing and (
+        reconciliation.total_fills_count > 0
+        or (bool(mizan_picks) and set(engine.positions) == set(mizan_picks))
+    )
+    if rebalancing and not executed_rebalance:
+        logger.warning(
+            "Rebalance did NOT execute: %d order(s) submitted, %d filled, %d rejected. The hold "
+            "clock is not reset and the book is carried unchanged.",
+            reconciliation.orders_submitted,
+            reconciliation.total_fills_count,
+            reconciliation.orders_rejected,
+        )
+
     portfolio = state_from_ledger(
         portfolio,
         cash=engine.cash,
@@ -1313,7 +1348,7 @@ def run_paper_session(
         session_date=session_date,
         session_realized_pnl=engine.ledger.realized_pnl,
         fees_paid=todays_fees,
-        rebalanced=rebalancing,
+        rebalanced=executed_rebalance,
         open_entry_fees=open_entry_fees,
         # Marked equity, not the governor's peak alone. `update_peaks` is reachable only from
         # `evaluate_order`, and a hold session proposes no orders, so nine sessions in ten never
@@ -1473,6 +1508,22 @@ def run_paper_session(
             else f"FAIL ({_paisa_str(reconciliation.discrepancy_paisa)} paisa discrepancy)"
         )
         f.write(f"- **Reconciliation Status**: **`{rec_status}`**\n\n")
+        # A halted or aborted session reconciles perfectly -- it refuses orders rather than
+        # mis-booking them -- so a report showing only the reconciliation status said PASS for
+        # a session that had stopped the pilot. Both now appear above the numbers.
+        if governor.is_killed:
+            reason = governor.kill_events[-1].reason if governor.kill_events else "not recorded"
+            f.write(
+                f"- **RISK KILL SWITCH FIRED**: **`{reason}`**\n"
+                f"- Orders refused this session: `{reconciliation.orders_rejected}`\n"
+                "- Every later session is refused until this is cleared with "
+                "`scripts/clear_paper_halt.py`.\n"
+            )
+        if session_abort_reason:
+            f.write(
+                f"- **SESSION ABORTED**: **`{session_abort_reason}`**\n"
+                "- The figures below cover only the period before the abort.\n"
+            )
         f.write("## 1. Capital & Financial Summary (IST)\n\n")
         f.write("| Metric | Value (Rs) |\n|---|---:|\n")
         f.write(f"| Initial Capital | Rs {_paisa_str(reconciliation.initial_cash)} |\n")
@@ -1517,7 +1568,22 @@ def run_paper_session(
         json.dump(
             {
                 **rolling_status,
-                "status": "COMPLETED",
+                # Not unconditionally COMPLETED. A halted or aborted session landed here as clean,
+                # and three dashboard readers served that indefinitely.
+                "status": (
+                    "ABORTED"
+                    if session_abort_reason
+                    else "HALTED"
+                    if governor.is_killed
+                    else "COMPLETED"
+                ),
+                "kill_switch_active": governor.is_killed,
+                "halt_reason": (
+                    governor.kill_events[-1].reason
+                    if governor.is_killed and governor.kill_events
+                    else ""
+                ),
+                "abort_reason": session_abort_reason,
                 "closed_at_ist": final_now.strftime("%Y-%m-%d %H:%M:%S IST"),
             },
             f,
