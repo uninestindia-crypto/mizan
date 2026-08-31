@@ -66,3 +66,28 @@ def test_upstox_quote_request_without_token_raises_typed_error() -> None:
         )
 
     assert raised.value.code == AcquisitionFailureCode.PROVIDER_UNAUTHORIZED
+
+
+def test_the_client_prefers_the_token_that_survives_the_night(monkeypatch) -> None:
+    """`UPSTOX_ACCESS_TOKEN` expires at 03:30 IST the morning after it is issued.
+
+    Upstox V2 has no refresh token, so a client reading only that variable is authorised solely on
+    days somebody renewed it by hand before the job ran. The 09:00 pre-open refresh would have been
+    unauthorised on 2026-09-01 for exactly this reason, while the paper session that follows it --
+    which already preferred the analytics token -- would have been fine. Two paths disagreeing about
+    which credential to use is what left the refresh dead.
+
+    The analytics token is issued free, one per user, for roughly a year.
+    """
+    from quant_system.data.upstox import UpstoxClient
+
+    monkeypatch.setenv("UPSTOX_ANALYTICS_TOKEN", "analytics-token")
+    monkeypatch.setenv("UPSTOX_ACCESS_TOKEN", "daily-token")
+    assert UpstoxClient().access_token == "analytics-token"
+
+    # Still works for anyone who only has the daily one.
+    monkeypatch.delenv("UPSTOX_ANALYTICS_TOKEN")
+    assert UpstoxClient().access_token == "daily-token"
+
+    # And an explicit argument still wins over both.
+    assert UpstoxClient(access_token="explicit").access_token == "explicit"

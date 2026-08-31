@@ -819,3 +819,64 @@ def test_a_rebalance_that_only_exits_is_not_a_completed_rebalance() -> None:
         f"`entry_fills` is {entry_fills!r}; it must count today's buys only, not the carry-forward "
         "replay, which would make every held session look like it entered."
     )
+
+
+def test_a_held_name_with_no_quote_does_not_kill_the_session_at_close() -> None:
+    """It killed it *after* a full day of trading, and after the abort handler.
+
+    `DecimalLedger` refuses to mark a held position it has no price for -- correctly; it will not
+    fabricate a market value. But `final_prices` was built only from quoted names, so one held name
+    the feed omitted raised `LedgerInvariantViolation` at `end_session`: the fills had happened, no
+    report was written, and `save_portfolio` was never reached. Two of five hundred names were
+    unquoted on 2026-08-31 and 97 are now held.
+
+    Marking at cost reports zero unrealized P&L for that name rather than a number nobody can
+    source, and the name is returned so the session can say which marks are real.
+    """
+    import importlib.util
+    import os
+    from unittest import mock
+
+    spec = importlib.util.spec_from_file_location(
+        "_rps_marks", Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    )
+    assert spec and spec.loader
+    runner = importlib.util.module_from_spec(spec)
+    with mock.patch.dict(os.environ, os.environ.copy(), clear=True):
+        spec.loader.exec_module(runner)
+
+    state = _carried()
+    engine = _engine(state)
+    engine.start_session(session_date=SESSION_DATE, timestamp=AT)
+
+    # ACME is quoted; BETA is not -- exactly the shape that aborted the session.
+    quoted = {"ACME": Decimal("1010.00")}
+    marks, fell_back = runner.marks_for_open_positions(quoted, engine.positions)
+
+    assert fell_back == ["BETA"], f"expected BETA to be named as unmarked, got {fell_back}"
+    assert marks["BETA"] == engine.positions["BETA"].average_price, (
+        "an unquoted holding must be marked at its own cost, so its unrealized P&L is zero"
+    )
+
+    report = engine.end_session(timestamp=CLOSE, close_prices=marks)
+    assert report.reconciled, f"reconciliation failed: {report.reconciliation_errors}"
+
+
+def test_marks_are_not_invented_for_names_that_are_not_held() -> None:
+    """The fallback covers open positions only; it is not a general price fabricator."""
+    import importlib.util
+    import os
+    from unittest import mock
+
+    spec = importlib.util.spec_from_file_location(
+        "_rps_marks2", Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    )
+    assert spec and spec.loader
+    runner = importlib.util.module_from_spec(spec)
+    with mock.patch.dict(os.environ, os.environ.copy(), clear=True):
+        spec.loader.exec_module(runner)
+
+    marks, fell_back = runner.marks_for_open_positions({"ACME": Decimal("1010.00")}, {})
+
+    assert marks == {"ACME": Decimal("1010.00")}
+    assert fell_back == []

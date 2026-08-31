@@ -20,6 +20,7 @@ import os
 import signal
 import sys
 import time
+from collections.abc import Mapping
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -170,6 +171,32 @@ def assert_upstox_usable(access_token: str | None = None) -> None:
 
 def _paisa_str(val: Decimal | float | int) -> str:
     return f"{Decimal(str(val)).quantize(_PAISA)}"
+
+
+def marks_for_open_positions(
+    quoted: dict[str, Decimal],
+    positions: Mapping[str, Any],
+) -> tuple[dict[str, Decimal], list[str]]:
+    """Closing marks covering every held name, and the names that had no quote.
+
+    `DecimalLedger` refuses to mark a held position it has no price for, rather than substituting
+    an average and reporting a fabricated market value. That refusal is right, and it made a held
+    name absent from the feed fatal: `end_session` raised **after** a full day of trading, before
+    `save_portfolio`, and outside the abort handler -- so the day's fills happened, no report was
+    written and no state was saved. Two of five hundred names were unquoted on 2026-08-31 and 97
+    are now held.
+
+    A position that must be marked and cannot be is marked at its own cost basis, which reports
+    zero unrealized P&L for it rather than a number nobody can source. The names are returned so
+    the session says which marks are real, instead of the caller silently believing all of them.
+    """
+    marks = dict(quoted)
+    fell_back: list[str] = []
+    for symbol, position in positions.items():
+        if position.quantity != 0 and symbol not in marks:
+            marks[symbol] = position.average_price
+            fell_back.append(symbol)
+    return marks, sorted(fell_back)
 
 
 def now_ist() -> datetime:
@@ -1229,7 +1256,15 @@ def run_paper_session(
                         )
 
             # Update rolling status file for live monitoring
-            snapshot_prices = {sym: state["price"] for sym, state in base_market.items()}
+            snapshot_prices, unmarked_now = marks_for_open_positions(
+                {sym: state["price"] for sym, state in base_market.items()}, engine.positions
+            )
+            if unmarked_now:
+                logger.warning(
+                    "No quote this step for %d held name(s); marked at cost for the snapshot: %s",
+                    len(unmarked_now),
+                    ", ".join(unmarked_now),
+                )
             snap = engine.get_portfolio_snapshot(timestamp=loop_now, current_prices=snapshot_prices)
 
             positions_detail = []
@@ -1379,7 +1414,16 @@ def run_paper_session(
 
     # 6. Final Market Close Processing (15:30 IST)
     final_now = now_ist() if realtime else close_dt_ist
-    final_prices = {sym: state["price"] for sym, state in base_market.items()}
+    final_prices, unmarked_at_close = marks_for_open_positions(
+        {sym: state["price"] for sym, state in base_market.items()}, engine.positions
+    )
+    if unmarked_at_close:
+        logger.error(
+            "No closing quote for %d held name(s); marked at cost basis, so their unrealized P&L "
+            "is reported as zero and the equity figure is not fully marked to market: %s",
+            len(unmarked_at_close),
+            ", ".join(unmarked_at_close),
+        )
     for sym, price in final_prices.items():
         quote = Quote(symbol=sym, timestamp=final_now, bid=price, ask=price, last_price=price)
         engine.process_quote(quote, current_time=final_now)
@@ -1566,6 +1610,7 @@ def run_paper_session(
         # pilot as a success.
         # An aborted loop is reported as an abort. The session is still reconciled and persisted --
         # stopping short of that would lose the book -- but nothing downstream may call it clean.
+        "unmarked_at_close": unmarked_at_close,
         "aborted": bool(session_abort_reason),
         "abort_reason": session_abort_reason,
         "risk": {

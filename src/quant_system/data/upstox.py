@@ -93,7 +93,19 @@ class UpstoxClient:
     ) -> None:
         # `api_key` remains only for source compatibility; V3 data requires a bearer token.
         self.api_key = api_key or os.getenv("UPSTOX_API_KEY", "")
-        self.access_token = access_token or os.getenv("UPSTOX_ACCESS_TOKEN", "")
+        # Analytics token first, then the standard access token.
+        #
+        # This read `UPSTOX_ACCESS_TOKEN` alone. That token expires at 03:30 IST the morning after
+        # it is issued and Upstox V2 has no refresh token, so an unattended 09:00 job was authorised
+        # only on days somebody had renewed it by hand the same morning. The analytics token is
+        # issued free, one per user, for roughly a year, and the paper runner already prefers it --
+        # the two paths disagreeing is what left the pre-open refresh unauthorised while the session
+        # that follows it was fine.
+        self.access_token = (
+            access_token
+            or os.getenv("UPSTOX_ANALYTICS_TOKEN", "")
+            or os.getenv("UPSTOX_ACCESS_TOKEN", "")
+        )
         self.dependencies = dependencies or _default_dependencies()
         self.config = config or UpstoxClientConfig()
 
