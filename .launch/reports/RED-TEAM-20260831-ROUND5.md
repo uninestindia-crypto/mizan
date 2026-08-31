@@ -347,9 +347,9 @@ recurring daily, created by wiring introduced in this batch.
 `scripts/ingest_all_market_data.py:160-172` hardcodes the authority window:
 
 ```python
-publication_date=date(2026, 8, 24),
-effective_from=date(2016, 8, 22),
-effective_to=date(2026, 8, 21),
+publication_date = (date(2026, 8, 24),)
+effective_from = (date(2016, 8, 22),)
+effective_to = (date(2026, 8, 21),)
 ```
 
 Every dataset the scheduled refresh now persists covers 2023-08-31..2026-08-30 and is bound to a
