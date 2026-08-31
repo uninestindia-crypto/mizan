@@ -26,9 +26,10 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from run_scheduled_paper_session import (  # noqa: E402
     HOLIDAY_AUTHORITY,
-    MAX_BAR_STALENESS_DAYS,
+    MAX_MISSED_SESSIONS,
     NotATradingDay,
     require_trading_day,
+    trading_sessions_between,
 )
 
 AUTHORITY = json.loads(HOLIDAY_AUTHORITY.read_text(encoding="utf-8"))
@@ -111,6 +112,24 @@ def test_the_rehearsal_flag_is_gone() -> None:
     assert '"--skip-refresh"' not in source
 
 
-def test_the_staleness_bound_is_short_enough_to_catch_a_broken_provider() -> None:
-    """Long enough for a Friday bar read after a Monday holiday, and no longer."""
-    assert 2 <= MAX_BAR_STALENESS_DAYS <= 5
+def test_staleness_is_counted_in_trading_sessions_not_calendar_days() -> None:
+    """Calendar arithmetic cannot tell a long weekend from a dead provider.
+
+    On 2026-08-31 the four-calendar-day bound passed on exactly its boundary -- 4 against a limit
+    of `> 4` -- while Friday 2026-08-28's bar was missing entirely, so every feature that session
+    computed was a trading day stale and nothing said so.
+    """
+    friday, monday = date(2026, 8, 28), date(2026, 8, 31)
+    thursday, wednesday = date(2026, 8, 27), date(2026, 8, 26)
+
+    assert trading_sessions_between(friday, monday) == 0, "a weekend is not a missed session"
+    assert trading_sessions_between(thursday, monday) == 1, "Friday traded and its bar is absent"
+    assert trading_sessions_between(wednesday, monday) == 2
+
+    assert MAX_MISSED_SESSIONS == 0, (
+        "at 09:00 the newest completed session is the previous trading day; anything older means "
+        "the refresh did not deliver what it asked for"
+    )
+    assert trading_sessions_between(thursday, monday) > MAX_MISSED_SESSIONS, (
+        "the exact case that slipped through on 2026-08-31 must now refuse"
+    )

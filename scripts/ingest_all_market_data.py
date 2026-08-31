@@ -242,6 +242,21 @@ class IngestionEngine:
                     pass
         print(f"Indexed {count} pre-existing cached datasets in EvidenceStore.", flush=True)
 
+    def _is_current(self, cached: IngestionResult) -> bool:
+        """Whether a catalogued dataset already reaches the requested end date.
+
+        A dataset whose newest bar predates `to_date` is not a hit: the missing days are exactly
+        what the caller asked for. Re-fetching a symbol whose range is already complete costs
+        nothing, so this errs toward asking the provider.
+        """
+        received_end = cached.received_end
+        if not received_end:
+            return False
+        try:
+            return date.fromisoformat(received_end[:10]) >= self.to_date
+        except ValueError:
+            return False
+
     def get_results_copy(self) -> list[IngestionResult]:
         """Thread-safe snapshot of results for progress updates."""
         with self.lock:
@@ -252,10 +267,17 @@ class IngestionEngine:
         sym = target.symbol
         key = target.instrument_key
 
-        # Check if already present in catalog
+        # Check if already present in catalog **and current to the requested end date**.
+        #
+        # The date half was missing, and it made the whole refresh a no-op: once a symbol was
+        # catalogued it was returned forever, so a run asking for data through today reported
+        # `Hits: 499, New: 0` in 0.3 seconds and the newest bar stayed wherever the first ingest
+        # left it. Observed live on 2026-08-31, with the cache still ending 2026-08-27 -- so every
+        # feature the pilot computed was a trading session stale, and nothing said so.
         with self.lock:
-            if sym in self.results and self.results[sym].row_count > 0:
-                return self.results[sym]
+            cached = self.results.get(sym)
+            if cached is not None and cached.row_count > 0 and self._is_current(cached):
+                return cached
 
         # Rate limiting sleep
         if self.rate_limit_sleep > 0:

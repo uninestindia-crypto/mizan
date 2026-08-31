@@ -533,3 +533,72 @@ def test_net_pnl_is_equity_minus_capital_not_realized_plus_unrealized() -> None:
         "the two definitions should differ by exactly the fees paid on the open position"
     )
     assert correct < naive, "equity-based P&L must be the more conservative of the two"
+
+
+# --------------------------------------------------------------------------------------------
+# A network blip must not end the trading day, and an abort must not report success.
+# --------------------------------------------------------------------------------------------
+
+
+def test_a_transient_quote_failure_does_not_end_the_session() -> None:
+    """One SSL handshake timeout killed a session that had been trading for two hours.
+
+    The `QuoteFeedError` refusal was written for *startup*, where an unusable feed means the
+    session must not begin. Applied to every poll, it made a routine network blip fatal -- and the
+    3-second per-batch timeout made blips ordinary rather than exceptional.
+    """
+    source = (
+        Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    ).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+
+    names = {
+        target.id
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name)
+    }
+    assert "MAX_CONSECUTIVE_QUOTE_FAILURES" in names, (
+        "no tolerance for a failed poll: a single timeout will end the day again"
+    )
+    assert "_QUOTE_TIMEOUT_SECONDS" in names, "the per-batch timeout is still hardcoded"
+
+    # The loop must catch the refusal rather than let it unwind the session.
+    handlers = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ExceptHandler)
+        and isinstance(node.type, ast.Name)
+        and node.type.id == "QuoteFeedError"
+    ]
+    assert handlers, "the trading loop does not catch QuoteFeedError, so one poll failure is fatal"
+
+
+def test_an_aborted_session_is_not_reported_as_a_success() -> None:
+    """The 14:21 abort printed `Session Concluded & Reconciled: SUCCESS` and exited 0.
+
+    Third occurrence of this class in one day. The session must still close and reconcile -- an
+    abrupt exit would leave the book unpersisted -- but nothing downstream may call it clean.
+    """
+    source = (
+        Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    ).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+
+    literals = {
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    assert "aborted" in literals, "the result payload does not carry an abort flag"
+    assert "[PAPER PILOT ABORTED]" in literals, "the banner cannot distinguish an abort"
+
+    returns = {
+        node.value.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Return)
+        and isinstance(node.value, ast.Constant)
+        and isinstance(node.value.value, int)
+    }
+    assert 10 in returns, "an aborted session must not exit 0"

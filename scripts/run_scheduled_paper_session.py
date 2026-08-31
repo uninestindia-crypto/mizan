@@ -3,11 +3,12 @@
 A scheduled run has nobody watching it, so every step that could silently produce a plausible-but-
 wrong session is checked and made to fail loudly instead:
 
-* **Bars must be fresh.** The decision uses the last *completed* session, and the run refuses if the
-  newest cached bar is more than `MAX_BAR_STALENESS_DAYS` old -- deciding on stale data is the
-  failure mode that made an earlier version of the loader rank week-old prices. This is a staleness
-  bound rather than the "did the refresh advance?" test it replaces, because that test was the
-  off-by-one described below.
+* **Bars must be fresh, counted in trading sessions.** The decision uses the last *completed*
+  session, and the run refuses if any trading day between the newest cached bar and today is
+  missing. Two earlier versions of this check both failed on a real morning: "did the refresh
+  advance?" was the off-by-one described below, and a four-calendar-day staleness bound passed on
+  exactly its boundary while Friday's bar was absent entirely. Only a session count can tell a long
+  weekend from a dead provider.
 * **Macro must cover the same date.** Missing India VIX or NIFTY makes every feature row
   uncomputable, and the session would report a clean 0-proposal run that looked like a decision.
 * **Today must be a trading day**, decided against the published NSE holiday calendar rather than
@@ -43,9 +44,15 @@ UNIVERSE_CSV = PROJECT_ROOT / "data/evidence/market-cache/scheduled-universe-ins
 #: comfortable headroom, and it stays clear of the provider's ten-year retrieval limit.
 LOOKBACK_DAYS = 3 * 365
 
-#: How old the newest completed bar may be before the run refuses. Four calendar days covers a
-#: Friday session read on the Tuesday after a Monday holiday, and nothing longer.
-MAX_BAR_STALENESS_DAYS = 4
+#: Trading sessions that may be missing between the newest cached bar and today before the run
+#: refuses. Zero: at 09:00 the newest completed session is the previous trading day, and anything
+#: older means the refresh did not get what it asked for.
+#:
+#: This counts **sessions**, not calendar days. The four-calendar-day bound it replaces could not
+#: tell a long weekend from a dead provider, and on 2026-08-31 it passed on exactly its boundary --
+#: 4 against a limit of `> 4` -- while the cache was missing Friday 2026-08-28 entirely. Every
+#: feature that session computed was a trading day stale and nothing reported it.
+MAX_MISSED_SESSIONS = 0
 
 
 #: The published NSE trading-holiday calendar, committed so the decision is auditable.
@@ -88,6 +95,24 @@ def require_trading_day(day: date) -> None:
             raise NotATradingDay(
                 f"{day:%Y-%m-%d %A} is an NSE trading holiday: {holiday.get('description')}"
             )
+
+
+def trading_sessions_between(start: date, end: date) -> int:
+    """Trading sessions strictly after `start` and strictly before `end`.
+
+    Friday to Monday is 0 -- nothing was missed. Thursday to Monday is 1, because Friday traded and
+    its bar is absent. That distinction is the whole point: calendar arithmetic cannot make it.
+    """
+    missed = 0
+    day = date.fromordinal(start.toordinal() + 1)
+    while day < end:
+        try:
+            require_trading_day(day)
+            missed += 1
+        except NotATradingDay:
+            pass
+        day = date.fromordinal(day.toordinal() + 1)
+    return missed
 
 
 def newest_cached_bar_date() -> date | None:
@@ -228,15 +253,14 @@ def main() -> int:
     if before is not None and after < before:
         log(f"refusing: the newest cached bar went backwards, {before} -> {after}")
         return 4
-    # Staleness, not "did it advance". The advance test was the off-by-one: on the first holiday
-    # after a trading day the refresh *does* advance, because it collects the previous session's
-    # bar that the previous run had not yet seen. Today being a trading day is now decided by the
-    # calendar above; what remains to check is that the data is actually recent.
-    staleness = (today - after).days
-    if staleness > MAX_BAR_STALENESS_DAYS:
+    # Counted in trading sessions. Today being a trading day is decided by the calendar above; what
+    # remains is whether the refresh actually delivered the sessions between then and now.
+    missed = trading_sessions_between(after, today)
+    if missed > MAX_MISSED_SESSIONS:
         log(
-            f"refusing: newest bar {after} is {staleness} days old, over the "
-            f"{MAX_BAR_STALENESS_DAYS}-day limit; the provider or the token is likely broken"
+            f"refusing: newest bar is {after} and {missed} trading session(s) are missing between "
+            f"it and today. Every feature would be computed from stale data. The refresh did not "
+            f"deliver what it asked for -- check the provider and the token."
         )
         return 4
     if not macro_covers(after):

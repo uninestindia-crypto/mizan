@@ -70,6 +70,17 @@ logger = logging.getLogger("quant_system.paper_runner")
 _PAISA = Decimal("0.01")
 
 
+#: Consecutive failed quote polls before the session gives up. At a 30-second interval this is
+#: about two and a half minutes of silence -- long enough to ride out a handshake timeout or a
+#: transient DNS failure, short enough that a genuinely dead feed does not leave the book marked to
+#: stale prices for the rest of the day.
+MAX_CONSECUTIVE_QUOTE_FAILURES = 5
+
+#: Per-batch HTTP timeout. Was 3 seconds for a 100-instrument request, which made handshake
+#: timeouts an ordinary event rather than a signal.
+_QUOTE_TIMEOUT_SECONDS = 15
+
+
 class QuoteFeedError(RuntimeError):
     """The exchange feed is unusable, so the session must not trade.
 
@@ -248,7 +259,7 @@ def fetch_upstox_live_quotes(
 
         try:
             req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=3) as resp:
+            with urllib.request.urlopen(req, timeout=_QUOTE_TIMEOUT_SECONDS) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 if data.get("status") == "success" and "data" in data:
                     payload = data["data"]
@@ -908,6 +919,8 @@ def run_paper_session(
         "market_close_ist": close_dt_ist.strftime("%H:%M:%S IST"),
     }
     step = 0
+    consecutive_quote_failures = 0
+    session_abort_reason = ""
 
     try:
         while not shutdown_requested:
@@ -928,9 +941,41 @@ def run_paper_session(
                 step,
             )
 
-            # Fetch fresh real-time quotes from Upstox / NSE
+            # Fetch fresh real-time quotes from Upstox / NSE.
+            #
+            # A failed poll skips the interval; it does not end the day. The refusal this softens
+            # was written for *startup*, where an unusable feed means the session must not begin,
+            # and applying it to every poll made one SSL handshake timeout kill a session that had
+            # been trading for two hours. The book is unchanged in the meantime -- the previous
+            # quotes stay in `base_market` and no decision is taken on them, because entries and
+            # exits only act on a rebalance.
+            #
+            # Persistent failure is still fatal: the feed being down for
+            # MAX_CONSECUTIVE_QUOTE_FAILURES polls is not a blip, and continuing would mark the
+            # book to prices that stopped arriving.
             if realtime:
-                live_quotes = fetch_upstox_live_quotes(universe, access_token=upstox_token)
+                try:
+                    live_quotes = fetch_upstox_live_quotes(universe, access_token=upstox_token)
+                except QuoteFeedError as quote_error:
+                    consecutive_quote_failures += 1
+                    if consecutive_quote_failures >= MAX_CONSECUTIVE_QUOTE_FAILURES:
+                        raise QuoteFeedError(
+                            f"the quote feed has failed {consecutive_quote_failures} polls in a "
+                            f"row (last: {quote_error}). Ending the session rather than holding a "
+                            "book marked to prices that stopped arriving."
+                        ) from quote_error
+                    logger.warning(
+                        "Quote poll %d failed (%s); skipping this interval. %d of %d before the "
+                        "session ends.",
+                        step,
+                        quote_error,
+                        consecutive_quote_failures,
+                        MAX_CONSECUTIVE_QUOTE_FAILURES,
+                    )
+                    if realtime:
+                        time.sleep(interval_seconds)
+                    continue
+                consecutive_quote_failures = 0
                 for sym, q in live_quotes.items():
                     base_market[sym] = q
 
@@ -1229,7 +1274,13 @@ def run_paper_session(
                 break
 
     except Exception as err:
-        logger.exception("Error during paper trading loop: %s", err)
+        # Recorded, not swallowed. This handler used to log and fall through to a normal close, so
+        # an unhandled exception still produced "Session Concluded & Reconciled: SUCCESS" and exit
+        # 0 -- which is how a session that died at 14:21 looked identical to one that ran to the
+        # bell. The session is still closed and reconciled below, because an abrupt exit would
+        # leave the book unpersisted and the ledger unreconciled; what changes is that it says so.
+        session_abort_reason = f"{type(err).__name__}: {err}"
+        logger.exception("Session ABORTED during the trading loop: %s", err)
 
     # 6. Final Market Close Processing (15:30 IST)
     final_now = now_ist() if realtime else close_dt_ist
@@ -1371,6 +1422,10 @@ def run_paper_session(
         # halting session reconciles perfectly -- it refuses every order rather than mis-booking
         # one -- so a caller branching on `reconciled` alone reports the session that killed the
         # pilot as a success.
+        # An aborted loop is reported as an abort. The session is still reconciled and persisted --
+        # stopping short of that would lose the book -- but nothing downstream may call it clean.
+        "aborted": bool(session_abort_reason),
+        "abort_reason": session_abort_reason,
         "risk": {
             "kill_switch_active": governor.is_killed,
             "halt_reason": (
@@ -1556,7 +1611,10 @@ def main() -> int:
         # SUCCESS and exited 0 for the session that permanently stopped the pilot. On an
         # unattended schedule that green exit was the operator's only signal.
         halted = bool(res.get("risk", {}).get("kill_switch_active"))
-        if not reconciled:
+        aborted = bool(res.get("aborted"))
+        if aborted:
+            banner = "[PAPER PILOT ABORTED]"
+        elif not reconciled:
             banner = "[PAPER PILOT RECONCILIATION FAILED]"
         elif halted:
             banner = "[PAPER PILOT HALTED BY RISK KILL SWITCH]"
@@ -1575,6 +1633,11 @@ def main() -> int:
         print(
             f"Evidence Report: logs/paper_runs/paper_session_{res['session_date']}_{res['session_id']}.md"
         )
+        if aborted:
+            print(f"ABORTED: {res['abort_reason']}")
+            print("The session did not run to the close. Its report covers only the period before")
+            print("the abort, and the persisted portfolio reflects that shortened session.")
+            return 10
         if not reconciled:
             for error in res["reconciliation"]["reconciliation_errors"]:
                 print(f"  - {error}")
