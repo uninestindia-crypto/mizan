@@ -343,7 +343,7 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     <header class="header">
       <div class="header-left">
         <h1>QuantOS Live Trading & P&L Monitor <span class="badge-live" id="session-status">LIVE STREAM</span></h1>
-        <div class="header-sub">Model: Mīzān Flagship Alpha (NSE 50) | 15-Feature Cross-Sectional Ridge (v1.0.0)</div>
+        <div class="header-sub" id="header-sub">Model: Mīzān Flagship Alpha | 15-Feature Cross-Sectional Ridge (v1.0.0)</div>
       </div>
       <div class="header-right">
         <div class="clock-ist" id="live-time">--:--:-- IST</div>
@@ -485,11 +485,11 @@ HTML_DASHBOARD = """<!DOCTYPE html>
         <!-- Mīzān Model Alpha Predictions (Full NIFTY 50 Universe) -->
         <div class="card">
           <div class="card-head">
-            <span class="card-title">Mīzān Alpha Signals & Rankings (NIFTY 50)</span>
-            <span class="badge badge-top" id="alpha-count">50 Stocks Evaluated</span>
+            <span class="card-title" id="alpha-title">Mīzān Alpha Signals &amp; Rankings</span>
+            <span class="badge badge-top" id="alpha-count">—</span>
           </div>
           <div class="card-body" id="alpha-signals-container" style="max-height: 480px; overflow-y: auto;">
-            <div class="empty-state">Loading model alpha predictions for NIFTY 50 universe...</div>
+            <div class="empty-state">Loading model alpha predictions...</div>
           </div>
         </div>
 
@@ -685,6 +685,23 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       }
 
       // Alpha Signals
+      // Labels come from the session, not from a constant. They previously said NIFTY 50 and
+      // "50 Stocks Evaluated" regardless of what was running.
+      const universeName = data.universe_name || "";
+      const scored = data.scored_count;
+      const universeSize = data.universe_size;
+      if (universeName) {
+        document.getElementById("alpha-title").textContent =
+          "Mīzān Alpha Signals & Rankings (" + universeName + ")";
+        document.getElementById("header-sub").textContent =
+          "Model: Mīzān Flagship Alpha (" + universeName +
+          ") | 15-Feature Cross-Sectional Ridge (v1.0.0)";
+      }
+      if (scored !== undefined && scored !== null) {
+        document.getElementById("alpha-count").textContent =
+          universeSize ? scored + " of " + universeSize + " Scored" : scored + " Scored";
+      }
+
       const alphaCont = document.getElementById("alpha-signals-container");
       const signals = data.alpha_signals || [];
       if (signals.length === 0) {

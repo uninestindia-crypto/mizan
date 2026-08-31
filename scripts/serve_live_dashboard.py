@@ -184,9 +184,11 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         return
 
 
-def serve_dashboard(port: int = 8080) -> None:
+def serve_dashboard(port: int = 8080, host: str = "127.0.0.1") -> None:
     socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("0.0.0.0", port), DashboardHandler) as httpd:
+    # Loopback, not 0.0.0.0. This page serves an Upstox access-token field and Start/Halt
+    # controls; bound to all interfaces those were reachable by anyone on the network.
+    with socketserver.TCPServer((host, port), DashboardHandler) as httpd:
         logger.info("=" * 75)
         logger.info("QuantOS Live Trading Dashboard running at http://localhost:%d", port)
         logger.info("Serving live P&L and market state from %s", STATUS_FILE)
@@ -200,8 +202,14 @@ def serve_dashboard(port: int = 8080) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="QuantOS Live Trading Dashboard Server")
     parser.add_argument("--port", type=int, default=8080, help="Port to serve dashboard on")
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Interface to bind. Defaults to loopback: this page exposes a token field and "
+        "session controls, so binding it to 0.0.0.0 hands those to the whole network.",
+    )
     args = parser.parse_args()
-    serve_dashboard(port=args.port)
+    serve_dashboard(port=args.port, host=args.host)
     return 0
 
 
