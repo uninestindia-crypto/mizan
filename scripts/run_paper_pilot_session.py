@@ -126,18 +126,30 @@ from quant_system.data.universe import NIFTY50_SYMBOLS  # noqa: E402
 
 ALLOWED_SYMBOLS = NIFTY50_SYMBOLS
 
-UPSTOX_INSTRUMENT_KEYS = {
-    "INFY": "NSE_EQ|INE009A01021",
-    "TCS": "NSE_EQ|INE467B01029",
-    "RELIANCE": "NSE_EQ|INE002A01018",
-    "HDFCBANK": "NSE_EQ|INE040A01034",
-    "ICICIBANK": "NSE_EQ|INE090A01021",
-    "SBIN": "NSE_EQ|INE062A01020",
-    "BHARTIARTL": "NSE_EQ|INE397D01024",
-    "ITC": "NSE_EQ|INE154A01025",
-    "KOTAKBANK": "NSE_EQ|INE237A01028",
-    "LT": "NSE_EQ|INE018A01030",
-}
+#: Symbol -> Upstox instrument key, resolved from the published NSE authority.
+#:
+#: What stood here was a dict of **ten** hardcoded symbols, with every other name falling back to
+#: `f"NSE_EQ|{symbol}"`. Upstox instrument keys are ISIN-based -- `NSE_EQ|INE009A01021`, not
+#: `NSE_EQ|INFY` -- so that fallback was never a valid key and those names could not be quoted. On a
+#: 500-name universe Upstox returned 5.
+#:
+#: It was invisible because the Yahoo scraper fired whenever fewer than half the symbols resolved,
+#: which was always. **Upstox has never actually served this pilot**; removing the fallback is what
+#: exposed it.
+_INSTRUMENT_KEY_AUTHORITY = PROJECT_ROOT / "data/authorities/nse-all-listed-equities.csv"
+
+
+def _load_instrument_keys() -> dict[str, str]:
+    """Every NSE equity's Upstox instrument key, by trading symbol."""
+    with open(_INSTRUMENT_KEY_AUTHORITY, encoding="utf-8-sig") as handle:
+        return {
+            (row.get("Symbol") or "").strip(): (row.get("Instrument Key") or "").strip()
+            for row in csv.DictReader(handle)
+            if (row.get("Instrument Key") or "").startswith("NSE_EQ|")
+        }
+
+
+UPSTOX_INSTRUMENT_KEYS: dict[str, str] = _load_instrument_keys()
 
 
 import urllib.parse  # noqa: E402
@@ -167,7 +179,17 @@ def fetch_upstox_live_quotes(
     chunk_size = 100
     for i in range(0, len(symbols), chunk_size):
         chunk_syms = symbols[i : i + chunk_size]
-        keys = [UPSTOX_INSTRUMENT_KEYS.get(s, f"NSE_EQ|{s}") for s in chunk_syms]
+        resolved = {s: UPSTOX_INSTRUMENT_KEYS[s] for s in chunk_syms if s in UPSTOX_INSTRUMENT_KEYS}
+        unknown = [s for s in chunk_syms if s not in UPSTOX_INSTRUMENT_KEYS]
+        if unknown:
+            logger.warning(
+                "No published Upstox instrument key for %d symbol(s); not requested: %s",
+                len(unknown),
+                ", ".join(unknown[:10]) + (" ..." if len(unknown) > 10 else ""),
+            )
+        if not resolved:
+            continue
+        keys = list(resolved.values())
         encoded_keys = ",".join(keys)
         url = f"https://api.upstox.com/v2/market-quote/quotes?instrument_key={encoded_keys}"
 
@@ -183,8 +205,7 @@ def fetch_upstox_live_quotes(
                 data = json.loads(resp.read().decode("utf-8"))
                 if data.get("status") == "success" and "data" in data:
                     payload = data["data"]
-                    for sym in chunk_syms:
-                        key = UPSTOX_INSTRUMENT_KEYS.get(sym, f"NSE_EQ|{sym}")
+                    for sym, key in resolved.items():
                         alt_key = f"NSE_EQ:{sym}"
                         quote_data = payload.get(key) or payload.get(alt_key) or {}
                         if quote_data:
