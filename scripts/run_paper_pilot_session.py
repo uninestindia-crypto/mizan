@@ -78,6 +78,38 @@ class QuoteFeedError(RuntimeError):
     """
 
 
+#: Environment variables carrying a quote credential, in resolution order.
+#:
+#: The analytics token is preferred because it is the only one that survives a night. Upstox
+#: issues it free, one per user, for roughly a year; the standard access token expires at 03:30
+#: IST the morning after issue and Upstox V2 has no refresh token, so it must be renewed by hand
+#: every trading day. An unattended schedule that dies whenever the operator forgets a manual step
+#: is not an unattended schedule.
+#:
+#: That the analytics token can actually serve this file's quote calls is measured, not assumed --
+#: `v2/market-quote/quotes` returned HTTP 200 for a 10-instrument batch, with depth and volume, on
+#: 2026-08-31. Evidence: `agent_context/work/active/20260831-claude-upstox-token-semantics.md`.
+_TOKEN_ENV_VARS = ("UPSTOX_ANALYTICS_TOKEN", "UPSTOX_ACCESS_TOKEN")
+
+
+def resolve_upstox_token(access_token: str | None = None) -> tuple[str, str]:
+    """Return the quote credential and the name of where it came from.
+
+    An explicit argument wins, so `--upstox-token` and the `upstox_token=` parameter keep their
+    existing override behaviour. Otherwise the environment is searched in `_TOKEN_ENV_VARS` order.
+    The source name is returned rather than discarded so that every downstream error can say which
+    token it is talking about -- an operator with two tokens configured cannot act on a message
+    that does not name one.
+    """
+    if access_token:
+        return access_token, "explicit --upstox-token"
+    for name in _TOKEN_ENV_VARS:
+        value = os.getenv(name, "")
+        if value:
+            return value, name
+    return "", ""
+
+
 def assert_upstox_usable(access_token: str | None = None) -> None:
     """Fail at startup if the token is absent, malformed or expired.
 
@@ -85,30 +117,44 @@ def assert_upstox_usable(access_token: str | None = None) -> None:
     token expired on 2026-08-23 and every session for eight days ran on a fallback feed under that
     banner. Presence is not validity, and an unattended schedule has nobody to notice the
     difference -- so the expiry claim the token carries is read and checked.
+
+    The check applies to whichever token was selected. A long-lived analytics token is validated
+    by exactly the same rule as a daily access token: the guard reads the `exp` the token itself
+    carries, so it needs no knowledge of which class it is looking at, and a revoked or
+    mis-pasted analytics token is caught just as an expired access token is.
     """
-    token = access_token or os.getenv("UPSTOX_ACCESS_TOKEN", "")
+    token, source = resolve_upstox_token(access_token)
     if not token:
-        raise QuoteFeedError("UPSTOX_ACCESS_TOKEN is not set")
+        raise QuoteFeedError(
+            f"no Upstox token. Set one of {' or '.join(_TOKEN_ENV_VARS)} in .env. "
+            "UPSTOX_ANALYTICS_TOKEN is preferred: it is free, one per user, and lasts about a "
+            "year, so an unattended session survives a morning you forget to refresh."
+        )
     parts = token.split(".")
     if len(parts) != 3:
-        raise QuoteFeedError("UPSTOX_ACCESS_TOKEN is not a JWT; it cannot be an Upstox token")
+        raise QuoteFeedError(f"{source} is not a JWT; it cannot be an Upstox token")
     payload = parts[1] + "=" * (-len(parts[1]) % 4)
     try:
         claims = json.loads(base64.urlsafe_b64decode(payload))
     except Exception as error:
-        raise QuoteFeedError(f"UPSTOX_ACCESS_TOKEN payload is unreadable: {error}") from error
+        raise QuoteFeedError(f"{source} payload is unreadable: {error}") from error
     expiry = claims.get("exp")
     if expiry is None:
-        raise QuoteFeedError("UPSTOX_ACCESS_TOKEN carries no expiry claim")
+        raise QuoteFeedError(f"{source} carries no expiry claim")
     expires_at = datetime.fromtimestamp(int(expiry), _IST)
     if expires_at <= now_ist():
+        others = [n for n in _TOKEN_ENV_VARS if n != source]
         raise QuoteFeedError(
-            f"UPSTOX_ACCESS_TOKEN expired at {expires_at:%Y-%m-%d %H:%M IST}, "
+            f"{source} expired at {expires_at:%Y-%m-%d %H:%M IST}, "
             f"{now_ist() - expires_at} ago. Upstox standard access tokens expire at 03:30 IST the "
-            "morning after they are issued; an extended token is a separate product. Refresh it "
-            "before the session runs -- there is no second feed to fall back to."
+            "morning after they are issued. Set UPSTOX_ANALYTICS_TOKEN instead -- it is free, one "
+            "per user, and lasts about a year. "
+            f"({' and '.join(others)} was not set or was not reached.) "
+            "There is no second feed to fall back to."
         )
-    logger.info("Upstox token valid until %s", f"{expires_at:%Y-%m-%d %H:%M IST}")
+    logger.info(
+        "Upstox token source %s, valid until %s", source, f"{expires_at:%Y-%m-%d %H:%M IST}"
+    )
 
 
 def _paisa_str(val: Decimal | float | int) -> str:
@@ -168,12 +214,13 @@ def fetch_upstox_live_quotes(
     symbols: list[str], access_token: str | None = None
 ) -> dict[str, dict[str, Any]]:
     """Fetch real-time live market quotes directly from Upstox Market Quote API in high-speed batches."""
-    token = access_token or os.getenv("UPSTOX_ACCESS_TOKEN", "")
+    token, source = resolve_upstox_token(access_token)
     if not token:
         raise QuoteFeedError(
-            "no UPSTOX_ACCESS_TOKEN. This pilot has one quote source and will not substitute "
-            "another; set the token and re-run."
+            f"no Upstox token ({' or '.join(_TOKEN_ENV_VARS)}). This pilot has one quote source "
+            "and will not substitute another; set the token and re-run."
         )
+    del source  # resolved for symmetry with the startup guard; the request needs only the value
 
     results = {}
     chunk_size = 100
@@ -1101,7 +1148,16 @@ def run_paper_session(
             ]
 
             total_fees = sum((f.fee for f in engine.fills), Decimal("0.00")).quantize(_PAISA)
-            net_pnl = (snap.realized_pnl + snap.unrealized_pnl).quantize(_PAISA)
+            # Equity minus capital, not realized + unrealized. The latter **excludes the statutory
+            # fees already paid**: measured live, it reported -205.88 against a true -1,279.94 while
+            # the fees tile beside it showed 1,074.06 -- the exact gap. Both numbers were on screen
+            # and did not reconcile, and the headline understated the loss by precisely the cost of
+            # trading, which is the one quantity this strategy's research says is binding.
+            #
+            # This form also cannot double-count: a closed lot's fees are already inside
+            # `realized_pnl`, so subtracting `total_fees_paid` from it would charge them twice.
+            live_equity = (snap.cash + snap.total_market_value).quantize(_PAISA)
+            net_pnl = (live_equity - initial_cash).quantize(_PAISA)
             net_pnl_pct = float(net_pnl / initial_cash * Decimal("100.0"))
 
             sorted_gainers = sorted(universe, key=lambda s: returns_map.get(s, 0.0), reverse=True)
@@ -1129,6 +1185,12 @@ def run_paper_session(
             rolling_status = {
                 "session_id": session_id,
                 "status": "RUNNING",
+                # Published so the dashboard states what is actually running. Its header, panel
+                # title and badge were hardcoded to "NIFTY 50" / "50 Stocks Evaluated" while the
+                # session ran NIFTY 500 and scored 498 names.
+                "universe_name": universe_name,
+                "universe_size": len(universe),
+                "scored_count": len(scores),
                 "timestamp_ist": loop_now.strftime("%Y-%m-%d %H:%M:%S IST"),
                 "initial_cash": _paisa_str(initial_cash),
                 "total_equity": _paisa_str(snap.total_equity),
@@ -1220,7 +1282,9 @@ def run_paper_session(
         portfolio.realized_pnl,
         portfolio.total_fees,
     )
-    total_net_pnl = reconciliation.total_realized_pnl + reconciliation.total_unrealized_pnl
+    # The same correction as the live tile, and it matters more here: this figure is written into
+    # the session JSON and the markdown report, so the record inherited the understatement.
+    total_net_pnl = (reconciliation.total_equity - initial_cash).quantize(_PAISA)
     return_pct = float(total_net_pnl / initial_cash * Decimal("100.0"))
 
     logger.info("=" * 80)

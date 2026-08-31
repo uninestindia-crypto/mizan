@@ -24,13 +24,14 @@ retained.
 from __future__ import annotations
 
 import ast
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
 import pytest
 
 from quant_system.core.domain import Fill, OrderType, Side
+from quant_system.execution.orderbook_sim import OrderBookSnapshot
 from quant_system.execution.paper_pilot import (
     PaperPilotEngine,
     PaperProposal,
@@ -440,11 +441,95 @@ def test_an_expired_token_stops_the_session_at_startup(monkeypatch) -> None:
     with pytest.raises(runner.QuoteFeedError, match="expired"):
         runner.assert_upstox_usable(_token(1_755_000_000))  # 2025-08-12
 
-    # Explicitly cleared: `access_token or os.getenv(...)` treats "" as absent and reads the
-    # ambient variable, which the module's own .env loader has already populated.
+    # Both are cleared explicitly: `resolve_upstox_token` treats "" as absent and falls through to
+    # the environment, so a developer machine with either token in `.env` would otherwise decide
+    # the result of this assertion.
     monkeypatch.delenv("UPSTOX_ACCESS_TOKEN", raising=False)
-    with pytest.raises(runner.QuoteFeedError, match="not set"):
+    monkeypatch.delenv("UPSTOX_ANALYTICS_TOKEN", raising=False)
+    with pytest.raises(runner.QuoteFeedError, match="no Upstox token"):
         runner.assert_upstox_usable("")
 
     with pytest.raises(runner.QuoteFeedError, match="not a JWT"):
         runner.assert_upstox_usable("plainly-not-a-token")
+
+    # The analytics token is preferred over the access token, and preferred even when the access
+    # token has expired -- which is the whole point of it. Upstox issues the analytics token for
+    # about a year while the access token dies at 03:30 IST the morning after issue, so a session
+    # on an unattended schedule must not abort merely because nobody refreshed the daily one.
+    future = int(datetime.now(UTC).timestamp()) + 86_400 * 300
+    monkeypatch.setenv("UPSTOX_ACCESS_TOKEN", _token(1_755_000_000))  # long expired
+    monkeypatch.setenv("UPSTOX_ANALYTICS_TOKEN", _token(future))
+    runner.assert_upstox_usable()  # must not raise
+    resolved, source = runner.resolve_upstox_token()
+    assert source == "UPSTOX_ANALYTICS_TOKEN"
+    assert resolved == _token(future)
+
+    # With no analytics token, the expired access token still stops the session, and the message
+    # names the variable that failed rather than a generic "token".
+    monkeypatch.delenv("UPSTOX_ANALYTICS_TOKEN", raising=False)
+    with pytest.raises(runner.QuoteFeedError, match="UPSTOX_ACCESS_TOKEN expired"):
+        runner.assert_upstox_usable()
+
+    # An explicit argument still overrides both, so `--upstox-token` is unaffected.
+    monkeypatch.setenv("UPSTOX_ANALYTICS_TOKEN", _token(future))
+    _, explicit_source = runner.resolve_upstox_token("supplied-directly")
+    assert explicit_source == "explicit --upstox-token"
+
+    # A revoked or mis-pasted analytics token is caught by the same expiry rule, not waved through
+    # for being the preferred class.
+    monkeypatch.setenv("UPSTOX_ANALYTICS_TOKEN", _token(1_755_000_000))
+    with pytest.raises(runner.QuoteFeedError, match="UPSTOX_ANALYTICS_TOKEN expired"):
+        runner.assert_upstox_usable()
+
+
+def test_net_pnl_is_equity_minus_capital_not_realized_plus_unrealized() -> None:
+    """The identity the live tile and the session report both depend on.
+
+    `realized + unrealized` **excludes the statutory fees already paid**. Measured live on
+    2026-08-31 it reported -205.88 against a true -1,279.94, with the fees tile beside it showing
+    1,074.06 -- the exact gap. Both numbers were on screen and did not reconcile, and the headline
+    understated the loss by precisely the cost of trading.
+
+    Equity minus capital cannot double-count: a closed lot's fees are already inside
+    `realized_pnl`, so subtracting `total_fees_paid` from that sum would charge them twice.
+    """
+    engine = PaperPilotEngine(initial_cash=Decimal("1000000.00"), allow_short=False)
+    engine.start_session(session_date=SESSION_DATE, timestamp=AT)
+
+    def book(at: datetime) -> OrderBookSnapshot:
+        return OrderBookSnapshot.from_levels(
+            symbol="ACME",
+            timestamp=at,
+            bids=[(Decimal("999.75"), 10_000)],
+            asks=[(Decimal("1000.25"), 10_000)],
+            last_price=Decimal("1000.00"),
+        )
+
+    engine.process_quote(book(AT))
+    engine.submit_proposal(
+        PaperProposal(
+            proposal_id="buy1",
+            symbol="ACME",
+            side=Side.BUY,
+            quantity=100,
+            order_type=OrderType.MARKET,
+            decision_at=AT,
+        )
+    )
+    # A second quote a minute later: the simulator models queue priority, so an order submitted
+    # against the current book does not fill on that same book.
+    later = AT + timedelta(minutes=1)
+    fills = engine.process_quote(book(later), current_time=later)
+    assert fills, "the order never filled, so there is no fee and this test proves nothing"
+
+    report = engine.end_session(timestamp=CLOSE, close_prices={"ACME": Decimal("1000.00")})
+
+    assert report.total_fees_paid > Decimal("0.00"), "no fee was charged; this proves nothing"
+
+    naive = report.total_realized_pnl + report.total_unrealized_pnl
+    correct = report.total_equity - report.initial_cash
+
+    assert correct == naive - report.total_fees_paid, (
+        "the two definitions should differ by exactly the fees paid on the open position"
+    )
+    assert correct < naive, "equity-based P&L must be the more conservative of the two"
