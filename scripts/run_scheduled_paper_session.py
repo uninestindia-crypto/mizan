@@ -40,6 +40,15 @@ BARS_CACHE = PROJECT_ROOT / "data/evidence/market-cache/nifty500-refresh-2023082
 MACRO_CACHE = PROJECT_ROOT / "data/evidence/market-cache/macro-refresh-20230828-20260827"
 UNIVERSE_CSV = PROJECT_ROOT / "data/evidence/market-cache/scheduled-universe-instruments.csv"
 
+#: Where this refresh writes its own ingestion summary.
+#:
+#: The ingester's `--summary-file` defaults to
+#: `data/evidence/market-analysis/all-market-ingestion-summary.json`, which is the **all-market**
+#: record: 3,359 targets and 4,501,992 bars. Omitting the flag meant every scheduled NIFTY500
+#: refresh overwrote it with its own 500-symbol result, destroying the larger record. That already
+#: happened and was committed in `e853376a`; it would have recurred at 09:00 daily. A refresh writes
+#: its summary beside the cache it refreshed, never over an unrelated one.
+
 #: Bars are fetched three years back. The kernel consumes at most 400 trailing sessions, so this is
 #: comfortable headroom, and it stays clear of the provider's ten-year retrieval limit.
 LOOKBACK_DAYS = 3 * 365
@@ -186,6 +195,8 @@ def refresh_bars(universe_name: str, to_day: date) -> None:
         to_day.isoformat(),
         "--concurrency",
         "8",
+        "--summary-file",
+        str(BARS_CACHE / "ingestion-summary.json"),
     ]
     log("refreshing bars ...")
     subprocess.run(command, check=True, cwd=PROJECT_ROOT)

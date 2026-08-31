@@ -133,3 +133,63 @@ def test_staleness_is_counted_in_trading_sessions_not_calendar_days() -> None:
     assert trading_sessions_between(thursday, monday) > MAX_MISSED_SESSIONS, (
         "the exact case that slipped through on 2026-08-31 must now refuse"
     )
+
+
+def test_the_refresh_writes_its_own_summary_not_the_all_market_one() -> None:
+    """The ingester's `--summary-file` default is the **all-market** record, and omitting the flag
+    destroyed it.
+
+    `data/evidence/market-analysis/all-market-ingestion-summary.json` covers 3,359 targets and
+    4,501,992 bars. Every scheduled NIFTY500 refresh overwrote it with its own 500-symbol result;
+    that was committed in `e853376a` and would have recurred at 09:00 daily. Checked against the
+    parsed command rather than the raw text, so a comment mentioning the flag cannot satisfy it.
+    """
+    import ast as _ast
+
+    source = (REPO_ROOT / "scripts/run_scheduled_paper_session.py").read_text(encoding="utf-8")
+    tree = _ast.parse(source)
+
+    refresh = next(
+        node
+        for node in _ast.walk(tree)
+        if isinstance(node, _ast.FunctionDef) and node.name == "refresh_bars"
+    )
+    command = next(
+        node.value
+        for node in _ast.walk(refresh)
+        if isinstance(node, _ast.Assign)
+        and any(isinstance(t, _ast.Name) and t.id == "command" for t in node.targets)
+    )
+    rendered = [_ast.unparse(element) for element in command.elts]
+
+    assert "'--summary-file'" in rendered, (
+        "refresh_bars does not pass --summary-file, so the ingester falls back to its default: "
+        "the all-market summary. A NIFTY500 refresh would overwrite a 3,359-target record."
+    )
+    index = rendered.index("'--summary-file'")
+    destination = rendered[index + 1]
+    assert "BARS_CACHE" in destination, (
+        f"the summary is written to {destination!r}, outside the cache this refresh owns. A "
+        "refresh must not write over a record it did not produce."
+    )
+
+
+def test_the_all_market_summary_still_covers_the_whole_market() -> None:
+    """The file that was destroyed, restored, and now guarded.
+
+    A 500-entry all-market summary is the corruption, not a smaller universe: this file is the
+    record of the full ingest and nothing else may write it.
+    """
+    import json as _json
+
+    path = REPO_ROOT / "data/evidence/market-analysis/all-market-ingestion-summary.json"
+    if not path.is_file():
+        pytest.skip("the all-market summary is not present in this checkout")
+
+    document = _json.loads(path.read_text(encoding="utf-8"))
+    entries = document if isinstance(document, list) else document.get("results", document)
+
+    assert len(entries) > 3000, (
+        f"the all-market summary holds {len(entries)} entries. It covered 3,359; a scheduled "
+        "NIFTY500 refresh writing over it leaves exactly 500."
+    )
