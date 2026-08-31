@@ -366,3 +366,85 @@ def test_the_scheduler_wrapper_propagates_the_exit_code() -> None:
     assert "exit /b %RC%" in wrapper, (
         "the wrapper swallows the session's exit code; every scheduled run will look successful"
     )
+
+
+# --------------------------------------------------------------------------------------------
+# One quote source. The pilot uses Upstox or it does not trade.
+# --------------------------------------------------------------------------------------------
+
+
+def test_there_is_no_secondary_quote_source() -> None:
+    """The Upstox token expired 2026-08-23 and eight days of sessions ran on a Yahoo scraper.
+
+    The log said `Upstox API Token : CONFIGURED` throughout, because the check tested that the
+    string was non-empty rather than that it worked. Any name missing from both feeds was priced at
+    a flat Rs 1000.00 and labelled `REAL_NSE_ESTIMATE`. A record whose provenance is not what it
+    claims is worse than no record.
+
+    Checked against the parsed tree, not the raw text. A substring search cannot tell code from a
+    comment, and the comment recording this history names the very strings being banned -- which is
+    the third time in this file's history that a text search has stood in for a semantic one.
+    """
+    source = (
+        Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    ).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+
+    literals = {
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    names = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)} | {
+        target.id
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name)
+    }
+
+    assert not any("yahoo" in text.lower() for text in literals), "a second quote source is back"
+    assert "REAL_NSE_ESTIMATE" not in literals, "prices are being estimated and labelled as real"
+    assert "DEFAULT_NIFTY_PRICES" not in names, "the hardcoded price table is back"
+    assert not any(
+        isinstance(node, ast.FunctionDef) and "nse_quote" in node.name for node in ast.walk(tree)
+    ), "the fallback scraper is back"
+
+
+def test_an_expired_token_stops_the_session_at_startup(monkeypatch) -> None:
+    """Presence is not validity, and an unattended schedule has nobody to spot the difference."""
+    import importlib.util
+    import os
+    from unittest import mock
+
+    spec = importlib.util.spec_from_file_location(
+        "_rps", Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    )
+    assert spec and spec.loader
+    runner = importlib.util.module_from_spec(spec)
+    # The runner loads `.env` into `os.environ` at import time. Executing it inside a snapshot keeps
+    # that out of the rest of the suite -- without this it set UPSTOX_ACCESS_TOKEN for every later
+    # test, and two Upstox tests that require an absent token failed depending on ordering.
+    with mock.patch.dict(os.environ, os.environ.copy(), clear=True):
+        spec.loader.exec_module(runner)
+
+    # A structurally valid JWT whose expiry is in the past.
+    import base64 as _b64
+    import json as _json
+
+    def _token(exp: int) -> str:
+        head = _b64.urlsafe_b64encode(b'{"alg":"HS256"}').decode().rstrip("=")
+        body = _b64.urlsafe_b64encode(_json.dumps({"exp": exp}).encode()).decode().rstrip("=")
+        return f"{head}.{body}.signature"
+
+    with pytest.raises(runner.QuoteFeedError, match="expired"):
+        runner.assert_upstox_usable(_token(1_755_000_000))  # 2025-08-12
+
+    # Explicitly cleared: `access_token or os.getenv(...)` treats "" as absent and reads the
+    # ambient variable, which the module's own .env loader has already populated.
+    monkeypatch.delenv("UPSTOX_ACCESS_TOKEN", raising=False)
+    with pytest.raises(runner.QuoteFeedError, match="not set"):
+        runner.assert_upstox_usable("")
+
+    with pytest.raises(runner.QuoteFeedError, match="not a JWT"):
+        runner.assert_upstox_usable("plainly-not-a-token")

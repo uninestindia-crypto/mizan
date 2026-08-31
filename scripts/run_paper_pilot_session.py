@@ -12,6 +12,7 @@ Runs continuously from current time until market close (15:30 IST) with penny-ex
 from __future__ import annotations
 
 import argparse
+import base64
 import csv
 import json
 import logging
@@ -69,6 +70,47 @@ logger = logging.getLogger("quant_system.paper_runner")
 _PAISA = Decimal("0.01")
 
 
+class QuoteFeedError(RuntimeError):
+    """The exchange feed is unusable, so the session must not trade.
+
+    Raised rather than falling back. This pilot has exactly one quote source by instruction, and a
+    session priced from anything else is not a record of what the model would have done.
+    """
+
+
+def assert_upstox_usable(access_token: str | None = None) -> None:
+    """Fail at startup if the token is absent, malformed or expired.
+
+    The runner used to log "Upstox API Token : CONFIGURED" whenever the string was non-empty. The
+    token expired on 2026-08-23 and every session for eight days ran on a fallback feed under that
+    banner. Presence is not validity, and an unattended schedule has nobody to notice the
+    difference -- so the expiry claim the token carries is read and checked.
+    """
+    token = access_token or os.getenv("UPSTOX_ACCESS_TOKEN", "")
+    if not token:
+        raise QuoteFeedError("UPSTOX_ACCESS_TOKEN is not set")
+    parts = token.split(".")
+    if len(parts) != 3:
+        raise QuoteFeedError("UPSTOX_ACCESS_TOKEN is not a JWT; it cannot be an Upstox token")
+    payload = parts[1] + "=" * (-len(parts[1]) % 4)
+    try:
+        claims = json.loads(base64.urlsafe_b64decode(payload))
+    except Exception as error:
+        raise QuoteFeedError(f"UPSTOX_ACCESS_TOKEN payload is unreadable: {error}") from error
+    expiry = claims.get("exp")
+    if expiry is None:
+        raise QuoteFeedError("UPSTOX_ACCESS_TOKEN carries no expiry claim")
+    expires_at = datetime.fromtimestamp(int(expiry), _IST)
+    if expires_at <= now_ist():
+        raise QuoteFeedError(
+            f"UPSTOX_ACCESS_TOKEN expired at {expires_at:%Y-%m-%d %H:%M IST}, "
+            f"{now_ist() - expires_at} ago. Upstox standard access tokens expire at 03:30 IST the "
+            "morning after they are issued; an extended token is a separate product. Refresh it "
+            "before the session runs -- there is no second feed to fall back to."
+        )
+    logger.info("Upstox token valid until %s", f"{expires_at:%Y-%m-%d %H:%M IST}")
+
+
 def _paisa_str(val: Decimal | float | int) -> str:
     return f"{Decimal(str(val)).quantize(_PAISA)}"
 
@@ -79,7 +121,6 @@ def now_ist() -> datetime:
 
 import os  # noqa: E402
 import urllib.request  # noqa: E402
-from concurrent.futures import ThreadPoolExecutor, as_completed  # noqa: E402
 
 from quant_system.data.universe import NIFTY50_SYMBOLS  # noqa: E402
 
@@ -101,128 +142,14 @@ UPSTOX_INSTRUMENT_KEYS = {
 
 import urllib.parse  # noqa: E402
 
-DEFAULT_NIFTY_PRICES = {
-    "ADANIENT": Decimal("2450.00"),
-    "ADANIPORTS": Decimal("1180.00"),
-    "APOLLOHOSP": Decimal("6850.00"),
-    "ASIANPAINT": Decimal("2380.00"),
-    "AXISBANK": Decimal("1120.00"),
-    "BAJAJ-AUTO": Decimal("8950.00"),
-    "BAJFINANCE": Decimal("6720.00"),
-    "BAJAJFINSV": Decimal("1580.00"),
-    "BEL": Decimal("285.00"),
-    "BPCL": Decimal("320.00"),
-    "BHARTIARTL": Decimal("1650.00"),
-    "BRITANNIA": Decimal("5250.00"),
-    "CIPLA": Decimal("1480.00"),
-    "COALINDIA": Decimal("405.00"),
-    "DRREDDY": Decimal("6420.00"),
-    "EICHERMOT": Decimal("8080.00"),
-    "GRASIM": Decimal("3270.00"),
-    "HCLTECH": Decimal("1300.00"),
-    "HDFCBANK": Decimal("728.50"),
-    "HDFCLIFE": Decimal("561.00"),
-    "HEROMOTOCO": Decimal("5650.00"),
-    "HINDALCO": Decimal("1045.00"),
-    "HINDUNILVR": Decimal("2025.00"),
-    "ICICIBANK": Decimal("1438.00"),
-    "INDUSINDBK": Decimal("1003.00"),
-    "INFY": Decimal("1121.00"),
-    "ITC": Decimal("271.50"),
-    "JSWSTEEL": Decimal("1324.00"),
-    "KOTAKBANK": Decimal("415.50"),
-    "LT": Decimal("4050.00"),
-    "M&M": Decimal("3424.00"),
-    "MARUTI": Decimal("13610.00"),
-    "NESTLEIND": Decimal("1454.00"),
-    "NTPC": Decimal("337.00"),
-    "ONGC": Decimal("233.00"),
-    "POWERGRID": Decimal("267.00"),
-    "RELIANCE": Decimal("1305.00"),
-    "SBILIFE": Decimal("1780.00"),
-    "SBIN": Decimal("1055.00"),
-    "SHRIRAMFIN": Decimal("1114.00"),
-    "SUNPHARMA": Decimal("1920.00"),
-    "TATACONSUM": Decimal("1045.00"),
-    "TATAMOTORS": Decimal("720.00"),
-    "TATASTEEL": Decimal("185.50"),
-    "TCS": Decimal("2272.00"),
-    "TECHM": Decimal("1568.00"),
-    "TITAN": Decimal("5098.00"),
-    "TRENT": Decimal("2914.00"),
-    "ULTRACEMCO": Decimal("11672.00"),
-    "WIPRO": Decimal("177.50"),
-}
-
-
-def _fetch_single_nse_quote(sym: str) -> tuple[str, dict[str, Any] | None]:
-    ticker = urllib.parse.quote(sym) + ".NS"
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1m&range=1d"
-    try:
-        req = urllib.request.Request(
-            url,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
-        )
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            meta = data["chart"]["result"][0]["meta"]
-            price = Decimal(str(round(meta["regularMarketPrice"], 2)))
-            high = Decimal(str(round(meta.get("regularMarketDayHigh", price), 2)))
-            low = Decimal(str(round(meta.get("regularMarketDayLow", price), 2)))
-            prev_close = Decimal(str(round(meta.get("previousClose", price), 2)))
-            volume = int(meta.get("regularMarketVolume", 100000))
-            spread = (
-                Decimal("0.05")
-                if price < Decimal("500")
-                else Decimal("0.10")
-                if price < Decimal("1500")
-                else Decimal("0.25")
-            )
-            return sym, {
-                "price": price,
-                "high": high,
-                "low": low,
-                "previous_close": prev_close,
-                "volume": volume,
-                "spread": spread,
-                "depth": max(100, volume // 5000),
-                "source": "REAL_NSE_EXCHANGE_FEED",
-            }
-    except Exception:
-        return sym, None
-
-
-_GLOBAL_PRICE_CACHE: dict[str, dict[str, Any]] = {}
-
-
-def fetch_live_nse_quotes(symbols: list[str]) -> dict[str, dict[str, Any]]:
-    """Fetch 100% authentic, real-time live market quotes from NSE with zero lag."""
-    global _GLOBAL_PRICE_CACHE
-    results = dict(_GLOBAL_PRICE_CACHE)
-    with ThreadPoolExecutor(max_workers=40) as executor:
-        futures = [executor.submit(_fetch_single_nse_quote, s) for s in symbols]
-        for fut in as_completed(futures):
-            sym, q_data = fut.result()
-            if q_data:
-                results[sym] = q_data
-                _GLOBAL_PRICE_CACHE[sym] = q_data
-
-    # Guarantee all symbols exist in output dictionary
-    for s in symbols:
-        if s not in results:
-            fallback_p = DEFAULT_NIFTY_PRICES.get(s, Decimal("1000.00"))
-            results[s] = {
-                "price": fallback_p,
-                "high": fallback_p,
-                "low": fallback_p,
-                "previous_close": fallback_p,
-                "volume": 500000,
-                "spread": Decimal("0.10"),
-                "depth": 500,
-                "source": "REAL_NSE_ESTIMATE",
-            }
-            _GLOBAL_PRICE_CACHE[s] = results[s]
-    return results
+#: There is no secondary quote source, by explicit instruction: this pilot uses Upstox or it does
+#: not trade. What stood here was a Yahoo Finance scraper plus a table of hardcoded prices, and any
+#: name missing from both was priced at a flat Rs 1000.00 and labelled "REAL_NSE_ESTIMATE".
+#:
+#: It mattered. The Upstox token expired on 2026-08-23 and every session since ran entirely on the
+#: fallback while the log printed "Upstox API Token : CONFIGURED", because the check tested that the
+#: string was present rather than that it worked. A record whose provenance is not what it claims is
+#: worse than no record.
 
 
 def fetch_upstox_live_quotes(
@@ -231,7 +158,10 @@ def fetch_upstox_live_quotes(
     """Fetch real-time live market quotes directly from Upstox Market Quote API in high-speed batches."""
     token = access_token or os.getenv("UPSTOX_ACCESS_TOKEN", "")
     if not token:
-        return fetch_live_nse_quotes(symbols)
+        raise QuoteFeedError(
+            "no UPSTOX_ACCESS_TOKEN. This pilot has one quote source and will not substitute "
+            "another; set the token and re-run."
+        )
 
     results = {}
     chunk_size = 100
@@ -291,8 +221,23 @@ def fetch_upstox_live_quotes(
             logger.warning("Upstox batch quote fetch failed (%s).", err)
             break
 
-    if not results or len(results) < len(symbols) // 2:
-        return fetch_live_nse_quotes(symbols)
+    if not results:
+        raise QuoteFeedError(
+            f"Upstox returned no quotes for any of {len(symbols)} symbols. Refusing to trade: a "
+            "session priced from anything other than the exchange feed is not a record of what "
+            "this model would have done."
+        )
+    missing = sorted(set(symbols) - set(results))
+    if missing:
+        # Reported, not filled in. A partial cross-section is the caller's problem to judge -- the
+        # coverage gate downstream already refuses a shrunk one -- but inventing a price for the
+        # absent names is how a fabricated quote reaches a decision.
+        logger.warning(
+            "Upstox returned no quote for %d of %d symbols; they are omitted, not estimated: %s",
+            len(missing),
+            len(symbols),
+            ", ".join(missing[:10]) + (" ..." if len(missing) > 10 else ""),
+        )
 
     return results
 
@@ -531,12 +476,11 @@ def run_paper_session(
     logger.info("Universe           : %s (%d assets)", universe_name, len(universe))
     logger.info("Initial Capital    : Rs %s", _paisa_str(initial_cash))
     logger.info("Model Profile      : %s", model_profile.upper())
-    logger.info(
-        "Upstox API Token   : %s",
-        "CONFIGURED"
-        if bool(os.getenv("UPSTOX_ACCESS_TOKEN"))
-        else "NOT CONFIGURED (Using Live Exchange Feed)",
-    )
+    # Validated, not merely present -- and before anything else, so an expired token stops the
+    # session at startup instead of eight days of reports built on a substitute feed. The old
+    # banner said "CONFIGURED" for any non-empty string and "NOT CONFIGURED (Using Live Exchange
+    # Feed)" otherwise, which described the fallback as the live feed.
+    assert_upstox_usable(upstox_token)
     logger.info(
         "Execution Mode     : %s (Interval: %.1fs)",
         "REALTIME_STREAM" if realtime else "INTRADAY_SEQUENCE",
@@ -548,44 +492,10 @@ def run_paper_session(
     logger.info("Fetching real-time market data from Upstox / NSE exchange feed...")
     base_market = fetch_upstox_live_quotes(universe, access_token=upstox_token)
     if not base_market:
-        logger.warning("Could not reach live exchange feed. Using fallback baseline.")
-        base_market = {
-            "INFY": {
-                "price": Decimal("1121.10"),
-                "previous_close": Decimal("1120.00"),
-                "spread": Decimal("0.10"),
-                "depth": 500,
-                "source": "FALLBACK",
-            },
-            "TCS": {
-                "price": Decimal("2270.20"),
-                "previous_close": Decimal("2265.00"),
-                "spread": Decimal("0.25"),
-                "depth": 400,
-                "source": "FALLBACK",
-            },
-            "RELIANCE": {
-                "price": Decimal("1306.00"),
-                "previous_close": Decimal("1300.00"),
-                "spread": Decimal("0.10"),
-                "depth": 600,
-                "source": "FALLBACK",
-            },
-            "HDFCBANK": {
-                "price": Decimal("728.80"),
-                "previous_close": Decimal("725.00"),
-                "spread": Decimal("0.10"),
-                "depth": 700,
-                "source": "FALLBACK",
-            },
-            "ICICIBANK": {
-                "price": Decimal("1437.80"),
-                "previous_close": Decimal("1430.00"),
-                "spread": Decimal("0.15"),
-                "depth": 550,
-                "source": "FALLBACK",
-            },
-        }
+        raise QuoteFeedError(
+            "the exchange feed returned nothing. What stood here was a hardcoded five-name "
+            "baseline that would have produced a full session report from invented prices."
+        )
     for sym, m in base_market.items():
         logger.info(
             "  [REAL NSE FEED] %-10s : Rs %s (Day Range: Rs %s - Rs %s | Vol: %s)",

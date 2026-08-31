@@ -1,22 +1,22 @@
 {
   "NIFTY50": {
-    "bars_count": 745,
-    "latest_close": 24090.85,
-    "file": "data\\evidence\\market-cache\\macro-refresh-20230828-20260827\\macro_NIFTY50.json"
+    "bars_count": 743,
+    "latest_close": 24175.65,
+    "file": "D:\\quant_system\\data\\evidence\\market-cache\\macro-refresh-20230828-20260827\\macro_NIFTY50.json"
   },
   "INDIAVIX": {
-    "bars_count": 745,
-    "latest_close": 11.07,
-    "file": "data\\evidence\\market-cache\\macro-refresh-20230828-20260827\\macro_INDIAVIX.json"
+    "bars_count": 743,
+    "latest_close": 10.68,
+    "file": "D:\\quant_system\\data\\evidence\\market-cache\\macro-refresh-20230828-20260827\\macro_INDIAVIX.json"
   },
   "NIFTYBANK": {
-    "bars_count": 745,
-    "latest_close": 57509.95,
-    "file": "data\\evidence\\market-cache\\macro-refresh-20230828-20260827\\macro_NIFTYBANK.json"
+    "bars_count": 743,
+    "latest_close": 57496.3,
+    "file": "D:\\quant_system\\data\\evidence\\market-cache\\macro-refresh-20230828-20260827\\macro_NIFTYBANK.json"
   },
   "NIFTYIT": {
-    "bars_count": 745,
-    "latest_close": 30221.15,
-    "file": "data\\evidence\\market-cache\\macro-refresh-20230828-20260827\\macro_NIFTYIT.json"
+    "bars_count": 743,
+    "latest_close": 31281.7,
+    "file": "D:\\quant_system\\data\\evidence\\market-cache\\macro-refresh-20230828-20260827\\macro_NIFTYIT.json"
   }
 }

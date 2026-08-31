@@ -80,7 +80,7 @@ def ingest_macro_series(
                 "ingested_at": datetime.now(UTC).isoformat(),
                 "candles": candles,
             }
-            out_file.write_text(json.dumps(summary_item, indent=2), encoding="utf-8")
+            out_file.write_text(json.dumps(summary_item, indent=2), encoding="utf-8", newline="\n")
             results[sym] = {
                 "bars_count": len(candles),
                 "latest_close": summary_item["latest_close"],
@@ -90,7 +90,7 @@ def ingest_macro_series(
             print(f"Error fetching macro {sym}: {e}", flush=True)
 
     summary_file = output_dir / "macro_regimes_summary.json"
-    summary_file.write_text(json.dumps(results, indent=2), encoding="utf-8")
+    summary_file.write_text(json.dumps(results, indent=2), encoding="utf-8", newline="\n")
     print(f"Macro regimes saved to: {output_dir}\n", flush=True)
     return results
 
