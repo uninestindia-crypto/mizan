@@ -562,3 +562,66 @@ def test_the_anchor_round_trips_through_the_state_file(tmp_path) -> None:
     assert loaded is not None
     assert loaded.daily_anchor_on == date(2026, 9, 1)
     assert loaded.daily_anchor_equity == Decimal("1000000.00")
+
+
+# --------------------------------------------------------------------------------------------
+# Two sessions must not silently overwrite each other.
+# --------------------------------------------------------------------------------------------
+
+
+def test_a_concurrent_write_is_refused_rather_than_clobbered(tmp_path) -> None:
+    """Two sessions ran at once and the second to finish discarded the first's whole trading day.
+
+    16 fills, `sessions_completed` 10 to 11, one session's fees -- gone, with both reports on disk
+    and no error anywhere. There is no lock, so the overlap is still possible; what this prevents is
+    the loss, which is the part that cannot be recovered afterwards.
+    """
+    from quant_system.execution.paper_portfolio import state_hash_on_disk
+
+    path = tmp_path / "portfolio.json"
+    save_portfolio(path, _state(sessions_completed=10))
+
+    # Session A loads.
+    seen_by_a = state_hash_on_disk(path)
+
+    # Session B finishes first and writes its day.
+    save_portfolio(path, _state(sessions_completed=11, cash=Decimal("111111.11")))
+
+    # Session A now tries to write what it believes is the next state.
+    with pytest.raises(PaperPortfolioError, match="changed since this session loaded it"):
+        save_portfolio(path, _state(sessions_completed=11), seen_by_a)
+
+    # B's day survives.
+    surviving = load_portfolio(path)
+    assert surviving is not None
+    assert surviving.cash == Decimal("111111.11")
+
+
+def test_an_uncontended_write_still_succeeds(tmp_path) -> None:
+    """The guard must not refuse the ordinary case of one session writing its own next state."""
+    from quant_system.execution.paper_portfolio import state_hash_on_disk
+
+    path = tmp_path / "portfolio.json"
+    save_portfolio(path, _state(sessions_completed=4))
+    seen = state_hash_on_disk(path)
+
+    save_portfolio(path, _state(sessions_completed=5), seen)
+
+    reloaded = load_portfolio(path)
+    assert reloaded is not None
+    assert reloaded.sessions_completed == 5
+
+
+def test_a_first_run_writes_against_no_prior_file(tmp_path) -> None:
+    """`None` is the real value for "there was no file", not a request to skip the check."""
+    from quant_system.execution.paper_portfolio import state_hash_on_disk
+
+    path = tmp_path / "portfolio.json"
+    assert state_hash_on_disk(path) is None
+
+    save_portfolio(path, _state(), None)
+    assert load_portfolio(path) is not None
+
+    # And a second writer that also believed the file was absent is refused.
+    with pytest.raises(PaperPortfolioError, match="changed since this session loaded it"):
+        save_portfolio(path, _state(cash=Decimal("222222.22")), None)

@@ -77,6 +77,17 @@ _PAISA = Decimal("0.01")
 #: stale prices for the rest of the day.
 MAX_CONSECUTIVE_QUOTE_FAILURES = 5
 
+#: How much of the selection the book must actually hold for a rebalance to count as executed.
+#:
+#: `bool(entry_fills)` was satisfied by **one** fill. A rebalance that sold the old book and then
+#: bought one name of four left 76.3% in cash, paid Rs 1,115.75 to get there, reset the hold clock
+#: and reported success -- a portfolio the screen never models, recorded as the one it does.
+#:
+#: Not 1.0: integer share truncation legitimately drops the most expensive names, and on
+#: 2026-08-31 three of a hundred picks were skipped because one share cost more than the
+#: allocation. 0.8 tolerates that and refuses a book that is mostly cash.
+MIN_REBALANCE_COVERAGE = 0.8
+
 #: Per-batch HTTP timeout. Was 3 seconds for a 100-instrument request, which made handshake
 #: timeouts an ordinary event rather than a signal.
 _QUOTE_TIMEOUT_SECONDS = 15
@@ -197,6 +208,28 @@ def marks_for_open_positions(
             marks[symbol] = position.average_price
             fell_back.append(symbol)
     return marks, sorted(fell_back)
+
+
+def rebalance_executed(
+    selected: set[str],
+    held: set[str],
+    minimum: float = MIN_REBALANCE_COVERAGE,
+) -> bool:
+    """Whether the book became the selection the model chose.
+
+    The flag this replaces was `bool(entry_fills)`, satisfied by **one** fill: a rebalance that sold
+    the old book and bought one name of four left 76.3% in cash, paid Rs 1,115.75 to get there,
+    reset the hold clock and reported success. Before that it was `total_fills_count > 0`, satisfied
+    by the exits alone.
+
+    Coverage asks the question the flag is actually for, and answers it the same way for every shape
+    that matters: an all-exits rebalance covers 0.0, one entry of four covers 0.25, a re-rank that
+    keeps everything covers 1.0, and a hundred picks with three names too expensive to buy a single
+    share of covers 0.97.
+    """
+    if not selected:
+        return False
+    return len(held & selected) / len(selected) >= minimum
 
 
 def now_ist() -> datetime:
@@ -412,10 +445,12 @@ from quant_system.execution.mizan_live_features import (  # noqa: E402
     select_top_fraction,
 )
 from quant_system.execution.paper_portfolio import (  # noqa: E402
+    PaperPortfolioError,
     PaperPortfolioState,
     load_portfolio,
     save_portfolio,
     state_from_ledger,
+    state_hash_on_disk,
 )
 
 ALLOWED_SYMBOLS = NIFTY500_SYMBOLS
@@ -706,6 +741,10 @@ def run_paper_session(
     # decision -> entry -> exit, so the card's 11 is the screen's 10. `rebalance_due` takes the
     # card's convention and does that conversion itself; passing the raw value here and comparing it
     # directly was half of why the executed hold was 12 sessions rather than 10.
+    # The hash as it stood when this session loaded, for the compare-and-swap at the close. Two
+    # sessions ran concurrently and the second to finish silently discarded the first's whole
+    # trading day; this does not stop the overlap, it stops the loss.
+    portfolio_hash_at_load = state_hash_on_disk(PORTFOLIO_STATE_PATH)
     portfolio = load_portfolio(PORTFOLIO_STATE_PATH) or PaperPortfolioState(cash=initial_cash)
     horizon = int(model.config.label_horizon_sessions)
     rebalancing = portfolio.rebalance_due(horizon)
@@ -1494,19 +1533,30 @@ def run_paper_session(
         for fill in engine.fills
         if fill.side is Side.BUY and not fill.fill_id.startswith("carry_")
     ]
-    holds_the_selection = bool(mizan_picks) and set(engine.positions) == set(mizan_picks)
-    executed_rebalance = (
-        rebalancing and bool(engine.positions) and (bool(entry_fills) or holds_the_selection)
-    )
+    # How much of the selection the book actually ended up holding.
+    #
+    # `bool(entry_fills)` treated one fill as a completed rebalance. Coverage asks the question the
+    # flag is really for -- did the portfolio become the thing the model chose? -- and answers it
+    # the same way for all the shapes that matter: an all-exits rebalance covers 0.0, one entry of
+    # four covers 0.25, a re-rank that keeps everything covers 1.0, and today's 97 fills of 100
+    # picks cover 0.97.
+    selected = set(mizan_picks)
+    held = set(engine.positions)
+    rebalance_coverage = len(held & selected) / len(selected) if selected else 0.0
+    executed_rebalance = rebalancing and rebalance_executed(selected, held)
     if rebalancing and not executed_rebalance:
         logger.warning(
-            "Rebalance did NOT execute: %d order(s) submitted, %d filled (%d of them entries), "
-            "%d rejected, %d position(s) held at close. The hold clock is not reset.",
+            "Rebalance did NOT execute: %d of %d selected names held (%.0f%%, minimum %.0f%%); "
+            "%d order(s) submitted, %d filled (%d of them entries), %d rejected. The hold clock is "
+            "not reset.",
+            len(held & selected),
+            len(selected),
+            rebalance_coverage * 100,
+            MIN_REBALANCE_COVERAGE * 100,
             reconciliation.orders_submitted,
             reconciliation.total_fills_count,
             len(entry_fills),
             reconciliation.orders_rejected,
-            len(engine.positions),
         )
         if not engine.positions:
             logger.error(
@@ -1536,7 +1586,13 @@ def run_paper_session(
             governor.kill_events[-1].reason if governor.is_killed and governor.kill_events else ""
         ),
     )
-    save_portfolio(PORTFOLIO_STATE_PATH, portfolio)
+    try:
+        save_portfolio(PORTFOLIO_STATE_PATH, portfolio, portfolio_hash_at_load)
+    except PaperPortfolioError as clash:
+        # The session's own artifacts are already written, so the day is recoverable by hand; what
+        # must not happen is overwriting whatever the other session recorded.
+        session_abort_reason = f"{type(clash).__name__}: {clash}"
+        logger.error("REFUSING to persist the portfolio: %s", clash)
     logger.info(
         "Portfolio saved: cash Rs %s, %d holding(s), realized Rs %s, fees to date Rs %s",
         portfolio.cash,

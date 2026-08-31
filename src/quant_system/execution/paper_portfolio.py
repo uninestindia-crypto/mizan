@@ -42,6 +42,7 @@ trades that actually happened today.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
@@ -60,6 +61,19 @@ PORTFOLIO_SCHEMA_ID = "quantos.paper_portfolio"
 #: boundary. Version 4 adds the daily drawdown anchor, so restarting the process during a session
 #: does not re-baseline it. No migration is written: an older file is refused on load.
 PORTFOLIO_SCHEMA_VERSION = 4
+
+
+class _Unchecked:
+    """Sentinel type for "no compare-and-swap requested".
+
+    `None` cannot serve: it is the real value for "there was no state file when this session
+    loaded", and a caller passing it means exactly that. A distinct type keeps the signature
+    honest under strict typing rather than widening it to `object`.
+    """
+
+
+#: The sentinel itself.
+UNCHECKED = _Unchecked()
 
 
 class PaperPortfolioError(RuntimeError):
@@ -262,16 +276,56 @@ class PaperPortfolioState:
         }
 
 
-def save_portfolio(path: Path, state: PaperPortfolioState) -> None:
-    """Write state with a content hash, atomically.
+def state_hash_on_disk(path: Path) -> str | None:
+    """The hash currently recorded at `path`, or None when there is no file.
 
-    The hash exists so a truncated or hand-edited file is refused on the next session rather than
-    resumed from. An unattended weekday schedule has nobody to notice a corrupt resume.
+    Read without validating the rest of the document: this is used to detect that *something else*
+    wrote since we loaded, and a file we are about to refuse to overwrite does not need to parse.
     """
+    if not path.is_file():
+        return None
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return "<unreadable>"
+    recorded = document.get("state_hash")
+    return str(recorded) if recorded is not None else "<absent>"
+
+
+def save_portfolio(
+    path: Path,
+    state: PaperPortfolioState,
+    expected_prior_hash: str | None | _Unchecked = UNCHECKED,
+) -> None:
+    """Write state with a content hash, atomically, refusing to clobber a concurrent write.
+
+    The content hash exists so a truncated or hand-edited file is refused on the next session
+    rather than resumed from. An unattended weekday schedule has nobody to notice a corrupt resume.
+
+    ``expected_prior_hash`` is the compare-and-swap. Pass what
+    :func:`state_hash_on_disk` returned when the session loaded, and the write is refused if
+    anything has changed the file since. Two sessions ran concurrently and the second to finish
+    silently discarded the first's entire trading day -- 16 fills, `sessions_completed` 10 to 11,
+    one session's fees -- with both reports on disk and no error anywhere. There is no lock: this
+    does not prevent the overlap, it prevents the loss, which is the part that cannot be recovered.
+
+    The default is deliberately a sentinel rather than ``None``: ``None`` is the legitimate value
+    for "there was no file when I loaded", and a caller that passes it means it. Omitting the
+    argument entirely skips the check, which keeps every existing caller working.
+    """
+    if not isinstance(expected_prior_hash, _Unchecked):
+        current = state_hash_on_disk(path)
+        if current != expected_prior_hash:
+            raise PaperPortfolioError(
+                f"portfolio state at {path} changed since this session loaded it "
+                f"(expected {expected_prior_hash!r}, found {current!r}). Another session has "
+                "written here; refusing to overwrite it and lose that trading day."
+            )
     payload = state.to_payload()
     document = {"payload": payload, "state_hash": canonical_sha256(payload)}
     path.parent.mkdir(parents=True, exist_ok=True)
-    staging = path.with_suffix(path.suffix + ".staging")
+    # A per-process staging name, so two writers cannot corrupt each other's temporary file.
+    staging = path.with_suffix(f"{path.suffix}.{os.getpid()}.staging")
     staging.write_text(json.dumps(document, indent=2, sort_keys=True), encoding="utf-8")
     staging.replace(path)
 

@@ -776,51 +776,6 @@ def test_quote_lookups_are_pinned_to_the_symbols_the_feed_returned() -> None:
     )
 
 
-def test_a_rebalance_that_only_exits_is_not_a_completed_rebalance() -> None:
-    """Every exit filled, every entry skipped as unaffordable, book flat -- and it counted.
-
-    `total_fills_count > 0` was satisfied by the exits alone, so the pilot went 100% to cash, paid a
-    full exit round trip, reset the hold clock and stamped `last_rebalance_on`. Going to cash is not
-    a rule the screen contains; it cannot be the outcome that marks one as executed.
-
-    Located rather than analysed: the flag's definition is read from the source and its three
-    required parts asserted. The behaviour itself is pinned by `test_paper_portfolio.py`, which
-    drives `state_from_ledger` with the flag both ways.
-    """
-    tree = _runner_tree()
-    definition = next(
-        ast.unparse(node.value)
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Assign)
-        for target in node.targets
-        if isinstance(target, ast.Name) and target.id == "executed_rebalance"
-    )
-
-    assert "engine.positions" in definition, (
-        f"`executed_rebalance` is {definition!r}. It does not require the book to hold anything, so "
-        "a rebalance that sold everything and bought nothing still counts as executed."
-    )
-    assert "entry_fills" in definition, (
-        f"`executed_rebalance` is {definition!r}. Exits alone must not satisfy it."
-    )
-    assert "total_fills_count" not in definition, (
-        "the total fill count includes exits, which is exactly what made an all-exits rebalance "
-        "look complete"
-    )
-
-    entry_fills = next(
-        ast.unparse(node.value)
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Assign)
-        for target in node.targets
-        if isinstance(target, ast.Name) and target.id == "entry_fills"
-    )
-    assert "Side.BUY" in entry_fills and "carry_" in entry_fills, (
-        f"`entry_fills` is {entry_fills!r}; it must count today's buys only, not the carry-forward "
-        "replay, which would make every held session look like it entered."
-    )
-
-
 def test_a_held_name_with_no_quote_does_not_kill_the_session_at_close() -> None:
     """It killed it *after* a full day of trading, and after the abort handler.
 
@@ -987,3 +942,61 @@ def test_a_well_formed_empty_success_is_absence_not_transport_failure() -> None:
     ):
         with pytest.raises(runner.QuoteFeedError, match="no quotes for any"):
             runner.fetch_upstox_live_quotes(symbols, access_token="t")
+
+
+def _runner_module():
+    import importlib.util
+    import os
+    from unittest import mock
+
+    spec = importlib.util.spec_from_file_location(
+        "_rps_rule", Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    )
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    with mock.patch.dict(os.environ, os.environ.copy(), clear=True):
+        spec.loader.exec_module(module)
+    return module
+
+
+def test_a_rebalance_counts_only_when_the_book_became_the_selection() -> None:
+    """Every shape that has been wrong, driven through the real rule.
+
+    `total_fills_count > 0` was satisfied by the exits alone; `bool(entry_fills)` by one fill of
+    four, leaving 76.3% in cash after paying to get there. Coverage answers all of them.
+    """
+    runner = _runner_module()
+    picks = {f"P{n}" for n in range(4)}
+
+    assert runner.rebalance_executed(picks, set()) is False, "all exits, nothing bought"
+    assert runner.rebalance_executed(picks, {"P0"}) is False, "one entry of four is 25%"
+    assert runner.rebalance_executed(picks, picks) is True, "a re-rank that keeps everything"
+
+    hundred = {f"N{n}" for n in range(100)}
+    truncated = set(list(hundred)[:97])  # three names too expensive for one share
+    assert runner.rebalance_executed(hundred, truncated) is True, (
+        "integer share truncation legitimately drops the priciest names; 97 of 100 is the "
+        "portfolio the model chose"
+    )
+
+    assert runner.rebalance_executed(set(), set()) is False, "no selection is not a rebalance"
+
+
+def test_the_runner_decides_the_rebalance_flag_with_that_rule() -> None:
+    """Located, because a behavioural test of the rule cannot see the runner ignoring it.
+
+    The rule above is decidable and strong; this is the narrow, decidable half that pins the runner
+    to it. A mutant reverting the flag to `bool(entry_fills)` changes only this line, and nothing
+    behavioural would catch it.
+    """
+    definition = next(
+        ast.unparse(node.value)
+        for node in ast.walk(_runner_tree())
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name) and target.id == "executed_rebalance"
+    )
+    assert "rebalance_executed(" in definition, (
+        f"`executed_rebalance` is {definition!r}; it must come from the shared rule, not be "
+        "recomputed inline where it can drift back to counting fills"
+    )
