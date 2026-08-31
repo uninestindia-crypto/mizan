@@ -452,3 +452,53 @@ def test_the_peak_round_trips_so_a_multi_session_decline_can_trip_the_switch(tmp
     loaded = load_portfolio(path)
     assert loaded is not None
     assert loaded.peak_equity == Decimal("1200000.00")
+
+
+# --------------------------------------------------------------------------------------------
+# A rebalance is recorded when it happens, not when it is intended.
+# --------------------------------------------------------------------------------------------
+
+
+def test_a_refused_rebalance_does_not_reset_the_hold_clock() -> None:
+    """228 orders rejected, zero filled, the book unchanged -- and it was persisted as a rebalance.
+
+    `rebalanced=rebalancing` recorded the *intent*. The clock reset and `last_rebalance_on` advanced
+    on a portfolio nobody had touched, so the next real rebalance was pushed ten sessions away.
+    """
+    held = _state(sessions_held=10, last_rebalance_on=date(2026, 8, 17))
+
+    refused = state_from_ledger(
+        held,
+        cash=held.cash,
+        positions={s: (h.quantity, h.average_cost) for s, h in held.holdings.items()},
+        session_date=date(2026, 9, 14),
+        session_realized_pnl=Decimal("0.00"),
+        fees_paid=Decimal("0.00"),
+        rebalanced=False,  # what the runner now passes when nothing executed
+    )
+
+    assert refused.sessions_held == 11, "the clock must keep running, not restart"
+    assert refused.last_rebalance_on == date(2026, 8, 17), "no rebalance happened to stamp"
+    assert refused.rebalance_due(11) is True, "still due; the refusal did not satisfy it"
+
+
+def test_a_rebalance_that_kept_everything_still_counts_as_one() -> None:
+    """The case a naive "did anything fill?" fix would get wrong in the other direction.
+
+    A rebalance whose new selection equals the current book legitimately fills nothing -- the model
+    re-ranked and chose to keep what it held. That is a completed rebalance and its clock resets.
+    """
+    held = _state(sessions_held=10)
+
+    kept = state_from_ledger(
+        held,
+        cash=held.cash,
+        positions={s: (h.quantity, h.average_cost) for s, h in held.holdings.items()},
+        session_date=date(2026, 9, 14),
+        session_realized_pnl=Decimal("0.00"),
+        fees_paid=Decimal("0.00"),
+        rebalanced=True,
+    )
+
+    assert kept.sessions_held == 1
+    assert kept.last_rebalance_on == date(2026, 9, 14)

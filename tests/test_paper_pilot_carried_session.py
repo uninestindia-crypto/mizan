@@ -298,60 +298,80 @@ def test_reconciliation_can_actually_report_failure() -> None:
     )
 
 
-def test_a_cost_seeded_daily_peak_halts_a_book_that_never_moved_intraday() -> None:
-    """The behaviour, not the spelling. The previous version of this test was worthless.
+def _governor_kwargs_resolved() -> dict[str, str]:
+    """The runner's `PreTradeRiskGovernor(...)` arguments, with local names resolved.
 
-    It asserted `"ledger_funding" not in ast.unparse(...)`. At `46c7bb67` the defect was written
-    through a local -- `opening_equity = portfolio.ledger_funding()` then
-    `initial_equity=opening_equity` -- so `ast.unparse` returned `'opening_equity'` and the check
-    passed against the very commit it named. Four of five mutants survived it, including a verbatim
-    reintroduction of the defect and `initial_equity=Decimal("0.00")`, which disables the daily rule
-    outright.
-
-    This drives the governor the way the runner does and asserts the outcome instead: a book 5.63%
-    below its cost basis, with **zero** intraday movement, must not trip a 4% *daily* limit. Seed it
-    from a cost figure and it does -- on the first order, which is the exit, so the losing book is
-    then held with nothing able to sell it.
+    Resolution is the whole point. The previous version of this check read the *unresolved*
+    expression: at `46c7bb67` the defect was written as `opening_equity = ledger_funding()` then
+    `initial_equity=opening_equity`, so `ast.unparse` returned `'opening_equity'` and a search for
+    "ledger_funding" passed against the very commit it named. Following a name back to what it was
+    assigned is the difference between checking spelling and checking meaning.
     """
-    from quant_system.core.domain import Order
-    from quant_system.risk.checks import RiskLimits
-    from quant_system.risk.governor import PreTradeRiskGovernor
+    source = (
+        Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    ).read_text(encoding="utf-8")
+    tree = ast.parse(source)
 
-    limits = RiskLimits(max_daily_drawdown_pct=0.04, max_total_drawdown_pct=0.12)
-    cost_basis = Decimal("1000000.00")  # what ledger_funding() returns: invariant to price
-    marked_open = Decimal("943735.66")  # equity marked at this session's open, 5.63% below
+    call = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "PreTradeRiskGovernor"
+    )
+    enclosing = next(
+        fn
+        for fn in ast.walk(tree)
+        if isinstance(fn, ast.FunctionDef) and any(n is call for n in ast.walk(fn))
+    )
+    assignments: dict[str, ast.expr] = {
+        target.id: node.value
+        for node in ast.walk(enclosing)
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name)
+    }
 
-    def first_order_of_the_session(seed: Decimal):
-        governor = PreTradeRiskGovernor(
-            limits=limits,
-            initial_equity=seed,
-            all_time_peak_equity=max(cost_basis, seed),
-        )
-        return governor.evaluate_order(
-            Order(
-                order_id="exit1",
-                symbol="ACME",
-                side=Side.SELL,
-                quantity=10,
-                order_type=OrderType.MARKET,
-                created_at=AT,
-            ),
-            current_equity=marked_open,
-            current_cash=Decimal("62195.95"),
-            positions={},
-            current_quote=None,
-            current_prices={},
-        )
+    def resolve(expression: ast.expr, depth: int = 0) -> str:
+        if isinstance(expression, ast.Name) and expression.id in assignments and depth < 5:
+            return resolve(assignments[expression.id], depth + 1)
+        return ast.unparse(expression)
 
-    from_cost = first_order_of_the_session(cost_basis)
-    assert "DAILY_DRAWDOWN_LIMIT_BREACHED" in (from_cost.reason or ""), (
-        "seeding the daily peak from a cost figure should reproduce the defect; if it no longer "
-        "does, this test has stopped exercising the thing it exists to catch"
+    return {kw.arg: resolve(kw.value) for kw in call.keywords if kw.arg}
+
+
+def test_the_daily_peak_is_wired_to_marked_equity_not_a_cost_figure() -> None:
+    """Kills four mutants the previous two versions of this test both survived.
+
+    `initial_equity` must trace back to equity marked at this session's open. Seeded from
+    `ledger_funding()` -- cash + holdings at cost + fees, invariant to price -- the 4% *daily* rule
+    measures cumulative unrealized loss since inception, and a book 5.63% down over ten sessions
+    with zero intraday movement halts on its first order. That order is the exit, so the losing
+    book is then held with nothing able to sell it.
+    """
+    kwargs = _governor_kwargs_resolved()
+    seed = kwargs.get("initial_equity", "")
+
+    assert "ledger_funding" not in seed, (
+        f"the daily peak is seeded from a cost figure: {seed!r}. It must be equity marked at the "
+        "session open, or the daily rule measures the whole unrealized loss since inception."
+    )
+    assert "peak_equity" not in seed, (
+        f"the daily peak is seeded from the carried all-time peak: {seed!r}. That is the original "
+        "defect: the daily rule then measures a multi-session decline."
+    )
+    assert "opening_marks" in seed or "marked" in seed, (
+        f"the daily peak does not trace back to marked equity: {seed!r}"
     )
 
-    from_marked = first_order_of_the_session(marked_open)
-    assert "DRAWDOWN" not in (from_marked.reason or ""), (
-        f"a book that did not move intraday tripped a daily limit: {from_marked.reason}"
+
+def test_the_trailing_peak_still_carries_across_sessions() -> None:
+    """Separating the peaks must not drop the carried one, or the 12% rule resets every morning."""
+    trailing = _governor_kwargs_resolved().get("all_time_peak_equity", "")
+
+    assert "peak_equity" in trailing, (
+        f"the trailing peak no longer carries the persisted high-water mark: {trailing!r}. The "
+        "total-drawdown switch would then measure from today and never trip."
     )
 
 
