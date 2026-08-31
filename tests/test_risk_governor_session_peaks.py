@@ -199,13 +199,38 @@ def test_the_runner_anchors_the_daily_peak_before_it_places_any_order() -> None:
     ]
     assert calls, "nothing calls reset_session_peak; the daily baseline is the previous close"
 
-    # What it is anchored *to*. Passing the boot-time figure would satisfy a placement check while
-    # reproducing the defect exactly, because that figure is the previous close.
+    # What it is anchored *to*, with local names resolved.
+    #
+    # Reading the argument unresolved is not enough: `anchor_equity = marked_opening_equity` one
+    # line above the call satisfies a check on the argument's spelling while reproducing the defect
+    # exactly. That mutant survived this test until resolution was added, which is the same failure
+    # the round-five tests had at scale -- thirteen string-preserving mutants, none caught.
+    assignments = {
+        target.id: ast.unparse(node.value)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name)
+    }
+
+    def resolve(expression: str, depth: int = 0) -> str:
+        if depth < 4 and expression in assignments:
+            return resolve(assignments[expression], depth + 1)
+        return expression
+
     for call in calls:
-        argument = ast.unparse(call.args[0]) if call.args else ""
+        argument = resolve(ast.unparse(call.args[0])) if call.args else ""
         assert "marked_opening_equity" not in argument, (
             f"the daily peak is anchored to {argument!r}, which is the boot-time mark -- the "
             "previous close at 09:00, and the defect this call exists to remove."
+        )
+        # Both permitted sources are now named functions with behavioural tests of their own:
+        # `equity_marked_at` values the book at the marks it is given, and `anchor_to_reuse` returns
+        # today's persisted baseline or nothing. This assertion pins which of them the runner uses;
+        # what each one *does* is driven elsewhere, because a source check cannot establish that.
+        assert "equity_marked_at" in argument or "anchor_to_reuse" in argument, (
+            f"the daily peak is anchored to {argument!r}; it must come from equity marked at the "
+            "first live quote, or from the anchor this session already persisted today."
         )
 
     # And that it is reachable. `if False and ...` keeps the call on the same line while disabling
@@ -226,7 +251,9 @@ def test_the_runner_anchors_the_daily_peak_before_it_places_any_order() -> None:
     # gated on the once-per-session flag, and the restart path is gated on the persisted anchor
     # belonging to today. Both are conditions about *when* to anchor; an unconditional call, or one
     # disabled by a constant, is what must not pass.
-    assert all("daily_peak_anchored" in test or "daily_anchor_on" in test for test in guarding), (
+    # Whether each guard is *effective* is driven by `test_a_restart_reuses_only_todays_anchor`:
+    # a source check can see that a condition exists, never that it decides anything.
+    assert all("daily_peak_anchored" in test or "persisted_anchor" in test for test in guarding), (
         f"an anchor call is guarded by {guarding!r}. Each must be conditional on the session it "
         "belongs to, so it neither re-anchors every step nor is switched off by a constant."
     )
@@ -245,3 +272,55 @@ def test_the_runner_anchors_the_daily_peak_before_it_places_any_order() -> None:
         f"line {min(proposal_lines)}. The exit is the first order of a rebalance, so a late "
         "baseline is set after the decision it was supposed to govern."
     )
+
+
+def test_the_anchor_equity_is_marked_at_the_supplied_prices() -> None:
+    """Driven, not read. The defect is *which* marks are supplied, so the arithmetic must be exact.
+
+    Computed from the boot-time quote map this is the previous close, which is how an overnight gap
+    became a "daily" drawdown. The function itself must value the book at whatever marks it is
+    given, and fall back to a position's own cost only when it has no mark at all.
+    """
+    import importlib.util
+    import os
+    from dataclasses import dataclass
+    from pathlib import Path
+    from unittest import mock
+
+    spec = importlib.util.spec_from_file_location(
+        "_rps_equity", Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    )
+    assert spec and spec.loader
+    runner = importlib.util.module_from_spec(spec)
+    with mock.patch.dict(os.environ, os.environ.copy(), clear=True):
+        spec.loader.exec_module(runner)
+
+    @dataclass
+    class _Position:
+        quantity: int
+        average_price: Decimal
+
+    positions = {
+        "ACME": _Position(100, Decimal("1000.00")),
+        "BETA": _Position(50, Decimal("200.00")),
+    }
+    cash = Decimal("50000.00")
+
+    # Yesterday's close: 100*1000 + 50*200 = 110,000, plus cash.
+    at_close = runner.equity_marked_at(
+        cash, positions, {"ACME": Decimal("1000.00"), "BETA": Decimal("200.00")}
+    )
+    assert at_close == Decimal("160000.00")
+
+    # A 5% overnight gap down must produce a different number, or the daily rule cannot tell the
+    # two apart -- which is precisely the defect.
+    after_gap = runner.equity_marked_at(
+        cash, positions, {"ACME": Decimal("950.00"), "BETA": Decimal("190.00")}
+    )
+    assert after_gap == Decimal("154500.00")
+    assert after_gap < at_close
+
+    # A position with no mark is valued at its own cost, never dropped: dropping it would understate
+    # equity and make the drawdown look larger than it is.
+    partial = runner.equity_marked_at(cash, positions, {"ACME": Decimal("950.00")})
+    assert partial == Decimal("155000.00")

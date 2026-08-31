@@ -177,12 +177,16 @@ def build_universe_csv(universe_name: str) -> int:
     return len(rows)
 
 
-def refresh_bars(universe_name: str, to_day: date) -> None:
-    matched = build_universe_csv(universe_name)
-    log(f"universe {universe_name}: {matched} instruments with provider keys")
-    if matched == 0:
-        raise SystemExit("refusing to run: no instrument keys resolved for the universe")
-    command = [
+def build_refresh_command(to_day: date) -> list[str]:
+    """The ingester invocation this refresh runs.
+
+    Extracted so a test can read the command the code actually produces rather than the source text
+    that produces it. `--summary-file` was omitted here for weeks and the ingester fell back to its
+    default -- the all-market record -- so every scheduled NIFTY500 refresh overwrote a 3,359-target
+    file with its own 500. A test that greps this function's source passes the moment the flag
+    appears anywhere in it, including in a comment explaining its absence.
+    """
+    return [
         sys.executable,
         str(PROJECT_ROOT / "scripts/ingest_all_market_data.py"),
         "--universe-csv",
@@ -198,8 +202,15 @@ def refresh_bars(universe_name: str, to_day: date) -> None:
         "--summary-file",
         str(BARS_CACHE / "ingestion-summary.json"),
     ]
+
+
+def refresh_bars(universe_name: str, to_day: date) -> None:
+    matched = build_universe_csv(universe_name)
+    log(f"universe {universe_name}: {matched} instruments with provider keys")
+    if matched == 0:
+        raise SystemExit("refusing to run: no instrument keys resolved for the universe")
     log("refreshing bars ...")
-    subprocess.run(command, check=True, cwd=PROJECT_ROOT)
+    subprocess.run(build_refresh_command(to_day), check=True, cwd=PROJECT_ROOT)
 
 
 def refresh_macro(to_day: date) -> None:

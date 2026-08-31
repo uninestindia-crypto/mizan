@@ -232,6 +232,65 @@ def rebalance_executed(
     return len(held & selected) / len(selected) >= minimum
 
 
+def equity_marked_at(
+    cash: Decimal,
+    positions: Mapping[str, Any],
+    marks: Mapping[str, Decimal],
+) -> Decimal:
+    """Equity valued at the supplied marks, falling back to each position's own cost.
+
+    The daily drawdown baseline. Computed from the boot-time quote map it is the *previous close*,
+    which turned an overnight gap into a "daily" drawdown with no intraday movement -- the 4% rule
+    firing on the first order, which is the exit. Extracted so a test can drive the gap rather than
+    read the line that computes it: four of five tests written for the last round were functions of
+    the source text, and thirteen independent mutants walked through all of them.
+    """
+    return (
+        cash
+        + sum(
+            (
+                Decimal(position.quantity) * marks.get(symbol, position.average_price)
+                for symbol, position in positions.items()
+            ),
+            Decimal("0.00"),
+        )
+    ).quantize(_PAISA)
+
+
+def anchor_to_reuse(portfolio: PaperPortfolioState, session_date: date) -> Decimal | None:
+    """The drawdown baseline already recorded for `session_date`, or None to take a fresh one.
+
+    A restart within the same session must reuse the morning's baseline; a new session must not.
+    Extracted because a guard's *presence* is checkable from the source and its *effectiveness* is
+    not: `daily_anchor_on != session_date` keeps every string a located assertion looks for while
+    inverting the decision, and that mutant survived until this could be driven.
+    """
+    if portfolio.daily_anchor_on != session_date:
+        return None
+    if portfolio.daily_anchor_equity <= 0:
+        return None
+    return portfolio.daily_anchor_equity
+
+
+def entry_quantity(
+    symbol: str,
+    marks: Mapping[str, Decimal],
+    allocation: Decimal,
+    available_cash: Decimal,
+) -> int:
+    """Shares to buy for one selected name, or zero when it cannot be sized.
+
+    Zero for a name the feed did not return: there is no price to size against and inventing one is
+    what removing the fallback price table was for. Zero also when a single share costs more than
+    the allocation, which is how the priciest names drop out under equal weighting.
+    """
+    price = marks.get(symbol)
+    if price is None or price <= 0:
+        return 0
+    target = min(allocation, available_cash * Decimal("0.95"))
+    return int(target / price)
+
+
 def now_ist() -> datetime:
     return datetime.now(_IST)
 
@@ -1042,14 +1101,15 @@ def run_paper_session(
     # the 4% limit. Three sessions were abandoned and restarted on 2026-08-31 alone.
     session_anchor_equity: Decimal | None = None
     daily_peak_anchored = False
-    if portfolio.daily_anchor_on == session_date and portfolio.daily_anchor_equity > 0:
-        governor.reset_session_peak(portfolio.daily_anchor_equity)
-        session_anchor_equity = portfolio.daily_anchor_equity
+    persisted_anchor = anchor_to_reuse(portfolio, session_date)
+    if persisted_anchor is not None:
+        governor.reset_session_peak(persisted_anchor)
+        session_anchor_equity = persisted_anchor
         daily_peak_anchored = True
         logger.info(
             "Reusing today's persisted drawdown baseline of Rs %s from an earlier start of this "
             "session; not re-anchoring.",
-            _paisa_str(portfolio.daily_anchor_equity),
+            _paisa_str(persisted_anchor),
         )
 
     try:
@@ -1122,17 +1182,11 @@ def run_paper_session(
             # repository through all three; it has one now. Anchoring here rather than at the
             # snapshot below matters, because the order loops run first within a step.
             if realtime and not daily_peak_anchored:
-                anchor_equity = (
-                    engine.cash
-                    + sum(
-                        (
-                            Decimal(position.quantity) * base_market[symbol]["price"]
-                            for symbol, position in engine.positions.items()
-                            if symbol in base_market
-                        ),
-                        Decimal("0.00"),
-                    )
-                ).quantize(_PAISA)
+                anchor_equity = equity_marked_at(
+                    engine.cash,
+                    engine.positions,
+                    {sym: state["price"] for sym, state in base_market.items()},
+                )
                 governor.reset_session_peak(anchor_equity)
                 session_anchor_equity = anchor_equity
                 daily_peak_anchored = True
@@ -1275,16 +1329,14 @@ def run_paper_session(
             for sym in top_picks if rebalancing else []:
                 current_held = engine.positions[sym].quantity if sym in engine.positions else 0
                 if current_held == 0:
-                    if sym not in base_market:
-                        # Selected but unquotable this step. Skipping is the only honest option:
-                        # there is no price to size against and inventing one is what the removal
-                        # of the fallback table was for.
+                    step_marks = {s: state["price"] for s, state in base_market.items()}
+                    if sym not in step_marks:
                         logger.warning("  %s: selected but no quote this step; not entered", sym)
                         continue
                     avail_cash = engine.cash
                     target_alloc = min(per_name_alloc, avail_cash * Decimal("0.95"))
-                    price = base_market[sym]["price"]
-                    qty = int(target_alloc / price)
+                    price = step_marks[sym]
+                    qty = entry_quantity(sym, step_marks, per_name_alloc, avail_cash)
                     if qty == 0:
                         # One share costs more than the allocation. Saying so beats a silent skip:
                         # under equal weight this is how a high-priced name drops out.

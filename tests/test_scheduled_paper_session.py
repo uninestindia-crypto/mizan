@@ -136,41 +136,33 @@ def test_staleness_is_counted_in_trading_sessions_not_calendar_days() -> None:
 
 
 def test_the_refresh_writes_its_own_summary_not_the_all_market_one() -> None:
-    """The ingester's `--summary-file` default is the **all-market** record, and omitting the flag
-    destroyed it.
+    """The ingester's `--summary-file` default is the **all-market** record, and omitting it
+    destroyed that record.
 
     `data/evidence/market-analysis/all-market-ingestion-summary.json` covers 3,359 targets and
     4,501,992 bars. Every scheduled NIFTY500 refresh overwrote it with its own 500-symbol result;
-    that was committed in `e853376a` and would have recurred at 09:00 daily. Checked against the
-    parsed command rather than the raw text, so a comment mentioning the flag cannot satisfy it.
+    that was committed in `e853376a` and would have recurred at 09:00 daily.
+
+    Driven, not read. An earlier version of this test parsed `refresh_bars` and asserted the flag
+    appeared in the command *literal* -- which a comment mentioning the flag can satisfy, and which
+    thirteen independent mutants walked straight through in the round that shipped it. This calls
+    the builder and inspects the command it actually returns.
     """
-    import ast as _ast
+    from run_scheduled_paper_session import BARS_CACHE, build_refresh_command
 
-    source = (REPO_ROOT / "scripts/run_scheduled_paper_session.py").read_text(encoding="utf-8")
-    tree = _ast.parse(source)
+    command = build_refresh_command(date(2026, 9, 1))
 
-    refresh = next(
-        node
-        for node in _ast.walk(tree)
-        if isinstance(node, _ast.FunctionDef) and node.name == "refresh_bars"
+    assert "--summary-file" in command, (
+        "the refresh does not pass --summary-file, so the ingester falls back to its default: the "
+        "all-market summary. A NIFTY500 refresh would overwrite a 3,359-target record."
     )
-    command = next(
-        node.value
-        for node in _ast.walk(refresh)
-        if isinstance(node, _ast.Assign)
-        and any(isinstance(t, _ast.Name) and t.id == "command" for t in node.targets)
+    destination = Path(command[command.index("--summary-file") + 1])
+    assert BARS_CACHE in destination.parents, (
+        f"the summary is written to {destination}, outside the cache this refresh owns. A refresh "
+        "must not write over a record it did not produce."
     )
-    rendered = [_ast.unparse(element) for element in command.elts]
-
-    assert "'--summary-file'" in rendered, (
-        "refresh_bars does not pass --summary-file, so the ingester falls back to its default: "
-        "the all-market summary. A NIFTY500 refresh would overwrite a 3,359-target record."
-    )
-    index = rendered.index("'--summary-file'")
-    destination = rendered[index + 1]
-    assert "BARS_CACHE" in destination, (
-        f"the summary is written to {destination!r}, outside the cache this refresh owns. A "
-        "refresh must not write over a record it did not produce."
+    assert "market-analysis" not in destination.parts, (
+        f"the summary is written into {destination}, the all-market directory"
     )
 
 

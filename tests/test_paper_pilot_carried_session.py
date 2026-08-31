@@ -757,23 +757,10 @@ def test_quote_lookups_are_pinned_to_the_symbols_the_feed_returned() -> None:
         f"the intraday returns loop iterates {ast.unparse(returns_loop.iter)!r}, not `priced`"
     )
 
-    # 4. The entry loop refuses to size a pick it has no price for.
-    entry_loop = next(
-        node
-        for node in ast.walk(tree)
-        # startswith, not `in`: the exit loop's iterable also mentions `top_picks`.
-        if isinstance(node, ast.For) and ast.unparse(node.iter).startswith("top_picks")
-    )
-    guards = [
-        ast.unparse(statement.test)
-        for statement in ast.walk(entry_loop)
-        if isinstance(statement, ast.If)
-        and any(isinstance(inner, ast.Continue) for inner in ast.walk(statement))
-    ]
-    assert any("not in base_market" in guard for guard in guards), (
-        f"the entry loop has no membership guard before it prices a pick; its skip conditions are "
-        f"{guards}. A selected name the feed did not return would be indexed blindly."
-    )
+    # The entry loop's own guard is not asserted here any more. It was, and the assertion was
+    # defeated by `if sym not in base_market and False:` -- which keeps every string intact while
+    # disabling the check. `test_a_selected_name_with_no_quote_is_sized_at_zero` drives
+    # `entry_quantity` instead, which no string-preserving edit can satisfy.
 
 
 def test_a_held_name_with_no_quote_does_not_kill_the_session_at_close() -> None:
@@ -1000,3 +987,62 @@ def test_the_runner_decides_the_rebalance_flag_with_that_rule() -> None:
         f"`executed_rebalance` is {definition!r}; it must come from the shared rule, not be "
         "recomputed inline where it can drift back to counting fills"
     )
+
+
+def test_a_restart_reuses_only_todays_anchor() -> None:
+    """Driven, because a guard's presence is checkable from source and its effect is not.
+
+    `daily_anchor_on != session_date` keeps every string a located assertion looks for while
+    inverting the decision -- it survived that assertion, and this is what kills it.
+    """
+    runner = _runner_module()
+    today, yesterday = date(2026, 9, 1), date(2026, 8, 31)
+
+    todays = PaperPortfolioState(
+        cash=Decimal("50000.00"),
+        daily_anchor_on=today,
+        daily_anchor_equity=Decimal("1000000.00"),
+    )
+    assert runner.anchor_to_reuse(todays, today) == Decimal("1000000.00")
+
+    stale = PaperPortfolioState(
+        cash=Decimal("50000.00"),
+        daily_anchor_on=yesterday,
+        daily_anchor_equity=Decimal("1000000.00"),
+    )
+    assert runner.anchor_to_reuse(stale, today) is None, (
+        "yesterday's baseline must not govern today; the daily rule would measure from the wrong "
+        "morning"
+    )
+
+    never = PaperPortfolioState(cash=Decimal("50000.00"))
+    assert runner.anchor_to_reuse(never, today) is None
+
+    zeroed = PaperPortfolioState(
+        cash=Decimal("50000.00"), daily_anchor_on=today, daily_anchor_equity=Decimal("0.00")
+    )
+    assert runner.anchor_to_reuse(zeroed, today) is None, "a zero baseline disables the daily rule"
+
+
+def test_a_selected_name_with_no_quote_is_sized_at_zero() -> None:
+    """The entry guard, driven rather than located.
+
+    `if sym not in base_market and False:` keeps the guard's text intact while disabling it, and
+    that mutant survived the located assertion. Sizing is the decision that actually matters.
+    """
+    runner = _runner_module()
+    marks = {"ACME": Decimal("100.00")}
+    allocation = Decimal("9500.00")
+    cash = Decimal("500000.00")
+
+    assert runner.entry_quantity("ACME", marks, allocation, cash) == 95
+    assert runner.entry_quantity("MISSING", marks, allocation, cash) == 0, (
+        "a name the feed did not return has no price to size against; it must not be entered"
+    )
+    assert runner.entry_quantity("ZERO", {"ZERO": Decimal("0.00")}, allocation, cash) == 0
+    assert (
+        runner.entry_quantity("PRICEY", {"PRICEY": Decimal("48600.00")}, allocation, cash) == 0
+    ), "one share costs more than the allocation, which is how a dear name drops out"
+
+    # Cash-bound rather than allocation-bound.
+    assert runner.entry_quantity("ACME", marks, allocation, Decimal("1000.00")) == 9
