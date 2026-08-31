@@ -642,3 +642,51 @@ def test_an_aborted_session_is_not_reported_as_a_success() -> None:
         and isinstance(node.value.value, int)
     }
     assert 10 in returns, "an aborted session must not exit 0"
+
+
+def test_a_partial_quote_batch_failure_fails_the_poll() -> None:
+    """The tolerance added yesterday did not cover the case that actually happened.
+
+    `fetch_upstox_live_quotes` raised only when it got **nothing**, so a poll that lost a chunk
+    returned normally and the caller reset `consecutive_quote_failures` to zero. Live on
+    2026-08-31 at 13:29 and 13:44 two chunks failed -- 300 of 500 symbols missing, twice -- and the
+    session priced the absent names from quotes minutes old, because the previous values simply
+    stayed in `base_market`.
+
+    A chunk that errored tells us nothing about its symbols and must be retried. A symbol missing
+    from a response that otherwise succeeded is genuinely unquotable and retrying changes nothing.
+    Only the first is a failure of the poll, and the test drives exactly that split.
+    """
+    import importlib.util
+    import os
+    import urllib.request
+    from unittest import mock
+
+    spec = importlib.util.spec_from_file_location(
+        "_rps_partial",
+        Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py",
+    )
+    assert spec and spec.loader
+    runner = importlib.util.module_from_spec(spec)
+    with mock.patch.dict(os.environ, os.environ.copy(), clear=True):
+        spec.loader.exec_module(runner)
+
+    symbols = [f"SYM{n:03d}" for n in range(150)]  # two chunks at chunk_size 100
+    runner.UPSTOX_INSTRUMENT_KEYS = {s: f"NSE_EQ|{s}" for s in symbols}
+
+    calls = {"n": 0}
+
+    def one_good_chunk_then_a_timeout(*_args, **_kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise TimeoutError("_ssl.c:1015: The handshake operation timed out")
+        raise TimeoutError("_ssl.c:1015: The handshake operation timed out")
+
+    with mock.patch.object(urllib.request, "urlopen", one_good_chunk_then_a_timeout):
+        with pytest.raises(runner.QuoteFeedError, match="quote batches failed"):
+            runner.fetch_upstox_live_quotes(symbols, access_token="t")
+
+    assert calls["n"] == 2, (
+        "a failed chunk stopped the loop; the remaining batches must still be attempted so the "
+        "error can say how much of the feed was lost"
+    )

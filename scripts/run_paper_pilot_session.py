@@ -234,7 +234,9 @@ def fetch_upstox_live_quotes(
     del source  # resolved for symmetry with the startup guard; the request needs only the value
 
     results = {}
+    failed_chunks: list[tuple[int, str]] = []
     chunk_size = 100
+    chunk_count = (len(symbols) + chunk_size - 1) // chunk_size
     for i in range(0, len(symbols), chunk_size):
         chunk_syms = symbols[i : i + chunk_size]
         resolved = {s: UPSTOX_INSTRUMENT_KEYS[s] for s in chunk_syms if s in UPSTOX_INSTRUMENT_KEYS}
@@ -297,8 +299,32 @@ def fetch_upstox_live_quotes(
                                 "source": "UPSTOX_LIVE_FEED",
                             }
         except Exception as err:
-            logger.warning("Upstox batch quote fetch failed (%s).", err)
-            break
+            # Counted, and the remaining chunks are still attempted: one bad request should not
+            # discard the batches that would have succeeded.
+            failed_chunks.append((i // chunk_size, str(err)))
+            logger.warning(
+                "Upstox batch quote fetch failed for chunk %d (%s).", i // chunk_size, err
+            )
+            continue
+
+    # A transport failure is a failed poll, even when other chunks succeeded.
+    #
+    # This used to raise only when it got **nothing**, so a poll that lost a chunk returned
+    # normally and the caller reset its consecutive-failure counter. Two chunks failed live on
+    # 2026-08-31 at 13:29 and 13:44 -- 300 of 500 symbols missing, twice -- and the session carried
+    # on pricing the absent names from quotes minutes old, because the previous values simply
+    # stayed in `base_market`.
+    #
+    # The distinction that matters is *why* a symbol is absent. A chunk that errored tells us
+    # nothing about its symbols and must be retried; a symbol missing from a response that
+    # otherwise succeeded is genuinely unquotable right now, and no amount of retrying changes it.
+    # Only the first is a failure of the poll.
+    if failed_chunks:
+        raise QuoteFeedError(
+            f"{len(failed_chunks)} of {chunk_count} quote batches failed; "
+            f"{len(results)} of {len(symbols)} symbols returned. First error: "
+            f"{failed_chunks[0][1]}"
+        )
 
     if not results:
         raise QuoteFeedError(
@@ -308,9 +334,13 @@ def fetch_upstox_live_quotes(
         )
     missing = sorted(set(symbols) - set(results))
     if missing:
-        # Reported, not filled in. A partial cross-section is the caller's problem to judge -- the
-        # coverage gate downstream already refuses a shrunk one -- but inventing a price for the
-        # absent names is how a fabricated quote reaches a decision.
+        # Reported, not filled in. These are symbols the exchange did not return in a response
+        # that otherwise succeeded -- genuinely unquotable right now, not a transport failure, which
+        # is handled above. Inventing a price for them is how a fabricated quote reaches a decision.
+        #
+        # An earlier version of this comment claimed "the coverage gate downstream already refuses
+        # a shrunk one". No such gate exists on this path: the coverage minimum applies to the
+        # feature cross-section built from daily bars, not to an intraday quote poll.
         logger.warning(
             "Upstox returned no quote for %d of %d symbols; they are omitted, not estimated: %s",
             len(missing),
