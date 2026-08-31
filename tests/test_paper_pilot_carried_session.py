@@ -690,3 +690,87 @@ def test_a_partial_quote_batch_failure_fails_the_poll() -> None:
         "a failed chunk stopped the loop; the remaining batches must still be attempted so the "
         "error can say how much of the feed was lost"
     )
+
+
+def _runner_tree() -> ast.Module:
+    return ast.parse(
+        (Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py").read_text(
+            encoding="utf-8"
+        )
+    )
+
+
+def _assigned(name: str) -> str:
+    """The expression a module-level-visible local is assigned, rendered."""
+    return next(
+        ast.unparse(node.value)
+        for node in ast.walk(_runner_tree())
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name) and target.id == name
+    )
+
+
+def test_quote_lookups_are_pinned_to_the_symbols_the_feed_returned() -> None:
+    """Two missing quotes out of five hundred aborted the session before a single order.
+
+    `KeyError: '360ONE'` on 2026-08-31. Removing the fabricated price table was right -- it invented
+    a flat Rs 1000.00 and labelled it a real exchange price -- but every consumer that silently
+    depended on it was left indexing `base_market` by every universe member. Fixing the *cause* of
+    that day's missing symbol left the crash itself in place.
+
+    **These are four located facts, not an analysis.** Five attempts at a general "is this lookup
+    guarded?" check were each wrong in a new way: one allowlisted names instead of resolving them;
+    one matched `priced` as a substring of `unpriced`; one joined every guard in a loop and resolved
+    identifiers until an unrelated chain satisfied it; one expanded definitions into a blob where
+    `in base_market` leaked in from elsewhere. Each passed, and each was worthless. Asserting the
+    specific things that must be true is decidable, and it is what the entry-loop check already did
+    correctly.
+    """
+    tree = _runner_tree()
+
+    # 1. The filtered list really filters.
+    assert "in base_market" in _assigned("priced"), (
+        f"`priced` is assigned {_assigned('priced')!r}, which does not filter by quote membership"
+    )
+
+    # 2. The intraday panels rank only what was priced.
+    assert "priced" in _assigned("sorted_gainers"), (
+        f"`sorted_gainers` is built from {_assigned('sorted_gainers')!r}; ranking the whole "
+        "universe reintroduces the lookup that crashed the session"
+    )
+
+    # 3. The returns loop iterates the filtered list.
+    returns_loop = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.For)
+        and any(
+            isinstance(inner, ast.Subscript)
+            and isinstance(inner.value, ast.Name)
+            and inner.value.id == "base_market"
+            for inner in ast.walk(node)
+        )
+        and "quote_state" in ast.unparse(node)
+    )
+    assert ast.unparse(returns_loop.iter) == "priced", (
+        f"the intraday returns loop iterates {ast.unparse(returns_loop.iter)!r}, not `priced`"
+    )
+
+    # 4. The entry loop refuses to size a pick it has no price for.
+    entry_loop = next(
+        node
+        for node in ast.walk(tree)
+        # startswith, not `in`: the exit loop's iterable also mentions `top_picks`.
+        if isinstance(node, ast.For) and ast.unparse(node.iter).startswith("top_picks")
+    )
+    guards = [
+        ast.unparse(statement.test)
+        for statement in ast.walk(entry_loop)
+        if isinstance(statement, ast.If)
+        and any(isinstance(inner, ast.Continue) for inner in ast.walk(statement))
+    ]
+    assert any("not in base_market" in guard for guard in guards), (
+        f"the entry loop has no membership guard before it prices a pick; its skip conditions are "
+        f"{guards}. A selected name the feed did not return would be indexed blindly."
+    )

@@ -1076,7 +1076,21 @@ def run_paper_session(
             # deliberately NOT a model input: the decision above came from completed daily bars
             # through the shared kernel. Conflating the two is what the old code did.
             returns_map = {}
-            for sym in universe:
+            # Symbols the feed actually returned. Indexing `base_market` by every universe member
+            # crashed the whole session when Upstox omitted one: `KeyError: '360ONE'` on
+            # 2026-08-31, before a single order. Removing the fabricated price table -- correctly --
+            # left every consumer that assumed full coverage exposed, and fixing the *cause* of that
+            # day's missing symbol left the crash itself in place.
+            priced = [sym for sym in universe if sym in base_market]
+            if len(priced) < len(universe):
+                logger.info(
+                    "Quotes cover %d of %d names this step; the rest are omitted from the "
+                    "intraday panels, not priced.",
+                    len(priced),
+                    len(universe),
+                )
+
+            for sym in priced:
                 # Not named `quote`: that name is bound to a `Quote` object later in this
                 # function, and reusing it made mypy infer dict[str, Any] for both.
                 quote_state = base_market[sym]
@@ -1138,6 +1152,12 @@ def run_paper_session(
             for sym in top_picks if rebalancing else []:
                 current_held = engine.positions[sym].quantity if sym in engine.positions else 0
                 if current_held == 0:
+                    if sym not in base_market:
+                        # Selected but unquotable this step. Skipping is the only honest option:
+                        # there is no price to size against and inventing one is what the removal
+                        # of the fallback table was for.
+                        logger.warning("  %s: selected but no quote this step; not entered", sym)
+                        continue
                     avail_cash = engine.cash
                     target_alloc = min(per_name_alloc, avail_cash * Decimal("0.95"))
                     price = base_market[sym]["price"]
@@ -1246,7 +1266,7 @@ def run_paper_session(
             net_pnl = (live_equity - initial_cash).quantize(_PAISA)
             net_pnl_pct = float(net_pnl / initial_cash * Decimal("100.0"))
 
-            sorted_gainers = sorted(universe, key=lambda s: returns_map.get(s, 0.0), reverse=True)
+            sorted_gainers = sorted(priced, key=lambda s: returns_map.get(s, 0.0), reverse=True)
             top_gainers_list = [
                 {
                     "rank": i + 1,
