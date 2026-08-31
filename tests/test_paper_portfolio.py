@@ -502,3 +502,63 @@ def test_a_rebalance_that_kept_everything_still_counts_as_one() -> None:
 
     assert kept.sessions_held == 1
     assert kept.last_rebalance_on == date(2026, 9, 14)
+
+
+# --------------------------------------------------------------------------------------------
+# The daily drawdown baseline must survive a restart.
+# --------------------------------------------------------------------------------------------
+
+
+def test_the_daily_anchor_survives_a_restart_within_the_same_session() -> None:
+    """Four starts in one day measured a 10.2% decline as three separate sub-4% ones.
+
+    The anchor lived only in the process, so every restart re-baselined the daily rule to whatever
+    equity was current: 1,000,000 -> 965,000 -> 931,000 -> 898,000, and the 4% limit never tripped.
+    Three sessions were abandoned and restarted on 2026-08-31 alone, so this is a live path.
+    """
+    session = date(2026, 9, 1)
+    morning = state_from_ledger(
+        PaperPortfolioState(cash=Decimal("1000000.00")),
+        cash=Decimal("1000000.00"),
+        positions={},
+        session_date=session,
+        session_realized_pnl=Decimal("0.00"),
+        fees_paid=Decimal("0.00"),
+        rebalanced=False,
+        daily_anchor_on=session,
+        daily_anchor_equity=Decimal("1000000.00"),
+    )
+
+    assert morning.daily_anchor_on == session
+    assert morning.daily_anchor_equity == Decimal("1000000.00")
+
+    # A later start on the same day passes no anchor; the morning's must be carried, not replaced.
+    after_restart = state_from_ledger(
+        morning,
+        cash=Decimal("931000.00"),
+        positions={},
+        session_date=session,
+        session_realized_pnl=Decimal("-69000.00"),
+        fees_paid=Decimal("0.00"),
+        rebalanced=False,
+    )
+
+    assert after_restart.daily_anchor_equity == Decimal("1000000.00"), (
+        "the restart re-baselined the daily rule to the reduced equity, which is how a 10.2% "
+        "decline was measured as three separate sub-4% ones"
+    )
+    assert after_restart.daily_anchor_on == session
+
+
+def test_the_anchor_round_trips_through_the_state_file(tmp_path) -> None:
+    """It is only useful across restarts if it is actually persisted."""
+    path = tmp_path / "portfolio.json"
+    save_portfolio(
+        path,
+        _state(daily_anchor_on=date(2026, 9, 1), daily_anchor_equity=Decimal("1000000.00")),
+    )
+    loaded = load_portfolio(path)
+
+    assert loaded is not None
+    assert loaded.daily_anchor_on == date(2026, 9, 1)
+    assert loaded.daily_anchor_equity == Decimal("1000000.00")

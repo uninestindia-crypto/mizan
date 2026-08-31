@@ -880,3 +880,110 @@ def test_marks_are_not_invented_for_names_that_are_not_held() -> None:
 
     assert marks == {"ACME": Decimal("1010.00")}
     assert fell_back == []
+
+
+def test_http_200_without_a_success_payload_is_a_failed_chunk() -> None:
+    """A 200 carrying an error body used to fall through in silence.
+
+    `if data.get("status") == "success" and "data" in data:` simply did not match, the loop moved
+    on, and the poll returned whatever the other chunks had -- so the consecutive-failure counter
+    reset on the very poll that lost 100 of 150 symbols.
+
+    **The discriminating case needs one good chunk and one bad one.** A first version of this test
+    used a single chunk and asserted only the exception *type*; both the fixed and the broken code
+    raise there, because when every chunk is bad `results` is empty and the older
+    "no quotes for any" guard fires instead. It passed against a faithful reproduction of the
+    defect. Mutation caught it; nothing else would have.
+    """
+    import importlib.util
+    import io
+    import json as _json
+    import os
+    import urllib.request
+    from unittest import mock
+
+    spec = importlib.util.spec_from_file_location(
+        "_rps_200", Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    )
+    assert spec and spec.loader
+    runner = importlib.util.module_from_spec(spec)
+    with mock.patch.dict(os.environ, os.environ.copy(), clear=True):
+        spec.loader.exec_module(runner)
+
+    symbols = [f"SYM{n:03d}" for n in range(150)]  # two chunks at chunk_size 100
+    runner.UPSTOX_INSTRUMENT_KEYS = {s: f"NSE_EQ|{s}" for s in symbols}
+
+    good = {
+        "status": "success",
+        "data": {
+            f"NSE_EQ|{sym}": {
+                "last_price": 100.0,
+                "ohlc": {"high": 101.0, "low": 99.0, "close": 100.0},
+                "volume": 50_000,
+            }
+            for sym in symbols[:100]
+        },
+    }
+    # An error envelope that still carries a `data` key. Without this case a check on `status`
+    # alone looks equivalent, because every other bad shape fails later on `data["data"]` anyway --
+    # this is the one where a status-only test would parse an error body as quotes.
+    bad = {
+        "status": "error",
+        "errors": [{"message": "too many requests"}],
+        "data": {f"NSE_EQ|{sym}": {"last_price": 0.0} for sym in symbols[100:]},
+    }
+
+    class _Response(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return False
+
+    calls = {"n": 0}
+
+    def first_good_then_an_error_envelope(*_args, **_kwargs):
+        calls["n"] += 1
+        return _Response(_json.dumps(good if calls["n"] == 1 else bad).encode())
+
+    with mock.patch.object(urllib.request, "urlopen", first_good_then_an_error_envelope):
+        with pytest.raises(runner.QuoteFeedError, match="quote batches failed"):
+            runner.fetch_upstox_live_quotes(symbols, access_token="t")
+
+    assert calls["n"] == 2, "both chunks must be attempted"
+
+
+def test_a_well_formed_empty_success_is_absence_not_transport_failure() -> None:
+    """The other side of the same split, and it must not consume the retry budget."""
+    import importlib.util
+    import io
+    import json as _json
+    import os
+    import urllib.request
+    from unittest import mock
+
+    spec = importlib.util.spec_from_file_location(
+        "_rps_empty", Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    )
+    assert spec and spec.loader
+    runner = importlib.util.module_from_spec(spec)
+    with mock.patch.dict(os.environ, os.environ.copy(), clear=True):
+        spec.loader.exec_module(runner)
+
+    symbols = ["SYM001", "SYM002"]
+    runner.UPSTOX_INSTRUMENT_KEYS = {s: f"NSE_EQ|{s}" for s in symbols}
+
+    class _Response(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return False
+
+    with mock.patch.object(
+        urllib.request,
+        "urlopen",
+        lambda *_a, **_k: _Response(_json.dumps({"status": "success", "data": {}}).encode()),
+    ):
+        with pytest.raises(runner.QuoteFeedError, match="no quotes for any"):
+            runner.fetch_upstox_live_quotes(symbols, access_token="t")

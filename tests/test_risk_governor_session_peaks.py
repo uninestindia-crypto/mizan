@@ -222,9 +222,13 @@ def test_the_runner_anchors_the_daily_peak_before_it_places_any_order() -> None:
         )
     ]
     assert guarding, "the anchor is not guarded at all; it would re-anchor on every step"
-    assert all("daily_peak_anchored" in test for test in guarding), (
-        f"the anchor's condition is {guarding!r}; it must be gated on the once-per-session flag "
-        "and nothing that disables it"
+    # Two call sites now, and they carry different guards for different reasons: the in-loop one is
+    # gated on the once-per-session flag, and the restart path is gated on the persisted anchor
+    # belonging to today. Both are conditions about *when* to anchor; an unconditional call, or one
+    # disabled by a constant, is what must not pass.
+    assert all("daily_peak_anchored" in test or "daily_anchor_on" in test for test in guarding), (
+        f"an anchor call is guarded by {guarding!r}. Each must be conditional on the session it "
+        "belongs to, so it neither re-anchors every step nor is switched off by a constant."
     )
 
     anchor_line = min(call.lineno for call in calls)

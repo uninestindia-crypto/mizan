@@ -57,9 +57,9 @@ PORTFOLIO_SCHEMA_ID = "quantos.paper_portfolio"
 
 #: Version 2 added ``entry_fee`` per holding and renamed ``sessions_since_rebalance`` to
 #: ``sessions_held``. Version 3 adds the risk halt, so a tripped kill switch survives the session
-#: boundary. No migration is written for either: no state file has ever been produced, because the
-#: scheduled session was disabled before its first run. An older file is refused on load.
-PORTFOLIO_SCHEMA_VERSION = 3
+#: boundary. Version 4 adds the daily drawdown anchor, so restarting the process during a session
+#: does not re-baseline it. No migration is written: an older file is refused on load.
+PORTFOLIO_SCHEMA_VERSION = 4
 
 
 class PaperPortfolioError(RuntimeError):
@@ -133,6 +133,16 @@ class PaperPortfolioState:
     risk_halted: bool = False
     halted_on: date | None = None
     halt_reason: str = ""
+
+    #: The daily-drawdown baseline for `daily_anchor_on`, and the date it belongs to.
+    #:
+    #: `PreTradeRiskGovernor` is rebuilt per process, so the anchor was rebuilt too: every restart
+    #: re-baselined the daily rule to whatever equity was current. Measured across four starts in
+    #: one day -- 1,000,000, 965,000, 931,000, 898,000 -- a 10.2% decline was seen as three separate
+    #: sub-4% ones and never tripped a 4% limit. Three sessions were abandoned and restarted on
+    #: 2026-08-31 alone, so this is a live path rather than a hypothetical one.
+    daily_anchor_on: date | None = None
+    daily_anchor_equity: Decimal = Decimal("0.00")
 
     #: Sessions the current holding will have been held for as of the *next* session's check.
     #:
@@ -235,6 +245,8 @@ class PaperPortfolioState:
                 for h in sorted(self.holdings.values(), key=lambda h: h.symbol)
             ],
             "peak_equity": str(self.peak_equity),
+            "daily_anchor_on": self.daily_anchor_on.isoformat() if self.daily_anchor_on else None,
+            "daily_anchor_equity": str(self.daily_anchor_equity),
             "risk_halted": self.risk_halted,
             "halted_on": self.halted_on.isoformat() if self.halted_on else None,
             "halt_reason": self.halt_reason,
@@ -316,6 +328,12 @@ def load_portfolio(path: Path) -> PaperPortfolioState | None:
         sessions_completed=int(payload["sessions_completed"]),
         sessions_held=int(payload["sessions_held"]),
         peak_equity=Decimal(payload["peak_equity"]),
+        daily_anchor_on=(
+            date.fromisoformat(payload["daily_anchor_on"])
+            if payload.get("daily_anchor_on")
+            else None
+        ),
+        daily_anchor_equity=Decimal(payload["daily_anchor_equity"]),
         risk_halted=bool(payload["risk_halted"]),
         halted_on=(date.fromisoformat(payload["halted_on"]) if payload.get("halted_on") else None),
         halt_reason=str(payload.get("halt_reason", "")),
@@ -335,6 +353,8 @@ def state_from_ledger(
     session_peak_equity: Decimal | None = None,
     risk_halted: bool = False,
     halt_reason: str = "",
+    daily_anchor_on: date | None = None,
+    daily_anchor_equity: Decimal | None = None,
 ) -> PaperPortfolioState:
     """The state to persist after a session, from the ledger's closing view.
 
@@ -378,6 +398,12 @@ def state_from_ledger(
         # decline that caused it.
         peak_equity=max(previous.peak_equity, session_peak_equity or Decimal("0.00")).quantize(
             Decimal("0.01")
+        ),
+        # Carried so a restart within the same session reuses the morning's baseline rather than
+        # taking a fresh one from wherever the book has since fallen to.
+        daily_anchor_on=daily_anchor_on or previous.daily_anchor_on,
+        daily_anchor_equity=(
+            daily_anchor_equity if daily_anchor_equity is not None else previous.daily_anchor_equity
         ),
         # Sticky. Once halted, only a human clears it; a later quiet session must not lift it.
         risk_halted=previous.risk_halted or risk_halted,

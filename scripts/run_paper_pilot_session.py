@@ -290,41 +290,48 @@ def fetch_upstox_live_quotes(
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=_QUOTE_TIMEOUT_SECONDS) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-                if data.get("status") == "success" and "data" in data:
-                    payload = data["data"]
-                    for sym, key in resolved.items():
-                        alt_key = f"NSE_EQ:{sym}"
-                        quote_data = payload.get(key) or payload.get(alt_key) or {}
-                        if quote_data:
-                            ohlc = quote_data.get("ohlc", {})
-                            price = Decimal(str(round(quote_data.get("last_price", 0), 2)))
-                            high = Decimal(str(round(ohlc.get("high", price), 2)))
-                            low = Decimal(str(round(ohlc.get("low", price), 2)))
-                            prev_close = Decimal(str(round(ohlc.get("close", price), 2)))
-                            volume = int(quote_data.get("volume", 100000))
+                # A 200 carrying something other than a success envelope is a failed chunk, not an
+                # empty one. This used to fall through silently: the `if` simply did not match, the
+                # loop moved on, and the poll returned whatever the other chunks had -- so the
+                # consecutive-failure counter reset on the very poll that lost 100 of 150 symbols.
+                # An error body, a rate-limit envelope and a truncated response all land here.
+                if data.get("status") != "success" or "data" not in data:
+                    raise QuoteFeedError(
+                        f"Upstox returned HTTP 200 without a success payload "
+                        f"(status={data.get('status')!r}, keys={sorted(data)[:5]})"
+                    )
+                payload = data["data"]
+                for sym, key in resolved.items():
+                    alt_key = f"NSE_EQ:{sym}"
+                    quote_data = payload.get(key) or payload.get(alt_key) or {}
+                    if quote_data:
+                        ohlc = quote_data.get("ohlc", {})
+                        price = Decimal(str(round(quote_data.get("last_price", 0), 2)))
+                        high = Decimal(str(round(ohlc.get("high", price), 2)))
+                        low = Decimal(str(round(ohlc.get("low", price), 2)))
+                        prev_close = Decimal(str(round(ohlc.get("close", price), 2)))
+                        volume = int(quote_data.get("volume", 100000))
 
-                            depth_info = quote_data.get("depth", {})
-                            buy_depth = depth_info.get("buy", [])
-                            sell_depth = depth_info.get("sell", [])
+                        depth_info = quote_data.get("depth", {})
+                        buy_depth = depth_info.get("buy", [])
+                        sell_depth = depth_info.get("sell", [])
 
-                            spread = Decimal("0.05")
-                            if buy_depth and sell_depth:
-                                best_bid = Decimal(str(buy_depth[0].get("price", price)))
-                                best_ask = Decimal(str(sell_depth[0].get("price", price)))
-                                spread = max(
-                                    Decimal("0.05"), (best_ask - best_bid).quantize(_PAISA)
-                                )
+                        spread = Decimal("0.05")
+                        if buy_depth and sell_depth:
+                            best_bid = Decimal(str(buy_depth[0].get("price", price)))
+                            best_ask = Decimal(str(sell_depth[0].get("price", price)))
+                            spread = max(Decimal("0.05"), (best_ask - best_bid).quantize(_PAISA))
 
-                            results[sym] = {
-                                "price": price,
-                                "high": high,
-                                "low": low,
-                                "previous_close": prev_close,
-                                "volume": volume,
-                                "spread": spread,
-                                "depth": max(100, volume // 5000),
-                                "source": "UPSTOX_LIVE_FEED",
-                            }
+                        results[sym] = {
+                            "price": price,
+                            "high": high,
+                            "low": low,
+                            "previous_close": prev_close,
+                            "volume": volume,
+                            "spread": spread,
+                            "depth": max(100, volume // 5000),
+                            "source": "UPSTOX_LIVE_FEED",
+                        }
         except Exception as err:
             # Counted, and the remaining chunks are still attempted: one bad request should not
             # discard the batches that would have succeeded.
@@ -989,7 +996,22 @@ def run_paper_session(
     step = 0
     consecutive_quote_failures = 0
     session_abort_reason = ""
+
+    # A restart within the same session must reuse the morning's baseline, not take a fresh one
+    # from wherever the book has since fallen to. The anchor lived only in this process, so four
+    # starts in one day measured a 10.2% decline as three separate sub-4% ones and never tripped
+    # the 4% limit. Three sessions were abandoned and restarted on 2026-08-31 alone.
+    session_anchor_equity: Decimal | None = None
     daily_peak_anchored = False
+    if portfolio.daily_anchor_on == session_date and portfolio.daily_anchor_equity > 0:
+        governor.reset_session_peak(portfolio.daily_anchor_equity)
+        session_anchor_equity = portfolio.daily_anchor_equity
+        daily_peak_anchored = True
+        logger.info(
+            "Reusing today's persisted drawdown baseline of Rs %s from an earlier start of this "
+            "session; not re-anchoring.",
+            _paisa_str(portfolio.daily_anchor_equity),
+        )
 
     try:
         while not shutdown_requested:
@@ -1073,6 +1095,7 @@ def run_paper_session(
                     )
                 ).quantize(_PAISA)
                 governor.reset_session_peak(anchor_equity)
+                session_anchor_equity = anchor_equity
                 daily_peak_anchored = True
                 logger.info(
                     "Daily drawdown baseline anchored at Rs %s from the first live mark (was Rs "
@@ -1506,6 +1529,8 @@ def run_paper_session(
         # touched the peak -- and the fallback seed was `ledger_funding()`, a *cost* figure. A book
         # that rose 25% during a hold and then fell 20% from that high recorded no drawdown at all.
         session_peak_equity=max(governor.all_time_peak_equity, reconciliation.total_equity),
+        daily_anchor_on=session_date if session_anchor_equity is not None else None,
+        daily_anchor_equity=session_anchor_equity,
         risk_halted=governor.is_killed,
         halt_reason=(
             governor.kill_events[-1].reason if governor.is_killed and governor.kill_events else ""
