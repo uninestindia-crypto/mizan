@@ -15,6 +15,54 @@ Today's 09:00 session is running on `d6f421e3`. Round four verified that exact p
 nothing found fires on a first session. Editing before the close would swap a verified revision for
 an unverified one for no gain, because none of these four items can bite until session 11.
 
+## 0. NEW, and first in priority — the bar refresh fetches nothing
+
+Found live on 2026-08-31, the first real scheduled-path run. `scripts/ingest_all_market_data.py`
+reported `Hits: 499, New: 0` and finished in **0.3 seconds**:
+
+```
+newest cached bar : 2026-08-27      <- Thursday. Friday 2026-08-28 is missing.
+today             : 2026-08-31
+staleness (days)  : 4   limit: 4
+guard verdict     : PASS            <- `staleness > MAX` is False at exactly the boundary
+```
+
+`process_target` (`scripts/ingest_all_market_data.py:255-258`) returns the cached result when
+`sym in self.results and row_count > 0`. The check is **by symbol, never by date coverage**, so once
+a symbol is in the catalog the ingester will never fetch another day for it. The refresh is a no-op
+for the entire universe, permanently.
+
+This is worse than the four items below, because it silently poisons **every record the pilot
+collects**: the decision is computed from features one trading session stale, and nothing in the
+session report says so. Round four listed the staleness boundary under `NOT PROBED`; it is now
+observed, not hypothetical.
+
+Repair, both halves:
+
+- The cache hit must be date-aware: a symbol whose newest bar is older than `to_date` must be
+  re-fetched for the missing range. Take care not to re-download ten years each morning.
+- `MAX_BAR_STALENESS_DAYS` must count **trading sessions**, not calendar days. The holiday authority
+  at `data/authorities/nse-trading-holidays.json` already makes that computable. A calendar bound
+  cannot distinguish a long weekend from a broken provider, which is exactly the case that passed.
+
+Test: a cache whose newest bar predates `to_date` must cause a fetch; a refresh that returns nothing
+new must fail the guard rather than pass it on a boundary.
+
+## 0b. The Upstox feed was unauthorized for the whole session
+
+`Upstox batch quote fetch failed (HTTP Error 401: Unauthorized)` fired **43 times** on 2026-08-31.
+The session completed only because `fetch_live_nse_quotes` (the Yahoo path) covered every name --
+verified: 97 open positions, **zero** priced at the Rs 1000.00 fallback, so no fabricated price
+entered the book today.
+
+That is luck, not design. With P2-1 still open, a name missing from *both* feeds is priced at a
+hardcoded Rs 1000.00 that is labelled `REAL_NSE_EXCHANGE_FEED` and logged as a real exchange price.
+
+Repair: refuse to price a name whose quote came from neither feed, rather than substituting a
+constant; and surface the quote source per name in the session report so a record's provenance is
+readable afterwards. Also worth a pre-open token check, so a 401 is a refusal at 09:00 rather than a
+silent downgrade to the fallback feed.
+
 ## 1. P1-3 (Blocker) — a refused rebalance is recorded as one that happened
 
 `scripts/run_paper_pilot_session.py:1272` passes `rebalanced=rebalancing` — the **intent**. Round
