@@ -137,3 +137,107 @@ def test_omitting_the_trailing_peak_keeps_the_old_single_argument_behaviour() ->
 
     assert governor.daily_peak_equity == PEAK
     assert governor.all_time_peak_equity == PEAK
+
+
+def test_an_overnight_gap_is_not_a_daily_drawdown() -> None:
+    """The defect, three rounds running, and what `reset_session_peak` exists to prevent.
+
+    A baseline taken from the previous close turns an overnight gap into a "daily" drawdown with
+    zero intraday movement: the 4% rule fires on the first order, that order is the exit, the
+    losing book is retained, and the halt persists so every later session refuses.
+
+    Anchoring to the first live mark is the fix. The trailing peak keeps the real high-water mark,
+    so the 12% rule still sees the gap -- which is correct: it is a genuine loss against capital,
+    just not an intraday one.
+    """
+    previous_close = Decimal("1000000.00")
+    after_a_5pc_gap = Decimal("950000.00")
+
+    stale = PreTradeRiskGovernor(
+        limits=LIMITS, initial_equity=previous_close, all_time_peak_equity=previous_close
+    )
+    assert "DAILY_DRAWDOWN_LIMIT_BREACHED" in (_decide(stale, after_a_5pc_gap).reason or ""), (
+        "seeding from the previous close should reproduce the defect; if it no longer does, this "
+        "test has stopped exercising what it exists to catch"
+    )
+
+    anchored = PreTradeRiskGovernor(
+        limits=LIMITS, initial_equity=previous_close, all_time_peak_equity=previous_close
+    )
+    anchored.reset_session_peak(after_a_5pc_gap)  # the first live mark of the session
+
+    decision = _decide(anchored, after_a_5pc_gap)
+    assert "DAILY" not in (decision.reason or ""), (
+        f"a gap with no intraday movement tripped the daily rule: {decision.reason}"
+    )
+    assert anchored.all_time_peak_equity == previous_close, (
+        "anchoring the daily peak must not lower the trailing peak; the 12% rule still measures "
+        "the gap against the real high-water mark"
+    )
+
+
+def test_the_runner_anchors_the_daily_peak_before_it_places_any_order() -> None:
+    """`reset_session_peak` had no caller anywhere in the repository through three rounds.
+
+    Anchoring must also happen before the order loops, not at the end-of-step snapshot: the exits
+    and entries run first within a step, so a baseline set afterwards is set too late to matter.
+    """
+    import ast
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    ).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "reset_session_peak"
+    ]
+    assert calls, "nothing calls reset_session_peak; the daily baseline is the previous close"
+
+    # What it is anchored *to*. Passing the boot-time figure would satisfy a placement check while
+    # reproducing the defect exactly, because that figure is the previous close.
+    for call in calls:
+        argument = ast.unparse(call.args[0]) if call.args else ""
+        assert "marked_opening_equity" not in argument, (
+            f"the daily peak is anchored to {argument!r}, which is the boot-time mark -- the "
+            "previous close at 09:00, and the defect this call exists to remove."
+        )
+
+    # And that it is reachable. `if False and ...` keeps the call on the same line while disabling
+    # it, which a line-position check alone cannot see.
+    guarding = [
+        ast.unparse(node.test)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.If)
+        and any(
+            isinstance(inner, ast.Call)
+            and isinstance(inner.func, ast.Attribute)
+            and inner.func.attr == "reset_session_peak"
+            for inner in ast.walk(node)
+        )
+    ]
+    assert guarding, "the anchor is not guarded at all; it would re-anchor on every step"
+    assert all("daily_peak_anchored" in test for test in guarding), (
+        f"the anchor's condition is {guarding!r}; it must be gated on the once-per-session flag "
+        "and nothing that disables it"
+    )
+
+    anchor_line = min(call.lineno for call in calls)
+    proposal_lines = [
+        node.lineno
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "submit_proposal"
+    ]
+    assert proposal_lines, "no orders are submitted; this check has gone blind"
+    assert anchor_line < min(proposal_lines), (
+        f"the daily peak is anchored at line {anchor_line}, after the first order at "
+        f"line {min(proposal_lines)}. The exit is the first order of a rebalance, so a late "
+        "baseline is set after the decision it was supposed to govern."
+    )

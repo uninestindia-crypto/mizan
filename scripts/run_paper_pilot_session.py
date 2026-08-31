@@ -962,6 +962,7 @@ def run_paper_session(
     step = 0
     consecutive_quote_failures = 0
     session_abort_reason = ""
+    daily_peak_anchored = False
 
     try:
         while not shutdown_requested:
@@ -1019,6 +1020,39 @@ def run_paper_session(
                 consecutive_quote_failures = 0
                 for sym, q in live_quotes.items():
                     base_market[sym] = q
+
+            # Anchor the daily peak to the first live mark of the session, before any order.
+            #
+            # `marked_opening_equity` is computed from `base_market` as it stood when the process
+            # booted. At 09:00 that is the **previous close**, so an overnight gap became a "daily"
+            # drawdown with zero intraday movement: the 4% rule fired on the first order, which is
+            # the exit, the losing book was retained, and `risk_halted` persisted so every later
+            # session exited 8.
+            #
+            # This is the third round in which the daily rule has measured something other than the
+            # day. `reset_session_peak` exists precisely for this and had no caller anywhere in the
+            # repository through all three; it has one now. Anchoring here rather than at the
+            # snapshot below matters, because the order loops run first within a step.
+            if realtime and not daily_peak_anchored:
+                anchor_equity = (
+                    engine.cash
+                    + sum(
+                        (
+                            Decimal(position.quantity) * base_market[symbol]["price"]
+                            for symbol, position in engine.positions.items()
+                            if symbol in base_market
+                        ),
+                        Decimal("0.00"),
+                    )
+                ).quantize(_PAISA)
+                governor.reset_session_peak(anchor_equity)
+                daily_peak_anchored = True
+                logger.info(
+                    "Daily drawdown baseline anchored at Rs %s from the first live mark (was Rs "
+                    "%s from the previous close)",
+                    _paisa_str(anchor_equity),
+                    _paisa_str(marked_opening_equity),
+                )
 
             # Generate realistic top-of-book and L2 depth from real market quotes
             step_books = {}
@@ -1378,18 +1412,41 @@ def run_paper_session(
     # rebalance -- the model re-ranked and chose to keep what it held. Resetting its clock is
     # correct. So the test is whether the selection was *executed*, which means a rebalance session
     # that reached the point of acting: either something traded, or nothing needed to.
-    executed_rebalance = rebalancing and (
-        reconciliation.total_fills_count > 0
-        or (bool(mizan_picks) and set(engine.positions) == set(mizan_picks))
+    # `total_fills_count > 0` was satisfied by **exits alone**.
+    #
+    # A rebalance where every exit filled and every entry was skipped as unaffordable left the
+    # pilot 100% in cash, having paid a full exit round trip -- and recorded it as a completed
+    # rebalance, resetting the hold clock and stamping `last_rebalance_on`. Going to cash is not a
+    # rule the screen contains, so it cannot be an outcome that counts as executing one.
+    #
+    # A rebalance executes when the book ends up holding the selection, or at least moves toward
+    # it: an entry filled. Exits on their own are half a rebalance, and the half that leaves the
+    # portfolio in a state the strategy never intends.
+    entry_fills = [
+        fill
+        for fill in engine.fills
+        if fill.side is Side.BUY and not fill.fill_id.startswith("carry_")
+    ]
+    holds_the_selection = bool(mizan_picks) and set(engine.positions) == set(mizan_picks)
+    executed_rebalance = (
+        rebalancing and bool(engine.positions) and (bool(entry_fills) or holds_the_selection)
     )
     if rebalancing and not executed_rebalance:
         logger.warning(
-            "Rebalance did NOT execute: %d order(s) submitted, %d filled, %d rejected. The hold "
-            "clock is not reset and the book is carried unchanged.",
+            "Rebalance did NOT execute: %d order(s) submitted, %d filled (%d of them entries), "
+            "%d rejected, %d position(s) held at close. The hold clock is not reset.",
             reconciliation.orders_submitted,
             reconciliation.total_fills_count,
+            len(entry_fills),
             reconciliation.orders_rejected,
+            len(engine.positions),
         )
+        if not engine.positions:
+            logger.error(
+                "The book is FLAT after a rebalance: every exit filled and no entry did. A full "
+                "exit round trip was paid to reach a state the screen never models. Investigate "
+                "before the next rebalance rather than letting it repeat."
+            )
 
     portfolio = state_from_ledger(
         portfolio,

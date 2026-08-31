@@ -774,3 +774,48 @@ def test_quote_lookups_are_pinned_to_the_symbols_the_feed_returned() -> None:
         f"the entry loop has no membership guard before it prices a pick; its skip conditions are "
         f"{guards}. A selected name the feed did not return would be indexed blindly."
     )
+
+
+def test_a_rebalance_that_only_exits_is_not_a_completed_rebalance() -> None:
+    """Every exit filled, every entry skipped as unaffordable, book flat -- and it counted.
+
+    `total_fills_count > 0` was satisfied by the exits alone, so the pilot went 100% to cash, paid a
+    full exit round trip, reset the hold clock and stamped `last_rebalance_on`. Going to cash is not
+    a rule the screen contains; it cannot be the outcome that marks one as executed.
+
+    Located rather than analysed: the flag's definition is read from the source and its three
+    required parts asserted. The behaviour itself is pinned by `test_paper_portfolio.py`, which
+    drives `state_from_ledger` with the flag both ways.
+    """
+    tree = _runner_tree()
+    definition = next(
+        ast.unparse(node.value)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name) and target.id == "executed_rebalance"
+    )
+
+    assert "engine.positions" in definition, (
+        f"`executed_rebalance` is {definition!r}. It does not require the book to hold anything, so "
+        "a rebalance that sold everything and bought nothing still counts as executed."
+    )
+    assert "entry_fills" in definition, (
+        f"`executed_rebalance` is {definition!r}. Exits alone must not satisfy it."
+    )
+    assert "total_fills_count" not in definition, (
+        "the total fill count includes exits, which is exactly what made an all-exits rebalance "
+        "look complete"
+    )
+
+    entry_fills = next(
+        ast.unparse(node.value)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name) and target.id == "entry_fills"
+    )
+    assert "Side.BUY" in entry_fills and "carry_" in entry_fills, (
+        f"`entry_fills` is {entry_fills!r}; it must count today's buys only, not the carry-forward "
+        "replay, which would make every held session look like it entered."
+    )
