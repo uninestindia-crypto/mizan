@@ -59,7 +59,13 @@ PORTFOLIO_SCHEMA_ID = "quantos.paper_portfolio"
 #: Version 2 added ``entry_fee`` per holding and renamed ``sessions_since_rebalance`` to
 #: ``sessions_held``. Version 3 adds the risk halt, so a tripped kill switch survives the session
 #: boundary. Version 4 adds the daily drawdown anchor, so restarting the process during a session
-#: does not re-baseline it. No migration is written: an older file is refused on load.
+#: does not re-baseline it.
+#:
+#: Versions 2 and 3 landed with "no migration is written: no state file has ever been produced".
+#: That was true then and had **stopped being true** by version 4: the session of 2026-08-31 wrote a
+#: real v3 file holding 97 positions, and the next morning's run refused it and exited 2 before
+#: placing an order. `_migrated` upgrades a v3 payload; the claim that no file exists is not one to
+#: carry forward without rechecking it.
 PORTFOLIO_SCHEMA_VERSION = 4
 
 
@@ -276,6 +282,41 @@ class PaperPortfolioState:
         }
 
 
+def _migrated(payload: dict[str, Any], path: Path) -> dict[str, Any]:
+    """Bring an older payload up to the current schema, or refuse.
+
+    Version 4 was added on the reasoning that "no state file has ever been produced", which was true
+    when versions 2 and 3 landed and had **stopped being true** by the time 4 did: the session of
+    2026-08-31 wrote a real v3 file holding 97 positions. The next morning's run refused it and
+    exited 2 before placing an order. Fail-closed was the right instinct and the wrong outcome,
+    because the alternative to migrating was discarding a real book.
+
+    Migration runs after the hash check, so integrity is still verified against exactly what was
+    written; only then are the new fields defaulted.
+    """
+    version = payload.get("schema_version")
+    if payload.get("schema_id") != PORTFOLIO_SCHEMA_ID:
+        raise PaperPortfolioError(
+            f"portfolio state at {path} declares schema {payload.get('schema_id')!r}, "
+            f"expected {PORTFOLIO_SCHEMA_ID!r}"
+        )
+    if version == PORTFOLIO_SCHEMA_VERSION:
+        return payload
+    if version == 3:
+        # v4 added the daily drawdown anchor. A v3 file has none, and no anchor is the correct
+        # starting state: the session takes a fresh one from its first live mark.
+        upgraded = dict(payload)
+        upgraded["daily_anchor_on"] = None
+        upgraded["daily_anchor_equity"] = "0.00"
+        upgraded["schema_version"] = PORTFOLIO_SCHEMA_VERSION
+        return upgraded
+    raise PaperPortfolioError(
+        f"portfolio state at {path} declares "
+        f"{payload.get('schema_id')} v{version}, expected "
+        f"{PORTFOLIO_SCHEMA_ID} v{PORTFOLIO_SCHEMA_VERSION}, and no migration exists from v{version}"
+    )
+
+
 def state_hash_on_disk(path: Path) -> str | None:
     """The hash currently recorded at `path`, or None when there is no file.
 
@@ -352,15 +393,7 @@ def load_portfolio(path: Path) -> PaperPortfolioState | None:
         raise PaperPortfolioError(
             f"portfolio state at {path} does not match its own hash; refusing to resume from it"
         )
-    if (payload.get("schema_id"), payload.get("schema_version")) != (
-        PORTFOLIO_SCHEMA_ID,
-        PORTFOLIO_SCHEMA_VERSION,
-    ):
-        raise PaperPortfolioError(
-            f"portfolio state at {path} declares "
-            f"{payload.get('schema_id')} v{payload.get('schema_version')}, expected "
-            f"{PORTFOLIO_SCHEMA_ID} v{PORTFOLIO_SCHEMA_VERSION}"
-        )
+    payload = _migrated(payload, path)
 
     holdings = {
         entry["symbol"]: PortfolioHolding(

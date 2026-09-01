@@ -625,3 +625,115 @@ def test_a_first_run_writes_against_no_prior_file(tmp_path) -> None:
     # And a second writer that also believed the file was absent is refused.
     with pytest.raises(PaperPortfolioError, match="changed since this session loaded it"):
         save_portfolio(path, _state(cash=Decimal("222222.22")), None)
+
+
+# --------------------------------------------------------------------------------------------
+# Migrating a file written by an older schema.
+#
+# Versions 2 and 3 landed on the reasoning that no state file had ever been produced, so no
+# migration was needed. That reasoning expired on 2026-08-31, when a real session wrote a v3 file
+# holding 97 positions. The next morning's run refused it and exited 2 before placing an order.
+# --------------------------------------------------------------------------------------------
+
+
+def _write_at_version(path, state, version: int, drop=()) -> None:
+    """Write `state` as an older schema would have: older version, newer fields absent."""
+    from quant_system.data.market_data_evidence import canonical_sha256
+
+    save_portfolio(path, state)
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["payload"]["schema_version"] = version
+    for key in drop:
+        document["payload"].pop(key, None)
+    document["state_hash"] = canonical_sha256(document["payload"])
+    path.write_text(json.dumps(document), encoding="utf-8")
+
+
+V3_ABSENT = ("daily_anchor_on", "daily_anchor_equity")
+
+
+def test_a_v3_file_written_before_the_anchor_existed_still_loads(tmp_path) -> None:
+    """The real 2026-09-01 abort: refusing this discards a book, it does not protect one."""
+    path = tmp_path / "portfolio.json"
+    _write_at_version(path, _state(), 3, drop=V3_ABSENT)
+
+    loaded = load_portfolio(path)
+
+    assert loaded is not None
+    assert loaded.cash == Decimal("93570.50")
+    assert loaded.holdings["INFY"].quantity == 98
+    assert loaded.holdings["INFY"].entry_fee == Decimal("339.37")
+    assert loaded.sessions_held == 4
+    assert loaded.total_fees == Decimal("828.12")
+
+
+def test_a_migrated_v3_file_starts_the_session_with_no_anchor(tmp_path) -> None:
+    """No anchor is the correct starting state: the session takes a fresh one from its first mark.
+
+    Inventing one from the persisted figures would baseline the day against a stale equity and
+    measure a drawdown that did not happen today.
+    """
+    path = tmp_path / "portfolio.json"
+    # A non-zero peak, because the peak is the figure a migration would most plausibly reach for,
+    # and `peak_equity` defaults to 0.00 -- with the default this assertion cannot tell the two
+    # apart, and a mutant seeding the anchor from the peak survives it.
+    _write_at_version(path, _state(peak_equity=Decimal("1000000.00")), 3, drop=V3_ABSENT)
+
+    loaded = load_portfolio(path)
+
+    assert loaded is not None
+    assert loaded.daily_anchor_on is None
+    assert loaded.daily_anchor_equity == Decimal("0.00")
+    assert loaded.peak_equity == Decimal("1000000.00")
+
+
+def test_migration_does_not_bypass_the_integrity_check(tmp_path) -> None:
+    """An old version is a reason to upgrade a payload, never a reason to trust one."""
+    path = tmp_path / "portfolio.json"
+    _write_at_version(path, _state(), 3, drop=V3_ABSENT)
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["payload"]["cash"] = "99999999.00"
+    path.write_text(json.dumps(document), encoding="utf-8")
+
+    with pytest.raises(PaperPortfolioError, match="does not match its own hash"):
+        load_portfolio(path)
+
+
+def test_a_version_with_no_migration_is_still_refused(tmp_path) -> None:
+    """v2 renamed a field this loader reads. Defaulting through it would resume a wrong book."""
+    path = tmp_path / "portfolio.json"
+    _write_at_version(path, _state(), 2, drop=V3_ABSENT)
+
+    with pytest.raises(PaperPortfolioError, match="no migration exists from v2"):
+        load_portfolio(path)
+
+
+def test_a_foreign_schema_id_is_refused_whatever_its_version(tmp_path) -> None:
+    from quant_system.data.market_data_evidence import canonical_sha256
+
+    path = tmp_path / "portfolio.json"
+    save_portfolio(path, _state())
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["payload"]["schema_id"] = "somebody.else.ledger"
+    document["state_hash"] = canonical_sha256(document["payload"])
+    path.write_text(json.dumps(document), encoding="utf-8")
+
+    with pytest.raises(PaperPortfolioError, match="declares schema"):
+        load_portfolio(path)
+
+
+def test_a_migrated_book_is_written_back_at_the_current_version(tmp_path) -> None:
+    """Migration must be a one-off: the next morning reads a current file, not an old one again."""
+    path = tmp_path / "portfolio.json"
+    _write_at_version(path, _state(), 3, drop=V3_ABSENT)
+
+    loaded = load_portfolio(path)
+    assert loaded is not None
+    save_portfolio(path, loaded)
+
+    document = json.loads(path.read_text(encoding="utf-8"))
+    assert document["payload"]["schema_version"] == PORTFOLIO_SCHEMA_VERSION
+    assert "daily_anchor_on" in document["payload"]
+    reloaded = load_portfolio(path)
+    assert reloaded is not None
+    assert reloaded.cash == Decimal("93570.50")
