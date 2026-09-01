@@ -171,6 +171,13 @@ def test_the_all_market_summary_still_covers_the_whole_market() -> None:
 
     A 500-entry all-market summary is the corruption, not a smaller universe: this file is the
     record of the full ingest and nothing else may write it.
+
+    **This is a data-integrity check, not a regression guard.** It asserts on a committed artifact
+    and never executes `build_refresh_command`, so it will pass indefinitely while the code that
+    destroys the file is reintroduced, and fail only after the damage is committed. The guard that
+    catches a *code* regression is
+    `test_the_refresh_writes_its_own_summary_not_the_all_market_one` above, which drives the
+    builder. Both are wanted; only one of them can fail early.
     """
     import json as _json
 
@@ -184,4 +191,33 @@ def test_the_all_market_summary_still_covers_the_whole_market() -> None:
     assert len(entries) > 3000, (
         f"the all-market summary holds {len(entries)} entries. It covered 3,359; a scheduled "
         "NIFTY500 refresh writing over it leaves exactly 500."
+    )
+
+
+def test_the_refresh_writes_corporate_actions_into_its_own_cache() -> None:
+    """`--corporate-actions-dir` defaults into the ten-year all-market store.
+
+    Harmless while every NIFTY 500 name already has a file there that parses. A new index
+    constituent absent from the 3,359-name authority would have its three-year corporate-action
+    record written into a store whose `build_corporate_action_authority` hardcodes an effective
+    window of 2016-08-22..2026-08-21 -- a three-year record labelled as covering ten years, which
+    surfaces later as an adjustment that silently fails to apply.
+
+    Driven, like the summary-file guard above, because the previous round's lesson was that a test
+    reading the source text passes against every mutant that keeps the string.
+    """
+    from run_scheduled_paper_session import BARS_CACHE, build_refresh_command
+
+    command = build_refresh_command(date(2026, 9, 1))
+
+    assert "--corporate-actions-dir" in command, (
+        "the refresh does not pass --corporate-actions-dir, so the ingester falls back to the "
+        "ten-year all-market store"
+    )
+    destination = Path(command[command.index("--corporate-actions-dir") + 1])
+    assert BARS_CACHE in destination.parents, (
+        f"corporate actions are written to {destination}, outside the cache this refresh owns"
+    )
+    assert "all-market-20160822-20260821" not in destination.parts, (
+        f"corporate actions are written into the ten-year store at {destination}"
     )

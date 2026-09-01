@@ -1378,3 +1378,78 @@ def test_an_unquoted_holding_contributes_its_cost_to_the_anchor_not_zero() -> No
     assert equity == Decimal("80000.00"), (
         "10,000 cash + 100x600 quoted + 50x200 at cost; a zero contribution would give 70,000"
     )
+
+
+# --------------------------------------------------------------------------------------------
+# Concentration drift is reported, because nothing else can see it. (R6-08)
+# --------------------------------------------------------------------------------------------
+
+
+class _Pos:
+    def __init__(self, quantity: int, average_price: Decimal) -> None:
+        self.quantity = quantity
+        self.average_price = average_price
+
+
+def test_a_book_ninety_percent_in_one_name_is_reported() -> None:
+    """`evaluate_order` is the only enforcement point and it never runs when nothing is submitted.
+
+    A book that still contains the selection submits no orders, so a 90% position against a
+    declared 30% limit passed every check the session made.
+    """
+    runner = _quote_runner()
+    positions = {"BHARTIARTL": _Pos(900, Decimal("1000.00")), "TCS": _Pos(10, Decimal("1000.00"))}
+    marks = {"BHARTIARTL": Decimal("1000.00"), "TCS": Decimal("1000.00")}
+
+    drifted = runner.weight_drift_report(Decimal("90000.00"), positions, marks, 0.30)
+
+    assert [sym for sym, _ in drifted] == ["BHARTIARTL"]
+    assert drifted[0][1] > Decimal("0.85")
+
+
+def test_an_equal_weighted_book_reports_no_drift() -> None:
+    """The report must not fire on the state the strategy actually intends."""
+    runner = _quote_runner()
+    positions = {f"N{i:02d}": _Pos(10, Decimal("1000.00")) for i in range(20)}
+    marks = {sym: Decimal("1000.00") for sym in positions}
+
+    assert runner.weight_drift_report(Decimal("10000.00"), positions, marks, 0.30) == []
+
+
+def test_weights_are_measured_against_equity_including_cash() -> None:
+    """`max_position_weight` divides by total equity; measuring against the invested amount alone
+    would report a fully invested book and a 5%-cash book as equally concentrated."""
+    runner = _quote_runner()
+    positions = {"ACME": _Pos(100, Decimal("1000.00"))}  # Rs 100,000 invested
+    marks = {"ACME": Decimal("1000.00")}
+
+    # Against Rs 400,000 of equity that is 25%, under a 30% limit.
+    assert runner.weight_drift_report(Decimal("300000.00"), positions, marks, 0.30) == []
+    # Against Rs 100,000 of equity it is 100%.
+    assert runner.weight_drift_report(Decimal("0.00"), positions, marks, 0.30) != []
+
+
+def test_an_unquoted_position_is_weighted_at_cost_rather_than_skipped() -> None:
+    runner = _quote_runner()
+    positions = {"BETA": _Pos(100, Decimal("1000.00"))}
+
+    drifted = runner.weight_drift_report(Decimal("0.00"), positions, {}, 0.30)
+
+    assert [sym for sym, _ in drifted] == ["BETA"]
+
+
+def test_an_empty_book_reports_nothing_and_does_not_divide_by_zero() -> None:
+    runner = _quote_runner()
+
+    assert runner.weight_drift_report(Decimal("0.00"), {}, {}, 0.30) == []
+
+
+def test_the_worst_offender_is_reported_first() -> None:
+    """The message truncates to five names, so the order has to be the useful one."""
+    runner = _quote_runner()
+    positions = {"BIG": _Pos(60, Decimal("1000.00")), "MID": _Pos(35, Decimal("1000.00"))}
+    marks = {"BIG": Decimal("1000.00"), "MID": Decimal("1000.00")}
+
+    drifted = runner.weight_drift_report(Decimal("5000.00"), positions, marks, 0.30)
+
+    assert [sym for sym, _ in drifted] == ["BIG", "MID"]

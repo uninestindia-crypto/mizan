@@ -30,6 +30,36 @@ MACRO_INDICES = [
 ]
 
 
+def existing_bar_count(path: Path) -> int:
+    """Bars already cached at `path`, or 0 when there is no readable cache there."""
+    if not path.is_file():
+        return 0
+    try:
+        cached = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return 0
+    candles = cached.get("candles")
+    return len(candles) if isinstance(candles, list) else 0
+
+
+def may_overwrite_macro_cache(new_bar_count: int, cached_bar_count: int) -> bool:
+    """Whether a fetch result may replace what is already on disk.
+
+    The write used to be unconditional after `urlopen` returned. A **200 carrying no candles** --
+    an empty envelope, a rate-limit body, a window the provider decided it had nothing for --
+    therefore replaced a good `macro_INDIAVIX.json` with an empty candle list. `macro_covers` is
+    then permanently false and the scheduled session refuses at exit 5 until someone re-ingests by
+    hand. A 401 was safe, because it raised; a 200 was not, because it did not.
+
+    A first ingest with nothing cached is allowed to write nothing, so an empty result is still
+    recorded rather than looking like a run that never happened. What is refused is **destroying
+    bars that exist** in exchange for none.
+    """
+    if new_bar_count > 0:
+        return True
+    return cached_bar_count == 0
+
+
 def ingest_macro_series(
     output_dir: Path,
     from_date: date = date(2016, 8, 22),
@@ -69,6 +99,15 @@ def ingest_macro_series(
             print(f"[{sym:<10}] {name} -> {len(candles):,} daily bars fetched.", flush=True)
 
             out_file = output_dir / f"macro_{sym}.json"
+            cached_bars = existing_bar_count(out_file)
+            if not may_overwrite_macro_cache(len(candles), cached_bars):
+                print(
+                    f"REFUSED to overwrite {out_file.name}: the provider returned 0 bars and "
+                    f"{cached_bars:,} are already cached. Keeping the cache; this symbol is a "
+                    "failure for this run.",
+                    flush=True,
+                )
+                continue
             summary_item = {
                 "symbol": sym,
                 "instrument_key": key,

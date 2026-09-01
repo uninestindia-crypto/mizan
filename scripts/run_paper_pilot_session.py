@@ -447,6 +447,41 @@ def flat_book_alarm(opened_holding: int, exit_fills: int, exit_fees: Decimal) ->
     )
 
 
+def weight_drift_report(
+    cash: Decimal,
+    positions: Mapping[str, Any],
+    marks: Mapping[str, Decimal],
+    max_position_weight: float,
+) -> list[tuple[str, Decimal]]:
+    """Names whose share of equity exceeds the declared per-name limit, worst first.
+
+    The entry loop acts only when `current_held == 0`, so a name already held is never topped up or
+    trimmed. Weights therefore drift and the drift is **permanent** -- and because a book that
+    still contains the selection submits no orders, `evaluate_order`, the only enforcement point
+    for `max_position_weight`, never runs. A book 90% in one name against a declared 30% limit
+    passes every check the session makes.
+
+    **This reports the drift; it does not correct it.** Correcting it means re-weighting at each
+    rebalance, which is what the measured strategy does and what this runner does not, and that is
+    a change to what the pilot trades rather than to what it observes. It is recorded as a decision
+    for the founder rather than made here, days before the first rebalance.
+    """
+    # Against total equity including cash, because that is the denominator
+    # `PreTradeRiskGovernor.max_position_weight` uses. Measuring against the invested amount alone
+    # would report a fully invested book and a 5%-cash book as equally concentrated.
+    total = equity_marked_at(cash, positions, marks)
+    if total <= 0:
+        return []
+    limit = Decimal(str(max_position_weight))
+    drifted = []
+    for symbol, position in positions.items():
+        value = Decimal(position.quantity) * marks.get(symbol, position.average_price)
+        weight = (value / total).quantize(Decimal("0.0001"))
+        if weight > limit:
+            drifted.append((symbol, weight))
+    return sorted(drifted, key=lambda pair: pair[1], reverse=True)
+
+
 def now_ist() -> datetime:
     return datetime.now(_IST)
 
@@ -1765,6 +1800,23 @@ def run_paper_session(
     selected = set(mizan_picks)
     held = set(engine.positions)
     rebalance_coverage = len(held & selected) / len(selected) if selected else 0.0
+
+    # Concentration, reported rather than corrected. See `weight_drift_report`.
+    drifted = weight_drift_report(
+        engine.cash,
+        engine.positions,
+        {sym: state["price"] for sym, state in base_market.items()},
+        governor.limits.max_position_weight,
+    )
+    if drifted:
+        logger.error(
+            "%d name(s) exceed the declared %.0f%% per-name limit and the entry loop cannot trim "
+            "them: %s. The measured strategy re-weights at every rebalance; this runner only "
+            "enters names it does not already hold, so this drift is permanent.",
+            len(drifted),
+            governor.limits.max_position_weight * 100,
+            ", ".join(f"{sym} {weight * 100:.1f}%" for sym, weight in drifted[:5]),
+        )
     executed_rebalance = rebalancing and rebalance_executed(selected, held)
     if rebalancing and not executed_rebalance:
         logger.warning(

@@ -201,6 +201,17 @@ def build_refresh_command(to_day: date) -> list[str]:
         "8",
         "--summary-file",
         str(BARS_CACHE / "ingestion-summary.json"),
+        # Explicit, for the same reason as the summary file above.
+        #
+        # `--corporate-actions-dir` defaults into the ten-year all-market store, so this refresh
+        # wrote its corporate-action records there. Harmless while every NIFTY 500 name already has
+        # a file that parses -- measured: 0 non-list, 0 unreadable -- but a new index constituent
+        # absent from the 3,359-name authority would have its three-year record written into a
+        # store whose `build_corporate_action_authority` hardcodes an effective window of
+        # 2016-08-22..2026-08-21. A three-year record labelled as covering ten years is a
+        # provenance defect, and it would be discovered by an adjustment that failed to apply.
+        "--corporate-actions-dir",
+        str(BARS_CACHE / "corporate-actions"),
     ]
 
 
