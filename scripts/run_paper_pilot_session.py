@@ -1849,6 +1849,9 @@ def run_paper_session(
 
     portfolio = state_from_ledger(
         portfolio,
+        # A session that raised mid-morning does not spend one of the model's held sessions. The
+        # book below is real and is kept; the session is not counted.
+        session_completed=not session_abort_reason,
         cash=engine.cash,
         positions={sym: (pos.quantity, pos.average_price) for sym, pos in engine.positions.items()},
         session_date=session_date,

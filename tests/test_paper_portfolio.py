@@ -737,3 +737,89 @@ def test_a_migrated_book_is_written_back_at_the_current_version(tmp_path) -> Non
     reloaded = load_portfolio(path)
     assert reloaded is not None
     assert reloaded.cash == Decimal("93570.50")
+
+
+# --------------------------------------------------------------------------------------------
+# An aborted session does not spend one of the model's held sessions. (R6-15, second half)
+# --------------------------------------------------------------------------------------------
+
+
+def test_an_aborted_session_does_not_advance_the_hold_clock() -> None:
+    """A session that raised two minutes in was persisted with the counters advanced.
+
+    Ten such mornings retire a position without a single session having marked the book to a real
+    close.
+    """
+    previous = _state(sessions_held=4, sessions_completed=4)
+
+    after = state_from_ledger(
+        previous,
+        session_completed=False,
+        cash=Decimal("93570.50"),
+        positions={"INFY": (98, Decimal("1542.59"))},
+        session_date=date(2026, 9, 1),
+        session_realized_pnl=Decimal("0.00"),
+        fees_paid=Decimal("0.00"),
+        rebalanced=False,
+    )
+
+    assert after.sessions_held == 4
+    assert after.sessions_completed == 4
+
+
+def test_an_aborted_session_still_keeps_the_ledger_facts() -> None:
+    """Cash, holdings and fees happened. Discarding them would lose real fills."""
+    previous = _state(sessions_held=4, sessions_completed=4)
+
+    after = state_from_ledger(
+        previous,
+        session_completed=False,
+        cash=Decimal("50000.00"),
+        positions={"INFY": (120, Decimal("1500.00"))},
+        session_date=date(2026, 9, 1),
+        session_realized_pnl=Decimal("250.00"),
+        fees_paid=Decimal("31.75"),
+        rebalanced=False,
+    )
+
+    assert after.cash == Decimal("50000.00")
+    assert after.holdings["INFY"].quantity == 120
+    assert after.total_fees == previous.total_fees + Decimal("31.75")
+    assert after.realized_pnl == previous.realized_pnl + Decimal("250.00")
+
+
+def test_a_completed_session_still_advances_the_clock() -> None:
+    """The guard must not stop the clock for every session."""
+    previous = _state(sessions_held=4, sessions_completed=4)
+
+    after = state_from_ledger(
+        previous,
+        cash=Decimal("93570.50"),
+        positions={"INFY": (98, Decimal("1542.59"))},
+        session_date=date(2026, 9, 1),
+        session_realized_pnl=Decimal("0.00"),
+        fees_paid=Decimal("0.00"),
+        rebalanced=False,
+    )
+
+    assert after.sessions_held == 5
+    assert after.sessions_completed == 5
+
+
+def test_an_aborted_rebalance_does_not_stamp_the_rebalance_date() -> None:
+    """`rebalanced` still wins where it is true, so the two flags cannot contradict each other."""
+    previous = _state(sessions_held=9, sessions_completed=9)
+
+    after = state_from_ledger(
+        previous,
+        session_completed=False,
+        cash=Decimal("93570.50"),
+        positions={"INFY": (98, Decimal("1542.59"))},
+        session_date=date(2026, 9, 1),
+        session_realized_pnl=Decimal("0.00"),
+        fees_paid=Decimal("0.00"),
+        rebalanced=False,
+    )
+
+    assert after.last_rebalance_on == previous.last_rebalance_on
+    assert after.sessions_held == 9

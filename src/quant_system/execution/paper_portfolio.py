@@ -436,6 +436,7 @@ def state_from_ledger(
     session_realized_pnl: Decimal,
     fees_paid: Decimal,
     rebalanced: bool,
+    session_completed: bool = True,
     open_entry_fees: dict[str, Decimal] | None = None,
     session_peak_equity: Decimal | None = None,
     risk_halted: bool = False,
@@ -480,7 +481,14 @@ def state_from_ledger(
         realized_pnl=(previous.realized_pnl + session_realized_pnl).quantize(Decimal("0.01")),
         total_fees=(previous.total_fees + fees_paid).quantize(Decimal("0.01")),
         last_rebalance_on=session_date if rebalanced else previous.last_rebalance_on,
-        sessions_completed=previous.sessions_completed + 1,
+        # An aborted session does not count as one.
+        #
+        # A session that raised two minutes in was persisted with the counters advanced, so the
+        # model's ten-session hold was consumed by a day on which the book was never marked to a
+        # real close. Ten such mornings would retire a position without a single session having
+        # observed it. The *ledger* facts below are real and are kept -- cash, holdings and fees
+        # happened -- but the session did not complete, so it does not spend a session.
+        sessions_completed=previous.sessions_completed + (1 if session_completed else 0),
         # Monotonic by construction: a peak that could fall would let a drawdown be forgiven by the
         # decline that caused it.
         peak_equity=max(previous.peak_equity, session_peak_equity or Decimal("0.00")).quantize(
@@ -498,5 +506,7 @@ def state_from_ledger(
         halt_reason=previous.halt_reason or (halt_reason if risk_halted else ""),
         # 1, not 0, on the rebalance session: a position entered today is one session old when the
         # next session opens, and the check happens at the open.
-        sessions_held=1 if rebalanced else previous.sessions_held + 1,
+        sessions_held=(
+            1 if rebalanced else previous.sessions_held + (1 if session_completed else 0)
+        ),
     )
