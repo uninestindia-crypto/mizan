@@ -20,6 +20,7 @@ from decimal import Decimal
 import pytest
 
 from quant_system.core.domain import (
+    Fill,
     Order,
     OrderStatus,
     OrderType,
@@ -1154,3 +1155,97 @@ def test_fill_is_allowed_inside_the_session() -> None:
         asks=[(Decimal("1500.50"), 100)],
     )
     assert sim.simulate_fill(order, book, current_time=midday).is_executable is True
+
+
+# --------------------------------------------------------------------------------------------
+# The risk equity says when it could not mark a position. (R6-06)
+# --------------------------------------------------------------------------------------------
+
+
+def _engine_holding_two_names() -> PaperPilotEngine:
+    engine = PaperPilotEngine(initial_cash=Decimal("100000.00"), session_id="session_risk_equity")
+    t0 = datetime(2026, 9, 1, 3, 45, 0, tzinfo=UTC)
+    engine.carry_in_positions(
+        [
+            Fill(
+                fill_id="carry_acme",
+                order_id="carry_acme",
+                symbol="ACME",
+                side=Side.BUY,
+                quantity=100,
+                price=Decimal("500.00"),
+                timestamp=t0,
+                fee=Decimal("0.00"),
+            ),
+            Fill(
+                fill_id="carry_beta",
+                order_id="carry_beta",
+                symbol="BETA",
+                side=Side.BUY,
+                quantity=50,
+                price=Decimal("200.00"),
+                timestamp=t0,
+                fee=Decimal("0.00"),
+            ),
+        ]
+    )
+    engine.start_session(session_date=date(2026, 9, 1), timestamp=t0)
+    return engine
+
+
+def test_an_unquoted_position_is_valued_at_cost_in_the_risk_equity() -> None:
+    """Refusing to produce the figure would disable the kill switch over one unquoted name."""
+    engine = _engine_holding_two_names()
+    engine._price_cache["ACME"] = Decimal("600.00")
+
+    equity = engine._risk_equity()
+
+    # 100 x 600 quoted, 50 x 200 at cost, plus whatever cash the carried fills left.
+    assert equity == engine.ledger.cash + Decimal("60000.00") + Decimal("10000.00")
+
+
+def test_a_position_valued_at_cost_is_named_in_a_warning(caplog) -> None:
+    """It happened silently, in two duplicated expressions that could drift apart.
+
+    The governor is being told the book is worth more than the market may agree; an operator has to
+    be able to read that afterwards.
+    """
+    import logging
+
+    engine = _engine_holding_two_names()
+    engine._price_cache["ACME"] = Decimal("600.00")
+
+    with caplog.at_level(logging.WARNING):
+        engine._risk_equity()
+
+    assert "BETA" in caplog.text
+    assert "cost basis" in caplog.text
+    assert "ACME" not in caplog.text, "a name that was marked must not be reported as unmarked"
+
+
+def test_the_warning_is_one_line_per_name_not_one_per_order(caplog) -> None:
+    """`_risk_equity` runs on every proposal and every fill step; a per-call line is log spam."""
+    import logging
+
+    engine = _engine_holding_two_names()
+    engine._price_cache["ACME"] = Decimal("600.00")
+
+    with caplog.at_level(logging.WARNING):
+        for _ in range(25):
+            engine._risk_equity()
+
+    assert caplog.text.count("cost basis") == 1
+
+
+def test_a_fully_quoted_book_says_nothing_at_all(caplog) -> None:
+    import logging
+
+    engine = _engine_holding_two_names()
+    engine._price_cache["ACME"] = Decimal("600.00")
+    engine._price_cache["BETA"] = Decimal("250.00")
+
+    with caplog.at_level(logging.WARNING):
+        equity = engine._risk_equity()
+
+    assert equity == engine.ledger.cash + Decimal("60000.00") + Decimal("12500.00")
+    assert "cost basis" not in caplog.text

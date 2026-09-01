@@ -1239,3 +1239,142 @@ def test_a_skipped_symbol_is_reported_to_the_operator(caplog) -> None:
     assert set(results) == {"GOODNAME"}, "the unpriceable name must not be in the marks"
     assert "ZEROPRICE" in caplog.text
     assert "could not be priced" in caplog.text
+
+
+# --------------------------------------------------------------------------------------------
+# The opening fetch gets the same retry budget the loop has. (R6-19)
+# --------------------------------------------------------------------------------------------
+
+
+def test_a_transient_failure_at_startup_does_not_lose_the_day() -> None:
+    """One chunk of five timing out during the handshake used to end the session before it began.
+
+    That is the failure that actually ended 2026-08-31. A transient failure at 09:00 is not more
+    meaningful than the same failure at 09:05, where the loop already tolerates five of them.
+    """
+    runner = _quote_runner()
+    slept: list[float] = []
+    calls = {"n": 0}
+
+    def flaky(_universe, access_token=None):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise runner.QuoteFeedError("_ssl.c:1015: The handshake operation timed out")
+        return {"ACME": {"price": Decimal("1010.25")}}
+
+    result = runner.fetch_quotes_with_retry(
+        ["ACME"], access_token="t", fetch=flaky, sleep=slept.append
+    )
+
+    assert result == {"ACME": {"price": Decimal("1010.25")}}
+    assert calls["n"] == 3, "it must actually retry, not swallow the failure"
+    assert slept == [5.0, 5.0], "it must wait between attempts rather than hammering the provider"
+
+
+def test_a_feed_that_is_genuinely_down_still_ends_the_session() -> None:
+    """The budget is a tolerance for a blip, not permission to open a session with no marks."""
+    runner = _quote_runner()
+
+    def always_fails(_universe, access_token=None):
+        raise runner.QuoteFeedError("connection refused")
+
+    with pytest.raises(runner.QuoteFeedError, match="failed 5 times in a row"):
+        runner.fetch_quotes_with_retry(
+            ["ACME"], access_token="t", fetch=always_fails, sleep=lambda _s: None
+        )
+
+
+def test_the_startup_budget_is_the_same_number_as_the_loop_budget() -> None:
+    """Two different tolerances for the same failure would be a decision nobody made."""
+    runner = _quote_runner()
+    calls = {"n": 0}
+
+    def counted(_universe, access_token=None):
+        calls["n"] += 1
+        raise runner.QuoteFeedError("down")
+
+    with pytest.raises(runner.QuoteFeedError):
+        runner.fetch_quotes_with_retry(
+            ["ACME"], access_token="t", fetch=counted, sleep=lambda _s: None
+        )
+
+    assert calls["n"] == runner.MAX_CONSECUTIVE_QUOTE_FAILURES
+
+
+def test_a_first_attempt_that_works_does_not_wait_at_all() -> None:
+    """The common case must not pay for the rare one: 09:00 is the tightest moment of the day."""
+    runner = _quote_runner()
+    slept: list[float] = []
+
+    runner.fetch_quotes_with_retry(
+        ["ACME"],
+        access_token="t",
+        fetch=lambda _u, access_token=None: {"ACME": {"price": Decimal("1.00")}},
+        sleep=slept.append,
+    )
+
+    assert slept == []
+
+
+# --------------------------------------------------------------------------------------------
+# The flat-book alarm describes what happened, not a loss that did not occur. (R6-09, R6-11)
+# --------------------------------------------------------------------------------------------
+
+
+def test_a_session_that_opened_flat_is_not_told_it_paid_for_exits() -> None:
+    """The one message this used to print stated a financial event that had not occurred.
+
+    On a first session that started flat and could not enter, no exit filled and nothing was paid.
+    On an unattended schedule this is the operator's alarm text.
+    """
+    runner = _quote_runner()
+
+    message = runner.flat_book_alarm(opened_holding=0, exit_fills=0, exit_fees=Decimal("0.00"))
+
+    assert "nothing was paid" in message
+    assert "round trip" not in message
+    assert "exit costs" not in message
+
+
+def test_a_session_that_sold_everything_is_told_what_it_paid() -> None:
+    runner = _quote_runner()
+
+    message = runner.flat_book_alarm(opened_holding=97, exit_fills=97, exit_fees=Decimal("1115.75"))
+
+    assert "97 exit(s) filled" in message
+    assert "1115.75" in message
+
+
+def test_a_book_that_vanished_without_selling_is_a_reconciliation_question() -> None:
+    """Held at the open, flat at the close, and no exit filled: the fills do not explain it."""
+    runner = _quote_runner()
+
+    message = runner.flat_book_alarm(opened_holding=97, exit_fills=0, exit_fees=Decimal("0.00"))
+
+    assert "reconciliation" in message
+    assert "was paid" not in message
+
+
+def test_an_unquoted_holding_contributes_its_cost_to_the_anchor_not_zero() -> None:
+    """R6-11: an unquoted holding contributing zero anchors the day's drawdown baseline too low.
+
+    A baseline below true equity means the first real mark looks like a gain, and a genuine decline
+    from the true opening value is measured from the wrong place entirely.
+    """
+    runner = _quote_runner()
+
+    class _Position:
+        def __init__(self, quantity: int, average_price: Decimal) -> None:
+            self.quantity = quantity
+            self.average_price = average_price
+
+    positions = {
+        "ACME": _Position(100, Decimal("500.00")),
+        "BETA": _Position(50, Decimal("200.00")),  # no quote for this one
+    }
+
+    equity = runner.equity_marked_at(Decimal("10000.00"), positions, {"ACME": Decimal("600.00")})
+
+    assert equity == Decimal("80000.00"), (
+        "10,000 cash + 100x600 quoted + 50x200 at cost; a zero contribution would give 70,000"
+    )

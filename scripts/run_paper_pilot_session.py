@@ -20,7 +20,7 @@ import os
 import signal
 import sys
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -368,6 +368,83 @@ def _best_depth_price(levels: object) -> Decimal | None:
             if price is not None:
                 return price
     return None
+
+
+def fetch_quotes_with_retry(
+    universe: list[str],
+    access_token: str | None,
+    attempts: int = MAX_CONSECUTIVE_QUOTE_FAILURES,
+    delay_seconds: float = 5.0,
+    fetch: Callable[..., dict[str, Any]] | None = None,
+    sleep: Callable[[float], None] = time.sleep,
+) -> dict[str, Any]:
+    """The opening quote fetch, with the retry budget the trading loop already had.
+
+    The loop tolerates `MAX_CONSECUTIVE_QUOTE_FAILURES` consecutive failed polls before ending the
+    session. Startup tolerated none: one chunk of five timing out during the handshake raised, and
+    the whole trading day was lost before a single decision was taken. A handshake timeout is
+    exactly the failure that ended the 2026-08-31 session.
+
+    A transient failure at 09:00 is not more meaningful than the same failure at 09:05. The budget
+    is the same on both sides of the loop boundary.
+
+    `sleep` is injected so a test can drive the retry without spending real seconds; sleeping in a
+    test is a flakiness risk this repository counts as a craft defect.
+    """
+    fetch = fetch or fetch_upstox_live_quotes
+    last_error: QuoteFeedError | None = None
+    for attempt in range(1, max(1, attempts) + 1):
+        try:
+            return fetch(universe, access_token=access_token)
+        except QuoteFeedError as err:
+            last_error = err
+            if attempt >= max(1, attempts):
+                break
+            logger.warning(
+                "Opening quote fetch failed on attempt %d of %d (%s); retrying in %.1fs.",
+                attempt,
+                attempts,
+                err,
+                delay_seconds,
+            )
+            sleep(delay_seconds)
+
+    assert last_error is not None  # the loop either returned or recorded an error
+    raise QuoteFeedError(
+        f"the opening quote fetch failed {attempts} times in a row (last: {last_error}). "
+        "Refusing to open a session with no marks."
+    ) from last_error
+
+
+def flat_book_alarm(opened_holding: int, exit_fills: int, exit_fees: Decimal) -> str:
+    """What to tell the operator about a rebalance that ended with an empty book.
+
+    The one message this used to print stated a financial event: *"every exit filled and no entry
+    did. A full exit round trip was paid."* On a first session that started flat and could not
+    enter, no exit filled and nothing was paid. On an unattended schedule this is the operator's
+    alarm text, and it described a loss that had not occurred.
+
+    Both endings are worth an alarm. They are not the same alarm, and the difference is whether
+    money left the account.
+    """
+    if opened_holding and exit_fills:
+        return (
+            f"The book is FLAT after a rebalance: {exit_fills} exit(s) filled and no entry did. "
+            f"Rs {exit_fees} of exit costs was paid to reach a state the screen never models. "
+            "Investigate before the next rebalance rather than letting it repeat."
+        )
+    if opened_holding:
+        return (
+            "The book is FLAT after a rebalance, and it did not get there by selling: the session "
+            f"opened holding {opened_holding} name(s) and no exit filled. The positions are gone "
+            "from the ledger without a fill that removed them, which is a reconciliation question "
+            "before it is a trading one."
+        )
+    return (
+        "The book is FLAT after a rebalance: the session opened flat and no entry filled, so "
+        "nothing was bought and nothing was paid. The selection could not be executed at all -- "
+        "check sizing, cash buffer and rejected orders rather than looking for a loss."
+    )
 
 
 def now_ist() -> datetime:
@@ -797,7 +874,7 @@ def run_paper_session(
 
     # 1. Fetch initial real live quotes from Upstox / NSE
     logger.info("Fetching real-time market data from Upstox / NSE exchange feed...")
-    base_market = fetch_upstox_live_quotes(universe, access_token=upstox_token)
+    base_market = fetch_quotes_with_retry(universe, access_token=upstox_token)
     if not base_market:
         raise QuoteFeedError(
             "the exchange feed returned nothing. What stood here was a hardcoded five-name "
@@ -1171,6 +1248,7 @@ def run_paper_session(
     # the 4% limit. Three sessions were abandoned and restarted on 2026-08-31 alone.
     session_anchor_equity: Decimal | None = None
     daily_peak_anchored = False
+    last_reported_coverage: int | None = None
     persisted_anchor = anchor_to_reuse(portfolio, session_date)
     if persisted_anchor is not None:
         governor.reset_session_peak(persisted_anchor)
@@ -1329,7 +1407,11 @@ def run_paper_session(
             # left every consumer that assumed full coverage exposed, and fixing the *cause* of that
             # day's missing symbol left the crash itself in place.
             priced = [sym for sym in universe if sym in base_market]
-            if len(priced) < len(universe):
+            # Logged when the coverage *changes*, not every interval. At a 30-second cadence this
+            # printed on the order of 780 identical lines a session; the 2026-08-31 log is 246 KB,
+            # and a log an operator will not read is not an operational control.
+            if len(priced) < len(universe) and len(priced) != last_reported_coverage:
+                last_reported_coverage = len(priced)
                 logger.info(
                     "Quotes cover %d of %d names this step; the rest are omitted from the "
                     "intraday panels, not priced.",
@@ -1388,10 +1470,19 @@ def run_paper_session(
                         "APPROVED" if decision.approved else "REJECTED",
                     )
 
-            # 5f. On a rebalance, enter the selection. Exits above run first, in the same step, so
-            # the proceeds are available to fund these buys: sizing every entry against pre-exit
-            # cash meant a fully invested book could only spend its ~5% buffer, and the tail of the
-            # ranking went unfilled for a reason that had nothing to do with the model.
+            # 5f. On a rebalance, enter the selection.
+            #
+            # The exits above are *staged* first, not filled first. `submit_proposal` only stages;
+            # fills happen in the next step's `process_quote`, so the proceeds of an exit are not
+            # in `engine.cash` when the entries below are sized. The comment that stood here said
+            # they were, which is a statement of mechanism that the code does not implement --
+            # a reader sizing a change against it would be reasoning from a fiction.
+            #
+            # It is self-correcting over later steps: the exits fill, cash rises, and the entries
+            # that could not be sized this step are sized in a later one. The practical effect is
+            # that a fully invested book entering a rebalance can only spend its cash buffer on the
+            # first step, and the tail of the ranking fills over subsequent steps rather than at
+            # once.
             #
             # Explicitly gated on `rebalancing`. It used to rely on `top_picks` happening to be
             # empty on a hold session -- the invariant "act only on a rebalance session" enforced
@@ -1690,10 +1781,18 @@ def run_paper_session(
             reconciliation.orders_rejected,
         )
         if not engine.positions:
+            exit_fills = [
+                fill
+                for fill in engine.fills
+                if fill.side is Side.SELL and not fill.fill_id.startswith("carry_")
+            ]
             logger.error(
-                "The book is FLAT after a rebalance: every exit filled and no entry did. A full "
-                "exit round trip was paid to reach a state the screen never models. Investigate "
-                "before the next rebalance rather than letting it repeat."
+                "%s",
+                flat_book_alarm(
+                    opened_holding=len(engine.carried_positions),
+                    exit_fills=len(exit_fills),
+                    exit_fees=sum((f.fee for f in exit_fills), Decimal("0.00")),
+                ),
             )
 
     portfolio = state_from_ledger(

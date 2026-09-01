@@ -10,6 +10,7 @@ Enforces financial-model-craft and nse-execution-craft standards.
 
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
@@ -41,6 +42,9 @@ from quant_system.risk.checks import RiskDecision, RiskLimits
 from quant_system.risk.governor import PreTradeRiskGovernor
 
 _PAISA = Decimal("0.01")
+
+
+logger = logging.getLogger(__name__)
 
 
 class SessionStatus(StrEnum):
@@ -189,10 +193,46 @@ class PaperPilotEngine:
         self._last_quote_timestamp: dict[str, datetime] = {}
         self._audit_log: list[PaperAuditRecord] = []
         self._event_counter: int = 0
+        # Names already named in a cost-basis warning, so the notice is one line per name per
+        # session rather than one per order evaluated.
+        self._reported_unmarked: set[str] = set()
 
     @property
     def session_status(self) -> SessionStatus:
         return self._session_status
+
+    def _risk_equity(self) -> Decimal:
+        """Equity for the risk governor, valuing an unquoted position at its own cost.
+
+        `Ledger.get_portfolio_snapshot` refuses this substitution outright, three files away in
+        this same code base, with a comment explaining why: a mark that is not a market price is
+        not a mark. This is the one place the substitution is nonetheless correct, because the
+        alternative is worse -- the risk governor divides by this figure, and refusing to produce
+        it would disable the kill switch over a single unquoted carried name.
+
+        What was wrong was that it happened **silently**, in two duplicated expressions that could
+        drift apart. It is one expression now, and it says which positions it could not mark. The
+        governor is being told the book is worth more than the market may agree it is worth, and
+        that is a thing an operator has to be able to read afterwards.
+        """
+        unmarked = sorted(s for s in self.ledger.positions if s not in self._price_cache)
+        newly_unmarked = [s for s in unmarked if s not in self._reported_unmarked]
+        if newly_unmarked:
+            self._reported_unmarked.update(newly_unmarked)
+            logger.warning(
+                "Risk equity values %d position(s) at cost basis, having no quote for them: %s. "
+                "The drawdown limits are measured against a figure that is not fully marked to "
+                "market.",
+                len(newly_unmarked),
+                ", ".join(newly_unmarked),
+            )
+        return self.ledger.cash + sum(
+            (
+                p.current_market_value(self._price_cache.get(p.symbol, p.average_price))
+                for p in self.ledger.positions.values()
+            ),
+            Decimal("0.00"),
+        )
 
     @property
     def cash(self) -> Decimal:
@@ -408,10 +448,7 @@ class PaperPilotEngine:
         )
 
         # 4. Pre-trade Risk Evaluation
-        current_equity = self.ledger.cash + sum(
-            p.current_market_value(self._price_cache.get(p.symbol, p.average_price))
-            for p in self.ledger.positions.values()
-        )
+        current_equity = self._risk_equity()
 
         cached_price = self._price_cache.get(proposal.symbol)
         quote_for_risk: Quote | None = None
@@ -585,11 +622,7 @@ class PaperPilotEngine:
 
                 deferred_decision = self.risk_governor.evaluate_order(
                     order=order,
-                    current_equity=self.ledger.cash
-                    + sum(
-                        p.current_market_value(self._price_cache.get(p.symbol, p.average_price))
-                        for p in self.ledger.positions.values()
-                    ),
+                    current_equity=self._risk_equity(),
                     current_cash=self.ledger.cash,
                     positions=self.ledger.positions,
                     current_quote=Quote(
