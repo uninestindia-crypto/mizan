@@ -61,16 +61,22 @@ def test_an_unreadable_cache_counts_as_zero_so_a_fetch_can_repair_it(tmp_path, c
     assert may_overwrite_macro_cache(new_bar_count=0, cached_bar_count=existing_bar_count(path))
 
 
-def test_the_real_cached_indices_would_be_protected_today() -> None:
+#: The four macro indices are committed to this repository, so this is an assertion about real
+#: files rather than an environment-dependent one. A missing file is a failure, not a skip: these
+#: are exactly the files R6-16 destroys, and a test that quietly skips when they are absent would
+#: be silent in the one situation it exists for.
+_COMMITTED_MACRO_INDICES = ("macro_INDIAVIX", "macro_NIFTY50", "macro_NIFTYBANK", "macro_NIFTYIT")
+
+
+@pytest.mark.parametrize("name", _COMMITTED_MACRO_INDICES)
+def test_the_real_cached_indices_would_be_protected_today(name: str) -> None:
     """Against the files actually on disk, not a fixture."""
     cache_dir = (
         Path(__file__).resolve().parent.parent
         / "data/evidence/market-cache/macro-refresh-20230828-20260827"
     )
-    if not cache_dir.is_dir():  # pragma: no cover - the cache is not committed everywhere
-        pytest.skip("macro cache not present in this checkout")
 
-    for name in ("macro_INDIAVIX", "macro_NIFTY50", "macro_NIFTYBANK", "macro_NIFTYIT"):
-        cached = existing_bar_count(cache_dir / f"{name}.json")
-        assert cached > 0, f"{name} has no cached bars"
-        assert may_overwrite_macro_cache(0, cached) is False, f"{name} is not protected"
+    cached = existing_bar_count(cache_dir / f"{name}.json")
+
+    assert cached > 0, f"{name} has no cached bars at {cache_dir}"
+    assert may_overwrite_macro_cache(0, cached) is False, f"{name} is not protected"

@@ -39,6 +39,7 @@ def _price_path(n: int, seed: int) -> list[float]:
 
 
 @pytest.mark.parametrize("seed", [7, 11, 13, 17, 19])
+# test-allow: loop-in-test - a scan for the worst case over ~294 decision bars, not independent cases; the assertion is on the maximum and is total over the scan, and the seeds that are the real cases are parametrized
 def test_the_canonical_window_agrees_with_a_full_ten_year_prefix(seed: int) -> None:
     """2,460 bars is the ten-year series the store builder actually feeds."""
     closes = _price_path(2460, seed)
@@ -74,6 +75,7 @@ def test_a_history_exactly_the_window_is_bit_identical() -> None:
     ("window", "detectable"),
     [(51, True), (100, True), (200, True), (MIZAN_CANONICAL_WINDOW_BARS, False)],
 )
+# test-allow: loop-in-test - same scan-for-the-worst-case shape; the window sizes that are the real cases are parametrized above and the assertion is on the maximum over the scan
 def test_the_measurement_can_detect_a_divergence_it_does_not_find_at_400(
     window: int, detectable: bool
 ) -> None:
