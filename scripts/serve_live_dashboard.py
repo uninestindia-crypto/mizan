@@ -28,8 +28,21 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STATUS_FILE = PROJECT_ROOT / "logs" / "paper_runs" / "live_paper_status.json"
 PID_FILE = PROJECT_ROOT / "logs" / "paper_runs" / "runner.pid"
 
-env_file = PROJECT_ROOT / ".env"
-if env_file.exists():
+
+def load_env_file() -> None:
+    """Read `.env` into the environment. Called from `main`, never at import.
+
+    This ran at module scope. Importing the module -- which a test, a tool, or an editor's
+    autocomplete will do -- therefore wrote the founder's real Upstox access token into
+    `os.environ` as a side effect of the import statement. Seven tests asserting what happens
+    *without* a token failed the moment anything imported this file, because by then there was one.
+
+    A credential belongs in the environment of the process that was launched to use it, not in the
+    environment of anything that happens to import the module that reads it.
+    """
+    env_file = PROJECT_ROOT / ".env"
+    if not env_file.exists():
+        return
     for line in env_file.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if "=" in line and not line.startswith("#"):
@@ -38,6 +51,7 @@ if env_file.exists():
             v = v.strip().strip("'\"")
             if k and k not in os.environ:
                 os.environ[k] = v
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("quant_system.dashboard")
@@ -184,11 +198,34 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         return
 
 
-def serve_dashboard(port: int = 8080, host: str = "127.0.0.1") -> None:
-    socketserver.TCPServer.allow_reuse_address = True
+class ThreadedDashboardServer(socketserver.ThreadingTCPServer):
+    """One thread per connection, because the dashboard is a page a browser keeps open.
+
+    `socketserver.TCPServer` handles exactly one request at a time. A browser holding a connection
+    open -- a keep-alive, a tab left on the page, a request that never completes -- blocks every
+    other request behind it, so the port stays open and listening while nothing is answered. That
+    is what happened on 2026-09-01: the process was alive, `Get-NetTCPConnection` showed it
+    listening, and the page was dead.
+    """
+
+    daemon_threads = True  # a stuck client must not keep the process alive at shutdown
+    allow_reuse_address = True
+
+
+def build_dashboard_server(port: int = 8080, host: str = "127.0.0.1") -> ThreadedDashboardServer:
+    """The bound server, not yet serving.
+
+    Separate from `serve_dashboard` so a test can bind port 0, learn the port the OS chose, and
+    drive real concurrent requests against it. `serve_forever` blocks, so a test cannot otherwise
+    observe whether a stalled client blocks anyone else.
+    """
     # Loopback, not 0.0.0.0. This page serves an Upstox access-token field and Start/Halt
     # controls; bound to all interfaces those were reachable by anyone on the network.
-    with socketserver.TCPServer((host, port), DashboardHandler) as httpd:
+    return ThreadedDashboardServer((host, port), DashboardHandler)
+
+
+def serve_dashboard(port: int = 8080, host: str = "127.0.0.1") -> None:
+    with build_dashboard_server(port=port, host=host) as httpd:
         logger.info("=" * 75)
         logger.info("QuantOS Live Trading Dashboard running at http://localhost:%d", port)
         logger.info("Serving live P&L and market state from %s", STATUS_FILE)
@@ -209,6 +246,7 @@ def main() -> int:
         "session controls, so binding it to 0.0.0.0 hands those to the whole network.",
     )
     args = parser.parse_args()
+    load_env_file()
     serve_dashboard(port=args.port, host=args.host)
     return 0
 
