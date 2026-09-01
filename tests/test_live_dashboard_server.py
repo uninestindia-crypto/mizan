@@ -151,3 +151,81 @@ def test_the_env_file_never_overwrites_a_value_already_set(tmp_path, monkeypatch
     serve_live_dashboard.load_env_file()
 
     assert os.environ["QUANTOS_TEST_ONLY_KEY"] == "from-the-caller"
+
+
+_SECRET = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.not-a-real-token.signature"
+
+
+def test_the_token_never_reaches_the_child_command_line(monkeypatch) -> None:
+    """argv is readable from the process table by any local process, all session long."""
+    from scripts.serve_live_dashboard import build_pilot_launch
+
+    monkeypatch.delenv("UPSTOX_ACCESS_TOKEN", raising=False)
+    cmd, _ = build_pilot_launch({"upstox_token": _SECRET})
+
+    assert _SECRET not in " ".join(cmd)
+    assert "--upstox-token" not in cmd
+
+
+def test_the_log_line_the_dashboard_writes_carries_no_token(monkeypatch) -> None:
+    """The whole bearer token was written to stderr, and to a file under redirection."""
+    from scripts.serve_live_dashboard import build_pilot_launch
+
+    monkeypatch.delenv("UPSTOX_ACCESS_TOKEN", raising=False)
+    cmd, _ = build_pilot_launch({"upstox_token": _SECRET})
+
+    # Exactly what `logger.info("Starting background paper pilot: %s", " ".join(cmd))` emits.
+    logged = "Starting background paper pilot: {}".format(" ".join(cmd))
+    assert _SECRET not in logged
+
+
+def test_the_token_still_reaches_the_child_that_needs_it(monkeypatch) -> None:
+    """Removing the leak must not remove the credential: the session cannot run without it."""
+    from scripts.serve_live_dashboard import build_pilot_launch
+
+    monkeypatch.delenv("UPSTOX_ACCESS_TOKEN", raising=False)
+    _, child_env = build_pilot_launch({"upstox_token": _SECRET})
+
+    assert child_env["UPSTOX_ACCESS_TOKEN"] == _SECRET
+
+
+def test_an_operator_supplied_token_outranks_an_inherited_analytics_one(monkeypatch) -> None:
+    """`--upstox-token` meant explicit-wins. Passing through the environment must keep that."""
+    from scripts.serve_live_dashboard import build_pilot_launch
+
+    monkeypatch.setenv("UPSTOX_ANALYTICS_TOKEN", "the-inherited-one")
+    _, child_env = build_pilot_launch({"upstox_token": _SECRET})
+
+    assert child_env["UPSTOX_ACCESS_TOKEN"] == _SECRET
+    assert "UPSTOX_ANALYTICS_TOKEN" not in child_env
+
+
+def test_an_inherited_token_survives_when_the_operator_supplies_none(monkeypatch) -> None:
+    """The scheduled path supplies no token and must keep working off the environment."""
+    from scripts.serve_live_dashboard import build_pilot_launch
+
+    monkeypatch.setenv("UPSTOX_ANALYTICS_TOKEN", "the-inherited-one")
+    monkeypatch.delenv("UPSTOX_ACCESS_TOKEN", raising=False)
+    _, child_env = build_pilot_launch({})
+
+    assert child_env["UPSTOX_ANALYTICS_TOKEN"] == "the-inherited-one"
+
+
+def test_the_session_settings_the_operator_chose_do_reach_the_child(monkeypatch) -> None:
+    """A guard against fixing the leak by dropping the arguments."""
+    from scripts.serve_live_dashboard import build_pilot_launch
+
+    monkeypatch.delenv("UPSTOX_ACCESS_TOKEN", raising=False)
+    cmd, _ = build_pilot_launch(
+        {
+            "capital": 250000,
+            "slippage_bps": 7.5,
+            "end_time_ist": "14:45:00",
+            "universe_name": "NIFTY50",
+        }
+    )
+
+    assert cmd[cmd.index("--capital") + 1] == "250000"
+    assert cmd[cmd.index("--slippage-bps") + 1] == "7.5"
+    assert cmd[cmd.index("--end-time-ist") + 1] == "14:45:00"
+    assert cmd[cmd.index("--universe-name") + 1] == "NIFTY50"

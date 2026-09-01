@@ -22,7 +22,7 @@ import sys
 import time
 from collections.abc import Mapping
 from datetime import date, datetime, timedelta, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -291,6 +291,85 @@ def entry_quantity(
     return int(target / price)
 
 
+def _positive_price(value: object) -> Decimal | None:
+    """`value` as a paisa-quantised price, or None when it is not a usable one.
+
+    Rejects None, non-numeric types, zero, negatives and non-finite floats. A quote field is
+    provider data: it is whatever arrived, not whatever the type hints say should have.
+    """
+    if isinstance(value, bool) or not isinstance(value, int | float | str | Decimal):
+        return None
+    try:
+        price = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+    if not price.is_finite() or price <= 0:
+        return None
+    return price.quantize(_PAISA)
+
+
+def parse_quote_payload(quote_data: Mapping[str, Any]) -> dict[str, Any] | None:
+    """One symbol's market data, or None when the payload cannot yield a usable price.
+
+    `last_price` used to be read as `.get("last_price", 0)` and stamped `UPSTOX_LIVE_FEED`, so a
+    quote carrying `last_price: 0` -- or carrying none at all -- became a **real exchange price of
+    Rs 0.00**. For a held name that silently removes its whole value from the marked equity, the
+    risk baseline and the session report at once.
+
+    Depth prices are validated for the same reason from the other direction: a negative bid reaches
+    `OrderBookSnapshot.from_levels`, which correctly refuses it with `ValueError: Depth price must
+    be positive` -- and that exception aborts the entire session over one bad name in five hundred.
+    A level that cannot be priced is dropped here rather than allowed to end the day.
+
+    Returning None puts the symbol in exactly the position of one the feed never returned, which is
+    a case every caller already handles.
+    """
+    if not quote_data:
+        return None
+    price = _positive_price(quote_data.get("last_price"))
+    if price is None:
+        return None
+
+    ohlc = quote_data.get("ohlc") or {}
+    high = _positive_price(ohlc.get("high")) or price
+    low = _positive_price(ohlc.get("low")) or price
+    prev_close = _positive_price(ohlc.get("close")) or price
+
+    raw_volume = quote_data.get("volume")
+    volume = raw_volume if isinstance(raw_volume, int) and not isinstance(raw_volume, bool) else 0
+    volume = max(0, volume)
+
+    depth_info = quote_data.get("depth") or {}
+    best_bid = _best_depth_price(depth_info.get("buy"))
+    best_ask = _best_depth_price(depth_info.get("sell"))
+    spread = Decimal("0.05")
+    if best_bid is not None and best_ask is not None and best_ask > best_bid:
+        spread = max(Decimal("0.05"), (best_ask - best_bid).quantize(_PAISA))
+
+    return {
+        "price": price,
+        "high": high,
+        "low": low,
+        "previous_close": prev_close,
+        "volume": volume,
+        "spread": spread,
+        "depth": max(100, volume // 5000),
+        "source": "UPSTOX_LIVE_FEED",
+    }
+
+
+def _best_depth_price(levels: object) -> Decimal | None:
+    """The best usable price in a depth ladder, skipping levels that cannot be priced."""
+    if not isinstance(levels, list):
+        return None
+    for level in levels:
+        if isinstance(level, Mapping):
+            price = _positive_price(level.get("price"))
+            if price is not None:
+                return price
+    return None
+
+
 def now_ist() -> datetime:
     return datetime.now(_IST)
 
@@ -354,6 +433,7 @@ def fetch_upstox_live_quotes(
 
     results = {}
     failed_chunks: list[tuple[int, str]] = []
+    unpriced: list[str] = []
     chunk_size = 100
     chunk_count = (len(symbols) + chunk_size - 1) // chunk_size
     for i in range(0, len(symbols), chunk_size):
@@ -396,34 +476,14 @@ def fetch_upstox_live_quotes(
                 for sym, key in resolved.items():
                     alt_key = f"NSE_EQ:{sym}"
                     quote_data = payload.get(key) or payload.get(alt_key) or {}
-                    if quote_data:
-                        ohlc = quote_data.get("ohlc", {})
-                        price = Decimal(str(round(quote_data.get("last_price", 0), 2)))
-                        high = Decimal(str(round(ohlc.get("high", price), 2)))
-                        low = Decimal(str(round(ohlc.get("low", price), 2)))
-                        prev_close = Decimal(str(round(ohlc.get("close", price), 2)))
-                        volume = int(quote_data.get("volume", 100000))
-
-                        depth_info = quote_data.get("depth", {})
-                        buy_depth = depth_info.get("buy", [])
-                        sell_depth = depth_info.get("sell", [])
-
-                        spread = Decimal("0.05")
-                        if buy_depth and sell_depth:
-                            best_bid = Decimal(str(buy_depth[0].get("price", price)))
-                            best_ask = Decimal(str(sell_depth[0].get("price", price)))
-                            spread = max(Decimal("0.05"), (best_ask - best_bid).quantize(_PAISA))
-
-                        results[sym] = {
-                            "price": price,
-                            "high": high,
-                            "low": low,
-                            "previous_close": prev_close,
-                            "volume": volume,
-                            "spread": spread,
-                            "depth": max(100, volume // 5000),
-                            "source": "UPSTOX_LIVE_FEED",
-                        }
+                    parsed = parse_quote_payload(quote_data)
+                    if parsed is not None:
+                        results[sym] = parsed
+                    elif quote_data:
+                        # A payload arrived and could not be priced. Skipping is the same
+                        # treatment a name the feed never returned already gets; the alternative
+                        # is stamping Rs 0.00 as a real exchange price.
+                        unpriced.append(sym)
         except Exception as err:
             # Counted, and the remaining chunks are still attempted: one bad request should not
             # discard the batches that would have succeeded.
@@ -450,6 +510,16 @@ def fetch_upstox_live_quotes(
             f"{len(failed_chunks)} of {chunk_count} quote batches failed; "
             f"{len(results)} of {len(symbols)} symbols returned. First error: "
             f"{failed_chunks[0][1]}"
+        )
+
+    if unpriced:
+        # Visible, because these names are absent from the marks for the rest of the session and
+        # nothing downstream can distinguish "the feed skipped it" from "we refused its payload".
+        logger.warning(
+            "%d of %d symbols returned a payload that could not be priced and were skipped: %s",
+            len(unpriced),
+            len(symbols),
+            ", ".join(sorted(unpriced)[:10]),
         )
 
     if not results:
@@ -1538,8 +1608,17 @@ def run_paper_session(
             len(unmarked_at_close),
             ", ".join(unmarked_at_close),
         )
-    for sym, price in final_prices.items():
-        quote = Quote(symbol=sym, timestamp=final_now, bid=price, ask=price, last_price=price)
+    for sym, close_price in final_prices.items():
+        # Not `price`: that name is bound to a float earlier in this function for the returns
+        # ratio, and reusing it made mypy read every closing mark as a float -- a float in the
+        # argument list of a Decimal money constructor, which is the one thing this ledger forbids.
+        quote = Quote(
+            symbol=sym,
+            timestamp=final_now,
+            bid=close_price,
+            ask=close_price,
+            last_price=close_price,
+        )
         engine.process_quote(quote, current_time=final_now)
 
     # 7. End Trading Session & Penny-Exact Reconciliation

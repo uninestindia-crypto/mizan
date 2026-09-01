@@ -674,21 +674,51 @@ def test_a_partial_quote_batch_failure_fails_the_poll() -> None:
     symbols = [f"SYM{n:03d}" for n in range(150)]  # two chunks at chunk_size 100
     runner.UPSTOX_INSTRUMENT_KEYS = {s: f"NSE_EQ|{s}" for s in symbols}
 
+    import io
+    import json as _json
+
     calls = {"n": 0}
 
+    class _Response(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return False
+
     def one_good_chunk_then_a_timeout(*_args, **_kwargs):
+        """Chunk 1 genuinely succeeds. Chunk 2 times out.
+
+        Both branches used to raise, so there was no good chunk and the test could not distinguish
+        `if failed_chunks:` from `if failed_chunks and not results:` -- the mutant that reproduces
+        the original defect exactly. The test that gates this behaviour could not see its own
+        scenario.
+        """
         calls["n"] += 1
         if calls["n"] == 1:
-            raise TimeoutError("_ssl.c:1015: The handshake operation timed out")
+            body = {
+                "status": "success",
+                "data": {
+                    f"NSE_EQ|{s}": {"last_price": 100.0 + n, "volume": 1000}
+                    for n, s in enumerate(symbols[:100])
+                },
+            }
+            return _Response(_json.dumps(body).encode())
         raise TimeoutError("_ssl.c:1015: The handshake operation timed out")
 
     with mock.patch.object(urllib.request, "urlopen", one_good_chunk_then_a_timeout):
-        with pytest.raises(runner.QuoteFeedError, match="quote batches failed"):
+        with pytest.raises(runner.QuoteFeedError, match="quote batches failed") as raised:
             runner.fetch_upstox_live_quotes(symbols, access_token="t")
 
     assert calls["n"] == 2, (
         "a failed chunk stopped the loop; the remaining batches must still be attempted so the "
         "error can say how much of the feed was lost"
+    )
+    # The half that *did* arrive is what makes this a partial failure rather than a total one.
+    # Without this the assertion above passes against a loader that returned 100 good quotes and
+    # called the poll a success.
+    assert "100 of 150 symbols returned" in str(raised.value), (
+        f"the error must report the partial coverage it actually got: {raised.value}"
     )
 
 
@@ -1046,3 +1076,166 @@ def test_a_selected_name_with_no_quote_is_sized_at_zero() -> None:
 
     # Cash-bound rather than allocation-bound.
     assert runner.entry_quantity("ACME", marks, allocation, Decimal("1000.00")) == 9
+
+
+# --------------------------------------------------------------------------------------------
+# A payload that cannot be priced is skipped, not stamped as a real exchange price. (R6-02, R6-15)
+# --------------------------------------------------------------------------------------------
+
+
+def _quote_runner():
+    import importlib.util
+    import os
+    from unittest import mock
+
+    spec = importlib.util.spec_from_file_location(
+        "_rps_quotes", Path(__file__).resolve().parent.parent / "scripts/run_paper_pilot_session.py"
+    )
+    assert spec and spec.loader
+    runner = importlib.util.module_from_spec(spec)
+    with mock.patch.dict(os.environ, os.environ.copy(), clear=True):
+        spec.loader.exec_module(runner)
+    return runner
+
+
+_GOOD_QUOTE = {
+    "last_price": 1010.25,
+    "ohlc": {"high": 1020.0, "low": 1000.0, "close": 1005.0},
+    "volume": 500000,
+    "depth": {"buy": [{"price": 1010.10}], "sell": [{"price": 1010.40}]},
+}
+
+
+@pytest.mark.parametrize(
+    "bad_last_price",
+    [
+        pytest.param({"last_price": 0}, id="explicit zero"),
+        pytest.param({"last_price": 0.0}, id="explicit zero float"),
+        pytest.param({}, id="absent altogether"),
+        pytest.param({"last_price": None}, id="null"),
+        pytest.param({"last_price": -12.5}, id="negative"),
+        pytest.param({"last_price": "N/A"}, id="non-numeric string"),
+        pytest.param({"last_price": True}, id="a bool, which is an int in Python"),
+    ],
+)
+def test_a_payload_with_no_usable_price_is_skipped(bad_last_price) -> None:
+    """It used to become Rs 0.00 stamped `UPSTOX_LIVE_FEED`.
+
+    For a *held* name that silently removes the position's whole value from the marked equity, the
+    risk baseline and the session report at once.
+    """
+    runner = _quote_runner()
+    payload = {**_GOOD_QUOTE, **bad_last_price}
+    if "last_price" not in bad_last_price:
+        payload.pop("last_price")
+
+    assert runner.parse_quote_payload(payload) is None
+
+
+def test_a_good_payload_is_still_priced_and_still_labelled() -> None:
+    """The guard must not be a refusal of everything."""
+    runner = _quote_runner()
+
+    parsed = runner.parse_quote_payload(_GOOD_QUOTE)
+
+    assert parsed is not None
+    assert parsed["price"] == Decimal("1010.25")
+    assert parsed["previous_close"] == Decimal("1005.00")
+    assert parsed["source"] == "UPSTOX_LIVE_FEED"
+    assert parsed["spread"] == Decimal("0.30")
+
+
+def test_a_negative_depth_price_does_not_end_the_session(caplog) -> None:
+    """`OrderBookSnapshot.from_levels` refuses a negative bid -- and that killed the whole day.
+
+    One zero-priced name anywhere in the 500 aborted the session two minutes in. Ten such mornings
+    consume the model's entire ten-session hold without the book ever being marked to a real close.
+    """
+    runner = _quote_runner()
+    payload = {**_GOOD_QUOTE, "depth": {"buy": [{"price": -0.02}], "sell": [{"price": 1010.40}]}}
+
+    parsed = runner.parse_quote_payload(payload)
+
+    assert parsed is not None, "a bad depth level must not discard an otherwise usable quote"
+    assert parsed["price"] == Decimal("1010.25")
+    assert parsed["spread"] == Decimal("0.05"), "an unusable ladder falls back to the floor spread"
+    assert all(value > 0 for value in parsed.values() if isinstance(value, Decimal))
+
+
+def test_a_deeper_usable_level_is_taken_when_the_best_one_is_not() -> None:
+    runner = _quote_runner()
+    payload = {
+        **_GOOD_QUOTE,
+        "depth": {
+            "buy": [{"price": 0}, {"price": 1009.00}],
+            "sell": [{"price": -1}, {"price": 1011.00}],
+        },
+    }
+
+    parsed = runner.parse_quote_payload(payload)
+
+    assert parsed is not None
+    assert parsed["spread"] == Decimal("2.00")
+
+
+def test_missing_ohlc_falls_back_to_the_traded_price_not_to_zero() -> None:
+    """`ohlc.get("high", price)` was already right; a zero high would misstate the day's range."""
+    runner = _quote_runner()
+
+    parsed = runner.parse_quote_payload({"last_price": 1010.25})
+
+    assert parsed is not None
+    assert parsed["high"] == parsed["low"] == parsed["previous_close"] == Decimal("1010.25")
+
+
+def test_an_absent_volume_does_not_invent_one() -> None:
+    """It defaulted to 100000 -- a fabricated liquidity figure that sizes the simulated book."""
+    runner = _quote_runner()
+
+    parsed = runner.parse_quote_payload({"last_price": 1010.25})
+
+    assert parsed is not None
+    assert parsed["volume"] == 0
+    assert parsed["depth"] >= 100
+
+
+def test_a_skipped_symbol_is_reported_to_the_operator(caplog) -> None:
+    """Silently dropping a name is how the Rs 0.00 defect stayed invisible for a week.
+
+    Nothing downstream can distinguish "the feed omitted it" from "we refused its payload", so the
+    refusal has to be said out loud where an unattended schedule leaves a record.
+    """
+    import io
+    import json as _json
+    import logging
+    import urllib.request
+    from unittest import mock
+
+    runner = _quote_runner()
+    symbols = ["GOODNAME", "ZEROPRICE"]
+    runner.UPSTOX_INSTRUMENT_KEYS = {s: f"NSE_EQ|{s}" for s in symbols}
+
+    class _Response(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return False
+
+    body = {
+        "status": "success",
+        "data": {
+            "NSE_EQ|GOODNAME": {"last_price": 1010.25, "volume": 1000},
+            "NSE_EQ|ZEROPRICE": {"last_price": 0, "volume": 1000},
+        },
+    }
+
+    with caplog.at_level(logging.WARNING):
+        with mock.patch.object(
+            urllib.request, "urlopen", lambda *_a, **_k: _Response(_json.dumps(body).encode())
+        ):
+            results = runner.fetch_upstox_live_quotes(symbols, access_token="t")
+
+    assert set(results) == {"GOODNAME"}, "the unpriceable name must not be in the marks"
+    assert "ZEROPRICE" in caplog.text
+    assert "could not be priced" in caplog.text

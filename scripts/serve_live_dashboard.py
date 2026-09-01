@@ -95,36 +95,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             req_data = {}
 
         if self.path == "/api/control/start":
-            capital = str(req_data.get("capital", 50000))
-            slippage = str(req_data.get("slippage_bps", 5.0))
             stop_time = str(req_data.get("end_time_ist", "15:30:00"))
-            interval = str(req_data.get("interval_seconds", 10.0))
-            universe_name = str(req_data.get("universe_name", "NIFTY500"))
-            model_profile = str(req_data.get("model_profile", "sprint_50k"))
-            upstox_token = req_data.get("upstox_token") or os.getenv("UPSTOX_ACCESS_TOKEN", "")
-
-            python_exe = sys.executable
-            script_path = str(PROJECT_ROOT / "scripts" / "run_paper_pilot_session.py")
-
-            cmd = [
-                python_exe,
-                script_path,
-                "--realtime",
-                "--capital",
-                capital,
-                "--slippage-bps",
-                slippage,
-                "--end-time-ist",
-                stop_time,
-                "--interval-seconds",
-                interval,
-                "--model-profile",
-                model_profile,
-                "--universe-name",
-                universe_name,
-            ]
-            if upstox_token:
-                cmd.extend(["--upstox-token", upstox_token])
+            cmd, child_env = build_pilot_launch(req_data)
 
             logger.info("Starting background paper pilot: %s", " ".join(cmd))
             try:
@@ -132,7 +104,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 if ACTIVE_PROCESS and ACTIVE_PROCESS.poll() is None:
                     ACTIVE_PROCESS.terminate()
 
-                ACTIVE_PROCESS = subprocess.Popen(cmd, cwd=str(PROJECT_ROOT))
+                ACTIVE_PROCESS = subprocess.Popen(cmd, cwd=str(PROJECT_ROOT), env=child_env)
                 PID_FILE.parent.mkdir(parents=True, exist_ok=True)
                 with open(PID_FILE, "w") as pf:
                     pf.write(str(ACTIVE_PROCESS.pid))
@@ -196,6 +168,55 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
     def log_message(self, format: str, *args: Any) -> None:
         return
+
+
+def build_pilot_launch(req_data: dict[str, Any]) -> tuple[list[str], dict[str, str]]:
+    """The child's argv and environment. The token goes in the environment, never in argv.
+
+    It used to be appended to `cmd` as `--upstox-token <token>`, which leaked it twice:
+
+    - `logger.info("Starting background paper pilot: %s", " ".join(cmd))` wrote the whole bearer
+      token in plaintext to stderr, and to a file wherever the dashboard is launched with
+      redirection;
+    - argv is readable from the process table by any local process for as long as the session runs,
+      which is the whole trading day.
+
+    The credential here is the `UPSTOX_ANALYTICS_TOKEN` class, valid for about a year.
+
+    Redacting the log line would have fixed only the first leak, and only until someone added
+    another log statement. Keeping the token out of `cmd` entirely fixes both by construction:
+    `resolve_upstox_token` (`run_paper_pilot_session.py:118`) already reads the environment, so the
+    child needs no flag. An operator-supplied token still wins, which is what `--upstox-token` meant
+    -- the competing analytics variable is removed from the child's environment so it cannot
+    outrank what the operator just typed.
+    """
+    upstox_token = req_data.get("upstox_token") or os.getenv("UPSTOX_ACCESS_TOKEN", "")
+
+    cmd = [
+        sys.executable,
+        str(PROJECT_ROOT / "scripts" / "run_paper_pilot_session.py"),
+        "--realtime",
+        "--capital",
+        str(req_data.get("capital", 50000)),
+        "--slippage-bps",
+        str(req_data.get("slippage_bps", 5.0)),
+        "--end-time-ist",
+        str(req_data.get("end_time_ist", "15:30:00")),
+        "--interval-seconds",
+        str(req_data.get("interval_seconds", 10.0)),
+        "--model-profile",
+        str(req_data.get("model_profile", "sprint_50k")),
+        "--universe-name",
+        str(req_data.get("universe_name", "NIFTY500")),
+    ]
+
+    child_env = dict(os.environ)
+    if upstox_token:
+        # Explicit beats inherited, exactly as the flag did.
+        child_env.pop("UPSTOX_ANALYTICS_TOKEN", None)
+        child_env["UPSTOX_ACCESS_TOKEN"] = upstox_token
+
+    return cmd, child_env
 
 
 class ThreadedDashboardServer(socketserver.ThreadingTCPServer):
