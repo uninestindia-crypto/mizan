@@ -1453,3 +1453,88 @@ def test_the_worst_offender_is_reported_first() -> None:
     drifted = runner.weight_drift_report(Decimal("5000.00"), positions, marks, 0.30)
 
     assert [sym for sym, _ in drifted] == ["BIG", "MID"]
+
+
+def test_a_response_keyed_by_symbol_is_matched() -> None:
+    """The form the provider actually returns.
+
+    Measured live on 2026-09-01: the request carries `NSE_EQ|INE002A01018` and the response is
+    keyed `NSE_EQ:RELIANCE`. The primary lookup hit 0 of 10 and the fallback hit 10 of 10, so this
+    is the path every quote in the pilot takes.
+    """
+    import io
+    import json as _json
+    import urllib.request
+    from unittest import mock
+
+    runner = _quote_runner()
+    runner.UPSTOX_INSTRUMENT_KEYS = {"RELIANCE": "NSE_EQ|INE002A01018"}
+
+    class _Response(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return False
+
+    body = {"status": "success", "data": {"NSE_EQ:RELIANCE": {"last_price": 1309.0, "volume": 10}}}
+    with mock.patch.object(
+        urllib.request, "urlopen", lambda *_a, **_k: _Response(_json.dumps(body).encode())
+    ):
+        results = runner.fetch_upstox_live_quotes(["RELIANCE"], access_token="t")
+
+    assert results["RELIANCE"]["price"] == Decimal("1309.00")
+
+
+def test_a_response_keyed_by_isin_is_also_matched() -> None:
+    """Kept, because the provider has not promised which form it returns."""
+    import io
+    import json as _json
+    import urllib.request
+    from unittest import mock
+
+    runner = _quote_runner()
+    runner.UPSTOX_INSTRUMENT_KEYS = {"RELIANCE": "NSE_EQ|INE002A01018"}
+
+    class _Response(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return False
+
+    body = {
+        "status": "success",
+        "data": {"NSE_EQ|INE002A01018": {"last_price": 1309.0, "volume": 10}},
+    }
+    with mock.patch.object(
+        urllib.request, "urlopen", lambda *_a, **_k: _Response(_json.dumps(body).encode())
+    ):
+        results = runner.fetch_upstox_live_quotes(["RELIANCE"], access_token="t")
+
+    assert results["RELIANCE"]["price"] == Decimal("1309.00")
+
+
+def test_a_closed_market_ladder_does_not_produce_a_spread_of_the_whole_share_price() -> None:
+    """Real, measured, and not hypothetical.
+
+    At 17:00 IST on 2026-09-01 the live provider returned a top-of-book bid of 0.0 for all ten
+    instruments requested -- 90 of 100 depth levels priced at zero. The previous computation,
+    `best_ask - best_bid`, therefore produced a spread equal to the entire share price: RELIANCE
+    1309.00 rather than 0.05. That spread builds the simulated order book, and the pilot's opening
+    fetch runs at 09:00, before the 09:15 open, when the ladder looks exactly like this.
+    """
+    runner = _quote_runner()
+    payload = {
+        "last_price": 1309.0,
+        "depth": {
+            "buy": [{"quantity": 0, "price": 0.0, "orders": 0}],
+            "sell": [{"quantity": 0, "price": 0.0, "orders": 0}],
+        },
+    }
+
+    parsed = runner.parse_quote_payload(payload)
+
+    assert parsed is not None
+    assert parsed["spread"] == Decimal("0.05")
+    assert parsed["price"] == Decimal("1309.00")

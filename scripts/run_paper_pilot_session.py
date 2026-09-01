@@ -586,6 +586,18 @@ def fetch_upstox_live_quotes(
                     )
                 payload = data["data"]
                 for sym, key in resolved.items():
+                    # Both forms, and the second one is the one that works.
+                    #
+                    # Measured against the live provider on 2026-09-01 with a ten-instrument
+                    # authenticated request: the request carries the ISIN form
+                    # (`NSE_EQ|INE002A01018`) and the response is keyed by the symbol form
+                    # (`NSE_EQ:RELIANCE`). The primary lookup hit **0 of 10**; the fallback hit
+                    # **10 of 10**. The `key` lookup below is therefore dead in production and the
+                    # `alt_key` lookup carries every quote in the pilot.
+                    #
+                    # Both are kept -- the provider is free to key its response either way and has
+                    # not promised which -- but this is recorded so nobody removes the fallback as
+                    # redundant. Removing it would return an empty book with no error.
                     alt_key = f"NSE_EQ:{sym}"
                     quote_data = payload.get(key) or payload.get(alt_key) or {}
                     parsed = parse_quote_payload(quote_data)
