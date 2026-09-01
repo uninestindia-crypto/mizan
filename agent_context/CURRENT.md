@@ -43,7 +43,7 @@ What has **not**: the training runner, the campaign driver, and every research r
 
 | # | Was | Now |
 |---|---|---|
-| 1 | CI workflow and branch protection | **CLOSED.** CI workflow pushed to `origin/main`. GitHub Actions run `#32936340154` (`gates` job) **PASSED in 3m30s** across all steps (ruff, mypy, normal-order tests, reverse-order tests, craft self-tests, claims/disk audits) |
+| 1 | CI workflow and branch protection | **REOPENED 2026-09-01.** The workflow is on `main` and run `#32936340154` did pass on 2026-08-20. It has not run since **2026-08-29T17:30Z**: 25 consecutive runs failed in ~3s on `recent account payments have failed or your spending limit needs to be increased`. The gate is red for **billing**, not code. Branch protection remains impossible on this plan (`403 Upgrade to GitHub Pro or make this repository public`) |
 | 2 | Craft baseline regressed ~4x | **Test-craft 100% clean.** 87/87 test files pass with 0 `sleep-in-test` flakiness risks and 0 unannotated loops. Code craft has 240 structural lines/nesting primarily in UI HTML templates |
 | 3 | Provenance mechanism closed, artifact stale | **CLOSED.** Artifact rebuilt at `dab7f7b3`; 125 `quant_system` modules verified in archive, SBOM matches `uv.lock`, provenance binds HEAD |
 | 4 | Capability claims exceed behaviour | **CLOSED.** Corrected at `5a0447b`; unsupported US Equities & Fundamental claims removed; honest boundaries established |
@@ -555,10 +555,26 @@ attempt raises the multiplicity bar for whatever comes next.
 
 Engineering, in priority order:
 
-1. **Push the CI workflow and set branch protection** (Major #1). The workflow file exists on branch
-   `ci-workflow-pending` but could not be pushed: the token lacks `workflow` scope. Branch protection
-   on `main` requiring the `gates` check is a repository setting no agent can make. Both are the
-   founder's.
+1. **Restore GitHub Actions billing** (Major #1, and it is not what this line used to say).
+   Corrected 2026-09-01 against the live API; every clause of the previous text was out of date.
+
+   - The workflow **is** on `main` (`.github/workflows/ci.yml`) and the token **does** carry
+     `workflow` scope (`gh auth status`: `'gist', 'read:org', 'repo', 'workflow'`). Both halves of
+     the old blocker are gone.
+   - **CI has not run since 2026-08-29T17:30Z.** Run `33265792098` is the last success; the 25 runs
+     since — 8 on 08-30, 17 on 08-31 — all failed in about 3 seconds with
+     `The job was not started because recent account payments have failed or your spending limit
+     needs to be increased`. **The gate is red for billing, not for code**, and no commit in that
+     window has been checked by it.
+   - **Branch protection cannot be set on this plan at all.** `gh api
+     repos/uninestindia-crypto/quant-system/branches/main/protection` returns `403 Upgrade to
+     GitHub Pro or make this repository public`; the repository is `private`, plan `User`. Calling
+     it "a repository setting no agent can make" implied the founder could simply make it. They
+     cannot, without GitHub Pro or making the repository public. See
+     `20260826-NOTICE-branch-protection-unavailable-on-plan.md`.
+
+   Founder actions, in order: fix the Actions billing, then decide between GitHub Pro and a public
+   repository for branch protection.
 2. **Independently adjudicate the training path** (largest remaining evidence gap). The brief is
    written at `.launch/ADJUDICATION-BRIEF-TRAINING-PATH.md`. It must be run by an agent that did not
    author the training runner or the campaign driver.
