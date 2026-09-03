@@ -20,7 +20,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from quant_system.research_xs_monthly.bars import load_cache_bars, read_universe_symbols
-from quant_system.research_xs_monthly.paper import FROZEN_RULE, latest_signal, settle_positions
+from quant_system.research_xs_monthly.paper import (
+    FROZEN_RULE,
+    NOTIONAL_CAPITAL_INR,
+    latest_signal,
+    settle_positions,
+    size_positions,
+)
 
 STATE_NAME = "state.json"
 
@@ -55,10 +61,26 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("REFUSING: state file rule differs from FROZEN_RULE — inspect by hand")
     if not bars:
         raise SystemExit("REFUSING: no bars loaded")
+    capital = Decimal(str(state.get("capital", NOTIONAL_CAPITAL_INR)))
+    cash = Decimal(str(state.get("cash", capital)))
+
+    # Migration: legs opened before the book existed carry no shares. Re-open
+    # from the latest signal at identical entries, now sized. Only valid while
+    # no exit has elapsed (entry == latest signal entry); otherwise refuse.
+    if state.get("open") and any("shares" not in leg for leg in state["open"]):
+        migration_signal = latest_signal(bars)
+        if any(leg["entry_date"] != migration_signal["entry_date"] for leg in state["open"]):
+            raise SystemExit("REFUSING: legacy open legs predate latest signal — inspect by hand")
+        state["open"] = []
+        cash = capital
+        print("migrated legacy open legs to sized book (same entries)")
 
     settled = settle_positions(state.get("open", []), bars)
     state["open"] = settled["open"]
     state["closed"] = state.get("closed", []) + settled["closed"]
+    for leg in settled["closed"]:
+        if "proceeds" in leg:
+            cash += Decimal(str(leg["proceeds"]))
 
     opened_now: list[dict] = []
     if not state["open"]:
@@ -73,8 +95,9 @@ def main(argv: list[str] | None = None) -> int:
                 }
                 for h in signal["holdings"]
             ]
+            sized, cash = size_positions(fresh, cash)
             # Attach opening marks so state always carries the settled shape.
-            state["open"] = settle_positions(fresh, bars)["open"]
+            state["open"] = settle_positions(sized, bars)["open"]
             opened_now = state["open"]
         run_note = {
             "at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -91,12 +114,19 @@ def main(argv: list[str] | None = None) -> int:
             "open_legs": len(state["open"]),
             "newly_closed": len(settled["closed"]),
         }
+    open_mv = sum((Decimal(str(leg.get("market_value", "0"))) for leg in state["open"]), Decimal(0))
+    equity = cash + open_mv
+    run_note["equity"] = str(equity)
+    run_note["cash"] = str(cash)
+    state["capital"] = str(capital)
+    state["cash"] = str(cash)
     state["runs"] = state.get("runs", []) + [run_note]
     state_path.write_text(json.dumps(state, indent=1), encoding="utf-8")
 
     stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%SZ")
     (args.state_dir / f"watch_{stamp}.md").write_text(_render(state, run_note, load_stats))
     print(f"symbols {len(bars)} bars {load_stats['bars_loaded']} asof {settled['asof']}")
+    print(f"capital {capital} cash {cash} open_mv {open_mv} equity {equity}")
     print(f"open {len(state['open'])} closed {len(state['closed'])} runs {len(state['runs'])}")
     if state["closed"]:
         nets = [Decimal(str(leg["net"])) for leg in state["closed"]]
@@ -112,6 +142,8 @@ def _render(state: dict, run_note: dict, load_stats: dict) -> str:
         f"- Rule: formation {FROZEN_RULE['formation_sessions']}, "
         f"hold {FROZEN_RULE['hold_sessions']}, top {FROZEN_RULE['top_frac']}, "
         f"cost {FROZEN_RULE['cost_ratio']}",
+        f"- Book (notional, separate): capital {state.get('capital')} "
+        f"cash {state.get('cash')} equity {run_note.get('equity')}",
         f"- Bars loaded: {load_stats['bars_loaded']}",
         f"- Run: {json.dumps(run_note)}",
         "",

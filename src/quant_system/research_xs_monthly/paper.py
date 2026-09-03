@@ -36,6 +36,78 @@ FROZEN_RULE: Final = {
     "cost_ratio": str(COST_RATIO),
 }
 
+#: Separate notional book for the XS-monthly watch. Display-only accounting:
+#: no orders, no shared ledger, no touch on paper_pilot/paper_portfolio.
+NOTIONAL_CAPITAL_INR: Final = Decimal("1000000")
+
+
+def size_positions(
+    holdings: list[dict],
+    capital: Decimal = NOTIONAL_CAPITAL_INR,
+) -> tuple[list[dict], Decimal]:
+    """Split capital equally across holdings into integer shares (NSE cash has
+    no fractional shares). Returns (legs, cash_leftover)."""
+    if not holdings:
+        raise ScreenError("INSUFFICIENT_DATA: no holdings to size")
+    if capital <= 0:
+        raise ScreenError("BAD_PARAM: capital must be positive")
+    per_leg = capital / Decimal(len(holdings))
+    legs: list[dict] = []
+    used = Decimal(0)
+    for h in holdings:
+        entry = Decimal(str(h["entry_open"]))
+        shares = int(per_leg // entry)
+        value = Decimal(shares) * entry
+        used += value
+        legs.append(
+            {
+                "symbol": h["symbol"],
+                "entry_date": h["entry_date"],
+                "entry_open": str(entry),
+                "shares": shares,
+                "entry_value": str(value),
+            }
+        )
+    return legs, capital - used
+
+
+def _book_closed(pos: dict, exit_bar_open: Decimal) -> dict:
+    """Cash fields for a closed leg. Cost = full round trip on entry notional,
+    charged exactly once — same 0.224% model as the screen."""
+    shares = int(pos.get("shares", 0))
+    entry_open = Decimal(str(pos["entry_open"]))
+    entry_value = Decimal(str(pos.get("entry_value", Decimal(shares) * entry_open)))
+    with localcontext() as ctx:
+        ctx.prec = 28
+        exit_value = Decimal(shares) * exit_bar_open
+        cost = COST_RATIO * entry_value
+        proceeds = exit_value - cost
+        net_cash = proceeds - entry_value
+    return {
+        "shares": shares,
+        "entry_value": str(entry_value),
+        "exit_open": str(exit_bar_open),
+        "exit_value": str(exit_value),
+        "cost": str(cost),
+        "proceeds": str(proceeds),
+        "net_cash": str(net_cash),
+    }
+
+
+def _book_open(pos: dict, latest_open: Decimal) -> dict:
+    shares = int(pos.get("shares", 0))
+    entry_value = Decimal(str(pos.get("entry_value", "0")))
+    with localcontext() as ctx:
+        ctx.prec = 28
+        market_value = Decimal(shares) * latest_open
+        unrealized = market_value - entry_value
+    return {
+        "shares": shares,
+        "entry_value": str(entry_value),
+        "market_value": str(market_value),
+        "unrealized": str(unrealized),
+    }
+
 
 def latest_signal(
     bars_by_symbol: dict[str, list[Bar]],
@@ -125,15 +197,18 @@ def settle_positions(
                 if locked:
                     continue  # locked exit: leg stays pending, never forced
                 continue
-            closed.append(
-                {
-                    "symbol": symbol,
-                    "entry_date": pos["entry_date"],
-                    "exit_date": calendar[exit_pos].isoformat(),
-                    "entry_open": str(entry_open),
-                    "net": str(net),
-                }
-            )
+            leg = {
+                "symbol": symbol,
+                "entry_date": pos["entry_date"],
+                "exit_date": calendar[exit_pos].isoformat(),
+                "entry_open": str(entry_open),
+                "net": str(net),
+            }
+            if "shares" in pos:
+                exit_bar = idx.get(calendar[exit_pos])
+                if exit_bar is not None:
+                    leg.update(_book_closed(pos, exit_bar.open))
+            closed.append(leg)
         else:
             latest_bar = idx.get(calendar[-1])
             if latest_bar is None or entry_open <= 0:
@@ -141,14 +216,15 @@ def settle_positions(
             with localcontext() as ctx:
                 ctx.prec = 28
                 gross = (latest_bar.open - entry_open) / entry_open
-            opened.append(
-                {
-                    "symbol": symbol,
-                    "entry_date": pos["entry_date"],
-                    "entry_open": str(entry_open),
-                    "asof_date": calendar[-1].isoformat(),
-                    "gross_mark": str(gross),
-                    "cost_pending": str(COST_RATIO),
-                }
-            )
+            leg = {
+                "symbol": symbol,
+                "entry_date": pos["entry_date"],
+                "entry_open": str(entry_open),
+                "asof_date": calendar[-1].isoformat(),
+                "gross_mark": str(gross),
+                "cost_pending": str(COST_RATIO),
+            }
+            if "shares" in pos:
+                leg.update(_book_open(pos, latest_bar.open))
+            opened.append(leg)
     return {"closed": closed, "open": opened, "asof": calendar[-1].isoformat()}

@@ -12,7 +12,12 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from quant_system.research_xs_monthly.bars import Bar
-from quant_system.research_xs_monthly.paper import latest_signal, settle_positions
+from quant_system.research_xs_monthly.paper import (
+    NOTIONAL_CAPITAL_INR,
+    latest_signal,
+    settle_positions,
+    size_positions,
+)
 from quant_system.research_xs_monthly.screen import COST_RATIO, ScreenError
 
 
@@ -132,6 +137,56 @@ def test_fresh_open_carries_settled_shape() -> None:
     assert len(opened) == len(fresh)
     for leg in opened:
         assert leg["asof_date"] and leg["gross_mark"] and leg["cost_pending"]
+
+
+def test_book_splits_capital_into_integer_shares() -> None:
+    holdings = [
+        {"symbol": "A", "entry_date": "2020-03-30", "entry_open": "100"},
+        {"symbol": "B", "entry_date": "2020-03-30", "entry_open": "30"},
+    ]
+    legs, leftover = size_positions(holdings, Decimal("1000"))
+    assert legs[0]["shares"] == 5  # 500 // 100
+    assert legs[1]["shares"] == 16  # 500 // 30 floors
+    assert leftover == Decimal("1000") - (Decimal(500) + Decimal(480))
+    assert sum(Decimal(leg["entry_value"]) for leg in legs) + leftover == Decimal("1000")
+
+
+def test_book_defaults_to_ten_lakh() -> None:
+    assert NOTIONAL_CAPITAL_INR == Decimal("1000000")
+
+
+def test_book_closed_leg_cash_conserves() -> None:
+    bars = _universe()
+    signal = latest_signal(bars)
+    fresh = [
+        {"symbol": h["symbol"], "entry_date": h["entry_date"], "entry_open": h["entry_open"]}
+        for h in signal["holdings"]
+    ]
+    sized, leftover = size_positions(fresh, Decimal("100000"))
+    base = date.fromisoformat("2020-01-01")
+    for symbol, blist in bars.items():
+        last_close = blist[-1].close
+        for j in range(1, 25):
+            d = base + timedelta(days=90 + j - 1)
+            bars[symbol].append(
+                Bar(
+                    symbol=symbol,
+                    exchange_date=d,
+                    open=last_close,
+                    high=last_close + Decimal("1"),
+                    low=Decimal("0.5"),
+                    close=last_close,
+                    volume=1_000_000,
+                )
+            )
+    settled = settle_positions(sized, bars)
+    for leg in settled["closed"]:
+        # Flat exits: proceeds = entry_value - cost, net_cash = -cost.
+        assert Decimal(leg["proceeds"]) == Decimal(leg["entry_value"]) - Decimal(leg["cost"])
+        assert Decimal(leg["net_cash"]) == -Decimal(leg["cost"])
+    total_out = leftover + sum(Decimal(leg["proceeds"]) for leg in settled["closed"])
+    total_in = sum(Decimal(leg["entry_value"]) for leg in settled["closed"]) + leftover
+    assert total_out == total_in - sum(Decimal(leg["cost"]) for leg in settled["closed"])
 
 
 def test_empty_universe_fails_closed() -> None:
