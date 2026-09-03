@@ -124,6 +124,7 @@ Evidence: 50-name hold-21 long-only Sharpe +0.76/t1.18 (29 rebalances, not signi
 | owned-path collision search over `agent_context/work/active` | PASS | Antigravity paper-trade claim + mizan/cross-sectional claims mapped; new paths disjoint |
 | `scripts/new-workspace-clone.ps1 -Kind Worktree ... -Branch hermes/xs-monthly-new` | FAIL (infra) | Windows MAX_PATH on tracked `data/evidence/training-runs/...` blobs, exit 128; branch created, checkout not switched; shared-checkout fallback per PROTOCOL 1 |
 | `uv run pytest tests/test_xs_monthly_new.py tests/test_xs_monthly_paper_watch.py -q` | PASS | 19 passed |
+| `git add` (6 owned pathspecs only) + `git commit` + `git push origin main` | PASS | `35088e8c`, 9 files, all new; `git show --stat` confirms zero foreign files; HEAD == origin/main (0/0); other agent's working-tree edits left intact and uncommitted |
 | `uv run python scripts/run_xs_monthly_paper_watch.py` (x2: 1st hit a render-shape bug, fixed + regression-tested, 2nd clean) | PASS | 499 symbols, 99 legs opened 2026-09-02, state + Markdown in `logs/xs_monthly_new/paper_watch/` |
 | `uv run ruff check` + `ruff format` (new files only) | PASS | All checks passed |
 | full 423-symbol screen vs all-market 10y store | PASS | `logs/xs_monthly_new/20260903-104002Z`, long t2.59 = market t2.58, edge +5bps |
