@@ -13,11 +13,13 @@ Build a brand-new, isolated cross-sectional monthly (hold-21, long top-20%, pre-
 
 ## Owned paths
 
-- `src/quant_system/research_xs_monthly/` (new package only: universe loader, ranker, portfolio, metrics, paper watch — all new files)
+- `src/quant_system/research_xs_monthly/` (new package only: universe loader, ranker, portfolio, metrics, paper watch, dashboard — all new files)
 - `scripts/run_xs_monthly_screen_new.py` (new file only)
 - `scripts/run_xs_monthly_paper_watch.py` (new file only)
+- `scripts/serve_xs_watch_dashboard.py` (new file only, port 8091)
 - `tests/test_xs_monthly_new*.py` (new files only)
 - `tests/test_xs_monthly_paper_watch.py` (new file only)
+- `tests/test_xs_watch_dashboard.py` (new file only)
 - `logs/xs_monthly_new/` (new output dir only; never `logs/paper_runs/`)
 - `agent_context/work/active/20260903-hermes-xs-monthly-screen-new.md` (this file)
 
@@ -55,7 +57,7 @@ Build a brand-new, isolated cross-sectional monthly (hold-21, long top-20%, pre-
 
 ## Current step
 
-Step 9 — DONE. Separate ₹10L notional book live + Windows automation set. State: capital 1000000, cash 137184.02, 99 sized legs, equity 1000000.00 at open. Task `QuantOS-XSMonthly-PaperWatch` runs Mon–Fri 16:00 IST, next 2026-09-04. 22/22 tests green, ruff clean. Record stays ACTIVE for the settle cycle.
+Step 10 — DONE. Separate dashboard built + live-verified (equity, legs, 404 all OK), then stopped. 26/26 tests green, ruff clean. Committing below.
 
 ## Final numbers (quote these, not the interim block below)
 
@@ -123,7 +125,8 @@ Evidence: 50-name hold-21 long-only Sharpe +0.76/t1.18 (29 rebalances, not signi
 | `git status --short --branch` + `git worktree list` + `git branch --list` | PASS | main→origin/main; 2 detached worktrees + 2 non-default branches = live agents; failed xs worktree registered nothing |
 | owned-path collision search over `agent_context/work/active` | PASS | Antigravity paper-trade claim + mizan/cross-sectional claims mapped; new paths disjoint |
 | `scripts/new-workspace-clone.ps1 -Kind Worktree ... -Branch hermes/xs-monthly-new` | FAIL (infra) | Windows MAX_PATH on tracked `data/evidence/training-runs/...` blobs, exit 128; branch created, checkout not switched; shared-checkout fallback per PROTOCOL 1 |
-| `uv run pytest tests/test_xs_monthly_new.py tests/test_xs_monthly_paper_watch.py -q` | PASS | 22 passed (incl. 3 book sizing/conservation tests) |
+| `uv run pytest` (xs suites) | PASS | 26 passed (screen 11 + watch 11 + dashboard 4) |
+| dashboard live-serve check on :8091 | PASS | Equity/legs/RESEARCH ONLY present, bad path 404s |
 | ₹10L book: `size_positions` + cash fields + migration, watch run | PASS | capital 1000000, cash 137184.02, 99 legs, equity 1000000.00; expensive names (PTCIL 22685) floor to 0 shares — disclosed, rule frozen |
 | `schtasks /create QuantOS-XSMonthly-PaperWatch` Mon–Fri 16:00 IST | PASS | Next run 2026-09-04; appends `paper_watch/task.log`; never git-commits (auto-sync incident rule) |
 | `git add` (6 owned pathspecs only) + `git commit` + `git push origin main` | PASS | `35088e8c`, 9 files, all new; `git show --stat` confirms zero foreign files; HEAD == origin/main (0/0); other agent's working-tree edits left intact and uncommitted |
