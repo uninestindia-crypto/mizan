@@ -1,8 +1,8 @@
 {
   "payload": {
     "cash": "145520.31",
-    "daily_anchor_equity": "997027.98",
-    "daily_anchor_on": "2026-09-04",
+    "daily_anchor_equity": "993460.37",
+    "daily_anchor_on": "2026-09-07",
     "halt_reason": "",
     "halted_on": null,
     "holdings": [
@@ -686,16 +686,16 @@
         "symbol": "ZENTEC"
       }
     ],
-    "last_completed_on": "2026-09-04",
+    "last_completed_on": "2026-09-07",
     "last_rebalance_on": "2026-08-31",
     "peak_equity": "1000000.00",
     "realized_pnl": "0.00",
     "risk_halted": false,
     "schema_id": "quantos.paper_portfolio",
     "schema_version": 5,
-    "sessions_completed": 4,
-    "sessions_held": 4,
+    "sessions_completed": 5,
+    "sessions_held": 5,
     "total_fees": "1072.65"
   },
-  "state_hash": "1b44d2806d8199356aa010e20e0dc0e457f8664d5f26becfd5f3973cb3055dfb"
+  "state_hash": "635dd8106d0535b1dfb173b07c719cb22911cfb40b114259f476677d274d5c3a"
 }
