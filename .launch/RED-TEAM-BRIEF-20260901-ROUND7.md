@@ -100,3 +100,56 @@ Ranked by what would cost the most on 2026-09-10:
 Follow round six: a verdict summary table, a one-paragraph verdict, then findings at P1/P2/P3 with a
 reproduction for each. End with an explicit answer to the convergence question and a count comparison
 against 2, 3, 3, 5, 7.
+
+## Added 2026-09-02 03:05 IST — a hazard that affects how you may work
+
+`scripts/daily_auto_sync.ps1` runs at **23:00 IST every night** as the Windows task
+`QuantOS-DailyAutoSync`. Line 48 is `git add -A`; it then commits everything in the tree as
+`sync: daily automated checkpoint` and **pushes to `origin/main`**.
+
+It already swept this brief and the round-seven work record into `41a93f60` and pushed them, minutes
+after they were written.
+
+**Consequences you must work around:**
+
+- **Never leave a mutant in the working tree.** If the sweep fires while a deliberately-broken guard
+  is applied, that mutant is committed to `main` and pushed. Apply mutants to a **copy in your
+  scratchpad**, or apply-and-revert within a single tool call so the tree is never left dirty across
+  a wait.
+- Anything you write anywhere in the repo may be committed and pushed without your involvement.
+  Keep probe scripts in the scratchpad, which is outside the repository.
+- This is a standing PROTOCOL §4 violation (`git add -A` and broad commits are forbidden in a shared
+  checkout). Record it as a finding in its own right — it is not in scope as one of the eleven
+  claims, but it is a live defect in the release path and it endangers every agent's uncommitted
+  work, not only yours.
+
+## Added 2026-09-02 03:05 IST — a lead worth pulling, found while verifying the morning's readiness
+
+Upstox publishes the previous session's daily bar **per instrument, on a rolling basis overnight**.
+Measured at 02:50-03:00 IST on 2026-09-02, sampling every 25th name of the 500-name universe:
+
+- 02:50 — RELIANCE, TCS, HDFCBANK, INFY all newest `2026-08-31`; the 2026-09-01 bar absent.
+- 02:55 — TCS had `2026-09-01`; RELIANCE still `2026-08-31`.
+- 03:00 — sample of 20: **18 fresh, 2 stale** (LTTS and POLICYBZR still at `2026-08-31`).
+
+Two things follow, and the second is the interesting one:
+
+1. `newest_cached_bar_date()` (`scripts/run_scheduled_paper_session.py:127`) takes the **maximum**
+   `exchange_date` across the whole store. **One fresh symbol out of 500 clears the staleness gate
+   for the entire universe.** `MAX_MISSED_SESSIONS = 0` therefore does not mean what its name
+   suggests during a rolling publication window.
+2. On a **hold** session this is harmless: the cross-section is never built. Verified empirically —
+   the 2026-09-01 session log contains no `Mizan cross-section` line at all, only
+   `session 2, held 1 of 10 sessions -> HOLDING`. On the **rebalance** session it is not harmless:
+   `build_live_cross_section` calls `_require_one_decision_date`
+   (`src/quant_system/execution/mizan_live_features.py:197`), which **raises**
+   `MizanLiveFeatureError` if any symbol's window ends on an earlier date than the newest.
+
+So a rebalance morning where the rollout is 99.8% complete — one lagging name in 500 — aborts the
+rebalance. The next rebalance is approximately **2026-09-10**, the first session since 2026-08-31
+that will place orders.
+
+Assess: is the interaction between the max-based preflight gate and the all-or-nothing cross-section
+guard correct, and what does the session actually do when `MizanLiveFeatureError` is raised at 09:00?
+Does it abort cleanly without spending a held session (the `df11af59` claim, C11), or does it leave
+the book in a state no one has looked at? Drive it; do not read it.
