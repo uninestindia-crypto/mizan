@@ -463,13 +463,18 @@ class PaperPilotEngine:
         staged_valuation = quote_for_risk is None and order.limit_price is None
 
         if not staged_valuation:
+            price_map = {
+                p.symbol: self._price_cache.get(p.symbol, p.average_price)
+                for p in self.ledger.positions.values()
+            }
+            price_map.update(self._price_cache)
             decision = self.risk_governor.evaluate_order(
                 order=order,
                 current_equity=current_equity,
                 current_cash=self.ledger.cash,
                 positions=self.ledger.positions,
                 current_quote=quote_for_risk,
-                current_prices=self._price_cache,
+                current_prices=price_map,
             )
         else:
             # Staged valuation: check non-price constraints (kill switch, naked short)

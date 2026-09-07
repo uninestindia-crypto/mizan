@@ -59,14 +59,10 @@ PORTFOLIO_SCHEMA_ID = "quantos.paper_portfolio"
 #: Version 2 added ``entry_fee`` per holding and renamed ``sessions_since_rebalance`` to
 #: ``sessions_held``. Version 3 adds the risk halt, so a tripped kill switch survives the session
 #: boundary. Version 4 adds the daily drawdown anchor, so restarting the process during a session
-#: does not re-baseline it.
-#:
-#: Versions 2 and 3 landed with "no migration is written: no state file has ever been produced".
-#: That was true then and had **stopped being true** by version 4: the session of 2026-08-31 wrote a
-#: real v3 file holding 97 positions, and the next morning's run refused it and exited 2 before
-#: placing an order. `_migrated` upgrades a v3 payload; the claim that no file exists is not one to
-#: carry forward without rechecking it.
-PORTFOLIO_SCHEMA_VERSION = 4
+#: does not re-baseline it. Version 5 adds ``last_completed_on`` (R7-05), so multiple runs or
+#: restarts on the same trading calendar date do not increment ``sessions_held`` or
+#: ``sessions_completed`` repeatedly.
+PORTFOLIO_SCHEMA_VERSION = 5
 
 
 class _Unchecked:
@@ -171,6 +167,11 @@ class PaperPortfolioState:
     #: reported the age minus one at every check, which was one of two compounding off-by-ones that
     #: made the executed hold 12 sessions against a measured 10.
     sessions_held: int = 0
+
+    #: The trading calendar date of the last completed session, carried so restarting or
+    #: re-running on the same calendar date does not increment sessions_held or sessions_completed
+    #: repeatedly (R7-05).
+    last_completed_on: date | None = None
 
     @property
     def holdings_value_at_cost(self) -> Decimal:
@@ -279,6 +280,9 @@ class PaperPortfolioState:
             "sessions_completed": self.sessions_completed,
             "sessions_held": self.sessions_held,
             "total_fees": str(self.total_fees),
+            "last_completed_on": (
+                self.last_completed_on.isoformat() if self.last_completed_on else None
+            ),
         }
 
 
@@ -302,12 +306,18 @@ def _migrated(payload: dict[str, Any], path: Path) -> dict[str, Any]:
         )
     if version == PORTFOLIO_SCHEMA_VERSION:
         return payload
+    if version == 4:
+        upgraded = dict(payload)
+        upgraded["last_completed_on"] = None
+        upgraded["schema_version"] = PORTFOLIO_SCHEMA_VERSION
+        return upgraded
     if version == 3:
         # v4 added the daily drawdown anchor. A v3 file has none, and no anchor is the correct
         # starting state: the session takes a fresh one from its first live mark.
         upgraded = dict(payload)
         upgraded["daily_anchor_on"] = None
         upgraded["daily_anchor_equity"] = "0.00"
+        upgraded["last_completed_on"] = None
         upgraded["schema_version"] = PORTFOLIO_SCHEMA_VERSION
         return upgraded
     raise PaperPortfolioError(
@@ -406,6 +416,7 @@ def load_portfolio(path: Path) -> PaperPortfolioState | None:
         for entry in payload.get("holdings", [])
     }
     last = payload.get("last_rebalance_on")
+    last_completed = payload.get("last_completed_on")
     return PaperPortfolioState(
         cash=Decimal(payload["cash"]),
         holdings=holdings,
@@ -424,6 +435,9 @@ def load_portfolio(path: Path) -> PaperPortfolioState | None:
         risk_halted=bool(payload["risk_halted"]),
         halted_on=(date.fromisoformat(payload["halted_on"]) if payload.get("halted_on") else None),
         halt_reason=str(payload.get("halt_reason", "")),
+        last_completed_on=(
+            date.fromisoformat(last_completed) if last_completed else None
+        ),
     )
 
 
@@ -475,20 +489,18 @@ def state_from_ledger(
         for symbol, (quantity, average_cost) in sorted(positions.items())
         if quantity > 0
     }
+    already_counted_today = previous.last_completed_on == session_date
+    should_increment = session_completed and not already_counted_today
+
     return PaperPortfolioState(
         cash=cash.quantize(Decimal("0.01")),
         holdings=holdings,
         realized_pnl=(previous.realized_pnl + session_realized_pnl).quantize(Decimal("0.01")),
         total_fees=(previous.total_fees + fees_paid).quantize(Decimal("0.01")),
         last_rebalance_on=session_date if rebalanced else previous.last_rebalance_on,
-        # An aborted session does not count as one.
-        #
-        # A session that raised two minutes in was persisted with the counters advanced, so the
-        # model's ten-session hold was consumed by a day on which the book was never marked to a
-        # real close. Ten such mornings would retire a position without a single session having
-        # observed it. The *ledger* facts below are real and are kept -- cash, holdings and fees
-        # happened -- but the session did not complete, so it does not spend a session.
-        sessions_completed=previous.sessions_completed + (1 if session_completed else 0),
+        # A session completed on a date already counted must not advance the counters again (R7-05).
+        # An aborted session does not count as completed.
+        sessions_completed=previous.sessions_completed + (1 if should_increment else 0),
         # Monotonic by construction: a peak that could fall would let a drawdown be forgiven by the
         # decline that caused it.
         peak_equity=max(previous.peak_equity, session_peak_equity or Decimal("0.00")).quantize(
@@ -507,6 +519,9 @@ def state_from_ledger(
         # 1, not 0, on the rebalance session: a position entered today is one session old when the
         # next session opens, and the check happens at the open.
         sessions_held=(
-            1 if rebalanced else previous.sessions_held + (1 if session_completed else 0)
+            1 if rebalanced else previous.sessions_held + (1 if should_increment else 0)
+        ),
+        last_completed_on=(
+            session_date if (session_completed or already_counted_today) else previous.last_completed_on
         ),
     )

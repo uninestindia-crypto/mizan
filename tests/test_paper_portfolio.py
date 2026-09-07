@@ -12,7 +12,7 @@ rather than silently reset, because an unattended weekday schedule has nobody to
 from __future__ import annotations
 
 import json
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -182,7 +182,7 @@ def test_the_executed_hold_is_exactly_the_screened_hold() -> None:
             state,
             cash=state.cash,
             positions={"INFY": (100, Decimal("1500.00"))},
-            session_date=entry,
+            session_date=entry + timedelta(days=index),
             session_realized_pnl=Decimal("0.00"),
             fees_paid=Decimal("0.00"),
             rebalanced=False,
@@ -649,7 +649,19 @@ def _write_at_version(path, state, version: int, drop=()) -> None:
     path.write_text(json.dumps(document), encoding="utf-8")
 
 
-V3_ABSENT = ("daily_anchor_on", "daily_anchor_equity")
+V3_ABSENT = ("daily_anchor_on", "daily_anchor_equity", "last_completed_on")
+V4_ABSENT = ("last_completed_on",)
+
+
+def test_a_v4_file_written_before_last_completed_on_still_loads(tmp_path) -> None:
+    """v4 files written before v5 must migrate cleanly with last_completed_on defaulting to None."""
+    path = tmp_path / "portfolio.json"
+    _write_at_version(path, _state(), 4, drop=V4_ABSENT)
+
+    loaded = load_portfolio(path)
+    assert loaded is not None
+    assert loaded.last_completed_on is None
+    assert loaded.cash == Decimal("93570.50")
 
 
 def test_a_v3_file_written_before_the_anchor_existed_still_loads(tmp_path) -> None:
@@ -823,3 +835,56 @@ def test_an_aborted_rebalance_does_not_stamp_the_rebalance_date() -> None:
 
     assert after.last_rebalance_on == previous.last_rebalance_on
     assert after.sessions_held == 9
+
+
+def test_multiple_runs_on_the_same_date_do_not_advance_the_hold_clock() -> None:
+    """R7-05: every restart on the same trading day spent another of the model's held sessions."""
+    entry = date(2026, 9, 1)
+    state = _state(sessions_held=2, sessions_completed=2)
+
+    # First completion on 2026-09-01
+    run1 = state_from_ledger(
+        state,
+        session_completed=True,
+        cash=Decimal("93570.50"),
+        positions={"INFY": (98, Decimal("1542.59"))},
+        session_date=entry,
+        session_realized_pnl=Decimal("0.00"),
+        fees_paid=Decimal("0.00"),
+        rebalanced=False,
+    )
+    assert run1.sessions_completed == 3
+    assert run1.sessions_held == 3
+    assert run1.last_completed_on == entry
+
+    # Second completion (e.g. process restart) on the SAME date 2026-09-01
+    run2 = state_from_ledger(
+        run1,
+        session_completed=True,
+        cash=Decimal("93570.50"),
+        positions={"INFY": (98, Decimal("1542.59"))},
+        session_date=entry,
+        session_realized_pnl=Decimal("0.00"),
+        fees_paid=Decimal("0.00"),
+        rebalanced=False,
+    )
+    assert run2.sessions_completed == 3, "must not advance sessions_completed again on same date"
+    assert run2.sessions_held == 3, "must not advance sessions_held again on same date"
+    assert run2.last_completed_on == entry
+
+    # Third run on next trading day 2026-09-02
+    next_day = date(2026, 9, 2)
+    run3 = state_from_ledger(
+        run2,
+        session_completed=True,
+        cash=Decimal("93570.50"),
+        positions={"INFY": (98, Decimal("1542.59"))},
+        session_date=next_day,
+        session_realized_pnl=Decimal("0.00"),
+        fees_paid=Decimal("0.00"),
+        rebalanced=False,
+    )
+    assert run3.sessions_completed == 4
+    assert run3.sessions_held == 4
+    assert run3.last_completed_on == next_day
+

@@ -1538,3 +1538,162 @@ def test_a_closed_market_ladder_does_not_produce_a_spread_of_the_whole_share_pri
     assert parsed is not None
     assert parsed["spread"] == Decimal("0.05")
     assert parsed["price"] == Decimal("1309.00")
+
+
+# --------------------------------------------------------------------------------------------
+# Red Team Round 7 P1 Blockers and Runner Call-Site Mutant Killers (R7-01, R7-02, R7-08, R7-09)
+# --------------------------------------------------------------------------------------------
+
+
+def test_rebalance_executed_checks_coverage_boundary_and_purity_and_zero_fills() -> None:
+    """Kills M3, and validates R7-02 zero-fills and book purity guards."""
+    runner = _runner_module()
+    hundred = {f"N{n}" for n in range(100)}
+
+    # Boundary at 80%: 79% must fail, 80% must pass (kills M3)
+    held_79 = {f"N{n}" for n in range(79)}
+    held_80 = {f"N{n}" for n in range(80)}
+    assert runner.rebalance_executed(hundred, held_79) is False
+    assert runner.rebalance_executed(hundred, held_80) is True
+
+    # Zero fills when orders were submitted (R7-02)
+    assert runner.rebalance_executed(hundred, hundred, orders_submitted=24, total_fills=0) is False
+    assert runner.rebalance_executed(hundred, hundred, orders_submitted=24, total_fills=20) is True
+
+    # Book purity: held book contains lots of unwanted old names (R7-02)
+    selected_2 = {"AXISBANK", "ITC"}
+    held_4 = {"AXISBANK", "ITC", "RELIANCE", "TCS"}
+    assert runner.rebalance_executed(selected_2, held_4) is False
+
+
+def test_governor_allows_sell_order_even_when_unquoted_position_held() -> None:
+    """R7-01: An unquoted holding must not prevent de-risking exit orders."""
+    from quant_system.core.domain import Order, OrderType, Position, Quote, Side
+    from quant_system.risk.governor import PreTradeRiskGovernor, RiskLimits
+
+    gov = PreTradeRiskGovernor(limits=RiskLimits(max_portfolio_leverage=1.0))
+    positions = {
+        "RELIANCE": Position(symbol="RELIANCE", quantity=100, average_price=Decimal("2000.00")),
+        "TCS": Position(symbol="TCS", quantity=50, average_price=Decimal("3000.00")),
+    }
+    sell_order = Order(
+        order_id="ord_exit_rel",
+        symbol="RELIANCE",
+        side=Side.SELL,
+        order_type=OrderType.LIMIT,
+        quantity=100,
+        limit_price=Decimal("2050.00"),
+        created_at=datetime.now(UTC),
+    )
+    quote = Quote(
+        symbol="RELIANCE",
+        timestamp=datetime.now(UTC),
+        bid=Decimal("2050.00"),
+        ask=Decimal("2051.00"),
+    )
+    decision = gov.evaluate_order(
+        order=sell_order,
+        current_equity=Decimal("500000.00"),
+        current_cash=Decimal("150000.00"),
+        positions=positions,
+        current_quote=quote,
+        current_prices={"RELIANCE": Decimal("2050.00")},  # TCS is missing
+    )
+    assert decision.approved is True, f"Exit order was refused: {decision.reason}"
+
+
+def test_missing_state_file_fails_closed_when_past_sessions_exist(tmp_path, monkeypatch) -> None:
+    """R7-09: An absent state file with existing session reports must refuse to invent a fresh Rs 10 lakh book."""
+    runner = _runner_module()
+
+    runs_dir = tmp_path / "paper_runs"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    past_report = runs_dir / "paper_session_20260901_153000_IST.json"
+    past_report.write_text("{}", encoding="utf-8")
+
+    fake_state_path = runs_dir / "portfolio_state.json"
+    monkeypatch.setattr(runner, "PORTFOLIO_STATE_PATH", fake_state_path)
+    monkeypatch.setattr(runner, "assert_upstox_usable", lambda token: None)
+    monkeypatch.setattr(
+        runner,
+        "fetch_quotes_with_retry",
+        lambda universe, access_token=None: {"INFY": {"price": Decimal("1500.00")}},
+    )
+    # `run_paper_session` exports its token to the process environment
+    # (`run_paper_pilot_session.py:896`). Claiming it through monkeypatch first means the
+    # prior state -- here, absent -- is recorded and restored at teardown. Without this the
+    # token outlived the test and every later test saw one: `UpstoxClient(access_token="")`
+    # treats "" as falsy and falls through to `os.getenv("UPSTOX_ACCESS_TOKEN")`, so the two
+    # tests asserting PROVIDER_UNAUTHORIZED without a token got DATASET_EMPTY instead.
+    monkeypatch.setenv("UPSTOX_ACCESS_TOKEN", "test-only-not-a-real-token")
+
+    with pytest.raises(runner.PaperPortfolioError, match="Missing portfolio state"):
+        runner.run_paper_session(
+            session_date=date(2026, 9, 2),
+            output_dir=runs_dir,
+            universe=["INFY"],
+            upstox_token="test_mock_token",
+            force_new_portfolio=False,
+        )
+
+
+def test_halted_portfolio_refuses_trading_at_startup(tmp_path, monkeypatch) -> None:
+    """Kills M6: if portfolio.risk_halted is True, runner must exit 8."""
+    runner = _runner_module()
+    runs_dir = tmp_path / "paper_runs"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    state_path = runs_dir / "portfolio_state.json"
+    monkeypatch.setattr(runner, "PORTFOLIO_STATE_PATH", state_path)
+
+    halted_state = runner.PaperPortfolioState(
+        cash=Decimal("500000.00"),
+        risk_halted=True,
+        halted_on=date(2026, 9, 1),
+        halt_reason="TRAILING_DRAWDOWN_KILL_SWITCH",
+    )
+    runner.save_portfolio(state_path, halted_state)
+
+    monkeypatch.setattr(runner, "assert_upstox_usable", lambda token: None)
+    monkeypatch.setattr(
+        runner,
+        "fetch_quotes_with_retry",
+        lambda universe, access_token=None: {"INFY": {"price": Decimal("1500.00")}},
+    )
+    # `run_paper_session` exports its token to the process environment
+    # (`run_paper_pilot_session.py:896`). Claiming it through monkeypatch first means the
+    # prior state -- here, absent -- is recorded and restored at teardown. Without this the
+    # token outlived the test and every later test saw one: `UpstoxClient(access_token="")`
+    # treats "" as falsy and falls through to `os.getenv("UPSTOX_ACCESS_TOKEN")`, so the two
+    # tests asserting PROVIDER_UNAUTHORIZED without a token got DATASET_EMPTY instead.
+    monkeypatch.setenv("UPSTOX_ACCESS_TOKEN", "test-only-not-a-real-token")
+
+    with pytest.raises(SystemExit) as exc:
+        runner.run_paper_session(
+            session_date=date(2026, 9, 2),
+            output_dir=runs_dir,
+            universe=["INFY"],
+            upstox_token="valid_token",
+        )
+    assert exc.value.code == 8
+
+
+def test_concurrent_portfolio_write_during_session_detected_at_save(tmp_path) -> None:
+    """Kills M1 & M10: state_hash_on_disk at load prevents clobbering concurrent state write."""
+    runner = _runner_module()
+    runs_dir = tmp_path / "paper_runs"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    state_path = runs_dir / "portfolio_state.json"
+
+    initial_state = runner.PaperPortfolioState(cash=Decimal("1000000.00"))
+    runner.save_portfolio(state_path, initial_state)
+    load_hash = runner.state_hash_on_disk(state_path)
+
+    # Concurrent session writes to state_path
+    concurrent_state = runner.PaperPortfolioState(cash=Decimal("950000.00"), sessions_completed=1)
+    runner.save_portfolio(state_path, concurrent_state)
+
+    # Attempting to save with the original load_hash must raise PaperPortfolioError
+    my_updated_state = runner.PaperPortfolioState(cash=Decimal("900000.00"), sessions_completed=1)
+    with pytest.raises(runner.PaperPortfolioError, match="changed since this session loaded it"):
+        runner.save_portfolio(state_path, my_updated_state, expected_prior_hash=load_hash)
+

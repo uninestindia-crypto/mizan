@@ -376,7 +376,7 @@ class PreTradeRiskGovernor:
                 continue
             gross_pos_val += abs(p.quantity) * mark
 
-        if unvaluable:
+        if unvaluable and order.side != Side.SELL:
             return RiskDecision(
                 approved=False,
                 reason=(

@@ -214,6 +214,8 @@ def rebalance_executed(
     selected: set[str],
     held: set[str],
     minimum: float = MIN_REBALANCE_COVERAGE,
+    orders_submitted: int = 0,
+    total_fills: int = -1,
 ) -> bool:
     """Whether the book became the selection the model chose.
 
@@ -226,10 +228,17 @@ def rebalance_executed(
     that matters: an all-exits rebalance covers 0.0, one entry of four covers 0.25, a re-rank that
     keeps everything covers 1.0, and a hundred picks with three names too expensive to buy a single
     share of covers 0.97.
+
+    R7-02: Both target coverage and book purity must satisfy the threshold, and if orders were
+    submitted, at least one order must have filled.
     """
-    if not selected:
+    if not selected or not held:
         return False
-    return len(held & selected) / len(selected) >= minimum
+    if orders_submitted > 0 and total_fills == 0:
+        return False
+    target_coverage = len(held & selected) / len(selected)
+    book_purity = len(held & selected) / len(held)
+    return target_coverage >= minimum and book_purity >= minimum
 
 
 def equity_marked_at(
@@ -872,6 +881,7 @@ def run_paper_session(
     output_dir: Path | None = None,
     selection_fraction: float = 0.20,
     sizing: str = "equal-weight",
+    force_new_portfolio: bool = False,
 ) -> dict[str, Any]:
     """Runs a complete quote-driven paper trading session in IST from start time until market close (15:30 IST)."""
     current_ist = now_ist()
@@ -998,7 +1008,17 @@ def run_paper_session(
     # sessions ran concurrently and the second to finish silently discarded the first's whole
     # trading day; this does not stop the overlap, it stops the loss.
     portfolio_hash_at_load = state_hash_on_disk(PORTFOLIO_STATE_PATH)
-    portfolio = load_portfolio(PORTFOLIO_STATE_PATH) or PaperPortfolioState(cash=initial_cash)
+    portfolio = load_portfolio(PORTFOLIO_STATE_PATH)
+    if portfolio is None:
+        past_session_files = list(PORTFOLIO_STATE_PATH.parent.glob("paper_session_*.json"))
+        if past_session_files and not force_new_portfolio:
+            raise PaperPortfolioError(
+                f"Missing portfolio state at {PORTFOLIO_STATE_PATH}, but {len(past_session_files)} "
+                f"past session report(s) exist in {PORTFOLIO_STATE_PATH.parent}. Refusing to invent a "
+                "fresh Rs 10 lakh portfolio to prevent silent loss of carried holdings (R7-09). "
+                "Restore from backup (e.g. portfolio_state.backup.json) or pass --force-new-portfolio."
+            )
+        portfolio = PaperPortfolioState(cash=initial_cash)
     horizon = int(model.config.label_horizon_sessions)
     rebalancing = portfolio.rebalance_due(horizon)
     logger.info(
@@ -1829,7 +1849,13 @@ def run_paper_session(
             governor.limits.max_position_weight * 100,
             ", ".join(f"{sym} {weight * 100:.1f}%" for sym, weight in drifted[:5]),
         )
-    executed_rebalance = rebalancing and rebalance_executed(selected, held)
+    executed_rebalance = rebalancing and rebalance_executed(
+        selected,
+        held,
+        minimum=MIN_REBALANCE_COVERAGE,
+        orders_submitted=reconciliation.orders_submitted,
+        total_fills=reconciliation.total_fills_count,
+    )
     if rebalancing and not executed_rebalance:
         logger.warning(
             "Rebalance did NOT execute: %d of %d selected names held (%.0f%%, minimum %.0f%%); "
@@ -1885,6 +1911,13 @@ def run_paper_session(
     )
     try:
         save_portfolio(PORTFOLIO_STATE_PATH, portfolio, portfolio_hash_at_load)
+        # Automatic dual backup: local backup beside the state file, plus evidence backup (R7-09)
+        backup_local = PORTFOLIO_STATE_PATH.with_suffix(".backup.json")
+        save_portfolio(backup_local, portfolio)
+        evidence_dir = PROJECT_ROOT / "data" / "evidence" / "paper"
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        evidence_backup = evidence_dir / "portfolio_state.json"
+        save_portfolio(evidence_backup, portfolio)
     except PaperPortfolioError as clash:
         # The session's own artifacts are already written, so the day is recoverable by hand; what
         # must not happen is overwriting whatever the other session recorded.
@@ -2170,6 +2203,11 @@ def main() -> int:
     )
     parser.add_argument("--universe", type=str, nargs="+", default=None, help="Universe symbols")
     parser.add_argument("--output-dir", type=str, default=None, help="Output directory")
+    parser.add_argument(
+        "--force-new-portfolio",
+        action="store_true",
+        help="Allow creating a fresh portfolio even if previous session reports exist",
+    )
 
     args = parser.parse_args()
 
@@ -2197,6 +2235,7 @@ def main() -> int:
             end_time_str=args.end_time_ist,
             upstox_token=args.upstox_token,
             output_dir=out_p,
+            force_new_portfolio=args.force_new_portfolio,
         )
         # A failed reconciliation used to print SUCCESS and exit 0, next to a hardcoded
         # "(0.00 Paisa Discrepancy)" that was printed whether or not the discrepancy was zero. The
