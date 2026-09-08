@@ -70,6 +70,14 @@ def test_the_dashboard_still_answers_after_a_stalled_client_disappears(
         assert response.status == 200
 
 
+def test_the_dashboard_answers_xs_status(running_dashboard) -> None:
+    """The dashboard must serve XS monthly status for the multi-model dashboard view."""
+    port = running_dashboard
+    with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/xs_status", timeout=5) as response:
+        assert response.status == 200
+        assert "application/json" in response.headers.get("Content-Type", "")
+
+
 def test_the_dashboard_binds_loopback_only(running_dashboard) -> None:
     """The page carries an access-token field and Start/Halt controls."""
     port = running_dashboard

@@ -234,6 +234,21 @@ class DiagnosticsReport(BaseModel):
     total_checks: int
 
 
+class ModelStrategyAuditReport(BaseModel):
+    status: str
+    overall_verdict: str
+    model_status: str
+    strategy_status: str
+    class_imbalance: dict[str, Any]
+    holdout_performance: dict[str, Any]
+    multiplicity_dsr: dict[str, Any]
+    friction_wall: dict[str, Any]
+    horizons: dict[str, Any]
+    survivorship_bias: dict[str, Any]
+    key_findings: list[str]
+    actionable_recommendations: list[str]
+
+
 class MonteCarloRequest(BaseModel):
     strategy_name: str = "EquityDualMomentum"
     num_simulations: int = Field(5000, ge=500, le=50000)

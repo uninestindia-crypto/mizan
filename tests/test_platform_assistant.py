@@ -130,3 +130,32 @@ def test_assistant_api_endpoints(client: TestClient) -> None:
     act_json = act_resp.json()
     assert act_json["success"] is True
     assert act_json["data"]["delta"] > 0
+
+
+def test_assistant_audit_model_strategy_intent() -> None:
+    """Tests model and strategy profitability audit intent routing in assistant."""
+    service = PlatformAssistantService()
+    resp = service.process_chat(
+        AssistantChatRequest(prompt="Is my model and strategy profitable?")
+    )
+    assert "UNPROFITABLE AFTER STATUTORY COSTS" in resp.message
+    assert "Ridge Intercept" in resp.message or "Intercept Drift" in resp.message
+    assert "0.224%" in resp.message
+    assert len(resp.action_proposals) >= 1
+    assert any(p.target_tab == "tab-diagnostics" for p in resp.action_proposals)
+
+
+def test_model_strategy_diagnostics_endpoint(client: TestClient) -> None:
+    """Tests /api/v1/diagnostics/model-strategy endpoint response."""
+    resp = client.get("/api/v1/diagnostics/model-strategy")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "DEGRADED"
+    assert data["overall_verdict"] == "UNPROFITABLE_AFTER_STATUTORY_COSTS"
+    assert data["model_status"] == "FAIL"
+    assert "class_imbalance" in data
+    assert data["class_imbalance"]["up_samples"] == 182
+    assert data["class_imbalance"]["down_samples"] == 229
+    assert data["friction_wall"]["total_round_trip_pct"] > 0.20
+    assert len(data["key_findings"]) >= 3
+    assert len(data["actionable_recommendations"]) >= 3

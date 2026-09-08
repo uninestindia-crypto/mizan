@@ -1,0 +1,17 @@
+{
+  "timestamp_utc": "2026-09-04T19:01:02Z",
+  "model": "claude-opus-5",
+  "thinking_mode": "adaptive (effort: max)",
+  "endpoint": "https://lightning.ai/v1/messages",
+  "total_cost_usd": 5.5449,
+  "tokens": {
+    "input": 43970,
+    "cache_read": 0,
+    "output": 65138
+  },
+  "reports": [
+    "00_executive_summary.md",
+    "01_model_analysis.md",
+    "02_strategy_analysis.md"
+  ]
+}

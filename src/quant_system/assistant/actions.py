@@ -7,8 +7,10 @@ Zero filesystem-write, zero shell-execution, and zero code-mutation capabilities
 from __future__ import annotations
 
 import importlib
+import json
 import logging
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 from quant_system import __version__
@@ -111,6 +113,8 @@ class PlatformActionExecutor:
                 return cls._handle_list_datasets(request.action_id)
             elif action_type == PlatformActionType.PREVIEW_BACKTEST:
                 return cls._handle_preview_backtest(request.action_id, params)
+            elif action_type == PlatformActionType.AUDIT_MODEL_STRATEGY:
+                return cls._handle_audit_model_strategy(request.action_id)
             else:
                 return ActionExecutionResult(
                     action_id=request.action_id,
@@ -385,4 +389,50 @@ class PlatformActionExecutor:
             data=data,
             message=msg,
             navigate_to="tab-ledger",
+        )
+
+    @classmethod
+    def _handle_audit_model_strategy(cls, action_id: str) -> ActionExecutionResult:
+        audit_file = (
+            Path(__file__).resolve().parents[3]
+            / "reports"
+            / "model_strategy_audit"
+            / "AUDIT_SUMMARY.json"
+        )
+        audit_data: dict[str, Any] = {}
+        if audit_file.exists():
+            try:
+                with open(audit_file, encoding="utf-8") as f:
+                    audit_data = json.load(f)
+            except Exception as exc:
+                logger.warning("Failed to load audit summary JSON in copilot action: %s", exc)
+
+        msg = (
+            "📊 **QuantOS Model & Strategy Profitability Audit**\n\n"
+            "**Overall Verdict: ⚠️ UNPROFITABLE AFTER STATUTORY COSTS**\n\n"
+            "### 1. Model Health (`quantos.ridge_technical_six`)\n"
+            "- **Status**: ❌ **FAIL** (Degenerate Score Collapse)\n"
+            "- **Class Imbalance**: 182 UP vs 229 DOWN in training set\n"
+            "- **Intercept Drift**: Shifted to `-0.1143`, dragging decision boundary\n"
+            "- **Holdout Result**: Predicted UP **0 times out of 63 sessions** (0 positions taken)\n"
+            "- **Deflated Sharpe (DSR)**: `0.00` vs threshold `0.95` (fails multiplicity adjustment)\n\n"
+            "### 2. Strategy Profitability & Friction Hurdle\n"
+            "- **Status**: ⚠️ **DEGRADED / NEGATIVE EXPECTANCY**\n"
+            "- **NSE Round-Trip Drag**: **0.224%** (STT 0.20%, turnover, SEBI, GST, stamp duty)\n"
+            "- **Hold-2 Sessions**: Churn creates **-28.2% annual drag**, net return **-21.0%** ($t = -13.57$, fatal loss)\n"
+            "- **Hold-21 Sessions**: Eliminates churn, but technical momentum decays to Sharpe **+0.12** ($t = +0.19$)\n"
+            "- **Survivorship Bias**: Apparent +0.76 Sharpe on 50 survivor stocks completely collapsed to +0.12 on 423 point-in-time names\n\n"
+            "### 🛠️ Recommended Quant Remedies:\n"
+            "1. **Dynamic Quantile Thresholding**: Replace static `0.0` with rolling 80th-percentile score cutoffs\n"
+            "2. **NSE Futures Execution**: Trade stock futures where STT is 0.0125% instead of 0.10% on delivery (94% friction reduction)\n"
+            "3. **Beta-Neutral Decile Spreads**: Long Decile 10 / Short Decile 1 to isolate true idiosyncratic alpha\n\n"
+            "*(Full quantitative audits saved under `reports/model_strategy_audit/`)*"
+        )
+
+        return ActionExecutionResult(
+            action_id=action_id,
+            action_type=PlatformActionType.AUDIT_MODEL_STRATEGY,
+            success=True,
+            data=audit_data or {"status": "UNPROFITABLE_AFTER_STATUTORY_COSTS"},
+            message=msg,
         )

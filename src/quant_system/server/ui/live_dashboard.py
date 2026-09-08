@@ -335,6 +335,72 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       color: var(--text-muted);
       font-style: italic;
     }
+    /* Model Navigation Bar */
+    .model-nav {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .nav-tab {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.15s ease;
+    }
+    .nav-tab:hover {
+      background: #1f2937;
+      color: var(--text-main);
+      border-color: #374151;
+    }
+    .nav-tab.active {
+      background: #1e293b;
+      color: #ffffff;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.25);
+    }
+    .tab-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #64748b;
+    }
+    .nav-tab.active .tab-dot.dot-mizan {
+      background: var(--profit-green);
+      box-shadow: 0 0 8px var(--profit-green);
+    }
+    .nav-tab.active .tab-dot.dot-xs {
+      background: var(--accent-cyan);
+      box-shadow: 0 0 8px var(--accent-cyan);
+    }
+    .nav-tab.active .tab-dot.dot-registry {
+      background: var(--highlight);
+      box-shadow: 0 0 8px var(--highlight);
+    }
+    .tab-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #374151;
+      color: #d1d5db;
+    }
+    .nav-tab.active .tab-badge {
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+    }
   </style>
 </head>
 <body>
@@ -350,6 +416,28 @@ HTML_DASHBOARD = """<!DOCTYPE html>
         <div class="session-id" id="session-id">Session: Loading...</div>
       </div>
     </header>
+
+    <!-- Model Switcher Navigation -->
+    <nav class="model-nav">
+      <button class="nav-tab active" id="tab-btn-mizan" onclick="switchTab('mizan')">
+        <span class="tab-dot dot-mizan"></span>
+        <span>Mīzān Flagship Alpha</span>
+        <span class="tab-badge">Intraday Paper Pilot</span>
+      </button>
+      <button class="nav-tab" id="tab-btn-xs" onclick="switchTab('xs')">
+        <span class="tab-dot dot-xs"></span>
+        <span>Mīzān XS-Monthly Momentum</span>
+        <span class="tab-badge">21-Day Paper Watch</span>
+      </button>
+      <button class="nav-tab" id="tab-btn-registry" onclick="switchTab('registry')">
+        <span class="tab-dot dot-registry"></span>
+        <span>Strategy Directory & Governance</span>
+        <span class="tab-badge">All Models</span>
+      </button>
+    </nav>
+
+    <!-- TAB 1: Mīzān Model View -->
+    <div id="view-mizan" class="model-view">
 
     <!-- Platform GUI Controls: Market Hours Schedule & Session Runner -->
     <section class="controls-panel">
@@ -525,13 +613,244 @@ HTML_DASHBOARD = """<!DOCTYPE html>
         </div>
       </div>
     </div>
+  </div> <!-- /view-mizan -->
+
+  <!-- TAB 2: Mīzān XS-Monthly Momentum View -->
+  <div id="view-xs" class="model-view" style="display: none;">
+    <!-- XS Model Banner -->
+    <div class="card" style="border-left: 4px solid var(--accent-cyan); margin-bottom: 24px;">
+      <div class="card-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h2 style="font-size: 16px; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+            Mīzān XS-Monthly Momentum Strategy
+            <span class="badge" style="background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); border: 1px solid var(--accent-cyan);">21-Day Hold · Top 20%</span>
+            <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">RESEARCH ONLY · NO REAL ORDERS</span>
+          </h2>
+          <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace;">
+            Cross-sectional momentum ranking on NIFTY 500 universe · 0.224% round-trip friction · Forward paper watch
+          </div>
+        </div>
+        <div style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);">
+          Task: <span style="color: var(--accent-cyan);">QuantOS-XSMonthly-PaperWatch</span><br>
+          Cadence: Mon–Fri 16:00 IST
+        </div>
+      </div>
+    </div>
+
+    <!-- XS KPIs -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Book Equity</div>
+        <div class="kpi-val text-cyan" id="xs-kpi-equity">₹--</div>
+        <div class="kpi-sub text-muted">Capital: <span id="xs-kpi-capital">₹10,00,000.00</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Unrealized (MtM) P&L</div>
+        <div class="kpi-val" id="xs-kpi-pnl">₹--</div>
+        <div class="kpi-sub" id="xs-kpi-pnl-pct">--% vs Capital</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Available Cash Balance</div>
+        <div class="kpi-val text-blue" id="xs-kpi-cash">₹--</div>
+        <div class="kpi-sub text-muted">Unallocated liquidity</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Open Market Exposure</div>
+        <div class="kpi-val text-green" id="xs-kpi-market-val">₹--</div>
+        <div class="kpi-sub text-muted" id="xs-kpi-open-legs">99 active open legs</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Strategy Specifications</div>
+        <div class="kpi-val" style="font-size: 16px; padding-top: 6px;" id="xs-kpi-rule">21F / 21H / 20%</div>
+        <div class="kpi-sub text-muted">Friction: 0.224% Round-Trip</div>
+      </div>
+    </section>
+
+    <!-- XS Content Grid -->
+    <div class="content-grid">
+      <!-- Open Legs Table -->
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Active Holdings Matrix (Top-20% Momentum Basket)</span>
+            <span class="badge badge-tag" id="xs-open-count">Loading...</span>
+          </div>
+          <div class="card-body" style="padding: 0; max-height: 520px; overflow-y: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th class="text-right">Shares</th>
+                  <th class="text-right">Entry (₹)</th>
+                  <th class="text-right">Market Val (₹)</th>
+                  <th class="text-right">Gross Mark</th>
+                  <th class="text-right">Unrealized P&L</th>
+                  <th>Entry Date</th>
+                </tr>
+              </thead>
+              <tbody id="xs-positions-table-body">
+                <tr><td colspan="7" class="empty-state">Loading XS-Monthly positions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- XS Right Column: Runs & Strategy Rules -->
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Strategy Rules & Invariants</span>
+            <span class="badge badge-tag">FROZEN RULE</span>
+          </div>
+          <div class="card-body">
+            <div class="risk-grid">
+              <div class="risk-item">
+                <div class="risk-item-label">Formation Window</div>
+                <div class="risk-item-val text-cyan">21 Sessions (~1 Mo)</div>
+              </div>
+              <div class="risk-item">
+                <div class="risk-item-label">Holding Period</div>
+                <div class="risk-item-val text-cyan">21 Sessions (~1 Mo)</div>
+              </div>
+              <div class="risk-item">
+                <div class="risk-item-label">Selection Fraction</div>
+                <div class="risk-item-val text-cyan">Top 20% Momentum</div>
+              </div>
+              <div class="risk-item">
+                <div class="risk-item-label">Statutory NSE Friction</div>
+                <div class="risk-item-val text-cyan">0.224% Round-Trip</div>
+              </div>
+            </div>
+            <div style="margin-top: 16px; font-size: 12px; color: var(--text-muted); line-height: 1.6;">
+              <strong>Research Governance Finding:</strong> Historical 10-year test on 423 liquid names gave a selection edge of only <strong>+5 bps</strong> over holding the market equal-weight, with negative Rank IC. Forward paper watch tests whether this +5 bps reproduces out-of-sample or collapses to zero.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Watch Execution History</span>
+            <span class="badge badge-tag" id="xs-runs-count">0 Runs</span>
+          </div>
+          <div class="card-body" style="padding: 0; max-height: 240px; overflow-y: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Timestamp (UTC)</th>
+                  <th>Action</th>
+                  <th class="text-right">Legs</th>
+                  <th class="text-right">Equity (₹)</th>
+                </tr>
+              </thead>
+              <tbody id="xs-runs-table-body">
+                <tr><td colspan="4" class="empty-state">No execution runs recorded yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- TAB 3: Strategy Directory & Governance Overview -->
+  <div id="view-registry" class="model-view" style="display: none;">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">QuantOS Model & Strategy Directory</span>
+        <span class="badge badge-tag">Governance Snapshot</span>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <table>
+          <thead>
+            <tr>
+              <th>Model / Strategy Name</th>
+              <th>Candidate ID</th>
+              <th>Architecture & Horizon</th>
+              <th>Validation Finding</th>
+              <th>Promotion Verdict</th>
+              <th>Live Execution Gate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Mīzān Flagship Alpha</strong><br><span style="color: var(--text-muted); font-size: 11px;">quant_system.strategies.mizan_strategy</span></td>
+              <td><code>cand_mizan_v1</code></td>
+              <td>15-feature cross-sectional pooled L2 ridge regression · Intraday to multi-day</td>
+              <td>Sharpe -0.4108, Deflated Sharpe 0.1760 (fails 0.95 gate)</td>
+              <td><span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">RESEARCH_ONLY</span></td>
+              <td><span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">Paper Pilot Active</span><br><span style="font-size: 10px; color: var(--text-muted);">Refused on live routing</span></td>
+            </tr>
+            <tr>
+              <td><strong>Mīzān XS-Monthly Momentum</strong><br><span style="color: var(--text-muted); font-size: 11px;">quant_system.research_xs_monthly</span></td>
+              <td><code>xs_monthly_top20</code></td>
+              <td>Cross-sectional top-20% relative momentum ranker · 21 sessions (~1 month)</td>
+              <td>Long-only +1.74%/period vs Market +1.69%/period; Selection edge +5 bps (noise); Long-short Sharpe -0.12</td>
+              <td><span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">RESEARCH_ONLY</span></td>
+              <td><span class="badge" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee;">Paper Watch Active</span><br><span style="font-size: 10px; color: var(--text-muted);">Scheduled out-of-sample test</span></td>
+            </tr>
+            <tr>
+              <td><strong>Governed Single-Name Ridge</strong><br><span style="color: var(--text-muted); font-size: 11px;">quant_system.modeling.ridge</span></td>
+              <td><code>cand_ridge_v1</code></td>
+              <td>6-feature technical linear model with L2 regularization · Daily</td>
+              <td>INFY Sharpe -0.704; NIFTY 50 median Sharpe -0.228; Best DSR 0.218 vs 0.95 gate. No edge after 0.224% costs.</td>
+              <td><span class="badge" style="background: rgba(156, 163, 175, 0.2); color: #9ca3af;">RETIRED / RESEARCH_ONLY</span></td>
+              <td><span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">Blocked</span><br><span style="font-size: 10px; color: var(--text-muted);">Refused at promotion gate</span></td>
+            </tr>
+            <tr>
+              <td><strong>Equity Dual Momentum</strong><br><span style="color: var(--text-muted); font-size: 11px;">quant_system.strategies.equity_momentum</span></td>
+              <td><code>EquityDualMomentum</code></td>
+              <td>Dual SMA trend filter (20/50) + 50-day relative momentum ranker · Swing</td>
+              <td>Median Sharpe -2.2591 across NIFTY 50; beaten by losing Ridge on 26/40 names due to friction and whipsaws.</td>
+              <td><span class="badge" style="background: rgba(156, 163, 175, 0.2); color: #9ca3af;">INFERIOR BASELINE</span></td>
+              <td><span class="badge" style="background: rgba(156, 163, 175, 0.2); color: #9ca3af;">Registry Only</span></td>
+            </tr>
+            <tr>
+              <td><strong>Rolling ML Equity / AI-Enhanced</strong><br><span style="color: var(--text-muted); font-size: 11px;">quant_system.strategies.ml_equity</span></td>
+              <td><code>RollingRidgeClassifier</code></td>
+              <td>Rolling unpurged ridge classifier with technical indicators & multi-agent AI advisory</td>
+              <td>Lacks purging, embargoing, and multiplicity accounting.</td>
+              <td><span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">RESEARCH_ONLY</span></td>
+              <td><span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">Blocked</span><br><span style="font-size: 10px; color: var(--text-muted);">Refused at execution boundary (85ff535)</span></td>
+            </tr>
+            <tr>
+              <td><strong>Intraday ATM Straddle</strong><br><span style="color: var(--text-muted); font-size: 11px;">quant_system.strategies.options_straddle</span></td>
+              <td><code>IntradayATMStraddle</code></td>
+              <td>Options theta writing: Sell 09:20 IST ATM Call/Put, 25% stop-loss, 15:15 IST square-off</td>
+              <td>Code complete; not yet run through governed historical options evidence pipeline.</td>
+              <td><span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">UNADJUDICATED</span></td>
+              <td><span class="badge" style="background: rgba(156, 163, 175, 0.2); color: #9ca3af;">Registry Only</span></td>
+            </tr>
+            <tr>
+              <td><strong>Directional Vertical Spreads</strong><br><span style="color: var(--text-muted); font-size: 11px;">quant_system.strategies.options_spreads</span></td>
+              <td><code>DirectionalVerticalSpreads</code></td>
+              <td>Defined-risk 2-leg vertical options spreads (Bull Call / Bear Put)</td>
+              <td>Code complete; awaiting point-in-time options chain datasets.</td>
+              <td><span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">UNADJUDICATED</span></td>
+              <td><span class="badge" style="background: rgba(156, 163, 175, 0.2); color: #9ca3af;">Registry Only</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 
   <script>
     function formatINR(val) {
       const num = parseFloat(val);
       if (isNaN(num)) return "₹0.00";
       return "₹" + num.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll(".nav-tab").forEach(btn => btn.classList.remove("active"));
+      const activeBtn = document.getElementById("tab-btn-" + tabId);
+      if (activeBtn) activeBtn.classList.add("active");
+
+      document.querySelectorAll(".model-view").forEach(view => view.style.display = "none");
+      const targetView = document.getElementById("view-" + tabId);
+      if (targetView) targetView.style.display = "block";
     }
 
     async function startAutomatedSession() {
@@ -732,9 +1051,110 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       }
     }
 
-    // Auto-poll every 1500ms
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    async function fetchXsStatus() {
+      try {
+        const res = await fetch("/api/xs_status");
+        if (!res.ok) return;
+        const data = await res.json();
+        updateXsDashboard(data);
+      } catch (err) {
+        console.error("Failed to fetch XS status:", err);
+      }
+    }
+
+    function updateXsDashboard(data) {
+      if (!data) return;
+      const capital = parseFloat(data.capital) || 1000000;
+      const cash = parseFloat(data.cash) || 0;
+      const openLegs = data.open || [];
+      const runs = data.runs || [];
+
+      let totalMarketVal = 0;
+      let totalUnrealized = 0;
+      openLegs.forEach(leg => {
+        totalMarketVal += parseFloat(leg.market_value) || 0;
+        totalUnrealized += parseFloat(leg.unrealized) || 0;
+      });
+
+      const totalEquity = cash + totalMarketVal;
+      const pnlPct = capital > 0 ? (totalUnrealized / capital) * 100 : 0;
+
+      document.getElementById("xs-kpi-equity").textContent = formatINR(totalEquity);
+      document.getElementById("xs-kpi-capital").textContent = formatINR(capital);
+      document.getElementById("xs-kpi-cash").textContent = formatINR(cash);
+      document.getElementById("xs-kpi-market-val").textContent = formatINR(totalMarketVal);
+      document.getElementById("xs-kpi-open-legs").textContent = openLegs.length + " active open legs";
+
+      const pnlElem = document.getElementById("xs-kpi-pnl");
+      const pnlPctElem = document.getElementById("xs-kpi-pnl-pct");
+      const pnlSign = totalUnrealized >= 0 ? "+" : "";
+      pnlElem.textContent = pnlSign + formatINR(totalUnrealized);
+      pnlPctElem.textContent = pnlSign + pnlPct.toFixed(2) + "% vs Capital";
+
+      if (totalUnrealized >= 0) {
+        pnlElem.className = "kpi-val text-green";
+        pnlPctElem.className = "kpi-sub text-green";
+      } else {
+        pnlElem.className = "kpi-val text-red";
+        pnlPctElem.className = "kpi-sub text-red";
+      }
+
+      document.getElementById("xs-open-count").textContent = openLegs.length + " Positions";
+      const posBody = document.getElementById("xs-positions-table-body");
+      if (openLegs.length === 0) {
+        posBody.innerHTML = '<tr><td colspan="7" class="empty-state">No active open legs in XS-Monthly watch.</td></tr>';
+      } else {
+        posBody.innerHTML = openLegs.map(leg => {
+          const uPnl = parseFloat(leg.unrealized) || 0;
+          const uPnlClass = uPnl >= 0 ? "text-green" : "text-red";
+          const uPnlSign = uPnl >= 0 ? "+" : "";
+          const grossMark = parseFloat(leg.gross_mark) || 0;
+          const grossPct = (grossMark * 100).toFixed(2) + "%";
+          return `
+            <tr>
+              <td><strong>${escapeHtml(leg.symbol)}</strong></td>
+              <td class="text-right">${leg.shares}</td>
+              <td class="text-right">₹${parseFloat(leg.entry_open).toLocaleString('en-IN', {minimumFractionDigits: 1})}</td>
+              <td class="text-right">₹${parseFloat(leg.market_value).toLocaleString('en-IN', {minimumFractionDigits: 1})}</td>
+              <td class="text-right ${grossMark >= 0 ? 'text-green' : 'text-red'}">${grossMark >= 0 ? '+' : ''}${grossPct}</td>
+              <td class="text-right ${uPnlClass}"><strong>${uPnlSign}₹${uPnl.toFixed(1)}</strong></td>
+              <td>${leg.entry_date}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      document.getElementById("xs-runs-count").textContent = runs.length + " Runs";
+      const runsBody = document.getElementById("xs-runs-table-body");
+      if (runs.length === 0) {
+        runsBody.innerHTML = '<tr><td colspan="4" class="empty-state">No execution runs recorded yet.</td></tr>';
+      } else {
+        runsBody.innerHTML = runs.slice().reverse().map(r => `
+          <tr>
+            <td><code>${r.at ? r.at.replace('T', ' ').replace('Z', ' UTC') : '--'}</code></td>
+            <td><span class="badge badge-tag">${escapeHtml(r.note || 'run')}</span></td>
+            <td class="text-right">${r.open_legs !== undefined ? r.open_legs : '--'}</td>
+            <td class="text-right text-cyan">₹${r.equity ? parseFloat(r.equity).toLocaleString('en-IN', {minimumFractionDigits: 2}) : '--'}</td>
+          </tr>
+        `).join("");
+      }
+    }
+
+    // Auto-poll Mīzān every 1500ms, XS-Monthly every 3000ms
     fetchStatus();
+    fetchXsStatus();
     setInterval(fetchStatus, 1500);
+    setInterval(fetchXsStatus, 3000);
   </script>
 </body>
 </html>

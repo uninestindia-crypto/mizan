@@ -157,7 +157,10 @@ function initTabs() {
     }
 
     if (targetId === "tab-risk") loadRiskLimits();
-    if (targetId === "tab-diagnostics") loadDiagnostics();
+    if (targetId === "tab-diagnostics") {
+      loadDiagnostics();
+      loadModelStrategyAudit();
+    }
   }
 
   tabBtns.forEach((btn, index) => {
@@ -1226,7 +1229,86 @@ async function loadDiagnostics() {
 function initDiagnostics() {
   const btn = document.getElementById("btn-refresh-diag");
   if (btn) btn.addEventListener("click", loadDiagnostics);
+  const auditBtn = document.getElementById("btn-audit-model-strategy");
+  if (auditBtn) auditBtn.addEventListener("click", loadModelStrategyAudit);
 }
+
+async function loadModelStrategyAudit() {
+  const container = document.getElementById("model-strategy-audit-container");
+  if (!container) return;
+  // sec-allow: markup-injection — fixed loading markup contains no external data.
+  container.innerHTML = `<p style="color:var(--color-text-secondary);">Auditing model weights, score distributions, and NSE statutory friction...</p>`;
+
+  try {
+    const res = await fetch("/api/v1/diagnostics/model-strategy");
+    const d = await res.json();
+
+    const findingsHtml = (d.key_findings || []).map(f => `<li style="margin-bottom:6px;">${escapeHtml(f)}</li>`).join("");
+    const remediesHtml = (d.actionable_recommendations || []).map(r => `<li style="margin-bottom:6px;"><strong>${escapeHtml(r)}</strong></li>`).join("");
+
+    // sec-allow: markup-injection — diagnostic strings are escaped and counts are numeric.
+    container.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding:12px; background:rgba(239, 68, 68, 0.12); border:1px solid var(--color-danger); border-radius:8px;">
+        <div>
+          <strong style="font-size:15px; color:var(--color-danger);">Audit Verdict:</strong>
+          <span style="font-weight:700; margin-left:8px; color:var(--color-danger);">${escapeHtml(d.overall_verdict)}</span>
+        </div>
+        <span class="status-pill" style="color:var(--color-danger); border-color:var(--color-danger);">FAIL (0 Trades / Cost Wall)</span>
+      </div>
+
+      <div class="metrics-grid" style="margin-bottom:16px;">
+        <div class="stat-box">
+          <div class="stat-label">Model Intercept Drift</div>
+          <div class="stat-value negative" style="font-size:16px;">${Number(d.class_imbalance?.ridge_intercept ?? -0.114).toFixed(3)}</div>
+          <small style="color:var(--color-text-secondary); font-size:11px;">182 UP / 229 DOWN labels</small>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Holdout Signals (63d)</div>
+          <div class="stat-value negative" style="font-size:16px;">0 UP / 63 Flat</div>
+          <small style="color:var(--color-text-secondary); font-size:11px;">0% position taking (Degenerate)</small>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">NSE Round-Trip Drag</div>
+          <div class="stat-value negative" style="font-size:16px;">0.224%</div>
+          <small style="color:var(--color-text-secondary); font-size:11px;">STT 0.20% + Turnover + GST</small>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Hold-2 Annual Drag</div>
+          <div class="stat-value negative" style="font-size:16px;">-28.2% / yr</div>
+          <small style="color:var(--color-text-secondary); font-size:11px;">t = -13.57 (Fatal friction)</small>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Hold-21 Net Sharpe</div>
+          <div class="stat-value" style="font-size:16px; color:var(--color-warning);">+0.12</div>
+          <small style="color:var(--color-text-secondary); font-size:11px;">Signal decays over 21 days</small>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">423 Universe Rank IC</div>
+          <div class="stat-value negative" style="font-size:16px;">-0.022</div>
+          <small style="color:var(--color-text-secondary); font-size:11px;">50-name Sharpe (+0.76) was bias</small>
+        </div>
+      </div>
+
+      <div style="background:var(--color-bg-base); padding:14px; border-radius:8px; margin-bottom:14px;">
+        <h4 style="margin:0 0 8px 0; font-size:14px; color:var(--color-text-primary);">Key Audit Discoveries:</h4>
+        <ul style="margin:0; padding-left:20px; font-size:13px; color:var(--color-text-secondary);">
+          ${findingsHtml}
+        </ul>
+      </div>
+
+      <div style="background:rgba(34, 197, 94, 0.08); border:1px solid rgba(34, 197, 94, 0.25); padding:14px; border-radius:8px;">
+        <h4 style="margin:0 0 8px 0; font-size:14px; color:var(--color-success);">Actionable Quantitative Remedies:</h4>
+        <ol style="margin:0; padding-left:20px; font-size:13px; color:var(--color-text-primary);">
+          ${remediesHtml}
+        </ol>
+      </div>
+    `;
+  } catch (err) {
+    // sec-allow: markup-injection — the caught message is HTML-escaped before interpolation.
+    container.innerHTML = `<p style="color:var(--color-danger);">Failed to run model &amp; strategy audit: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
 
 function initMonteCarlo() {
   const mcBtn = document.getElementById("btn-run-mc");

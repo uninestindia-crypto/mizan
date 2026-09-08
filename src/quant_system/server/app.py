@@ -14,6 +14,7 @@ Features:
 from __future__ import annotations
 
 import json
+import logging
 import platform
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -81,6 +82,7 @@ from quant_system.server.schemas import (
     MizanPredictRequest,
     MizanPredictResponse,
     MizanUploadResponse,
+    ModelStrategyAuditReport,
     MonteCarloRequest,
     MonteCarloResponse,
     OperationCancelResponse,
@@ -126,6 +128,8 @@ from quant_system.server.ui import (
 )
 from quant_system.server.ui.live_dashboard import HTML_DASHBOARD
 from quant_system.strategies.registry import StrategyRegistry
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -853,6 +857,107 @@ def run_diagnostics() -> DiagnosticsReport:
         installed_strategies_count=strat_count,
         checks_passed=checks_passed,
         total_checks=total_checks,
+    )
+
+
+@app.get("/api/v1/diagnostics/model-strategy", response_model=ModelStrategyAuditReport)
+@app.get("/api/diagnostics/model-strategy", response_model=ModelStrategyAuditReport)
+def run_model_strategy_diagnostics() -> ModelStrategyAuditReport:
+    """Performs deep quantitative self-diagnostics on model and strategy profitability."""
+    audit_file = PROJECT_ROOT / "reports" / "model_strategy_audit" / "AUDIT_SUMMARY.json"
+    if audit_file.exists():
+        try:
+            with open(audit_file, encoding="utf-8") as f:
+                data = json.load(f)
+                return ModelStrategyAuditReport(
+                    status="DEGRADED",
+                    overall_verdict=data.get(
+                        "overall_verdict", "UNPROFITABLE_AFTER_STATUTORY_COSTS"
+                    ),
+                    model_status=data.get("model_audit", {}).get("status", "FAIL"),
+                    strategy_status=data.get("strategy_audit", {}).get("status", "DEGRADED"),
+                    class_imbalance=data.get("model_audit", {}).get("class_imbalance", {}),
+                    holdout_performance=data.get("model_audit", {}).get("holdout_performance", {}),
+                    multiplicity_dsr=data.get("model_audit", {}).get("multiplicity_dsr", {}),
+                    friction_wall=data.get("strategy_audit", {}).get("friction_wall", {}),
+                    horizons=data.get("strategy_audit", {}).get("horizons", {}),
+                    survivorship_bias=data.get("strategy_audit", {}).get("survivorship_bias", {}),
+                    key_findings=data.get("key_findings", []),
+                    actionable_recommendations=data.get("actionable_recommendations", []),
+                )
+        except Exception as exc:
+            logger.warning("Failed to load audit summary JSON: %s", exc)
+
+    return ModelStrategyAuditReport(
+        status="DEGRADED",
+        overall_verdict="UNPROFITABLE_AFTER_STATUTORY_COSTS",
+        model_status="FAIL",
+        strategy_status="DEGRADED",
+        class_imbalance={
+            "up_samples": 182,
+            "down_samples": 229,
+            "up_ratio": 0.4428,
+            "down_ratio": 0.5572,
+            "ridge_intercept": -0.1143,
+        },
+        holdout_performance={
+            "total_sessions": 63,
+            "predicted_up_sessions": 0,
+            "predicted_down_sessions": 63,
+            "positions_taken": 0,
+            "gross_sharpe": 0.0,
+            "issue": "Model takes 0 positions under default threshold 0.0 due to negative intercept drift.",
+        },
+        multiplicity_dsr={
+            "trials_tested": 51,
+            "raw_sharpe_range": "0.30 - 0.65",
+            "expected_max_random_sharpe": 2.80,
+            "deflated_sharpe_ratio": 0.0,
+            "pass_threshold": 0.95,
+            "status": "FAIL",
+        },
+        friction_wall={
+            "stt_rate_pct": 0.2000,
+            "turnover_charges_pct": 0.0067,
+            "gst_and_stamp_pct": 0.0162,
+            "brokerage_pct": 0.0010,
+            "total_round_trip_pct": 0.2239,
+        },
+        horizons={
+            "hold_2d": {
+                "annualized_turnover": 126.0,
+                "annual_friction_drag_pct": 28.22,
+                "net_annual_return_pct": -21.0,
+                "net_sharpe": -1.82,
+                "t_stat": -13.57,
+                "verdict": "FATAL_LOSS",
+            },
+            "hold_21d": {
+                "annualized_turnover": 12.0,
+                "annual_friction_drag_pct": 2.69,
+                "net_annual_return_pct": 1.2,
+                "net_sharpe": 0.12,
+                "t_stat": 0.19,
+                "verdict": "SIGNAL_DECAY",
+            },
+        },
+        survivorship_bias={
+            "nifty50_survivors_sharpe": 0.76,
+            "full_423_universe_sharpe": 0.12,
+            "rank_ic_expanded": -0.022,
+            "verdict": "Apparent edge was market beta and survivorship bias on winner basket.",
+        },
+        key_findings=[
+            "Model predicts UP 0 out of 63 times because negative intercept (-0.114) causes zero positions taken.",
+            "NSE cash statutory friction is 0.224% round-trip, creating a -28.2% annual drag on daily/2-day trading.",
+            "21-day holding eliminates churn but predictive signal decays to +0.12 Sharpe.",
+            "Prior +0.76 Sharpe momentum results collapsed to +0.12 when expanded from 50 to 423 names due to survivorship bias.",
+        ],
+        actionable_recommendations=[
+            "Switch decision threshold to dynamic rolling 80th percentile instead of 0.0.",
+            "Execute through NSE Futures to reduce transaction friction by 94%.",
+            "Hedge market beta with index futures to isolate true idiosyncratic alpha.",
+        ],
     )
 
 

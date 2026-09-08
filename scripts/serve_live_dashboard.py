@@ -27,6 +27,7 @@ from quant_system.server.ui.live_dashboard import HTML_DASHBOARD
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STATUS_FILE = PROJECT_ROOT / "logs" / "paper_runs" / "live_paper_status.json"
 PID_FILE = PROJECT_ROOT / "logs" / "paper_runs" / "runner.pid"
+XS_STATE_FILE = PROJECT_ROOT / "logs" / "xs_monthly_new" / "paper_watch" / "state.json"
 
 
 def load_env_file() -> None:
@@ -75,6 +76,20 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             if STATUS_FILE.exists():
                 try:
                     with open(STATUS_FILE, encoding="utf-8") as f:
+                        data = f.read()
+                    self.wfile.write(data.encode("utf-8"))
+                except Exception as err:
+                    self.wfile.write(json.dumps({"error": str(err)}).encode("utf-8"))
+            else:
+                self.wfile.write(json.dumps({"status": "WAITING_FOR_DATA"}).encode("utf-8"))
+        elif self.path in ("/api/xs_status", "/api/xs-monthly/status"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            if XS_STATE_FILE.exists():
+                try:
+                    with open(XS_STATE_FILE, encoding="utf-8") as f:
                         data = f.read()
                     self.wfile.write(data.encode("utf-8"))
                 except Exception as err:

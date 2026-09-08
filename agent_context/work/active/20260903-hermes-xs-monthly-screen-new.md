@@ -57,7 +57,7 @@ Build a brand-new, isolated cross-sectional monthly (hold-21, long top-20%, pre-
 
 ## Current step
 
-Step 10 — DONE. Separate dashboard built + live-verified (equity, legs, 404 all OK), then stopped. 26/26 tests green, ruff clean. Committing below.
+Step 11 — dashboard RUNNING (session `proc_8388753c0640`, :8091, verified serving). Record stays ACTIVE for the settle cycle.
 
 ## Final numbers (quote these, not the interim block below)
 

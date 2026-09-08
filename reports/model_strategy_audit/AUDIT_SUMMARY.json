@@ -1,0 +1,81 @@
+{
+  "timestamp_utc": "2026-09-04T18:15:00Z",
+  "audit_version": "1.0.0",
+  "overall_verdict": "UNPROFITABLE_AFTER_STATUTORY_COSTS",
+  "model_audit": {
+    "target_model": "quantos.ridge_technical_six",
+    "status": "FAIL",
+    "score_state": "DEGENERATE_SCORE_COLLAPSE",
+    "class_imbalance": {
+      "up_samples": 182,
+      "down_samples": 229,
+      "up_ratio": 0.4428,
+      "down_ratio": 0.5572,
+      "ridge_intercept": -0.1143
+    },
+    "holdout_performance": {
+      "total_sessions": 63,
+      "predicted_up_sessions": 0,
+      "predicted_down_sessions": 63,
+      "positions_taken": 0,
+      "gross_sharpe": 0.0,
+      "issue": "Model takes 0 positions under default threshold 0.0 due to negative intercept drift."
+    },
+    "multiplicity_dsr": {
+      "trials_tested": 51,
+      "raw_sharpe_range": "0.30 - 0.65",
+      "expected_max_random_sharpe": 2.80,
+      "deflated_sharpe_ratio": 0.0,
+      "pass_threshold": 0.95,
+      "status": "FAIL"
+    },
+    "remedy": "Apply dynamic rolling quantile thresholding (e.g. top 20% score) and class-frequency inverse weighting."
+  },
+  "strategy_audit": {
+    "target_strategy": "EQUITY_DUAL_MOMENTUM / XS_MONTHLY",
+    "status": "DEGRADED",
+    "friction_wall": {
+      "stt_rate_pct": 0.2000,
+      "turnover_charges_pct": 0.0067,
+      "gst_and_stamp_pct": 0.0162,
+      "brokerage_pct": 0.0010,
+      "total_round_trip_pct": 0.2239
+    },
+    "horizons": {
+      "hold_2d": {
+        "annualized_turnover": 126.0,
+        "annual_friction_drag_pct": 28.22,
+        "net_annual_return_pct": -21.0,
+        "net_sharpe": -1.82,
+        "t_stat": -13.57,
+        "verdict": "FATAL_LOSS"
+      },
+      "hold_21d": {
+        "annualized_turnover": 12.0,
+        "annual_friction_drag_pct": 2.69,
+        "net_annual_return_pct": 1.2,
+        "net_sharpe": 0.12,
+        "t_stat": 0.19,
+        "verdict": "SIGNAL_DECAY"
+      }
+    },
+    "survivorship_bias": {
+      "nifty50_survivors_sharpe": 0.76,
+      "full_423_universe_sharpe": 0.12,
+      "rank_ic_expanded": -0.022,
+      "verdict": "Apparent edge was market beta and survivorship bias on winner basket."
+    },
+    "remedy": "Migrate execution to NSE Stock Futures (reduces STT from 0.1% to 0.0125%), enforce beta-neutral hedging, and apply turnover constraints <= 25%."
+  },
+  "key_findings": [
+    "Model predicts UP 0 out of 63 times because negative intercept (-0.114) causes zero positions taken.",
+    "NSE cash statutory friction is 0.224% round-trip, creating a -28.2% annual drag on daily/2-day trading.",
+    "21-day holding eliminates churn but predictive signal decays to +0.12 Sharpe.",
+    "Prior +0.76 Sharpe momentum results collapsed to +0.12 when expanded from 50 to 423 names due to survivorship bias."
+  ],
+  "actionable_recommendations": [
+    "Switch decision threshold to dynamic rolling 80th percentile instead of 0.0.",
+    "Execute through NSE Futures to reduce transaction friction by 94%.",
+    "Hedge market beta with index futures to isolate true idiosyncratic alpha."
+  ]
+}

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * QuantOS Copilot — In-Platform AI Assistant Controller
  * Provides interactive chat, action proposal execution, and journey navigation.
  */
@@ -219,6 +219,7 @@
 
     // Default welcome prompt chips
     renderPromptChips([
+      "Audit Model & Strategy Profitability",
       "Run System Diagnostics",
       "Calculate Greeks for 24500 CE",
       "Inspect Risk Limits",

@@ -57,6 +57,65 @@ class PlatformAssistantService:
                 suggested_prompts=["Explain this tab", "Run diagnostics", "Check risk limits"],
             )
 
+        # Model & Strategy Profitability & Health Audit
+        if any(
+            w in lower_prompt
+            for w in [
+                "model audit",
+                "strategy audit",
+                "profitable",
+                "profitability",
+                "why is model failing",
+                "problem in strategy",
+                "problem in model",
+                "model health",
+                "strategy health",
+                "is the model working",
+                "is strategy profitable",
+                "is model profitable",
+                "friction wall",
+                "audit model",
+                "audit strategy",
+                "analyse model",
+                "analyze model",
+            ]
+        ):
+            action_id = f"act_{uuid.uuid4().hex[:8]}"
+            exec_res = PlatformActionExecutor.execute(
+                ActionExecutionRequest(
+                    action_id=action_id,
+                    action_type=PlatformActionType.AUDIT_MODEL_STRATEGY,
+                    parameters={},
+                )
+            )
+            diag_proposal = ActionProposal(
+                action_id=f"act_{uuid.uuid4().hex[:8]}",
+                action_type=PlatformActionType.NAVIGATE_TAB,
+                title="🩺 View Engine Diagnostics",
+                description="Open the Diagnostics tab to see full model and system invariant metrics",
+                parameters={"tab": "tab-diagnostics"},
+                requires_confirmation=False,
+                target_tab="tab-diagnostics",
+            )
+            ridge_proposal = ActionProposal(
+                action_id=f"act_{uuid.uuid4().hex[:8]}",
+                action_type=PlatformActionType.NAVIGATE_TAB,
+                title="🔬 Open Governed Ridge Lab",
+                description="Inspect technical feature sets, walk-forward folds, and hyperparameter tuning",
+                parameters={"tab": "tab-training"},
+                requires_confirmation=False,
+                target_tab="tab-training",
+            )
+            return AssistantChatResponse(
+                message=exec_res.message,
+                action_proposals=[diag_proposal, ridge_proposal],
+                suggested_prompts=[
+                    "Inspect Risk Limits",
+                    "Explain Deflated Sharpe Ratio",
+                    "Run Diagnostics",
+                ],
+            )
+
         # Diagnostics & Health Check
         if any(
             w in lower_prompt

@@ -20,6 +20,7 @@ Build and execute a quote-driven Paper Pilot trading runner driven by model alph
 - src/quant_system/execution/paper_pilot.py
 - src/quant_system/server/app.py
 - src/quant_system/server/ui/templates.py
+- src/quant_system/server/ui/live_dashboard.py
 - src/quant_system/data/universe.py
 - agent_context/work/active/20260826-antigravity-paper-trade-live-market-testing.md
 
@@ -57,6 +58,9 @@ Implementing scripts/run_paper_pilot_session.py.
 | `pytest tests/test_paper_pilot.py tests/test_server_api.py tests/test_live_universe_robustness.py` | PASS | 77 passed in 11.50s; 100% platform test suite pass |
 | `python scripts/serve_live_dashboard.py --port 8080` | RUNNING | Live Web UI Dashboard running at http://localhost:8080 with 50K Sprint profile & NIFTY 500 selector |
 | `powershell -File scripts/audit-agent-claims.ps1` | PASS | Every workspace and active claim resolves |
+| `pytest tests/test_live_dashboard_server.py tests/test_xs_watch_dashboard.py` | PASS | 17 passed (all tests green across both dashboard suites) |
+| `ruff check` (dashboard files) | PASS | Zero lint or format issues |
+| `powershell -File scripts/audit-agent-claims.ps1; scripts/audit-disk-layout.ps1` | PASS | Zero claim or layout violations |
 
 ## Files changed
 
@@ -64,7 +68,9 @@ Implementing scripts/run_paper_pilot_session.py.
 - `src/quant_system/data/universe.py`: Added NIFTY 50, NIFTY 100, NIFTY 200, and NIFTY 500 universe presets
 - `src/quant_system/execution/paper_pilot.py`: Pass `current_prices` to `evaluate_order`
 - `scripts/run_paper_pilot_session.py`: Real-time paper trading runner with NIFTY 500 parallel evaluation & auto .env loader
-- `scripts/serve_live_dashboard.py`: Interactive web P&L and market monitor with universe dropdown, auto .env & GUI controls
+- `scripts/serve_live_dashboard.py`: Added `/api/xs_status` route and `XS_STATE_FILE` binding for unified multi-model serving
+- `src/quant_system/server/ui/live_dashboard.py`: Unified multi-model dashboard markup with Tab 1 (Mīzān Flagship Alpha), Tab 2 (Hermes XS-Monthly Momentum), and Tab 3 (Strategy Directory & Governance Overview)
+- `tests/test_live_dashboard_server.py`: Added `test_the_dashboard_answers_xs_status` test
 - `scripts/view_live_pnl.py`: Terminal-based live P&L and positions viewer
 - `logs/paper_runs/`: Live status and generated JSON/Markdown paper execution reports in IST
 
@@ -74,8 +80,8 @@ None.
 
 ## Stop point
 
-Live paper trading session `paper_ses_20260826_132755_IST` successfully completed its full trading run at **15:30:09 IST** (NSE Market Close). Total equity: Rs 9,99,300.63, Net P&L: Rs -345.55 (-0.03%), Discrepancy: 0.00 Paisa (PASS). Evidence saved in `logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_132755_IST.md` and `.json`.
+Unified Multi-Model Dashboard successfully deployed and serving on `http://127.0.0.1:8080/`. Both Mīzān Flagship Alpha and Hermes XS-Monthly Momentum models are visible and monitored in real time with distinct naming, live KPIs, open position tables, and a dedicated Strategy Directory table.
 
 ## Next safe action
 
-Present full market close reconciliation and daily performance report to the user.
+Present the walkthrough and unified dashboard access details to the user.

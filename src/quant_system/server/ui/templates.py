@@ -358,6 +358,24 @@ def render_full_dashboard_html() -> str:
           <p style="color:var(--color-text-secondary);">Loading system diagnostics...</p>
         </div>
       </div>
+
+      <!-- Model & Strategy Profitability Audit Card -->
+      <div class="card" style="max-width: 800px; margin: 24px auto 0 auto;">
+        <div class="card-title">
+          <div>
+            <h2>Model &amp; Strategy Profitability Audit</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--color-text-secondary);">
+              Quantitative economics, label imbalance, NSE statutory friction (0.224%), and survivorship bias verification.
+            </p>
+          </div>
+          <button type="button" id="btn-audit-model-strategy" class="btn-primary" aria-label="Run Model and Strategy Audit">
+            Run Profitability Audit
+          </button>
+        </div>
+        <div id="model-strategy-audit-container" role="status" aria-live="polite" style="padding: 10px 0;">
+          <p style="color:var(--color-text-secondary);">Click &quot;Run Profitability Audit&quot; to inspect model validity and NSE execution economics...</p>
+        </div>
+      </div>
     </section>
 
   </main>
