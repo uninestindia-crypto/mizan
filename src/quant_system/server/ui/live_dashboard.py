@@ -409,7 +409,7 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     <header class="header">
       <div class="header-left">
         <h1>QuantOS Live Trading & P&L Monitor <span class="badge-live" id="session-status">LIVE STREAM</span></h1>
-        <div class="header-sub" id="header-sub">Model: Mīzān Flagship Alpha | 15-Feature Cross-Sectional Ridge (v1.0.0)</div>
+        <div class="header-sub" id="header-sub">Model: waiting for the session to report&#8230;</div>
       </div>
       <div class="header-right">
         <div class="clock-ist" id="live-time">--:--:-- IST</div>
@@ -1012,9 +1012,18 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       if (universeName) {
         document.getElementById("alpha-title").textContent =
           "Mīzān Alpha Signals & Rankings (" + universeName + ")";
+        // Derived, not asserted. The feature count and version were string literals here and
+        // in the static header until 2026-09-10. Both happened to be correct, which is worse
+        // than being wrong: nothing would have announced them going stale when the model
+        // changed. Same defect as the hardcoded "NIFTY 50" title this line already fixed for
+        // the universe -- half of it was repaired and half was left.
+        var modelName = data.model_name || "Mīzān Flagship Alpha";
+        var featureCount = data.feature_count;
+        var modelVersion = data.model_version;
+        var descriptor = (featureCount ? featureCount + "-Feature " : "") +
+          "Cross-Sectional Ridge" + (modelVersion ? " (v" + modelVersion + ")" : "");
         document.getElementById("header-sub").textContent =
-          "Model: Mīzān Flagship Alpha (" + universeName +
-          ") | 15-Feature Cross-Sectional Ridge (v1.0.0)";
+          "Model: " + modelName + " (" + universeName + ") | " + descriptor;
       }
       if (scored !== undefined && scored !== null) {
         document.getElementById("alpha-count").textContent =

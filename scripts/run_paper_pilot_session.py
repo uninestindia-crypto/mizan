@@ -1708,6 +1708,17 @@ def run_paper_session(
                 "universe_name": universe_name,
                 "universe_size": len(universe),
                 "scored_count": len(scores),
+                # The other half of the same defect, fixed 2026-09-10. The header derived the
+                # universe from this payload but carried "15-Feature Cross-Sectional Ridge
+                # (v1.0.0)" as a string literal in two places. It happened to be true -- the
+                # loaded model does have 15 features at v1.0.0 -- which is worse than being
+                # wrong, because nothing would have announced it going stale. Selecting the
+                # "50K Sprint" profile the dropdown already offers, or shipping a v2 schema,
+                # would have left the page asserting the old model's identity over the new
+                # model's numbers.
+                "model_name": model.config.model_name,
+                "model_version": model.config.version,
+                "feature_count": len(model.config.feature_names),
                 "timestamp_ist": loop_now.strftime("%Y-%m-%d %H:%M:%S IST"),
                 "initial_cash": _paisa_str(initial_cash),
                 "total_equity": _paisa_str(snap.total_equity),
