@@ -1,1 +1,34 @@
-[{"bcEndDate":"27-Sep-2023","bcStartDate":"21-Sep-2023","caBroadcastDate":null,"comp":"Delhivery Limited","exDate":"20-Sep-2023","faceVal":"1","ind":"-","isin":"INE148O01028","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"DELHIVERY"}]
+[
+  {
+    "bcEndDate": "29-Sep-2022",
+    "bcStartDate": "22-Sep-2022",
+    "caBroadcastDate": null,
+    "comp": "Delhivery Limited",
+    "exDate": "20-Sep-2022",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE148O01028",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "DELHIVERY"
+  },
+  {
+    "bcEndDate": "27-Sep-2023",
+    "bcStartDate": "21-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Delhivery Limited",
+    "exDate": "20-Sep-2023",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE148O01028",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "DELHIVERY"
+  }
+]

@@ -1,1 +1,50 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Hexaware Technologies Limited","exDate":"15-Apr-2025","faceVal":"1","ind":"-","isin":"INE093A01041","ndEndDate":"-","ndStartDate":"-","recDate":"15-Apr-2025","series":"EQ","subject":"Interim Dividend - Rs 5.75 Per Share","symbol":"HEXT"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Hexaware Technologies Limited","exDate":"10-Oct-2025","faceVal":"1","ind":"-","isin":"INE093A01041","ndEndDate":"-","ndStartDate":"-","recDate":"10-Oct-2025","series":"EQ","subject":"Interim Dividend - Rs 5.75 Per Share","symbol":"HEXT"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Hexaware Technologies Limited","exDate":"05-May-2026","faceVal":"1","ind":"-","isin":"INE093A01041","ndEndDate":"-","ndStartDate":"-","recDate":"05-May-2026","series":"EQ","subject":"Interim Dividend - Rs 8.50 Per Share","symbol":"HEXT"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Hexaware Technologies Limited",
+    "exDate": "15-Apr-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE093A01041",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "15-Apr-2025",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 5.75 Per Share",
+    "symbol": "HEXT"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Hexaware Technologies Limited",
+    "exDate": "10-Oct-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE093A01041",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "10-Oct-2025",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 5.75 Per Share",
+    "symbol": "HEXT"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Hexaware Technologies Limited",
+    "exDate": "05-May-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE093A01041",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "05-May-2026",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 8.50 Per Share",
+    "symbol": "HEXT"
+  }
+]

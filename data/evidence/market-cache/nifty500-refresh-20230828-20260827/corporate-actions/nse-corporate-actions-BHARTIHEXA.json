@@ -1,1 +1,50 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Bharti Hexacom Limited","exDate":"16-Aug-2024","faceVal":"5","ind":"-","isin":"INE343G01021","ndEndDate":"-","ndStartDate":"-","recDate":"16-Aug-2024","series":"EQ","subject":"Dividend - Rs 4 Per Share","symbol":"BHARTIHEXA"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Bharti Hexacom Limited","exDate":"25-Jul-2025","faceVal":"5","ind":"-","isin":"INE343G01021","ndEndDate":"-","ndStartDate":"-","recDate":"25-Jul-2025","series":"EQ","subject":"Dividend - Rs 10 Per Share","symbol":"BHARTIHEXA"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Bharti Hexacom Limited","exDate":"31-Jul-2026","faceVal":"5","ind":"-","isin":"INE343G01021","ndEndDate":"-","ndStartDate":"-","recDate":"31-Jul-2026","series":"EQ","subject":"Dividend - Rs 18 Per Share","symbol":"BHARTIHEXA"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Bharti Hexacom Limited",
+    "exDate": "16-Aug-2024",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE343G01021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "16-Aug-2024",
+    "series": "EQ",
+    "subject": "Dividend - Rs 4 Per Share",
+    "symbol": "BHARTIHEXA"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Bharti Hexacom Limited",
+    "exDate": "25-Jul-2025",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE343G01021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "25-Jul-2025",
+    "series": "EQ",
+    "subject": "Dividend - Rs 10 Per Share",
+    "symbol": "BHARTIHEXA"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Bharti Hexacom Limited",
+    "exDate": "31-Jul-2026",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE343G01021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "31-Jul-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 18 Per Share",
+    "symbol": "BHARTIHEXA"
+  }
+]

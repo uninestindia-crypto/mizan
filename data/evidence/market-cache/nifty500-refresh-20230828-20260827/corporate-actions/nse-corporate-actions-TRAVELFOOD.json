@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Travel Food Services Limited",
+    "exDate": "09-Sep-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE103V01028",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "09-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 10.25 Per Share",
+    "symbol": "TRAVELFOOD"
+  }
+]

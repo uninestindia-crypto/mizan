@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "bcEndDate": "31-Jul-2017",
+    "bcStartDate": "27-Jul-2017",
+    "caBroadcastDate": null,
+    "comp": "Tata Teleservices (Maharashtra) Limited",
+    "exDate": "25-Jul-2017",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE517B01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "TTML"
+  },
+  {
+    "bcEndDate": "28-Sep-2018",
+    "bcStartDate": "26-Sep-2018",
+    "caBroadcastDate": null,
+    "comp": "Tata Teleservices (Maharashtra) Limited",
+    "exDate": "24-Sep-2018",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE517B01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "TTML"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Tata Teleservices (Maharashtra) Limited",
+    "exDate": "11-Jul-2019",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE517B01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "12-Jul-2019",
+    "series": "EQ",
+    "subject": " De-Merger",
+    "symbol": "TTML"
+  }
+]

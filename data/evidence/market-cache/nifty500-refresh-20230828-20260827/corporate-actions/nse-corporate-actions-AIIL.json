@@ -1,1 +1,66 @@
-[{"bcEndDate":"30-Sep-2024","bcStartDate":"23-Sep-2024","caBroadcastDate":null,"comp":"Authum Investment & Infrastructure Limited","exDate":"20-Sep-2024","faceVal":"1","ind":"-","isin":"INE206F01022","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"AIIL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Authum Investment & Infrastructure Limited","exDate":"27-Mar-2025","faceVal":"1","ind":"-","isin":"INE206F01022","ndEndDate":"-","ndStartDate":"-","recDate":"27-Mar-2025","series":"EQ","subject":"Interim Dividend - Re 1 Per Share","symbol":"AIIL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Authum Investment & Infrastructure Limited","exDate":"16-May-2025","faceVal":"1","ind":"-","isin":"INE206F01022","ndEndDate":"-","ndStartDate":"-","recDate":"16-May-2025","series":"EQ","subject":"Interim Dividend - Re 0.50 Per Share","symbol":"AIIL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Authum Investment & Infrastructure Limited","exDate":"13-Jan-2026","faceVal":"1","ind":"-","isin":"INE206F01022","ndEndDate":"-","ndStartDate":"-","recDate":"13-Jan-2026","series":"EQ","subject":"Bonus 4:1","symbol":"AIIL"}]
+[
+  {
+    "bcEndDate": "30-Sep-2024",
+    "bcStartDate": "23-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Authum Investment & Infrastructure Limited",
+    "exDate": "20-Sep-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE206F01022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "AIIL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Authum Investment & Infrastructure Limited",
+    "exDate": "27-Mar-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE206F01022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "27-Mar-2025",
+    "series": "EQ",
+    "subject": "Interim Dividend - Re 1 Per Share",
+    "symbol": "AIIL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Authum Investment & Infrastructure Limited",
+    "exDate": "16-May-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE206F01022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "16-May-2025",
+    "series": "EQ",
+    "subject": "Interim Dividend - Re 0.50 Per Share",
+    "symbol": "AIIL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Authum Investment & Infrastructure Limited",
+    "exDate": "13-Jan-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE206F01022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "13-Jan-2026",
+    "series": "EQ",
+    "subject": "Bonus 4:1",
+    "symbol": "AIIL"
+  }
+]

@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Anthem Biosciences Limited","exDate":"25-Jun-2026","faceVal":"2","ind":"-","isin":"INE0CZ201020","ndEndDate":"-","ndStartDate":"-","recDate":"26-Jun-2026","series":"EQ","subject":"Dividend - Rs 2 Per Share","symbol":"ANTHEM"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Anthem Biosciences Limited",
+    "exDate": "25-Jun-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0CZ201020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "26-Jun-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2 Per Share",
+    "symbol": "ANTHEM"
+  }
+]

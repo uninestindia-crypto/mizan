@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"ITC Hotels Limited","exDate":"21-May-2026","faceVal":"1","ind":"-","isin":"INE379A01028","ndEndDate":"-","ndStartDate":"-","recDate":"21-May-2026","series":"EQ","subject":"Dividend - Re 1 Per Share","symbol":"ITCHOTELS"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "ITC Hotels Limited",
+    "exDate": "21-May-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE379A01028",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "21-May-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "ITCHOTELS"
+  }
+]

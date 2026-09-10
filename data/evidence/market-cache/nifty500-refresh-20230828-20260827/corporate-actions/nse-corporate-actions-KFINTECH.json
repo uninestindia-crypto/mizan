@@ -1,1 +1,50 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Kfin Technologies Limited","exDate":"23-Aug-2024","faceVal":"10","ind":"-","isin":"INE138Y01010","ndEndDate":"-","ndStartDate":"-","recDate":"23-Aug-2024","series":"EQ","subject":"Dividend - Rs 5.75 Per Share","symbol":"KFINTECH"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Kfin Technologies Limited","exDate":"22-Aug-2025","faceVal":"10","ind":"-","isin":"INE138Y01010","ndEndDate":"-","ndStartDate":"-","recDate":"22-Aug-2025","series":"EQ","subject":"Dividend - Rs 7.50 Per Share","symbol":"KFINTECH"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Kfin Technologies Limited","exDate":"15-Jul-2026","faceVal":"10","ind":"-","isin":"INE138Y01010","ndEndDate":"-","ndStartDate":"-","recDate":"15-Jul-2026","series":"EQ","subject":"Dividend - Rs 12 Per Share","symbol":"KFINTECH"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Kfin Technologies Limited",
+    "exDate": "23-Aug-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE138Y01010",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "23-Aug-2024",
+    "series": "EQ",
+    "subject": "Dividend - Rs 5.75 Per Share",
+    "symbol": "KFINTECH"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Kfin Technologies Limited",
+    "exDate": "22-Aug-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE138Y01010",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "22-Aug-2025",
+    "series": "EQ",
+    "subject": "Dividend - Rs 7.50 Per Share",
+    "symbol": "KFINTECH"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Kfin Technologies Limited",
+    "exDate": "15-Jul-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE138Y01010",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "15-Jul-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 12 Per Share",
+    "symbol": "KFINTECH"
+  }
+]

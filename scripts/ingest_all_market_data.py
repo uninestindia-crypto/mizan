@@ -107,20 +107,108 @@ def atomic_write_json(target: Path, value: object) -> None:
     atomic_write_bytes(target, encoded)
 
 
-def fetch_or_load_corporate_actions(
-    symbol: str, start: date, end: date, out_dir: Path, timeout: float = 10.0
-) -> tuple[Path, int]:
-    """Fetch corporate actions for an equity or load from cached JSON."""
-    out_dir.mkdir(parents=True, exist_ok=True)
-    target = out_dir / f"nse-corporate-actions-{symbol}.json"
-    if target.is_file():
-        try:
-            data = json.loads(target.read_text(encoding="utf-8"))
-            if isinstance(data, list):
-                return target, len(data)
-        except Exception:
-            pass
+#: How long a fetched corporate-action record stays usable before the next run re-pulls it.
+#: One day, because the price cache refreshes daily and the authority must never trail it.
+CA_MAX_AGE_HOURS: Final = 24.0
 
+#: Earliest date corporate actions are ever requested from, regardless of the bar window.
+#:
+#: The bar request's `from_date` is the wrong lower bound. A refresh asks for `to_day - 3*365`
+#: while its store still retains older bars -- measured on the NIFTY500 refresh cache, whose oldest
+#: bar is 2023-08-28 against a request floor of 2023-09-11. That leaves bars with no corporate-action
+#: coverage at the *start* of the series, which is the same defect as the stale window at the end.
+#: A wider corporate-action query costs exactly one API call either way, so there is no reason to
+#: bound it by the bar window at all.
+CA_HISTORY_ANCHOR: Final = date(2016, 8, 22)
+
+
+@dataclass(frozen=True, slots=True)
+class CorporateActionRecord:
+    """A corporate-action file together with the window it is actually evidence for.
+
+    ``effective_to`` is what this record genuinely covers, never what the caller asked for. A load
+    that could not be refreshed keeps the window of the fetch that produced it, so a consumer can
+    detect that a bar postdates its own corporate-action evidence.
+    """
+
+    path: Path
+    count: int
+    effective_from: date
+    effective_to: date
+    publication_date: date
+    status: str
+
+    @property
+    def covers_requested_end(self) -> bool:
+        return self.status == "FETCHED"
+
+
+def _provenance_path(target: Path) -> Path:
+    return target.with_name(f"{target.stem}.provenance.json")
+
+
+def _read_provenance(target: Path) -> dict[str, Any] | None:
+    path = _provenance_path(target)
+    if not path.is_file():
+        return None
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _write_provenance(
+    target: Path,
+    *,
+    symbol: str,
+    fetched_at: datetime,
+    effective_from: date,
+    effective_to: date,
+    status: str,
+    count: int,
+) -> None:
+    atomic_write_json(
+        _provenance_path(target),
+        {
+            "count": count,
+            "effective_from": effective_from.isoformat(),
+            "effective_to": effective_to.isoformat(),
+            "fetched_at": fetched_at.isoformat(),
+            "source_url": f"{NSE_CA_SOURCE_URL}/{symbol}",
+            "status": status,
+            "symbol": symbol,
+        },
+    )
+
+
+def _provenance_is_fresh(
+    provenance: dict[str, Any], start: date, end: date, now: datetime, max_age_hours: float
+) -> bool:
+    """A cached record is reusable only if it was fetched and spans the whole requested window.
+
+    Both bounds matter. Checking only ``effective_to`` was itself a defect: widening the lower
+    bound left the narrower cached record in place and skipped the network entirely, so a run that
+    asked for more history silently got less and reported success.
+    """
+    if provenance.get("status") != "FETCHED":
+        return False
+    try:
+        effective_from = date.fromisoformat(str(provenance["effective_from"]))
+        effective_to = date.fromisoformat(str(provenance["effective_to"]))
+        fetched_at = datetime.fromisoformat(str(provenance["fetched_at"]))
+    except Exception:
+        return False
+    if effective_to < end or effective_from > start:
+        return False
+    if fetched_at.tzinfo is None:
+        fetched_at = fetched_at.replace(tzinfo=UTC)
+    age_hours = (now - fetched_at).total_seconds() / 3600.0
+    return 0 <= age_hours <= max_age_hours
+
+
+def _request_corporate_actions(symbol: str, start: date, end: date, timeout: float) -> list[Any]:
+    """One NSE call. Raises on any failure so the caller decides, rather than silently emptying."""
     query = urllib.parse.urlencode(
         {
             "index": "equities",
@@ -137,36 +225,144 @@ def fetch_or_load_corporate_actions(
             "Referer": NSE_CA_SOURCE_URL,
         },
     )
+    with urllib.request.urlopen(req, timeout=timeout) as response:
+        body = response.read()
+    parsed = json.loads(body.decode("utf-8"))
+    if isinstance(parsed, list):
+        return parsed
+    if isinstance(parsed, dict) and isinstance(parsed.get("data"), list):
+        return list(parsed["data"])
+    raise ValueError(f"unrecognised corporate-action payload shape for {symbol}")
+
+
+def fetch_or_load_corporate_actions(
+    symbol: str,
+    start: date,
+    end: date,
+    out_dir: Path,
+    timeout: float = 10.0,
+    *,
+    now: datetime | None = None,
+    max_age_hours: float = CA_MAX_AGE_HOURS,
+) -> CorporateActionRecord:
+    """Return corporate actions for ``symbol``, re-fetching whenever the cache cannot reach ``end``.
+
+    The previous implementation returned any existing file unconditionally, so a symbol's record
+    froze permanently on first write, and every fetch failure wrote ``[]`` that was then trusted
+    forever. Both are repaired here: freshness is decided by recorded provenance, and a failure
+    never widens the window it reports.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    target = out_dir / f"nse-corporate-actions-{symbol}.json"
+    moment = now or datetime.now(UTC)
+
+    provenance = _read_provenance(target)
+    if (
+        provenance is not None
+        and target.is_file()
+        and _provenance_is_fresh(provenance, start, end, moment, max_age_hours)
+    ):
+        return CorporateActionRecord(
+            path=target,
+            count=int(provenance.get("count", 0)),
+            effective_from=date.fromisoformat(str(provenance["effective_from"])),
+            effective_to=date.fromisoformat(str(provenance["effective_to"])),
+            publication_date=datetime.fromisoformat(str(provenance["fetched_at"])).date(),
+            status="FETCHED",
+        )
+
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as response:
-            body = response.read()
-        parsed = json.loads(body.decode("utf-8"))
-        if isinstance(parsed, list):
-            atomic_write_bytes(target, body)
-            return target, len(parsed)
-        elif isinstance(parsed, dict) and "data" in parsed:
-            items = parsed["data"]
-            atomic_write_json(target, items)
-            return target, len(items)
+        items = _request_corporate_actions(symbol, start, end, timeout)
     except Exception:
-        pass
+        # Fetch failed. Report the window we can actually stand behind, never the requested one.
+        if provenance is not None and target.is_file():
+            recorded_to = date.fromisoformat(str(provenance["effective_to"]))
+            fetched_at = datetime.fromisoformat(str(provenance["fetched_at"]))
+            count = int(provenance.get("count", 0))
+            _write_provenance(
+                target,
+                symbol=symbol,
+                fetched_at=fetched_at,
+                effective_from=start,
+                effective_to=recorded_to,
+                status="STALE",
+                count=count,
+            )
+            return CorporateActionRecord(
+                path=target,
+                count=count,
+                effective_from=start,
+                effective_to=recorded_to,
+                publication_date=fetched_at.date(),
+                status="STALE",
+            )
 
-    # Save empty list if no filings or error
-    empty_bytes = b"[]\n"
-    atomic_write_bytes(target, empty_bytes)
-    return target, 0
+        # No provenance at all: either a first attempt, or a legacy file whose fetch date is
+        # unknown. Either way nothing here is evidence for any window, so claim none. Recording
+        # the failed status is what makes the next run retry instead of trusting an empty file.
+        count = 0
+        if target.is_file():
+            try:
+                existing = json.loads(target.read_text(encoding="utf-8"))
+                count = len(existing) if isinstance(existing, list) else 0
+            except Exception:
+                count = 0
+        else:
+            atomic_write_bytes(target, b"[]\n")
+        _write_provenance(
+            target,
+            symbol=symbol,
+            fetched_at=moment,
+            effective_from=start,
+            effective_to=start,
+            status="UNAVAILABLE",
+            count=count,
+        )
+        return CorporateActionRecord(
+            path=target,
+            count=count,
+            effective_from=start,
+            effective_to=start,
+            publication_date=moment.date(),
+            status="UNAVAILABLE",
+        )
+
+    atomic_write_json(target, items)
+    _write_provenance(
+        target,
+        symbol=symbol,
+        fetched_at=moment,
+        effective_from=start,
+        effective_to=end,
+        status="FETCHED",
+        count=len(items),
+    )
+    return CorporateActionRecord(
+        path=target,
+        count=len(items),
+        effective_from=start,
+        effective_to=end,
+        publication_date=moment.date(),
+        status="FETCHED",
+    )
 
 
-def build_corporate_action_authority(ca_path: Path, symbol: str) -> AuthorityReference:
-    """Build an AuthorityReference for the given corporate action file."""
-    content = ca_path.read_bytes()
+def build_corporate_action_authority(
+    record: CorporateActionRecord, symbol: str
+) -> AuthorityReference:
+    """Build an ``AuthorityReference`` describing what ``record`` actually covers.
+
+    The window was previously three hardcoded literals, so every dataset ingested on any date
+    claimed coverage to 2026-08-21 regardless of when it ran. It now comes from the record.
+    """
+    content = record.path.read_bytes()
     ca_hash = canonical_sha256(json.loads(content.decode("utf-8")))
     return AuthorityReference(
         authority_id=f"nse-corporate-actions-{symbol}",
         source_url=f"{NSE_CA_SOURCE_URL}/{symbol}",
-        publication_date=date(2026, 8, 24),
-        effective_from=date(2016, 8, 22),
-        effective_to=date(2026, 8, 21),
+        publication_date=record.publication_date,
+        effective_from=record.effective_from,
+        effective_to=record.effective_to,
         version="nse-real-response-v1",
         content_hash=ca_hash,
     )
@@ -192,6 +388,9 @@ class IngestionEngine:
         self.rate_limit_sleep = rate_limit_sleep
         self.lock = threading.Lock()
         self.results: dict[str, IngestionResult] = {}
+        #: Symbols whose corporate-action record does not reach `to_date`, by status. A non-empty
+        #: map means some datasets in this run carry an authority narrower than their own bars.
+        self.stale_corporate_actions: dict[str, str] = {}
         self._clean_stale_locks()
         self._fast_index_catalog()
 
@@ -284,10 +483,18 @@ class IngestionEngine:
             time.sleep(self.rate_limit_sleep)
 
         # 1. Fetch / Load corporate actions
-        ca_path, ca_count = fetch_or_load_corporate_actions(
-            sym, self.from_date, self.to_date, self.ca_dir
+        #
+        # The record carries the window it is genuinely evidence for, so an authority can no longer
+        # claim coverage the fetch never established. A symbol whose record could not be refreshed
+        # is counted rather than silently accepted -- see `self.stale_corporate_actions`.
+        ca_record = fetch_or_load_corporate_actions(
+            sym, min(self.from_date, CA_HISTORY_ANCHOR), self.to_date, self.ca_dir
         )
-        ca_auth = build_corporate_action_authority(ca_path, sym)
+        ca_count = ca_record.count
+        if not ca_record.covers_requested_end:
+            with self.lock:
+                self.stale_corporate_actions[sym] = ca_record.status
+        ca_auth = build_corporate_action_authority(ca_record, sym)
 
         # 2. Build acquisition request
         request = HistoricalDailyRequest(
@@ -429,6 +636,12 @@ def run_ingestion_pipeline(
             "empty_or_failed": empty_or_failed,
             "total_bars_ingested": total_bars,
             "elapsed_seconds": round(time.time() - start_time, 2),
+            # Symbols whose corporate-action authority does not reach `to_date`. Empty is the
+            # healthy state. A populated map is the signal that some datasets in this run carry
+            # an authority narrower than their own bars, which is how an unadjusted corporate
+            # action reaches a book unnoticed.
+            "stale_corporate_actions": dict(sorted(engine.stale_corporate_actions.items())),
+            "corporate_action_window_to": to_date.isoformat(),
             "results": [asdict(r) for r in engine.get_results_copy()],
         }
         atomic_write_json(summary_file, summary_data)
@@ -475,6 +688,19 @@ def run_ingestion_pipeline(
     )
     print(f"Empty or Inactive       : {empty_or_failed}", flush=True)
     print(f"Total Daily OHLCV Bars  : {total_bars:,}", flush=True)
+    stale = engine.stale_corporate_actions
+    if stale:
+        print(
+            f"Stale Corp-Action Auth  : {len(stale)} symbol(s) do NOT reach {to_date} "
+            f"-- their bars are unadjustable beyond their own authority window",
+            flush=True,
+        )
+        for sym, status in sorted(stale.items())[:20]:
+            print(f"    {sym:<14} {status}", flush=True)
+        if len(stale) > 20:
+            print(f"    ... and {len(stale) - 20} more (see summary file)", flush=True)
+    else:
+        print(f"Stale Corp-Action Auth  : 0 (all authorities reach {to_date})", flush=True)
     print(f"Summary Written To      : {summary_file}", flush=True)
 
     return {
@@ -485,6 +711,7 @@ def run_ingestion_pipeline(
         "empty_or_failed": empty_or_failed,
         "total_bars": total_bars,
         "elapsed_seconds": elapsed,
+        "stale_corporate_actions": dict(sorted(stale.items())),
     }
 
 

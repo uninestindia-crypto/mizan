@@ -1,1 +1,66 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"International Gemological Institute Limited","exDate":"28-Feb-2025","faceVal":"2","ind":"-","isin":"INE0Q9301021","ndEndDate":"-","ndStartDate":"-","recDate":"28-Feb-2025","series":"EQ","subject":"Interim Dividend - Rs 2.44 Per Share","symbol":"IGIL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"International Gemological Institute Limited","exDate":"14-Aug-2025","faceVal":"2","ind":"-","isin":"INE0Q9301021","ndEndDate":"-","ndStartDate":"-","recDate":"15-Aug-2025","series":"EQ","subject":"Interim Dividend - Rs 2.50 Per Share","symbol":"IGIL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"International Gemological Institute Limited","exDate":"17-Feb-2026","faceVal":"2","ind":"-","isin":"INE0Q9301021","ndEndDate":"-","ndStartDate":"-","recDate":"17-Feb-2026","series":"EQ","subject":"Interim Dividend - Rs 2.50 Per Share","symbol":"IGIL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"International Gemological Institute Limited","exDate":"24-Aug-2026","faceVal":"2","ind":"-","isin":"INE0Q9301021","ndEndDate":"-","ndStartDate":"-","recDate":"24-Aug-2026","series":"EQ","subject":"Interim Dividend - Rs 2.55 Per Share","symbol":"IGIL"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "International Gemological Institute Limited",
+    "exDate": "28-Feb-2025",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0Q9301021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "28-Feb-2025",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 2.44 Per Share",
+    "symbol": "IGIL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "International Gemological Institute Limited",
+    "exDate": "14-Aug-2025",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0Q9301021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "15-Aug-2025",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 2.50 Per Share",
+    "symbol": "IGIL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "International Gemological Institute Limited",
+    "exDate": "17-Feb-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0Q9301021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "17-Feb-2026",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 2.50 Per Share",
+    "symbol": "IGIL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "International Gemological Institute Limited",
+    "exDate": "24-Aug-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0Q9301021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "24-Aug-2026",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 2.55 Per Share",
+    "symbol": "IGIL"
+  }
+]

@@ -1,1 +1,66 @@
-[{"bcEndDate":"26-Jun-2024","bcStartDate":"19-Jun-2024","caBroadcastDate":null,"comp":"AWL Agri Business Limited","exDate":"18-Jun-2024","faceVal":"1","ind":"-","isin":"INE699H01024","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"AWL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"AWL Agri Business Limited","exDate":"19-Jun-2026","faceVal":"1","ind":"-","isin":"INE699H01024","ndEndDate":"-","ndStartDate":"-","recDate":"19-Jun-2026","series":"EQ","subject":"Dividend - Re 1 Per Share","symbol":"AWL"}]
+[
+  {
+    "bcEndDate": "30-Aug-2022",
+    "bcStartDate": "23-Aug-2022",
+    "caBroadcastDate": null,
+    "comp": "AWL Agri Business Limited",
+    "exDate": "19-Aug-2022",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE699H01024",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "AWL"
+  },
+  {
+    "bcEndDate": "20-Jul-2023",
+    "bcStartDate": "13-Jul-2023",
+    "caBroadcastDate": null,
+    "comp": "AWL Agri Business Limited",
+    "exDate": "12-Jul-2023",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE699H01024",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "AWL"
+  },
+  {
+    "bcEndDate": "26-Jun-2024",
+    "bcStartDate": "19-Jun-2024",
+    "caBroadcastDate": null,
+    "comp": "AWL Agri Business Limited",
+    "exDate": "18-Jun-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE699H01024",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "AWL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "AWL Agri Business Limited",
+    "exDate": "19-Jun-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE699H01024",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "19-Jun-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "AWL"
+  }
+]
