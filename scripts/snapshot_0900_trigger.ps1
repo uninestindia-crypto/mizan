@@ -23,13 +23,60 @@ $now = Get-Date
 Emit ("=" * 78)
 Emit "SNAPSHOT $($now.ToString('yyyy-MM-dd HH:mm:ss zzz'))"
 
+# Read the power events FIRST, so the mechanism can be reported beside the verdict rather than
+# asserted. An earlier version of this script printed "TRIGGER FIRED at 09:00 - wake timer worked".
+# The first half was measured; the second half was an assumption written before there was evidence
+# for it, and it was wrong to state as fact. Two changes were in play -- `Allow wake timers` on DC
+# (2026-09-07) and `Lid close action` on AC (2026-09-09) -- and this snapshot cannot separate them.
+# What it CAN observe is whether the machine slept at all, which distinguishes the two mechanisms:
+# waking shortly before 09:00 is a wake timer doing the work; never sleeping is the lid change
+# holding the machine awake.
+#
+# Pick the wake that is relevant to the 09:00 trigger, not merely the most recent one. The first
+# version took the latest event of the day and reported a 12-second sleep/wake blip at 09:27 -- a
+# real event, but one that happened long after the session had already started, so it said nothing
+# about whether the machine was awake at 09:00. The relevant wake is the LAST one at or before
+# 09:00 (plus a minute of slack for a wake that lands just after the trigger time).
+$sleptToday = $false
+$wokeAt = $null
+$cutoff = $now.Date.AddHours(9).AddMinutes(1)
+try {
+    $pt = Get-WinEvent -FilterHashtable @{LogName='System'; ProviderName='Microsoft-Windows-Power-Troubleshooter'; StartTime=$now.Date} -MaxEvents 10 -ErrorAction Stop
+    foreach ($e in $pt) {
+        $sleptToday = $true
+        if ($e.TimeCreated -le $cutoff) {
+            if ($wokeAt -eq $null -or $e.TimeCreated -gt $wokeAt) { $wokeAt = $e.TimeCreated }
+        }
+    }
+} catch {
+    $sleptToday = $false
+}
+
 $info = Get-ScheduledTaskInfo -TaskName "QuantOS Mizan Paper Session" -ErrorAction SilentlyContinue
 if ($info) {
     Emit "  task LastRunTime      : $($info.LastRunTime)"
     Emit "  task LastTaskResult   : $($info.LastTaskResult)"
     Emit "  task NextRunTime      : $($info.NextRunTime)"
+
     $firedToday = ($info.LastRunTime -ne $null) -and ($info.LastRunTime.Date -eq $now.Date) -and ($info.LastRunTime.Hour -lt 10)
-    Emit "  VERDICT               : $(if ($firedToday) { 'TRIGGER FIRED at 09:00 - wake timer worked' } else { 'TRIGGER DID NOT FIRE - still relying on the supervisor' })"
+
+    # Measured. States what happened, and nothing about why.
+    Emit "  VERDICT               : $(if ($firedToday) { 'TRIGGER FIRED at 09:00' } else { 'TRIGGER DID NOT FIRE - the supervisor will start the session late' })"
+
+    # Observed, and labelled as an observation. Attribution between the two fixes stays open.
+    if (-not $sleptToday) {
+        Emit "  MECHANISM (observed)  : machine did not sleep at all today - it was held awake"
+    } elseif ($wokeAt -eq $null) {
+        Emit "  MECHANISM (observed)  : machine was awake through 09:00 - it only slept later in the day"
+    } else {
+        $target = $now.Date.AddHours(9)
+        $delta = [int]($target - $wokeAt).TotalSeconds
+        if ($firedToday -and $delta -ge 0 -and $delta -lt 1800) {
+            Emit "  MECHANISM (observed)  : machine slept, then woke $delta s before 09:00 - a wake timer fired"
+        } else {
+            Emit "  MECHANISM (observed)  : machine slept and woke at $($wokeAt.ToString('HH:mm:ss')) - $(if ($firedToday) { 'unclear' } else { 'too late for the 09:00 trigger' })"
+        }
+    }
 } else {
     Emit "  task not found"
 }
@@ -42,10 +89,9 @@ if (Test-Path -LiteralPath $log) {
     Emit "  session log           : none yet for today"
 }
 
-# Was the machine asleep across 09:00? The direct evidence for the wake-timer question.
 try {
-    $pt = Get-WinEvent -FilterHashtable @{LogName='System'; ProviderName='Microsoft-Windows-Power-Troubleshooter'; StartTime=$now.Date} -MaxEvents 3 -ErrorAction Stop
-    foreach ($e in $pt) {
+    $pt2 = Get-WinEvent -FilterHashtable @{LogName='System'; ProviderName='Microsoft-Windows-Power-Troubleshooter'; StartTime=$now.Date} -MaxEvents 3 -ErrorAction Stop
+    foreach ($e in $pt2) {
         $line = (($e.Message -split "`n") | Where-Object { $_ -match 'Wake Time|Sleep Time' }) -join ' | '
         Emit "  power event $($e.TimeCreated.ToString('HH:mm:ss')): $line"
     }
