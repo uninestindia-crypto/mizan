@@ -27,6 +27,11 @@ dev = [
     "types-PyYAML>=6.0.12.20240314",
     "httpx>=0.27.0",
     "pyinstaller>=6.5.0",
+    # Audit and advisory SDKs, used only by scripts/ - never by the trading, training, or
+    # execution paths. Deliberately not in [project.dependencies]: the shipped platform must not
+    # carry two LLM SDKs it never calls.
+    "anthropic>=1.4.0",
+    "openai>=3.11.0",
 ]
 
 
