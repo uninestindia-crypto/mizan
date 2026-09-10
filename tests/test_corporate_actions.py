@@ -1,8 +1,23 @@
-"""Back-adjustment must reproduce a continuous series, and must refuse to guess.
+"""Back-adjustment must correct only what the provider left uncorrected.
 
-Written against the strings the NSE authority actually holds. The training corpus carries 250
-structural actions inside the research universe alone, each currently read by the model as a genuine
-±30-60% day, so a parser that silently misses a format is the same defect in a new place.
+Two wrong premises have been held here in turn, and most of these tests exist to keep either from
+coming back.
+
+**Wrong premise 1: "the manifest says RAW, so every published action needs applying."** False for
+this provider. Measured across the 423-name research universe, 212 of 212 published-ratio structural
+actions already show an ex-date gap of ~1.0. Applying the ratio on top is not a no-op, it is
+destructive -- TATASTEEL's 10:1 split became a **+945%** day.
+
+**Wrong premise 2: "a ratio-less action can be sized from its ex-date gap when the gap is big."**
+Also false. A gap is the corporate action *plus* whatever the market did that day, and the two
+cannot be separated. On the real corpus that rule would have inferred an **upward** correction for
+NMDC (+71.0%), BAJAJELEC (+32.2%) and SCI (+30.0%) -- erasing genuine moves and inventing fake ones.
+
+The contract is therefore: score the ex-date gap against *both* provider hypotheses in log-return
+space and apply a published ratio only when the data says it is missing; never size a ratio-less
+action from price, but accept one a caller validated against independent evidence; and treat
+dividends as a return-definition choice rather than a repair. Anything unsized is reported as
+unresolved so consumers refuse the window instead of publishing a fabricated return.
 """
 
 from __future__ import annotations
@@ -17,20 +32,23 @@ import pytest
 from quant_system.data.corporate_actions import (
     BarPoint,
     CorporateActionError,
+    ValidatedFactor,
     adjust_bars,
     build_adjustment_factors,
     parse_subject_factor,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+SPLIT_10_TO_1 = "Face Value Split (Sub-Division) - From Rs 10/- Per Share To Re 1/- Per Share"
 
 
-def _bar(day: int, close: float, *, volume: int = 1000, month: int = 1) -> BarPoint:
+def _bar(day: int, close: float, *, volume: int = 1000, open_: float | None = None) -> BarPoint:
     c = Decimal(str(close))
-    return BarPoint(date(2026, month, day), c, c, c, c, volume)
+    o = Decimal(str(open_)) if open_ is not None else c
+    return BarPoint(date(2026, 1, day), o, c, c, c, volume)
 
 
-# --- parsing ---------------------------------------------------------------------------------
+# --- parsing: the text layer, unchanged ----------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -40,66 +58,58 @@ def _bar(day: int, close: float, *, volume: int = 1000, month: int = 1) -> BarPo
         ("Face Value Split (Sub-Division) - From Rs10/- Per Share To Re 1/- Per Share", "0.1"),
         ("Face Value Split (Sub-Division) - From Rs 10 /- Per Share To Rs 2/- Per Share", "0.2"),
         ("Face Value Split From Rs 10 To Re 1", "0.1"),
-        ("Face Value Split (Sub-Division) - From Rs 5/- Per Share To Rs 2/- Per Share", "0.4"),
         # Abbreviated, and it carries none of the keywords a naive bucket filter would use --
         # it sits in the same "OTHER" pile as 5,497 Annual General Meetings.
         ("Fv Splt Frm Rs 10 To Rs 2", "0.2"),
     ],
 )
 def test_every_real_split_format_is_parsed(subject: str, expected: str) -> None:
-    factor, kinds, needs = parse_subject_factor(subject)
-    assert factor == Decimal(expected)
-    assert "split" in kinds
-    assert needs is False
+    parsed = parse_subject_factor(subject)
+    assert parsed.structural == Decimal(expected)
+    assert parsed.dividend == Decimal(1)
+    assert "split" in parsed.kinds
 
 
 @pytest.mark.parametrize(
     ("subject", "expected"),
     [
-        ("Bonus 1:1", "0.5"),  # 1 new per 1 held -> half the price
-        ("Bonus  1:4", "0.8"),  # double space, seen in the authority
-        ("Bonus 1: 2", str(Decimal(2) / Decimal(3))),  # space after the colon
+        ("Bonus 1:1", "0.5"),
+        ("Bonus  1:4", "0.8"),
+        ("Bonus 1: 2", str(Decimal(2) / Decimal(3))),
         ("Bonus 1:10 (Revised)", str(Decimal(10) / Decimal(11))),
     ],
 )
 def test_every_real_bonus_format_is_parsed(subject: str, expected: str) -> None:
-    factor, kinds, _ = parse_subject_factor(subject)
-    assert factor == Decimal(expected)
-    assert "bonus" in kinds
+    parsed = parse_subject_factor(subject)
+    assert parsed.structural == Decimal(expected)
+    assert "bonus" in parsed.kinds
 
 
-def test_a_single_record_carrying_bonus_and_split_applies_both() -> None:
-    """`Bonus 1:1/Face Value Split ... Rs 10 -> Rs 2` is one record and two price effects."""
-    subject = (
-        "Bonus 1:1/Face Value Split (Sub-Division) - From Rs 10/- Per Share To Rs 2/- Per Share"
-    )
-    factor, kinds, _ = parse_subject_factor(subject)
-    assert set(kinds) == {"bonus", "split"}
-    assert factor == Decimal("0.5") * Decimal("0.2")
+def test_structural_and_dividend_are_reported_separately_not_multiplied_together() -> None:
+    """They are treated differently downstream, so collapsing them loses the distinction.
 
-
-def test_dividend_split_and_meeting_in_one_record_all_resolve() -> None:
+    A record like this is common in the authority and was previously returned as one number, which
+    made it impossible to gap-verify the split without also gap-verifying the dividend.
+    """
     subject = (
         "Annual General Meeting/Dividend - Rs 10 Per Share/"
         "Face Value Split (Sub-Division) - From Rs 10/- Per Share To Rs 2/- Per Share"
     )
-    factor, kinds, _ = parse_subject_factor(subject, cum_close=Decimal("100"))
-    assert set(kinds) == {"dividend", "split"}
-    # dividend 10 off a 100 close, then a 5:1 split
-    assert factor == (Decimal("90") / Decimal("100")) * Decimal("0.2")
+    parsed = parse_subject_factor(subject, cum_close=Decimal("100"))
+    assert parsed.structural == Decimal("0.2")
+    assert parsed.dividend == Decimal("90") / Decimal("100")
+    assert set(parsed.kinds) == {"dividend", "split"}
+    assert parsed.combined == Decimal("0.2") * (Decimal("90") / Decimal("100"))
 
 
-def test_total_return_removes_the_dividend_and_price_return_does_not() -> None:
+def test_price_return_leaves_the_dividend_alone() -> None:
     subject = "Dividend - Rs 5 Per Share"
-    total, kinds, _ = parse_subject_factor(subject, cum_close=Decimal("100"), total_return=True)
-    assert total == Decimal("0.95")
-    assert kinds == ("dividend",)
+    total = parse_subject_factor(subject, cum_close=Decimal("100"), total_return=True)
+    assert total.dividend == Decimal("0.95")
 
-    price_only, kinds_only, _ = parse_subject_factor(
-        subject, cum_close=Decimal("100"), total_return=False
-    )
-    assert price_only == Decimal(1)
-    assert kinds_only == ()
+    price_only = parse_subject_factor(subject, cum_close=Decimal("100"), total_return=False)
+    assert price_only.dividend == Decimal(1)
+    assert price_only.kinds == ()
 
 
 @pytest.mark.parametrize(
@@ -107,133 +117,307 @@ def test_total_return_removes_the_dividend_and_price_return_does_not() -> None:
     ["Annual General Meeting", "Extra Ordinary General Meeting", "Interest Payment", "Rights"],
 )
 def test_actions_with_no_price_effect_produce_no_factor(subject: str) -> None:
-    factor, kinds, needs = parse_subject_factor(subject)
-    assert factor == Decimal(1)
-    assert kinds == ()
-    assert needs is False
+    parsed = parse_subject_factor(subject)
+    assert parsed.structural == Decimal(1)
+    assert parsed.dividend == Decimal(1)
+    assert parsed.kinds == ()
+    assert parsed.needs_inference is False
 
 
 @pytest.mark.parametrize(
     "subject", ["Demerger", "Scheme Of Demerger", "Scheme Of Arrangement Of Demerger"]
 )
-def test_a_ratioless_demerger_is_flagged_for_inference_not_parsed(subject: str) -> None:
-    """NSE publishes no ratio for these. No arithmetic recovers it from the text."""
-    factor, kinds, needs = parse_subject_factor(subject)
-    assert factor == Decimal(1)
-    assert kinds == ()
-    assert needs is True
+def test_a_ratioless_demerger_is_flagged_for_inference(subject: str) -> None:
+    parsed = parse_subject_factor(subject)
+    assert parsed.structural == Decimal(1)
+    assert parsed.kinds == ()
+    assert parsed.needs_inference is True
 
 
-# --- factor construction ---------------------------------------------------------------------
+# --- the regression that matters ------------------------------------------------------------
 
 
-def test_a_demerger_is_sized_from_the_ex_date_gap() -> None:
-    bars = [_bar(1, 100.0), _bar(2, 100.0), _bar(3, 35.0), _bar(4, 34.0)]
-    factors, skipped = build_adjustment_factors([(date(2026, 1, 3), "Demerger")], bars)
-    assert skipped == []
-    assert len(factors) == 1
-    assert factors[0].source == "INFERRED"
-    assert factors[0].factor == Decimal("0.35")
+def test_an_already_adjusted_split_is_refused_not_applied_again() -> None:
+    """The +945% bug. This is the single most important test in the file.
 
+    The bars either side of the ex-date show an ordinary +1% day, so the provider has already
+    applied the 10:1 ratio. Applying it again would scale ten years of history by 0.1.
+    """
+    bars = [_bar(1, 100.0), _bar(2, 101.0, open_=101.0), _bar(3, 102.0)]
+    factors, skipped = build_adjustment_factors([(date(2026, 1, 2), SPLIT_10_TO_1)], bars)
 
-def test_a_small_gap_is_reported_rather_than_absorbed_into_a_fake_action() -> None:
-    """Inferring from a 3% gap would fabricate a correction nothing asked for."""
-    bars = [_bar(1, 100.0), _bar(2, 100.0), _bar(3, 97.0), _bar(4, 96.0)]
-    factors, skipped = build_adjustment_factors([(date(2026, 1, 3), "Demerger")], bars)
-    assert factors == []
+    assert factors == [], "a split the provider already applied must not be applied twice"
     assert len(skipped) == 1
-    assert "too small to size safely" in skipped[0]
+    assert "already applied by the provider" in skipped[0]
+
+    unchanged = adjust_bars(bars, factors)
+    assert [b.close for b in unchanged] == [b.close for b in bars]
+
+
+def test_a_genuinely_unapplied_split_is_still_corrected() -> None:
+    """The check must not become a blanket refusal: a real -90% gap is a real split."""
+    bars = [_bar(1, 1000.0), _bar(2, 100.0, open_=100.0), _bar(3, 101.0)]
+    factors, skipped = build_adjustment_factors([(date(2026, 1, 2), SPLIT_10_TO_1)], bars)
+
+    assert len(factors) == 1
+    assert factors[0].factor == Decimal("0.1")
+    assert factors[0].source == "PARSED"
+    adjusted = adjust_bars(bars, factors)
+    assert adjusted[0].close == Decimal("100.0")
+    assert abs(float(adjusted[1].close / adjusted[0].close - 1)) < 0.01
+
+
+def test_a_dividend_is_applied_without_gap_verification() -> None:
+    """No gap can distinguish "already applied" from "correctly quoted" for a payout."""
+    bars = [_bar(1, 100.0), _bar(2, 99.0, open_=99.0), _bar(3, 99.5)]
+    factors, _ = build_adjustment_factors(
+        [(date(2026, 1, 2), "Dividend - Rs 1 Per Share")], bars, total_return=True
+    )
+    assert len(factors) == 1
+    assert factors[0].kinds == ("dividend",)
+    assert factors[0].factor == Decimal("99") / Decimal("100")
+
+
+def test_price_return_basis_produces_no_dividend_factor() -> None:
+    bars = [_bar(1, 100.0), _bar(2, 99.0, open_=99.0), _bar(3, 99.5)]
+    factors, _ = build_adjustment_factors(
+        [(date(2026, 1, 2), "Dividend - Rs 1 Per Share")], bars, total_return=False
+    )
+    assert factors == []
+
+
+def test_a_combined_record_gap_verifies_the_split_but_keeps_the_dividend() -> None:
+    """The reason the components are parsed apart, exercised end to end."""
+    subject = "Dividend - Rs 1 Per Share/" + SPLIT_10_TO_1
+    bars = [_bar(1, 100.0), _bar(2, 99.0, open_=99.0), _bar(3, 99.5)]
+    factors, skipped = build_adjustment_factors([(date(2026, 1, 2), subject)], bars)
+
+    kinds = [k for f in factors for k in f.kinds]
+    assert kinds == ["dividend"], "the split is already applied; the dividend is still a choice"
+    assert any("already applied by the provider" in s for s in skipped)
+
+
+# --- the blind band: why an absolute tolerance in factor space was wrong -----------------------
+#
+# The previous rule applied a published factor when |observed - factor| <= 0.20. That test cannot
+# separate its two hypotheses whenever |1 - factor| <= 0.40, because one observation then satisfies
+# both -- and it broke the tie toward "not applied", double-adjusting a series the provider had
+# already fixed. Measured on the 423-name research universe, 57 of 212 published-ratio actions
+# (27%) fell in that band, every one of them a bonus, and the corpus says the provider had applied
+# all 57.
+
+
+@pytest.mark.parametrize(
+    ("subject", "factor_text", "name"),
+    [
+        ("Bonus 1:10", "0.909090909", "ICICIBANK 2017-06-20"),
+        ("Bonus 1:5", "0.833333333", "NTPC 2019-03-19"),
+        ("Bonus 1:4", "0.8", "PFC 2023-09-21"),
+        ("Bonus 1:3", "0.75", "POWERGRID 2021-07-29"),
+        ("Bonus 1:2", "0.666666667", "LT 2017-07-13"),
+    ],
+)
+def test_a_bonus_the_provider_already_applied_is_not_applied_a_second_time(
+    subject: str, factor_text: str, name: str
+) -> None:
+    """Each of these sat in the old rule's blind band and would have been double-adjusted."""
+    bars = [_bar(1, 100.0), _bar(2, 100.5, open_=100.5), _bar(3, 101.0)]
+    plan = build_adjustment_factors([(date(2026, 1, 2), subject)], bars)
+
+    assert plan.factors == (), f"{name}: a +0.5% gap is not the published ratio {factor_text}"
+    assert plan.unresolved == ()
+    assert any("already applied by the provider" in note for note in plan.notes)
+    assert [b.close for b in adjust_bars(bars, plan.factors)] == [b.close for b in bars]
+
+
+@pytest.mark.parametrize(
+    ("subject", "ex_open"),
+    [("Bonus 1:10", 90.9), ("Bonus 1:5", 83.3), ("Bonus 1:2", 66.7)],
+)
+def test_a_bonus_the_provider_did_not_apply_is_still_caught(subject: str, ex_open: float) -> None:
+    """The other side of the same rule: it must not become a blanket refusal."""
+    bars = [_bar(1, 100.0), _bar(2, ex_open, open_=ex_open), _bar(3, ex_open)]
+    plan = build_adjustment_factors([(date(2026, 1, 2), subject)], bars)
+
+    assert len(plan.factors) == 1, "a gap matching the published ratio must still be corrected"
+    assert plan.factors[0].source == "PARSED"
+    adjusted = adjust_bars(bars, plan.factors)
+    assert abs(float(adjusted[1].close / adjusted[0].close - 1)) < 0.01
+
+
+def test_a_gap_matching_neither_hypothesis_is_unresolved_not_forced() -> None:
+    """A -40% gap on a 1:10 bonus is neither 'already applied' nor the published ratio."""
+    bars = [_bar(1, 100.0), _bar(2, 60.0, open_=60.0), _bar(3, 60.0)]
+    plan = build_adjustment_factors([(date(2026, 1, 2), "Bonus 1:10")], bars)
+
+    assert plan.factors == ()
+    assert [item.reason for item in plan.unresolved] == ["MATCHES_NEITHER_HYPOTHESIS"]
+
+
+def test_a_structural_action_with_no_ex_date_bar_is_unresolved() -> None:
+    """Neither hypothesis can be scored without the gap, so neither may be assumed."""
+    bars = [_bar(1, 100.0), _bar(3, 100.0)]
+    plan = build_adjustment_factors([(date(2026, 1, 2), SPLIT_10_TO_1)], bars)
+
+    assert plan.factors == ()
+    assert [item.reason for item in plan.unresolved] == ["NO_EX_DATE_BAR"]
+
+
+# --- demergers: what the provider really does leave behind ------------------------------------
+
+
+def test_a_demerger_is_never_sized_from_the_ex_date_gap() -> None:
+    """The gap is the action plus the day's market movement. It cannot separate the two."""
+    bars = [_bar(1, 100.0), _bar(2, 100.0), _bar(3, 35.0, open_=35.0), _bar(4, 34.0)]
+    plan = build_adjustment_factors([(date(2026, 1, 3), "Demerger")], bars)
+    assert plan.factors == ()
+    assert [item.reason for item in plan.unresolved] == ["RATIO_NOT_PUBLISHED"]
+    assert "not proof of the amount" in plan.unresolved[0].detail
+
+
+def test_a_positive_gap_demerger_is_not_turned_into_an_upward_correction() -> None:
+    """The case that condemned gap inference, from the real corpus.
+
+    NMDC's 2022-10-27 demerger ex-date shows **+71.0%**. A demerger cannot raise the parent's price,
+    so that gap is market movement, a provider adjustment, or both. The previous rule inferred a
+    factor of 1.71 from it -- scaling six years of prior history *up* by 71%, erasing a genuine move
+    and inventing a fake one in its place. BAJAJELEC (+32.2%) and SCI (+30.0%) sat in the same trap.
+    """
+    bars = [_bar(1, 100.0), _bar(2, 100.0), _bar(3, 171.0, open_=171.0), _bar(4, 170.0)]
+    plan = build_adjustment_factors([(date(2026, 1, 3), "Demerger")], bars)
+    assert plan.factors == (), "no upward 'correction' may be manufactured from a positive gap"
+    assert plan.unresolved[0].reason == "RATIO_NOT_PUBLISHED"
+    adjusted = adjust_bars(bars, plan.factors)
+    assert [b.close for b in adjusted] == [b.close for b in bars], "prices are left exactly alone"
+
+
+def test_a_small_gap_demerger_is_also_unresolved_rather_than_ignored() -> None:
+    """A 3% gap is not proof of a 3% entitlement, and it is not proof of no entitlement either."""
+    bars = [_bar(1, 100.0), _bar(2, 100.0), _bar(3, 97.0, open_=97.0), _bar(4, 96.0)]
+    plan = build_adjustment_factors([(date(2026, 1, 3), "Demerger")], bars)
+    assert plan.factors == ()
+    assert len(plan.unresolved) == 1, "the event is recorded so consumers can refuse the window"
+
+
+def test_an_independently_validated_demerger_factor_is_applied_and_labelled() -> None:
+    """The one admissible route: a size established outside the gap."""
+    bars = [_bar(1, 100.0), _bar(2, 100.0), _bar(3, 35.0, open_=35.0), _bar(4, 34.0)]
+    plan = build_adjustment_factors(
+        [(date(2026, 1, 3), "Demerger")],
+        bars,
+        validated_factors={
+            date(2026, 1, 3): ValidatedFactor(
+                Decimal("0.35"), "RESULTCO first open INR 65.00, entitlement 1:1 per filing"
+            )
+        },
+    )
+    assert len(plan.factors) == 1
+    assert plan.factors[0].source == "VALIDATED"
+    assert plan.factors[0].factor == Decimal("0.35")
+    assert "RESULTCO first open" in plan.factors[0].detail
+    assert plan.unresolved == ()
+
+
+def test_a_validated_factor_must_name_its_evidence() -> None:
+    with pytest.raises(CorporateActionError, match="corroborating evidence"):
+        ValidatedFactor(Decimal("0.35"), "   ")
+
+
+def test_a_supplied_factor_matching_no_action_is_reported_not_applied() -> None:
+    """A validated factor on the wrong date must not silently adjust the series."""
+    bars = [_bar(1, 100.0), _bar(2, 100.0), _bar(3, 35.0, open_=35.0)]
+    plan = build_adjustment_factors(
+        [(date(2026, 1, 3), "Demerger")],
+        bars,
+        validated_factors={date(2026, 1, 2): ValidatedFactor(Decimal("0.5"), "wrong date")},
+    )
+    assert plan.factors == ()
+    assert any("matched no ratio-less action" in note for note in plan.notes)
+    assert plan.unresolved[0].ex_date == date(2026, 1, 3)
 
 
 def test_bars_out_of_order_are_refused() -> None:
-    bars = [_bar(3, 100.0), _bar(1, 100.0)]
     with pytest.raises(CorporateActionError, match="ascending date order"):
-        build_adjustment_factors([], bars)
+        build_adjustment_factors([], [_bar(3, 100.0), _bar(1, 100.0)])
 
 
-# --- application -----------------------------------------------------------------------------
+# --- application mechanics ---------------------------------------------------------------------
+
+
+def _validated(on: date, factor: str) -> dict[date, ValidatedFactor]:
+    return {on: ValidatedFactor(Decimal(factor), "RESULTCO first open, entitlement per filing")}
 
 
 def test_back_adjustment_removes_the_discontinuity_and_leaves_real_returns_intact() -> None:
-    """The whole point: a 5:1 split must stop looking like an -80% day."""
-    bars = [_bar(1, 500.0), _bar(2, 505.0), _bar(3, 101.0), _bar(4, 102.0)]
-    factors, _ = build_adjustment_factors(
-        [(date(2026, 1, 3), "Face Value Split From Rs 10 To Rs 2")], bars
+    bars = [_bar(1, 500.0), _bar(2, 505.0), _bar(3, 101.0, open_=101.0), _bar(4, 102.0)]
+    plan = build_adjustment_factors(
+        [(date(2026, 1, 3), "Demerger")],
+        bars,
+        validated_factors=_validated(date(2026, 1, 3), "0.2"),
     )
-    adjusted = adjust_bars(bars, factors)
+    adjusted = adjust_bars(bars, plan.factors)
 
-    raw_gap = float(bars[2].close / bars[1].close - 1)
-    adj_gap = float(adjusted[2].close / adjusted[1].close - 1)
-    assert raw_gap < -0.79, "raw series really does show the artifact"
-    assert abs(adj_gap) < 0.01, "adjusted series shows an ordinary day"
-
-    # Real returns are untouched.
+    assert float(bars[2].close / bars[1].close - 1) < -0.79
+    assert abs(float(adjusted[2].close / adjusted[1].close - 1)) < 0.02
     assert adjusted[1].close / adjusted[0].close == bars[1].close / bars[0].close
     assert adjusted[3].close == bars[3].close, "the newest bars are never adjusted"
 
 
 def test_volume_is_rescaled_inversely_to_price() -> None:
-    bars = [_bar(1, 500.0, volume=1000), _bar(2, 100.0, volume=5000)]
-    factors, _ = build_adjustment_factors(
-        [(date(2026, 1, 2), "Face Value Split From Rs 10 To Rs 2")], bars
+    bars = [_bar(1, 500.0, volume=1000), _bar(2, 100.0, open_=100.0, volume=5000)]
+    plan = build_adjustment_factors(
+        [(date(2026, 1, 2), "Demerger")],
+        bars,
+        validated_factors=_validated(date(2026, 1, 2), "0.2"),
     )
-    adjusted = adjust_bars(bars, factors)
-    assert adjusted[0].close == Decimal("100")
-    assert adjusted[0].volume == 5000, "a 5:1 split multiplies the historical share count by 5"
+    adjusted = adjust_bars(bars, plan.factors)
+    assert adjusted[0].close == Decimal("100.0")
+    assert adjusted[0].volume == 5000
     assert adjusted[1].volume == 5000, "the newest bar is untouched"
 
 
-def test_multiple_actions_compound_backwards() -> None:
-    """Two splits: bars before both carry the product, bars between carry only the later one."""
-    bars = [_bar(1, 400.0), _bar(2, 200.0), _bar(3, 100.0)]
-    factors, _ = build_adjustment_factors(
-        [
-            (date(2026, 1, 2), "Face Value Split From Rs 10 To Rs 5"),
-            (date(2026, 1, 3), "Face Value Split From Rs 10 To Rs 5"),
-        ],
+def test_validated_factors_can_be_refused() -> None:
+    """A consumer that will only trust the authority's own published ratios can say so."""
+    bars = [_bar(1, 100.0), _bar(2, 100.0), _bar(3, 35.0, open_=35.0)]
+    plan = build_adjustment_factors(
+        [(date(2026, 1, 3), "Demerger")],
         bars,
+        validated_factors=_validated(date(2026, 1, 3), "0.35"),
     )
-    adjusted = adjust_bars(bars, factors)
-    assert adjusted[0].close == Decimal("100")  # 400 * 0.5 * 0.5
-    assert adjusted[1].close == Decimal("100")  # 200 * 0.5
-    assert adjusted[2].close == Decimal("100")  # untouched
+    assert adjust_bars(bars, plan.factors, allow_validated=True)[0].close == Decimal("35.00")
+    assert adjust_bars(bars, plan.factors, allow_validated=False)[0].close == Decimal("100")
 
 
-def test_inferred_factors_can_be_refused() -> None:
-    bars = [_bar(1, 100.0), _bar(2, 100.0), _bar(3, 35.0)]
-    factors, _ = build_adjustment_factors([(date(2026, 1, 3), "Demerger")], bars)
-    assert adjust_bars(bars, factors, allow_inferred=True)[0].close == Decimal("35.00")
-    assert adjust_bars(bars, factors, allow_inferred=False)[0].close == Decimal("100")
+# --- against the real authority and the real bars -----------------------------------------------
 
 
-# --- against the real authority ----------------------------------------------------------------
+def test_the_real_heg_demerger_is_left_unresolved_because_nothing_prices_the_entitlement() -> None:
+    """End to end on the event that started this: HEG, 2026-09-07, -64.3% on 3.6M shares.
 
-
-def test_the_real_heg_demerger_is_sized_and_removes_the_real_gap() -> None:
-    """End to end on the event that started this: HEG, 2026-09-07, -64.3% on 3.6M shares."""
+    The entitlement is one HEG Graphite share per HEG share, per the company filing. HEG Graphite
+    is **not in this repository's market cache** -- it listed after the cache window closed -- so
+    nothing here can price the entitlement. The -64.3% gap is therefore not evidence of a -64.3%
+    loss, and it is not evidence of the entitlement's value either. Unresolved is the only honest
+    verdict, and it is what lets the paper book disclose an unpriced asset instead of booking a
+    fabricated loss or a fabricated recovery.
+    """
     ca = (
         REPO_ROOT
         / "data/evidence/market-cache/nifty500-refresh-20230828-20260827"
         / "corporate-actions/nse-corporate-actions-HEG.json"
     )
     records = json.loads(ca.read_text(encoding="utf-8"))
-    assert any("Demerger" in str(r.get("subject", "")) for r in records), (
-        "the refreshed authority must contain the demerger this test exists for"
-    )
+    assert any("Demerger" in str(r.get("subject", "")) for r in records)
 
-    # The real quoted closes either side of the ex-date.
     bars = [
         BarPoint(date(2026, 9, 3), *[Decimal("707.45")] * 4, 1656554),
         BarPoint(date(2026, 9, 4), *[Decimal("728.25")] * 4, 2565950),
         BarPoint(date(2026, 9, 7), Decimal("260.00"), *[Decimal("272.20")] * 3, 3615221),
         BarPoint(date(2026, 9, 8), *[Decimal("258.60")] * 4, 1334287),
     ]
-    factors, skipped = build_adjustment_factors([(date(2026, 9, 7), "Demerger")], bars)
-    assert skipped == []
-    assert factors[0].source == "INFERRED"
+    plan = build_adjustment_factors([(date(2026, 9, 7), "Demerger")], bars)
+    assert plan.factors == ()
+    assert [item.reason for item in plan.unresolved] == ["RATIO_NOT_PUBLISHED"]
 
-    adjusted = adjust_bars(bars, factors)
-    raw_gap = float(bars[2].close / bars[1].close - 1)
-    adj_gap = float(adjusted[2].close / adjusted[1].close - 1)
-    assert raw_gap < -0.62, f"raw gap should be the real artifact, got {raw_gap:.4f}"
-    assert abs(adj_gap) < 0.06, f"adjusted gap should be an ordinary day, got {adj_gap:.4f}"
+    adjusted = adjust_bars(bars, plan.factors)
+    assert [b.close for b in adjusted] == [b.close for b in bars], "raw prices are preserved"

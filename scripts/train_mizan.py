@@ -30,9 +30,27 @@ sys.path.insert(0, str(ROOT_DIR / "scripts"))
 sys.path.insert(0, str(ROOT_DIR / "src"))
 
 import run_governed_ridge_training as runner  # noqa: E402
+from build_mizan_feature_store import (  # noqa: E402
+    authority_manifest_hash,
+    code_revision,
+    load_corporate_actions,
+    load_validated_demerger_factors,
+    raw_bar_points,
+)
 from cached_nifty50_costs import round_trip_cost_quotes  # noqa: E402
 from cached_nifty50_evidence import historical_acquisition_from_verified  # noqa: E402
 
+from quant_system.data.adjusted_acquisition import (  # noqa: E402
+    derive_adjusted_acquisition,
+    reference_from_plan,
+)
+from quant_system.data.adjustment_provenance import AdjustmentBasis  # noqa: E402
+from quant_system.data.corporate_actions import (  # noqa: E402
+    AdjustmentPlan,
+    CorporateActionError,
+    ValidatedFactor,
+    build_adjustment_factors,
+)
 from quant_system.evidence import (  # noqa: E402
     EvidenceResourceType,
     EvidenceStore,
@@ -56,6 +74,9 @@ from quant_system.modeling.trials import RidgeTrialStartV1  # noqa: E402
 from quant_system.modeling.validation import fold_spec_hash  # noqa: E402
 
 CANDIDATE_ID = "cand_mizan_v1"
+
+NSE_CORPORATE_ACTIONS_URL = "https://www.nseindia.com/api/corporates-corporateActions"
+"""The endpoint the corporate-action authorities were fetched from, bound into every derivation."""
 
 
 def load_feature_store(path: Path) -> dict[str, dict[date, dict[str, str]]]:
@@ -84,6 +105,46 @@ def governed_acquisitions(store_root: Path) -> dict[str, Any]:
     return found
 
 
+def adjusted_constituent_acquisition(
+    acquisition: Any,
+    *,
+    corporate_actions_dir: Path,
+    validated: dict[date, ValidatedFactor] | None,
+    total_return: bool,
+    authority_hash: str,
+    revision: str,
+    derived_at: datetime,
+) -> tuple[Any, AdjustmentPlan]:
+    """The corporate-action-adjusted derivation of one raw acquisition, with honest provenance.
+
+    This is the piece that was missing and that blocked the governed retrain. The feature store was
+    rebuilt on adjusted bars while ``build_label_dataset`` still read entry and exit opens off the
+    **raw** acquisition, so the model would have been fitted on corrected inputs against targets
+    still containing every corporate-action break. Deriving the acquisition here puts both sides on
+    one basis, and the derived manifest declares itself ADJUSTED rather than inheriting the raw
+    manifest's ``RAW`` literal.
+
+    The raw acquisition is returned to the caller untouched and is what the cost path prices.
+    """
+    symbol = acquisition.manifest.symbol
+    actions = load_corporate_actions(corporate_actions_dir, symbol)
+    bars = raw_bar_points(acquisition)
+    plan = build_adjustment_factors(
+        actions, bars, total_return=total_return, validated_factors=validated
+    )
+    reference = reference_from_plan(
+        plan,
+        manifest=acquisition.manifest,
+        basis=AdjustmentBasis.TOTAL_RETURN if total_return else AdjustmentBasis.PRICE_RETURN,
+        authority_content_hash=authority_hash,
+        authority_source_url=NSE_CORPORATE_ACTIONS_URL,
+        authority_publication_date=None,
+        code_revision=revision,
+        derived_at=derived_at,
+    )
+    return derive_adjusted_acquisition(acquisition, plan, reference), plan
+
+
 def _constituent(
     symbol: str,
     acquisition: Any,
@@ -91,8 +152,17 @@ def _constituent(
     calendar_version: str,
     quantity: int,
     horizon_sessions: int,
+    execution_acquisition: Any = None,
 ) -> tuple[Any, Any, Any]:
-    """One instrument's governed feature and label datasets."""
+    """One instrument's governed feature and label datasets.
+
+    ``acquisition`` is the series the model is *measured* on. When the caller has derived a
+    corporate-action-adjusted acquisition it passes that here and the raw one as
+    ``execution_acquisition``, so features, labels and P&L all sit on one basis while the costs stay
+    quoted on the prices a fill actually executes at. Passing only ``acquisition`` reproduces the
+    previous behaviour exactly.
+    """
+    execution = execution_acquisition if execution_acquisition is not None else acquisition
     calendar = runner._calendar_from_acquisition(acquisition, calendar_version)
     features = build_mizan_feature_dataset(
         acquisition,
@@ -101,11 +171,18 @@ def _constituent(
         acquisition.manifest.historical_universe_authority.content_hash,
         values,
     )
+    # Costs are priced on the executable raw series. A flat DP charge and a capped brokerage do not
+    # scale with a synthetic adjusted price, so quoting them on adjusted bars would misstate them.
     quotes = round_trip_cost_quotes(
-        features, acquisition, calendar, quantity=quantity, horizon_sessions=horizon_sessions
+        features, execution, calendar, quantity=quantity, horizon_sessions=horizon_sessions
     )
     labels = build_label_dataset(
-        features, acquisition, calendar, quotes, horizon_sessions=horizon_sessions
+        features,
+        acquisition,
+        calendar,
+        quotes,
+        horizon_sessions=horizon_sessions,
+        execution_acquisition=execution if execution is not acquisition else None,
     )
     return features, labels, calendar
 
@@ -146,17 +223,56 @@ def run(args: argparse.Namespace) -> int:
         print("REFUSED: no instrument has both a universe-bound acquisition and features.")
         return 2
 
+    adjust = not args.no_adjust
+    revision = code_revision()
+    derived_at = datetime.now(UTC)
+    authority_hash = authority_manifest_hash(args.corporate_actions_dir) or ""
+    validated_by_symbol = load_validated_demerger_factors(
+        None if args.no_adjust else args.validated_factors
+    )
+    if adjust:
+        print(
+            f"adjustment         : ENABLED, basis "
+            f"{'TOTAL_RETURN' if not args.price_return else 'PRICE_RETURN'}, "
+            f"authority {authority_hash[:12]}, revision {revision[:12]}",
+            flush=True,
+        )
+    else:
+        print("adjustment         : DISABLED -- labels measured on RAW provider bars", flush=True)
+
     constituents: list[tuple[str, Any, Any, Any]] = []
     failures: list[tuple[str, str]] = []
+    total_factors = 0
+    total_unresolved = 0
     for symbol in usable:
+        raw = acquisitions[symbol]
+        measured, execution = raw, None
+        if adjust:
+            try:
+                measured, plan = adjusted_constituent_acquisition(
+                    raw,
+                    corporate_actions_dir=args.corporate_actions_dir,
+                    validated=validated_by_symbol.get(symbol),
+                    total_return=not args.price_return,
+                    authority_hash=authority_hash,
+                    revision=revision,
+                    derived_at=derived_at,
+                )
+            except (CorporateActionError, ValueError) as error:
+                failures.append((symbol, f"ADJUSTMENT_FAILED: {error}"))
+                continue
+            execution = raw
+            total_factors += len(plan.factors)
+            total_unresolved += len(plan.unresolved)
         try:
             features, labels, calendar = _constituent(
                 symbol,
-                acquisitions[symbol],
+                measured,
                 features_by_symbol[symbol],
                 args.calendar_version,
                 args.quantity,
                 args.horizon_sessions,
+                execution,
             )
         except (ModelingError, runner.ConfigurationRefused) as error:
             detail = error.code.value if isinstance(error, ModelingError) else str(error)
@@ -165,6 +281,13 @@ def run(args: argparse.Namespace) -> int:
         constituents.append((symbol, features, labels, calendar))
         print(
             f"  {symbol:14s} features={len(features.rows):5d} labels={len(labels.rows):5d}",
+            flush=True,
+        )
+
+    if adjust:
+        print(
+            f"\ncorporate actions  : {total_factors:,} factors applied, "
+            f"{total_unresolved} unresolved (their label windows refused)",
             flush=True,
         )
 
@@ -287,6 +410,35 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--l2-penalty", default="1")
     parser.add_argument("--quantity", type=int, default=1)
     parser.add_argument("--calendar-version", default="provider-derived-v1")
+    parser.add_argument(
+        "--corporate-actions-dir",
+        type=Path,
+        default=ROOT_DIR
+        / "data/evidence/market-cache/all-market-20160822-20260821/corporate-actions",
+        help="Authority the label-side adjustment is derived from. Must be the same snapshot the "
+        "feature store was built against, or features and labels sit on different bases.",
+    )
+    parser.add_argument(
+        "--validated-factors",
+        type=Path,
+        default=ROOT_DIR / "data/authorities/nse-validated-demerger-factors.json",
+        help="Independently validated demerger factors. Ratio-less actions absent from this file "
+        "stay unresolved and every label window spanning one is refused.",
+    )
+    parser.add_argument(
+        "--price-return",
+        action="store_true",
+        help="Adjust structural actions only, leaving dividends as price drops. The default is "
+        "total return, which also removes dividends -- and which makes training returns "
+        "inconsistent with both paper books, since neither credits a dividend.",
+    )
+    parser.add_argument(
+        "--no-adjust",
+        action="store_true",
+        help="Measure labels on RAW provider bars, reproducing the pre-adjustment run. Diagnostic "
+        "only: the feature store is built on adjusted bars, so this deliberately mismatches the "
+        "two sides and exists to quantify what the adjustment changed.",
+    )
     return run(parser.parse_args(argv))
 
 

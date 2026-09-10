@@ -10,10 +10,25 @@ from enum import StrEnum
 from typing import Any
 
 from quant_system.core.domain import PriceBar
+from quant_system.data.adjustment_provenance import AdjustmentReference
 from quant_system.data.market_data_evidence import canonical_sha256, decimal_text, utc_text
 
 DATASET_MANIFEST_SCHEMA = "quantos.dataset_manifest"
 DATASET_MANIFEST_VERSION = 1
+"""Provider values. The ``adjustment`` block is the fixed ``PROVIDER_UNSPECIFIED``/``RAW`` literal.
+
+Emitted whenever ``DatasetManifest.adjustment`` is ``None``, which is every manifest already written
+to this repository. The payload is unchanged, so their hashes are unchanged.
+"""
+
+DATASET_MANIFEST_VERSION_ADJUSTED = 2
+"""Derived values. The ``adjustment`` block is a full
+:class:`~quant_system.data.adjustment_provenance.AdjustmentReference`.
+
+The version distinguishes the two payload *shapes*, so a reader never has to guess whether the
+``adjustment`` block is a placeholder literal or real provenance -- and a derived dataset can no
+longer masquerade as a raw one.
+"""
 BAR_RECORD_SCHEMA = "quantos.point_in_time_bar"
 BAR_RECORD_VERSION = 1
 UPSTOX_HISTORICAL_SOURCE = "UPSTOX_HISTORICAL"
@@ -296,6 +311,20 @@ class DatasetManifest:
     historical_universe_authority: AuthorityReference | None
     quality_findings: tuple[QualityFinding, ...]
     manifest_hash: str
+    adjustment: AdjustmentReference | None = None
+    """Provenance for a derived, corporate-action-adjusted series. ``None`` means provider values.
+
+    A provider response is genuinely RAW and keeps that label forever. What used to be dishonest was
+    that *derived* series were forced to claim it too: ``to_canonical_dict`` emitted the literal
+    ``{"method": "PROVIDER_UNSPECIFIED", "status": "RAW"}`` unconditionally, so evidence built on
+    adjusted bars declared itself unadjusted, immutably.
+
+    Setting this field switches the manifest to schema version
+    :data:`DATASET_MANIFEST_VERSION_ADJUSTED` and emits the full reference. Leaving it ``None``
+    reproduces the version-1 payload **byte for byte**, so every manifest hash already committed to
+    this repository is unchanged -- see ``tests/test_adjustment_provenance.py``. Derived series are
+    published alongside raw ones, never in place of them.
+    """
 
     @property
     def is_governed_eligible(self) -> bool:
@@ -307,7 +336,11 @@ class DatasetManifest:
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "acquired_at": utc_text(self.acquired_at),
-            "adjustment": {"method": "PROVIDER_UNSPECIFIED", "status": "RAW"},
+            "adjustment": (
+                self.adjustment.to_canonical_dict()
+                if self.adjustment is not None
+                else {"method": "PROVIDER_UNSPECIFIED", "status": "RAW"}
+            ),
             "available_timestamp_field": "available_at",
             "calendar": self.calendar.to_canonical_dict() if self.calendar else None,
             "canonical_content_hash": self.canonical_content_hash,
@@ -353,7 +386,11 @@ class DatasetManifest:
             "request_id": self.request_id,
             "row_count": self.row_count,
             "schema_id": DATASET_MANIFEST_SCHEMA,
-            "schema_version": DATASET_MANIFEST_VERSION,
+            "schema_version": (
+                DATASET_MANIFEST_VERSION_ADJUSTED
+                if self.adjustment is not None
+                else DATASET_MANIFEST_VERSION
+            ),
             "source": UPSTOX_HISTORICAL_SOURCE,
             "source_status": self.source_status.value,
             "status": self.status.value,

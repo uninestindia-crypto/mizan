@@ -38,6 +38,10 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR / "scripts"))
 sys.path.insert(0, str(ROOT_DIR / "src"))
 
+from build_mizan_feature_store import (  # noqa: E402
+    adjusted_bar_points,
+    load_corporate_actions,
+)
 from cached_nifty50_evidence import historical_acquisition_from_verified  # noqa: E402
 
 from quant_system.evidence import (  # noqa: E402
@@ -78,8 +82,19 @@ def _ranks(values: list[float]) -> list[float]:
     return [r / len(values) - 0.5 for r in ranks]
 
 
-def forward_returns(store_root: Path, symbols: set[str]) -> dict[str, dict[date, float]]:
-    """Net return from next open to the open HOLD_SESSIONS later."""
+def forward_returns(
+    store_root: Path,
+    symbols: set[str],
+    *,
+    corporate_actions_dir: Path | None = None,
+    total_return: bool = True,
+) -> dict[str, dict[date, float]]:
+    """Net return from next open to the open HOLD_SESSIONS later.
+
+    Bars are RAW, so a split or demerger between the two opens reads as a genuine -80% target.
+    Adjusting the **label** matters at least as much as adjusting the feature: a screen that fixes
+    one and not the other is measuring a mismatch rather than a model.
+    """
     store = EvidenceStore(EvidenceStoreConfig(root=store_root))
     best: dict[str, Any] = {}
     for verified in store.list_verified(EvidenceResourceType.DATASET):
@@ -91,8 +106,14 @@ def forward_returns(store_root: Path, symbols: set[str]) -> dict[str, dict[date,
             best[symbol] = acquisition
     out: dict[str, dict[date, float]] = {}
     for symbol, acquisition in best.items():
-        opens = [float(r.open) for r in acquisition.records]
-        dates = [r.exchange_date for r in acquisition.records]
+        actions = (
+            load_corporate_actions(corporate_actions_dir, symbol)
+            if corporate_actions_dir is not None
+            else []
+        )
+        bars, _, _ = adjusted_bar_points(acquisition, actions, total_return=total_return)
+        opens = [float(bar.open) for bar in bars]
+        dates = [bar.on for bar in bars]
         series: dict[date, float] = {}
         for i in range(len(opens) - HOLD_SESSIONS - 1):
             if opens[i + 1] > 0:
@@ -148,7 +169,16 @@ def run(args: argparse.Namespace) -> int:
     print(f"train symbols (governed) : {len(train_symbols)}")
     print(f"test  symbols (untouched): {len(test_symbols)}")
 
-    forward = forward_returns(args.market_cache, all_symbols)
+    forward = forward_returns(
+        args.market_cache,
+        all_symbols,
+        corporate_actions_dir=None if args.no_adjust else args.corporate_actions_dir,
+        total_return=not args.price_return,
+    )
+    print(
+        f"labels          : {'RAW (unadjusted)' if args.no_adjust else 'corporate-action adjusted'}",
+        flush=True,
+    )
     print(f"symbols with forward returns: {len(forward)}\n")
 
     # Rank within each date across the whole cross-section, then split by instrument.
@@ -232,6 +262,20 @@ def main() -> int:
         type=Path,
         default=ROOT_DIR / "data/evidence/market-cache/all-market-20160822-20260821/store",
     )
+    parser.add_argument(
+        "--corporate-actions-dir",
+        type=Path,
+        default=ROOT_DIR
+        / "data/evidence/market-cache/all-market-20160822-20260821/corporate-actions",
+        help="Authority used to back-adjust the label's next-open prices.",
+    )
+    parser.add_argument(
+        "--no-adjust",
+        action="store_true",
+        help="Compute labels from RAW opens, as this screen did before adjustment existed. "
+        "Use with a RAW feature store to reproduce the -0.000022 baseline.",
+    )
+    parser.add_argument("--price-return", action="store_true")
     return run(parser.parse_args())
 
 

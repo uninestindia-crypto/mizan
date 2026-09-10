@@ -1,0 +1,48 @@
+{
+  "blockers": [
+    "the Python interpreter is AMD64, not ARM64. Windows on ARM runs x86-64 processes under emulation, and an emulated x86-64 process cannot load the ARM64 QNN HTP backend. No package installation changes this",
+    "no QNN backend library is present anywhere on the search path",
+    "onnxruntime is not installed in this environment"
+  ],
+  "cpu_baseline": {
+    "available": true,
+    "gflops": 45.22,
+    "matrix_size": 512,
+    "milliseconds_each": 5.9367,
+    "numpy_version": "2.5.2",
+    "repeats": 20,
+    "result_finite": true,
+    "seconds_total": 0.118734
+  },
+  "generated_at": "2026-09-10T13:57:14.352363+00:00",
+  "hardware": {
+    "npu_devices": [
+      {
+        "FriendlyName": "Snapdragon(R) X - X126100 - Qualcomm(R) Hexagon(TM) NPU",
+        "InstanceId": "ACPI\\QCOM0D0A\\2&DABA3FF&0",
+        "Status": "OK"
+      }
+    ],
+    "processor": "ARMv8 (64-bit) Family 8 Model 1 Revision 201, Qualcomm Technologies Inc",
+    "reported_machine": "AMD64"
+  },
+  "interpreter": {
+    "executable": "D:/quant_system/.venv/Scripts/python.exe",
+    "pe_machine": "AMD64",
+    "processor_architecture_env": "AMD64",
+    "sysconfig_platform": "win-amd64",
+    "version": "3.13.15 (tags/v3.13.15:4061bc4, Aug  5 2026, 13:05:39) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "onnx_runtime": {
+    "detail": "No module named 'onnxruntime'",
+    "installed": false,
+    "providers": []
+  },
+  "qnn_libraries": {
+    "QnnCpu.dll": null,
+    "QnnHtp.dll": null,
+    "QnnHtpV73Stub.dll": null,
+    "QnnSystem.dll": null
+  },
+  "verdict": "NPU_UNREACHABLE"
+}

@@ -14,11 +14,14 @@ from __future__ import annotations
 import argparse
 import csv
 import gzip
+import hashlib
 import json
 import math
+import subprocess
 import sys
 from collections import defaultdict
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -28,12 +31,25 @@ sys.path.insert(0, str(ROOT_DIR / "src"))
 
 from cached_nifty50_evidence import historical_acquisition_from_verified  # noqa: E402
 
+from quant_system.data.adjustment_provenance import (  # noqa: E402
+    ADJUSTMENT_METHOD_V1,
+    ADJUSTMENT_METHOD_VERSION_V1,
+)
+from quant_system.data.corporate_actions import (  # noqa: E402
+    AdjustmentPlan,
+    BarPoint,
+    ValidatedFactor,
+    adjust_bars,
+    build_adjustment_factors,
+)
 from quant_system.evidence import (  # noqa: E402
     EvidenceResourceType,
     EvidenceStore,
     EvidenceStoreConfig,
 )
 from quant_system.modeling.rows import FEATURE_NAMES_V3  # noqa: E402
+
+_MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
 WARMUP_BARS = 50
 """Longest trailing window any feature needs (the 50-session moving average)."""
@@ -101,15 +117,188 @@ def deduplicate_by_symbol(store: EvidenceStore) -> dict[str, Any]:
     return best
 
 
+def _parse_ex_date(value: object) -> date | None:
+    """NSE publishes ex-dates as ``07-Sep-2026``."""
+    try:
+        day, month, year = str(value).split("-")
+        return date(int(year), _MONTHS.index(month) + 1, int(day))
+    except Exception:
+        return None
+
+
+def load_corporate_actions(ca_dir: Path, symbol: str) -> list[tuple[date, str]]:
+    """``(ex_date, subject)`` records for one symbol, or an empty list when there are none."""
+    path = ca_dir / f"nse-corporate-actions-{symbol}.json"
+    if not path.is_file():
+        return []
+    try:
+        items = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    out: list[tuple[date, str]] = []
+    for item in items if isinstance(items, list) else []:
+        ex_date = _parse_ex_date(item.get("exDate"))
+        if ex_date is not None:
+            out.append((ex_date, str(item.get("subject", ""))))
+    return out
+
+
+def code_revision() -> str:
+    """The exact revision that produced this artifact, with a dirty marker when it is not clean.
+
+    A derived dataset that cannot name the code that made it is not reproducible, and
+    ``quant-model-governance`` treats the code revision as part of the artifact's identity. An
+    uncommitted tree is recorded as such rather than silently reported as its parent commit.
+    """
+    try:
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT_DIR,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=30,
+        ).stdout.strip()
+        dirty = subprocess.run(
+            ["git", "status", "--porcelain", "--", "src", "scripts"],
+            cwd=ROOT_DIR,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=60,
+        ).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return "UNKNOWN"
+    return f"{head}-dirty" if dirty else head
+
+
+def authority_manifest_hash(corporate_actions_dir: Path | None) -> str | None:
+    """One hash over every corporate-action authority file consumed.
+
+    Binds *which* authority snapshot produced these factors. Refetching the authorities changes
+    this, so two feature stores built either side of a refetch cannot be mistaken for each other.
+    """
+    if corporate_actions_dir is None or not corporate_actions_dir.is_dir():
+        return None
+    digest = hashlib.sha256()
+    for path in sorted(corporate_actions_dir.glob("nse-corporate-actions-*.json")):
+        digest.update(path.name.encode("utf-8"))
+        digest.update(hashlib.sha256(path.read_bytes()).digest())
+    return digest.hexdigest()
+
+
+def load_validated_demerger_factors(
+    path: Path | None,
+) -> dict[str, dict[date, ValidatedFactor]]:
+    """Independently validated demerger factors, keyed by symbol then ex-date.
+
+    Produced by ``scripts/validate_demerger_factors.py``, which sizes an action from the resulting
+    company's own first traded price and the entitlement ratio in the company filing -- evidence
+    outside the parent's ex-date gap. Without such a file every ratio-less action stays unresolved,
+    which is the safe default rather than a degraded one.
+    """
+    if path is None or not path.is_file():
+        return {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    out: dict[str, dict[date, ValidatedFactor]] = {}
+    for entry in payload.get("validated", []):
+        ex_date = date.fromisoformat(str(entry["ex_date"]))
+        out.setdefault(str(entry["symbol"]), {})[ex_date] = ValidatedFactor(
+            Decimal(str(entry["factor"])), str(entry["evidence"])
+        )
+    return out
+
+
+def raw_bar_points(acquisition: Any) -> list[BarPoint]:
+    """The provider's own bars, ascending. Never mutated -- these are what a fill executes at."""
+    return sorted(
+        (
+            BarPoint(
+                on=record.exchange_date,
+                open=Decimal(str(record.open)),
+                high=Decimal(str(record.high)),
+                low=Decimal(str(record.low)),
+                close=Decimal(str(record.close)),
+                volume=int(record.volume),
+            )
+            for record in acquisition.records
+        ),
+        key=lambda bar: bar.on,
+    )
+
+
+def adjusted_bar_points(
+    acquisition: Any,
+    actions: list[tuple[date, str]],
+    *,
+    total_return: bool,
+    validated_factors: dict[date, ValidatedFactor] | None = None,
+) -> tuple[list[BarPoint], AdjustmentPlan]:
+    """Back-adjusted bars for one instrument, with the plan that produced them.
+
+    Most of what the authority publishes needs no correction: the provider already back-adjusts
+    every published-ratio split and bonus (212 of 212 measured). What it leaves behind is demergers,
+    which carry no published ratio -- and those are *not* sized from the ex-date gap, because a gap
+    is the action plus the day's market movement and nothing separates the two. They come back in
+    ``plan.unresolved``, and the caller drops every feature window that touches one.
+
+    Adjusting here rather than at read time keeps one definition of a return for every feature that
+    follows.
+    """
+    bars = raw_bar_points(acquisition)
+    if not actions:
+        return bars, AdjustmentPlan((), (), ())
+    plan = build_adjustment_factors(
+        actions, bars, total_return=total_return, validated_factors=validated_factors
+    )
+    return adjust_bars(bars, plan.factors), plan
+
+
+def blackout_dates(
+    bars: list[BarPoint], plan: AdjustmentPlan, *, window: int = WARMUP_BARS
+) -> set[date]:
+    """Session dates whose trailing feature window contains an action of unknown size.
+
+    A feature at session ``t`` reads bars ``(t - WARMUP_BARS, t]``. An unresolved corporate action
+    inside that window puts a fabricated return into every one of RSI, both moving averages, all
+    three momentum features and the volume z-score. The value is not merely noisy, it is an artifact
+    of an event nobody has sized -- and it looks like signal, which is worse.
+
+    So those rows are dropped rather than published with a caveat. Measured on the research
+    universe this costs about 54 events x 50 sessions out of roughly a million rows.
+    """
+    if not plan.unresolved:
+        return set()
+    ordered = [bar.on for bar in bars]
+    positions = {value: index for index, value in enumerate(ordered)}
+    blocked: set[date] = set()
+    for action in plan.unresolved:
+        start = positions.get(action.ex_date)
+        if start is None:
+            # No bar on the ex-date. The gap still lands between the surrounding sessions, so
+            # blacked out from the first session on or after it.
+            start = next((i for i, value in enumerate(ordered) if value >= action.ex_date), None)
+            if start is None:
+                continue
+        blocked.update(ordered[start : start + window + 1])
+    return blocked
+
+
 def _instrument_rows(
     symbol: str,
-    acquisition: Any,
+    bars: list[BarPoint],
     vix_by_date: dict[str, float],
     nifty_by_date: dict[str, float],
+    blackout: set[date] | None = None,
 ) -> list[tuple[str, str, list[float]]]:
-    """Causal feature rows for one instrument, before cross-sectional ranking."""
-    records = acquisition.records
-    dates = [record.exchange_date.isoformat() for record in records]
+    """Causal feature rows for one instrument, before cross-sectional ranking.
+
+    ``blackout`` names sessions whose trailing window spans a corporate action of unknown size; no
+    row is emitted for those. See :func:`blackout_dates`.
+    """
+    records = bars
+    blocked = blackout or set()
+    dates = [record.on.isoformat() for record in records]
     opens = [float(record.open) for record in records]
     highs = [float(record.high) for record in records]
     lows = [float(record.low) for record in records]
@@ -119,13 +308,15 @@ def _instrument_rows(
 
     rows: list[tuple[str, str, list[float]]] = []
     for i in range(WARMUP_BARS, len(records)):
+        if records[i].on in blocked:
+            continue
         close, open_, high, low = closes[i], opens[i], highs[i], lows[i]
         if close <= 0 or open_ <= 0 or high <= 0 or low <= 0:
             continue
-        date = dates[i]
-        vix = vix_by_date.get(date)
+        on = dates[i]
+        vix = vix_by_date.get(on)
         vix_past = vix_by_date.get(dates[i - 5])
-        nifty = nifty_by_date.get(date)
+        nifty = nifty_by_date.get(on)
         nifty_past = nifty_by_date.get(dates[i - 5])
         if vix is None or vix_past is None or nifty is None or nifty_past is None:
             continue
@@ -141,7 +332,7 @@ def _instrument_rows(
 
         rows.append(
             (
-                date,
+                on,
                 symbol,
                 [
                     close / closes[i - 1] - 1.0 if closes[i - 1] > 0 else 0.0,
@@ -182,7 +373,16 @@ def _apply_cross_sectional_ranks(by_date: dict[str, list[tuple[str, list[float]]
                 rows[position][1][target] = (rank + 1) / count - 0.5
 
 
-def build(store_root: Path, macro_dir: Path, universe_path: Path, out_dir: Path) -> None:
+def build(
+    store_root: Path,
+    macro_dir: Path,
+    universe_path: Path,
+    out_dir: Path,
+    *,
+    corporate_actions_dir: Path | None = None,
+    total_return: bool = True,
+    validated_factors_path: Path | None = None,
+) -> None:
     universe = read_universe(universe_path)
     vix_by_date = load_macro(macro_dir, "INDIAVIX")
     nifty_by_date = load_macro(macro_dir, "NIFTY50")
@@ -196,15 +396,64 @@ def build(store_root: Path, macro_dir: Path, universe_path: Path, out_dir: Path)
     selected = {s: a for s, a in acquisitions.items() if s in universe}
     print(f"in universe     : {len(selected)} symbols", flush=True)
 
+    validated = load_validated_demerger_factors(validated_factors_path)
+    if validated:
+        print(
+            f"validated CA    : {sum(len(v) for v in validated.values())} independently validated "
+            f"demerger factors across {len(validated)} symbols",
+            flush=True,
+        )
+
     by_date: dict[str, list[tuple[str, list[float]]]] = defaultdict(list)
     skipped = 0
+    adjusted_symbols = 0
+    total_factors = 0
+    unresolved_actions = 0
+    blacked_out_rows = 0
+    unresolved_symbols: set[str] = set()
+    refused: list[str] = []
     for symbol, acquisition in sorted(selected.items()):
         if len(acquisition.records) < WARMUP_BARS + 30:
             skipped += 1
             continue
-        for date, name, values in _instrument_rows(symbol, acquisition, vix_by_date, nifty_by_date):
-            by_date[date].append((name, values))
+        actions = (
+            load_corporate_actions(corporate_actions_dir, symbol)
+            if corporate_actions_dir is not None
+            else []
+        )
+        bars, plan = adjusted_bar_points(
+            acquisition,
+            actions,
+            total_return=total_return,
+            validated_factors=validated.get(symbol),
+        )
+        if plan.factors:
+            adjusted_symbols += 1
+            total_factors += len(plan.factors)
+        if plan.unresolved:
+            unresolved_actions += len(plan.unresolved)
+            unresolved_symbols.add(symbol)
+        refused.extend(f"{symbol} {item.ex_date} {item.reason}" for item in plan.unresolved)
+        blocked = blackout_dates(bars, plan)
+        blacked_out_rows += len(blocked)
+        for row_date, name, values in _instrument_rows(
+            symbol, bars, vix_by_date, nifty_by_date, blocked
+        ):
+            by_date[row_date].append((name, values))
     print(f"skipped (short) : {skipped}", flush=True)
+    if corporate_actions_dir is None:
+        print("corp actions    : DISABLED -- bars are RAW", flush=True)
+    else:
+        basis = "total return (dividends removed)" if total_return else "price return"
+        print(
+            f"corp actions    : {total_factors:,} factors on {adjusted_symbols} symbols", flush=True
+        )
+        print(f"adjustment basis: {basis}", flush=True)
+        print(
+            f"unresolved      : {unresolved_actions} actions on {len(unresolved_symbols)} symbols; "
+            f"up to {blacked_out_rows:,} feature rows blacked out",
+            flush=True,
+        )
 
     _apply_cross_sectional_ranks(by_date)
 
@@ -222,6 +471,29 @@ def build(store_root: Path, macro_dir: Path, universe_path: Path, out_dir: Path)
                 total += 1
 
     metadata = {
+        # Adjustment provenance. A store built on RAW bars and one built on adjusted bars are not
+        # comparable evidence, so which one this is must travel with the artifact.
+        "corporate_action_adjustment": {
+            "applied": corporate_actions_dir is not None,
+            "authority_dir": (
+                corporate_actions_dir.as_posix() if corporate_actions_dir is not None else None
+            ),
+            "authority_manifest_sha256": authority_manifest_hash(corporate_actions_dir),
+            "basis": "TOTAL_RETURN" if total_return else "PRICE_RETURN",
+            "blacked_out_session_rows": blacked_out_rows,
+            "code_revision": code_revision(),
+            "factors_applied": total_factors,
+            "method": ADJUSTMENT_METHOD_V1,
+            "method_version": ADJUSTMENT_METHOD_VERSION_V1,
+            "status": "RAW" if corporate_actions_dir is None else "ADJUSTED",
+            "symbols_adjusted": adjusted_symbols,
+            "symbols_with_unresolved_actions": len(unresolved_symbols),
+            "unresolved_actions": unresolved_actions,
+            "validated_demerger_factors": sum(len(v) for v in validated.values()),
+            "validated_factors_authority": (
+                validated_factors_path.as_posix() if validated_factors_path else None
+            ),
+        },
         "cross_sectional_dates": len(by_date),
         "deduplicated_symbols": len(acquisitions),
         "feature_names": list(FEATURE_NAMES_V3),
@@ -262,8 +534,41 @@ def main() -> int:
     parser.add_argument(
         "--out-dir", type=Path, default=ROOT_DIR / "data/evidence/feature-store/mizan"
     )
+    parser.add_argument(
+        "--corporate-actions-dir",
+        type=Path,
+        default=ROOT_DIR
+        / "data/evidence/market-cache/all-market-20160822-20260821/corporate-actions",
+        help="Authority directory used to back-adjust bars. Must match --store-root's cache.",
+    )
+    parser.add_argument(
+        "--validated-factors",
+        type=Path,
+        default=ROOT_DIR / "data/authorities/nse-validated-demerger-factors.json",
+        help="Independently validated demerger factors from validate_demerger_factors.py. "
+        "Ratio-less actions absent from this file stay unresolved and their windows are dropped.",
+    )
+    parser.add_argument(
+        "--no-adjust",
+        action="store_true",
+        help="Build on RAW bars, reproducing the pre-adjustment store. Diagnostic only.",
+    )
+    parser.add_argument(
+        "--price-return",
+        action="store_true",
+        help="Adjust structural actions only, leaving dividends as price drops. "
+        "The default is total return, which also removes dividends.",
+    )
     args = parser.parse_args()
-    build(args.store_root, args.macro_dir, args.universe, args.out_dir)
+    build(
+        args.store_root,
+        args.macro_dir,
+        args.universe,
+        args.out_dir,
+        corporate_actions_dir=None if args.no_adjust else args.corporate_actions_dir,
+        total_return=not args.price_return,
+        validated_factors_path=None if args.no_adjust else args.validated_factors,
+    )
     return 0
 
 

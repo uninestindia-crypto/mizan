@@ -6,6 +6,7 @@ from collections import Counter
 from datetime import date, datetime
 from decimal import ROUND_HALF_EVEN, Decimal, localcontext
 
+from quant_system.data.adjustment_provenance import AdjustmentReference, spans_unresolved
 from quant_system.data.evidence_draft import draft_from_historical_acquisition
 from quant_system.data.market_data import HistoricalAcquisition, PointInTimeBar
 from quant_system.data.market_data_evidence import decimal_text
@@ -34,35 +35,67 @@ def build_label_dataset(
     calendar: SessionCalendarV1,
     cost_quotes: tuple[RoundTripCostQuoteV1, ...],
     horizon_sessions: int = LABEL_HORIZON_SESSIONS_V1,
+    *,
+    execution_acquisition: HistoricalAcquisition | None = None,
 ) -> LabelDatasetV1:
     """Build matured labels, rejecting missing eligible opens or mismatched costs.
 
     ``horizon_sessions`` counts decision -> entry -> exit, so the default 2 holds for one session.
     The cost quotes supplied must have been priced for the same horizon; a mismatch surfaces as
     ``COST_QUOTE_MISSING`` rather than being silently repriced.
+
+    Corporate actions, and why there are two acquisitions
+    ----------------------------------------------------
+    ``acquisition`` supplies the prices the **return** is measured on. ``execution_acquisition``
+    supplies the prices a fill actually **executes** at, and defaults to ``acquisition`` -- which is
+    exactly the previous behaviour when both are the raw provider series.
+
+    They differ when ``acquisition`` is a corporate-action-adjusted derivation
+    (``data.adjusted_acquisition.derive_adjusted_acquisition``). A 1:1 bonus halves the quote and
+    doubles the share count: the raw ratio says the holder lost 50% and the holder in fact broke
+    even. Measuring the label on the adjusted series gets that right. But the *costs* must not be
+    quoted on adjusted prices, because NSE charges are not all ad valorem -- a flat DP charge and a
+    capped brokerage do not scale with a synthetic price, so an adjusted quote would misstate them.
+    So costs stay priced on raw executable opens at the raw notional, and the cost fraction and the
+    gross return are both fractions of the same economic position. Nothing is counted twice.
+
+    A window spanning a corporate action **of unknown size** is refused outright. The adjusted
+    series cannot correct it -- nothing sized it -- and the raw ratio across it is a fabricated
+    return. The row is dropped and its cost quote is recorded as refused rather than unused, so the
+    quote-completeness guard still holds.
     """
     if horizon_sessions < LABEL_HORIZON_SESSIONS_V1:
         raise ModelingError(
             ModelingFailureCode.LABEL_HORIZON_INVALID,
             "label horizon cannot be shorter than one held session",
         )
+    execution = execution_acquisition if execution_acquisition is not None else acquisition
     _validate_sources(feature_dataset, acquisition, calendar)
+    _validate_execution_source(acquisition, execution)
+    adjustment = acquisition.manifest.adjustment
     bars_by_date = {record.exchange_date: record for record in acquisition.records}
+    execution_bars_by_date = {record.exchange_date: record for record in execution.records}
     quotes_by_key = _index_quotes(cost_quotes)
     rows: list[LabelRowV1] = []
     used_quote_hashes: list[str] = []
+    refused_quote_hashes: list[str] = []
     for feature_row in feature_dataset.rows:
-        label_and_quote = _build_label(
+        outcome = _build_label(
             feature_row,
             acquisition,
             calendar,
             bars_by_date,
+            execution_bars_by_date,
             quotes_by_key,
             horizon_sessions,
+            adjustment,
         )
-        if label_and_quote is None:
+        if outcome is None:
             continue
-        label, quote = label_and_quote
+        label, quote = outcome
+        if label is None:
+            refused_quote_hashes.append(quote.quote_hash)
+            continue
         rows.append(label)
         used_quote_hashes.append(quote.quote_hash)
     if not rows:
@@ -71,7 +104,8 @@ def build_label_dataset(
             "no feature row has a matured two-session label horizon",
         )
     supplied_quote_hashes = Counter(quote.quote_hash for quote in cost_quotes)
-    if Counter(used_quote_hashes) != supplied_quote_hashes:
+    accounted = Counter(used_quote_hashes) + Counter(refused_quote_hashes)
+    if accounted != supplied_quote_hashes:
         raise ModelingError(
             ModelingFailureCode.COST_QUOTE_MISMATCH,
             "cost quote set contains an unused or unmatched quote",
@@ -172,14 +206,62 @@ def _index_quotes(
     return indexed
 
 
+def _validate_execution_source(
+    acquisition: HistoricalAcquisition, execution: HistoricalAcquisition
+) -> None:
+    """The two acquisitions must be the same instrument and, when derived, actually related.
+
+    Pairing an adjusted series for one symbol with raw bars for another would produce a return and
+    a cost that describe different instruments -- the failure mode that a Red Team recheck already
+    found once on this codebase, where a symbol was bound by map key rather than by each bar's own
+    identity.
+    """
+    if execution is acquisition:
+        return
+    manifest, source = acquisition.manifest, execution.manifest
+    if (
+        manifest.symbol != source.symbol
+        or manifest.provider_instrument_id != source.provider_instrument_id
+    ):
+        raise ModelingError(
+            ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+            "execution acquisition is a different instrument from the measured acquisition",
+        )
+    adjustment = manifest.adjustment
+    if adjustment is None:
+        raise ModelingError(
+            ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+            "a separate execution acquisition is only meaningful for an adjusted measured series",
+        )
+    if adjustment.source_manifest_hash != source.manifest_hash:
+        raise ModelingError(
+            ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+            "measured series was not derived from the supplied execution acquisition",
+        )
+    for record in execution.records:
+        if (
+            record.symbol != source.symbol
+            or record.provider_instrument_id != source.provider_instrument_id
+        ):
+            raise ModelingError(
+                ModelingFailureCode.DATASET_INTEGRITY_INVALID,
+                "execution bar does not carry the acquisition's own instrument identity",
+                offending_record_key=(
+                    f"{record.symbol}:{record.exchange_date.isoformat()}:{record.source_row_index}"
+                ),
+            )
+
+
 def _build_label(
     feature_row: FeatureRowV1,
     acquisition: HistoricalAcquisition,
     calendar: SessionCalendarV1,
     bars_by_date: dict[date, PointInTimeBar],
+    execution_bars_by_date: dict[date, PointInTimeBar],
     quotes_by_key: dict[tuple[str, datetime, datetime], RoundTripCostQuoteV1],
     horizon_sessions: int,
-) -> tuple[LabelRowV1, RoundTripCostQuoteV1] | None:
+    adjustment: AdjustmentReference | None,
+) -> tuple[LabelRowV1 | None, RoundTripCostQuoteV1] | None:
     ordinal = calendar.ordinal_for_close(feature_row.decision_at)
     if ordinal is None:
         raise ModelingError(
@@ -207,6 +289,14 @@ def _build_label(
             f"following eligible open is missing for {exit_session.exchange_date.isoformat()}",
             offending_record_key=feature_row.record_key,
         )
+    entry_fill = execution_bars_by_date.get(entry_session.exchange_date)
+    exit_fill = execution_bars_by_date.get(exit_session.exchange_date)
+    if entry_fill is None or exit_fill is None:
+        raise ModelingError(
+            ModelingFailureCode.ELIGIBLE_OPEN_MISSING,
+            "executable open is missing from the execution acquisition",
+            offending_record_key=feature_row.record_key,
+        )
     key = feature_row.provider_instrument_id, entry_session.open_at, exit_session.open_at
     quote = quotes_by_key.get(key)
     if quote is None:
@@ -215,8 +305,18 @@ def _build_label(
             "no immutable cost quote matches the executable label",
             offending_record_key=feature_row.record_key,
         )
-    _validate_quote(feature_row, entry_bar, exit_bar, quote)
-    return _row_from_quote(feature_row, entry_bar, exit_bar, quote), quote
+    _validate_quote(feature_row, entry_fill, exit_fill, quote)
+    if spans_unresolved(
+        adjustment,
+        after=entry_session.exchange_date,
+        through=exit_session.exchange_date,
+    ):
+        # A corporate action of unknown size sits inside the holding window. The adjusted series
+        # cannot correct it, because nothing sized it, and the raw ratio across it is a fabricated
+        # return -- so no label is produced. The quote is returned so the caller can account for it
+        # as refused rather than as silently unused.
+        return None, quote
+    return _row_from_quote(feature_row, entry_bar, exit_bar, entry_fill, quote), quote
 
 
 def _validate_quote(
@@ -243,12 +343,22 @@ def _row_from_quote(
     feature_row: FeatureRowV1,
     entry_bar: PointInTimeBar,
     exit_bar: PointInTimeBar,
+    entry_fill: PointInTimeBar,
     quote: RoundTripCostQuoteV1,
 ) -> LabelRowV1:
+    """One matured label.
+
+    ``entry_bar``/``exit_bar`` are the measured series -- adjusted when one was supplied, raw
+    otherwise -- and give the gross return the holder actually experienced across any corporate
+    action in the window. ``entry_fill`` is the executable raw bar, and gives the rupee notional the
+    quoted costs were priced against. Dividing the cost by the *adjusted* notional would rescale a
+    real rupee charge by a synthetic price ratio; dividing the return by the raw prices would ignore
+    the entitlement. Both fractions are of the same economic position, so nothing double-counts.
+    """
     with localcontext() as context:
         context.prec = 50
         context.rounding = ROUND_HALF_EVEN
-        entry_notional = entry_bar.open * quote.quantity
+        entry_notional = entry_fill.open * quote.quantity
         gross_return = (exit_bar.open - entry_bar.open) / entry_bar.open
         total_cost = sum(
             (money.amount_decimal for money in quote.component_costs.values()),

@@ -1,0 +1,39 @@
+{
+  "_comment": [
+    "Entitlement ratios for ratio-less NSE corporate actions, taken from issuer filings.",
+    "",
+    "THIS FILE IS AN INPUT, NOT AN INFERENCE. NSE publishes demergers with no ratio, and the size",
+    "of the entitlement is a legal fact the issuer publishes -- not something recoverable from the",
+    "parent's ex-date gap. An earlier revision of the adjustment code derived ratios from that gap;",
+    "measured on the research universe it would have inferred an UPWARD correction for NMDC",
+    "(+71.0%), BAJAJELEC (+32.2%) and SCI (+30.0%), erasing genuine market moves and inventing fake",
+    "ones. Every entry here must therefore cite the filing it came from.",
+    "",
+    "An action absent from this file is left UNRESOLVED by scripts/validate_demerger_factors.py, and",
+    "every feature window and label window spanning it is dropped downstream. That is the safe",
+    "default: losing a few dozen observations costs far less than publishing a fabricated return.",
+    "",
+    "Adding an entry is not sufficient for the factor to be used. validate_demerger_factors.py also",
+    "checks value continuity against the RESULTING COMPANY'S OWN first traded price:",
+    "    parent_close_cum  ~=  parent_open_ex  +  ratio x resulting_first_open",
+    "That is a second instrument's price, independent of the parent's gap. An entry whose ratio does",
+    "not balance that identity within 5% is refused, not applied.",
+    "",
+    "Run scripts/validate_demerger_factors.py first; its worklist at",
+    "reports/corporate_action_validation/ratioless-action-worklist.json lists every unresolved",
+    "action with its ex-date gap, the same-day market median move, and candidate new listings, so a",
+    "human can look up the filing for the ones that matter."
+  ],
+  "schema_id": "quantos.demerger_entitlements",
+  "schema_version": 1,
+  "entitlements": [
+    {
+      "symbol": "HEG",
+      "ex_date": "2026-09-07",
+      "resulting_symbol": "HEGGRAPHITE",
+      "ratio": "1",
+      "filing_url": "https://bazaarwatch.com/announcement/88270/heg-ltd-attached",
+      "note": "HEG Limited filing dated 2026-08-24 sets 2026-09-07 as the record date and specifies one HEG Graphite share for each eligible HEG share. EXPECTED TO REFUSE with RESULTING_COMPANY_NOT_IN_CACHE: the ex-date falls after this cache's window (received_end 2026-08-21) and HEG Graphite has no price in this repository at all. The refusal is the point -- it is what lets the XS-Monthly book disclose an unpriced entitlement instead of booking either the full -64.3% quote drop as a loss or an invented recovery. The issuer's own site returned HTTP 403 on direct retrieval; the reproduced filing text is the cited source and the ratio must be re-verified against the issuer's own disclosure before this entry is ever used to adjust anything. The resulting_symbol is a placeholder pending the actual NSE listing symbol."
+    }
+  ]
+}
