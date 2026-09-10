@@ -1,6 +1,6 @@
 # Active work: Mizan loss diagnosis and TimesFM suitability
 
-STATUS: ACTIVE
+STATUS: COMPLETED
 OWNER: Codex root with read-only research delegates
 TOOL: Codex
 STARTED_UTC: 2026-09-10
@@ -32,7 +32,7 @@ Explain current losses in both Mizan virtual books from ledger and strategy evid
 
 ## Current step
 
-Startup complete; inspecting runtime snapshots and current strategy code.
+Diagnosis and source-linked report completed. No source or runtime changes.
 
 ## Decision rationale
 
@@ -43,10 +43,17 @@ User requested diagnosis and suitability advice, not an implementation. Current 
 - Startup context and every active record read; claims remain live.
 - git status: six modified market-cache JSON files, many new market-cache datasets and ensure_xs_watch.ps1 are pre-existing foreign work; not edited.
 - git worktree list / branch --list: main plus two Codex worktrees and ci-workflow-pending; left unchanged.
+- Decimal probes: Flagship September 10 marked P&L -11696.95 minus carried fees1072.65 equals -12769.60; all 97 marks reconcile.
+- XS probe: gross -1928.33; HEG -6084; remaining selected legs +4155.67; 91 funded legs out of99; modeled pending round-trip costs1932.7077952.
+- Company filing: September7 HEG demerger record date and 1:1 Graphite entitlement; current XS state omits corresponding asset. Fair valuation unresolved; no invented correction.
+- Live path uses fixed15-feature weights; corrected research screen fits different8-feature weights; no automatic online learning in either book.
+- Official TimesFM3 model/repository/license verified: non-commercial/non-production default license; recommend only separately governed evaluation with permitted rights; 2.5 Apache2 route noted.
+- Both audit-agent-claims.ps1 and audit-disk-layout.ps1 PASS; source-linked report local file links checked.
 
 ## Files changed
 
-- This unique work record only so far.
+- reports/mizan_loss_diagnosis_20260910.md: diagnosis, arithmetic, caveats, source references, next priorities and input hashes.
+- This unique record, moved to completed at finish.
 
 ## Blockers and conflicts
 
@@ -54,8 +61,8 @@ Source and runtime paths are actively claimed; analysis is read-only. No blocker
 
 ## Stop point
 
-No strategy or runtime mutation. No staging or commits.
+Completed requested analysis and recommendation. No strategy or runtime mutation, staging or commits. Other agents' source/runtime claims remain unchanged. Two read-only delegates hit an account usage limit before final synthesis; root completed their essential verification directly. External TimesFM delegate completed.
 
 ## Next safe action
 
-Measure both current paper-book states and trace their P&L and training lineage.
+User can review reports/mizan_loss_diagnosis_20260910.md. Future implementation should coordinate with active XS/paper owners, start with HEG entitlement accounting and consistent marks/costs, then bind exact model validation. No repair or retraining was requested as part of this diagnosis; no unfinished implementation is claimed.
