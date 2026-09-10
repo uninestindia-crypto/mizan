@@ -1,1 +1,18 @@
-[{"bcEndDate":"20-Sep-2024","bcStartDate":"13-Sep-2024","caBroadcastDate":null,"comp":"Nova Agritech Limited","exDate":"12-Sep-2024","faceVal":"2","ind":"-","isin":"INE02H701025","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"NOVAAGRI"}]
+[
+  {
+    "bcEndDate": "20-Sep-2024",
+    "bcStartDate": "13-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Nova Agritech Limited",
+    "exDate": "12-Sep-2024",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE02H701025",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "NOVAAGRI"
+  }
+]

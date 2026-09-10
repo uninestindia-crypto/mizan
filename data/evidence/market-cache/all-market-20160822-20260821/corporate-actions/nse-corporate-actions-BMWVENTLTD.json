@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"BMW Ventures Limited","exDate":"10-Feb-2026","faceVal":"10","ind":"-","isin":"INE965W01036","ndEndDate":"-","ndStartDate":"-","recDate":"10-Feb-2026","series":"EQ","subject":"Interim Dividend - Rs 1.50 Per Share","symbol":"BMWVENTLTD"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "BMW Ventures Limited",
+    "exDate": "10-Feb-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE965W01036",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "10-Feb-2026",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 1.50 Per Share",
+    "symbol": "BMWVENTLTD"
+  }
+]

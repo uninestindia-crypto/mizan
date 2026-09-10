@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Gensol Engineering Limited","exDate":"17-Oct-2023","faceVal":"10","ind":"-","isin":"INE06H201014","ndEndDate":"-","ndStartDate":"-","recDate":"17-Oct-2023","series":"EQ","subject":"Bonus 2:1","symbol":"GENSOL"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Gensol Engineering Limited",
+    "exDate": "17-Oct-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE06H201014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "17-Oct-2023",
+    "series": "EQ",
+    "subject": "Bonus 2:1",
+    "symbol": "GENSOL"
+  }
+]

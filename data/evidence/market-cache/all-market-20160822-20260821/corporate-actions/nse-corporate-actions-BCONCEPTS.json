@@ -1,1 +1,66 @@
-[{"bcEndDate":"21-Dec-2022","bcStartDate":"14-Dec-2022","caBroadcastDate":null,"comp":"Brand Concepts Limited","exDate":"13-Dec-2022","faceVal":"10","ind":"-","isin":"INE977Y01011","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"BCONCEPTS"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Brand Concepts Limited","exDate":"29-Mar-2023","faceVal":"10","ind":"-","isin":"INE977Y01011","ndEndDate":"-","ndStartDate":"-","recDate":"30-Mar-2023","series":"EQ","subject":"Interim Dividend - Rs  0.50 Per Share","symbol":"BCONCEPTS"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Brand Concepts Limited","exDate":"19-Oct-2023","faceVal":"10","ind":"-","isin":"INE977Y01011","ndEndDate":"-","ndStartDate":"-","recDate":"19-Oct-2023","series":"EQ","subject":"Dividend - Re 0.50 Per Share","symbol":"BCONCEPTS"},{"bcEndDate":"28-Aug-2024","bcStartDate":"21-Aug-2024","caBroadcastDate":null,"comp":"Brand Concepts Limited","exDate":"20-Aug-2024","faceVal":"10","ind":"-","isin":"INE977Y01011","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"BCONCEPTS"}]
+[
+  {
+    "bcEndDate": "21-Dec-2022",
+    "bcStartDate": "14-Dec-2022",
+    "caBroadcastDate": null,
+    "comp": "Brand Concepts Limited",
+    "exDate": "13-Dec-2022",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE977Y01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "BCONCEPTS"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Brand Concepts Limited",
+    "exDate": "29-Mar-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE977Y01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "30-Mar-2023",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs  0.50 Per Share",
+    "symbol": "BCONCEPTS"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Brand Concepts Limited",
+    "exDate": "19-Oct-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE977Y01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "19-Oct-2023",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.50 Per Share",
+    "symbol": "BCONCEPTS"
+  },
+  {
+    "bcEndDate": "28-Aug-2024",
+    "bcStartDate": "21-Aug-2024",
+    "caBroadcastDate": null,
+    "comp": "Brand Concepts Limited",
+    "exDate": "20-Aug-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE977Y01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "BCONCEPTS"
+  }
+]

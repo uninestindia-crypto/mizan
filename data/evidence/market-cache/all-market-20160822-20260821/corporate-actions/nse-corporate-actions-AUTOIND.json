@@ -1,1 +1,18 @@
-[{"bcEndDate":"25-Sep-2024","bcStartDate":"19-Sep-2024","caBroadcastDate":null,"comp":"Autoline Industries Limited","exDate":"17-Sep-2024","faceVal":"10","ind":"-","isin":"INE718H01014","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"AUTOIND"}]
+[
+  {
+    "bcEndDate": "25-Sep-2024",
+    "bcStartDate": "19-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Autoline Industries Limited",
+    "exDate": "17-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE718H01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "AUTOIND"
+  }
+]

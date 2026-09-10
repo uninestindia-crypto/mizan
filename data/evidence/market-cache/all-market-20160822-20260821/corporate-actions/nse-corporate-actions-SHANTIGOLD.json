@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Shanti Gold International Limited","exDate":"06-Aug-2026","faceVal":"10","ind":"-","isin":"INE06ZD01017","ndEndDate":"-","ndStartDate":"-","recDate":"06-Aug-2026","series":"EQ","subject":"Rights 19:295 @ Premium Rs 205/-","symbol":"SHANTIGOLD"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Shanti Gold International Limited",
+    "exDate": "06-Aug-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE06ZD01017",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "06-Aug-2026",
+    "series": "EQ",
+    "subject": "Rights 19:295 @ Premium Rs 205/-",
+    "symbol": "SHANTIGOLD"
+  }
+]

@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"BCPL Railway Infrastructure Limited","exDate":"29-May-2026","faceVal":"10","ind":"-","isin":"INE00SW01015","ndEndDate":"-","ndStartDate":"-","recDate":"29-May-2026","series":"EQ","subject":"Dividend - Rs 1  Per Share","symbol":"BCPL"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "BCPL Railway Infrastructure Limited",
+    "exDate": "29-May-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE00SW01015",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "29-May-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1  Per Share",
+    "symbol": "BCPL"
+  }
+]

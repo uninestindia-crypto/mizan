@@ -1,1 +1,66 @@
-[{"bcEndDate":"20-Sep-2024","bcStartDate":"07-Sep-2024","caBroadcastDate":null,"comp":"Shipping Corporation of India Land and Assets Limited","exDate":"06-Sep-2024","faceVal":"10","ind":"-","isin":"INE0PB301013","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"SCILAL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Shipping Corporation of India Land and Assets Limited","exDate":"06-Sep-2024","faceVal":"10","ind":"-","isin":"INE0PB301013","ndEndDate":"-","ndStartDate":"-","recDate":"06-Sep-2024","series":"EQ","subject":"Dividend - Re 0.66 Per Share","symbol":"SCILAL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Shipping Corporation of India Land and Assets Limited","exDate":"04-Sep-2025","faceVal":"10","ind":"-","isin":"INE0PB301013","ndEndDate":"-","ndStartDate":"-","recDate":"05-Sep-2025","series":"EQ","subject":"Dividend - Re 0.55 Per Share","symbol":"SCILAL"}]
+[
+  {
+    "bcEndDate": "20-Sep-2024",
+    "bcStartDate": "07-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Shipping Corporation of India Land and Assets Limited",
+    "exDate": "06-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0PB301013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "SCILAL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Shipping Corporation of India Land and Assets Limited",
+    "exDate": "06-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0PB301013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "06-Sep-2024",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.66 Per Share",
+    "symbol": "SCILAL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Shipping Corporation of India Land and Assets Limited",
+    "exDate": "04-Sep-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0PB301013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "05-Sep-2025",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.55 Per Share",
+    "symbol": "SCILAL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Shipping Corporation of India Land and Assets Limited",
+    "exDate": "04-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0PB301013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "04-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.55 Per Share",
+    "symbol": "SCILAL"
+  }
+]

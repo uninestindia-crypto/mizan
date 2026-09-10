@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Cineline India Limited","exDate":"11-Sep-2017","faceVal":"5","ind":"-","isin":"INE704H01022","ndEndDate":"-","ndStartDate":"-","recDate":"12-Sep-2017","series":"EQ","subject":" Dividend - Re 0.50 Per Share","symbol":"CINELINE"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Cineline India Limited",
+    "exDate": "11-Sep-2017",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE704H01022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "12-Sep-2017",
+    "series": "EQ",
+    "subject": " Dividend - Re 0.50 Per Share",
+    "symbol": "CINELINE"
+  }
+]

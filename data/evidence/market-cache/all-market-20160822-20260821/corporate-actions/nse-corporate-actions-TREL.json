@@ -1,1 +1,50 @@
-[{"bcEndDate":"29-Sep-2023","bcStartDate":"23-Sep-2023","caBroadcastDate":null,"comp":"Transindia Real Estate Limited","exDate":"22-Sep-2023","faceVal":"2","ind":"-","isin":"INE0O3901029","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"TREL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Transindia Real Estate Limited","exDate":"16-Aug-2024","faceVal":"2","ind":"-","isin":"INE0O3901029","ndEndDate":"-","ndStartDate":"-","recDate":"16-Aug-2024","series":"EQ","subject":"Interim Dividend - Re 0.50 Per Share","symbol":"TREL"},{"bcEndDate":"26-Sep-2024","bcStartDate":"20-Sep-2024","caBroadcastDate":null,"comp":"Transindia Real Estate Limited","exDate":"19-Sep-2024","faceVal":"2","ind":"-","isin":"INE0O3901029","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"TREL"}]
+[
+  {
+    "bcEndDate": "29-Sep-2023",
+    "bcStartDate": "23-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Transindia Real Estate Limited",
+    "exDate": "22-Sep-2023",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0O3901029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "TREL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Transindia Real Estate Limited",
+    "exDate": "16-Aug-2024",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0O3901029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "16-Aug-2024",
+    "series": "EQ",
+    "subject": "Interim Dividend - Re 0.50 Per Share",
+    "symbol": "TREL"
+  },
+  {
+    "bcEndDate": "26-Sep-2024",
+    "bcStartDate": "20-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Transindia Real Estate Limited",
+    "exDate": "19-Sep-2024",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0O3901029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "TREL"
+  }
+]

@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Veljan Denison Limited","exDate":"21-Aug-2026","faceVal":"10","ind":"-","isin":"INE232E01013","ndEndDate":"-","ndStartDate":"-","recDate":"22-Aug-2026","series":"EQ","subject":"Dividend - Rs 8.50 Per Share","symbol":"VELJAN"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Veljan Denison Limited",
+    "exDate": "21-Aug-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE232E01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "22-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 8.50 Per Share",
+    "symbol": "VELJAN"
+  }
+]

@@ -1,1 +1,34 @@
-[{"bcEndDate":"30-Sep-2024","bcStartDate":"24-Sep-2024","caBroadcastDate":null,"comp":"Xtglobal Infotech Limited","exDate":"23-Sep-2024","faceVal":"1","ind":"-","isin":"INE547B01028","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"XTGLOBAL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Xtglobal Infotech Limited","exDate":"21-Nov-2025","faceVal":"1","ind":"-","isin":"INE547B01028","ndEndDate":"-","ndStartDate":"-","recDate":"21-Nov-2025","series":"EQ","subject":"Interim Dividend - Rs 0.05 Per Share","symbol":"XTGLOBAL"}]
+[
+  {
+    "bcEndDate": "30-Sep-2024",
+    "bcStartDate": "24-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Xtglobal Infotech Limited",
+    "exDate": "23-Sep-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE547B01028",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "XTGLOBAL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Xtglobal Infotech Limited",
+    "exDate": "21-Nov-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE547B01028",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "21-Nov-2025",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 0.05 Per Share",
+    "symbol": "XTGLOBAL"
+  }
+]

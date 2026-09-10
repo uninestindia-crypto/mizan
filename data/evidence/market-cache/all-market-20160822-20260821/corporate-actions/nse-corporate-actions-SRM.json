@@ -1,1 +1,18 @@
-[{"bcEndDate":"30-Sep-2024","bcStartDate":"24-Sep-2024","caBroadcastDate":null,"comp":"SRM Contractors Limited","exDate":"23-Sep-2024","faceVal":"10","ind":"-","isin":"INE0R6Z01013","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"SRM"}]
+[
+  {
+    "bcEndDate": "30-Sep-2024",
+    "bcStartDate": "24-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "SRM Contractors Limited",
+    "exDate": "23-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0R6Z01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "SRM"
+  }
+]

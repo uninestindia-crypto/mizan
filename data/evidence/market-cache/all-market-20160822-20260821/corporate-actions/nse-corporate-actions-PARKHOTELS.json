@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Apeejay Surrendra Park Hotels Limited","exDate":"19-Sep-2025","faceVal":"1","ind":"-","isin":"INE988S01028","ndEndDate":"-","ndStartDate":"-","recDate":"19-Sep-2025","series":"EQ","subject":"Dividend - Re 0.50 Per Share","symbol":"PARKHOTELS"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Apeejay Surrendra Park Hotels Limited",
+    "exDate": "19-Sep-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE988S01028",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "19-Sep-2025",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.50 Per Share",
+    "symbol": "PARKHOTELS"
+  }
+]

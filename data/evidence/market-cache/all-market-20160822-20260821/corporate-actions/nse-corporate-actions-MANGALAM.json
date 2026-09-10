@@ -1,1 +1,66 @@
-[{"bcEndDate":"30-Sep-2016","bcStartDate":"24-Sep-2016","caBroadcastDate":null,"comp":"Mangalam Drugs And Organics Limited","exDate":"22-Sep-2016","faceVal":"10","ind":"-","isin":"INE584F01014","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting (Book Closure Dates Revised)","symbol":"MANGALAM"},{"bcEndDate":"26-Sep-2017","bcStartDate":"20-Sep-2017","caBroadcastDate":null,"comp":"Mangalam Drugs And Organics Limited","exDate":"18-Sep-2017","faceVal":"10","ind":"-","isin":"INE584F01014","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"MANGALAM"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Mangalam Drugs And Organics Limited","exDate":"21-Dec-2017","faceVal":"10","ind":"-","isin":"INE584F01014","ndEndDate":"-","ndStartDate":"-","recDate":"22-Dec-2017","series":"EQ","subject":" Interim Dividend Re 0.50 Per Share","symbol":"MANGALAM"},{"bcEndDate":"25-Sep-2018","bcStartDate":"19-Sep-2018","caBroadcastDate":null,"comp":"Mangalam Drugs And Organics Limited","exDate":"17-Sep-2018","faceVal":"10","ind":"-","isin":"INE584F01014","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"MANGALAM"}]
+[
+  {
+    "bcEndDate": "30-Sep-2016",
+    "bcStartDate": "24-Sep-2016",
+    "caBroadcastDate": null,
+    "comp": "Mangalam Drugs And Organics Limited",
+    "exDate": "22-Sep-2016",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE584F01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting (Book Closure Dates Revised)",
+    "symbol": "MANGALAM"
+  },
+  {
+    "bcEndDate": "26-Sep-2017",
+    "bcStartDate": "20-Sep-2017",
+    "caBroadcastDate": null,
+    "comp": "Mangalam Drugs And Organics Limited",
+    "exDate": "18-Sep-2017",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE584F01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "MANGALAM"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Mangalam Drugs And Organics Limited",
+    "exDate": "21-Dec-2017",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE584F01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "22-Dec-2017",
+    "series": "EQ",
+    "subject": " Interim Dividend Re 0.50 Per Share",
+    "symbol": "MANGALAM"
+  },
+  {
+    "bcEndDate": "25-Sep-2018",
+    "bcStartDate": "19-Sep-2018",
+    "caBroadcastDate": null,
+    "comp": "Mangalam Drugs And Organics Limited",
+    "exDate": "17-Sep-2018",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE584F01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "MANGALAM"
+  }
+]

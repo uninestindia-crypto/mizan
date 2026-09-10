@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Disa India Limited","exDate":"05-Aug-2026","faceVal":"10","ind":"-","isin":"INE131C01011","ndEndDate":"-","ndStartDate":"-","recDate":"05-Aug-2026","series":"EQ","subject":"Dividend - Rs 200 Per Share","symbol":"DISAQ"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Disa India Limited",
+    "exDate": "05-Aug-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE131C01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "05-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 200 Per Share",
+    "symbol": "DISAQ"
+  }
+]

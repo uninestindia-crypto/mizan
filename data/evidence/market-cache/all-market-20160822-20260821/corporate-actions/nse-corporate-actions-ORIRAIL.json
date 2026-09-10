@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Oriental Rail Infrastructure Limited",
+    "exDate": "01-Sep-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE457G01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "01-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.10 Per Share",
+    "symbol": "ORIRAIL"
+  }
+]

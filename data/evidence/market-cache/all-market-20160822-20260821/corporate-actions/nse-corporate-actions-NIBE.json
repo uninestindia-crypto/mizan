@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"NIBE Limited","exDate":"23-Sep-2025","faceVal":"10","ind":"-","isin":"INE149O01018","ndEndDate":"-","ndStartDate":"-","recDate":"23-Sep-2025","series":"EQ","subject":"Dividend - Rs 1.25 Per Share","symbol":"NIBE"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "NIBE Limited",
+    "exDate": "23-Sep-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE149O01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "23-Sep-2025",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.25 Per Share",
+    "symbol": "NIBE"
+  }
+]

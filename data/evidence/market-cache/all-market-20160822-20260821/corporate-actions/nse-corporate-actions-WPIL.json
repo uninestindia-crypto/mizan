@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"WPIL Limited","exDate":"31-Jul-2026","faceVal":"1","ind":"-","isin":"INE765D01022","ndEndDate":"-","ndStartDate":"-","recDate":"31-Jul-2026","series":"EQ","subject":"Dividend - Rs 2 Per Share","symbol":"WPIL"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "WPIL Limited",
+    "exDate": "31-Jul-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE765D01022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "31-Jul-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2 Per Share",
+    "symbol": "WPIL"
+  }
+]

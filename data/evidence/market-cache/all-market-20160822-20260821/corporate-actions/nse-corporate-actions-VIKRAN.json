@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Vikran Engineering Limited",
+    "exDate": "28-Aug-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE01R501028",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "28-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.18 Per Share",
+    "symbol": "VIKRAN"
+  }
+]

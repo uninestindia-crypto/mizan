@@ -1,1 +1,66 @@
-[{"bcEndDate":"09-Aug-2017","bcStartDate":"03-Aug-2017","caBroadcastDate":null,"comp":"Prism Johnson Limited","exDate":"01-Aug-2017","faceVal":"10","ind":"-","isin":"INE010A01011","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"PRSMJOHNSN"},{"bcEndDate":"08-Aug-2018","bcStartDate":"04-Aug-2018","caBroadcastDate":null,"comp":"Prism Johnson Limited","exDate":"02-Aug-2018","faceVal":"10","ind":"-","isin":"INE010A01011","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting/Interim Dividend- Re 0.50 Per Share(Date And Purpose Revised)","symbol":"PRSMJOHNSN"},{"bcEndDate":"31-Jul-2019","bcStartDate":"25-Jul-2019","caBroadcastDate":null,"comp":"Prism Johnson Limited","exDate":"23-Jul-2019","faceVal":"10","ind":"-","isin":"INE010A01011","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"PRSMJOHNSN"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Prism Johnson Limited","exDate":"06-Aug-2019","faceVal":"10","ind":"-","isin":"INE010A01011","ndEndDate":"-","ndStartDate":"-","recDate":"07-Aug-2019","series":"EQ","subject":" Interim Dividend Re 1 Per Share","symbol":"PRSMJOHNSN"}]
+[
+  {
+    "bcEndDate": "09-Aug-2017",
+    "bcStartDate": "03-Aug-2017",
+    "caBroadcastDate": null,
+    "comp": "Prism Johnson Limited",
+    "exDate": "01-Aug-2017",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE010A01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "PRSMJOHNSN"
+  },
+  {
+    "bcEndDate": "08-Aug-2018",
+    "bcStartDate": "04-Aug-2018",
+    "caBroadcastDate": null,
+    "comp": "Prism Johnson Limited",
+    "exDate": "02-Aug-2018",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE010A01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting/Interim Dividend- Re 0.50 Per Share(Date And Purpose Revised)",
+    "symbol": "PRSMJOHNSN"
+  },
+  {
+    "bcEndDate": "31-Jul-2019",
+    "bcStartDate": "25-Jul-2019",
+    "caBroadcastDate": null,
+    "comp": "Prism Johnson Limited",
+    "exDate": "23-Jul-2019",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE010A01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "PRSMJOHNSN"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Prism Johnson Limited",
+    "exDate": "06-Aug-2019",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE010A01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "07-Aug-2019",
+    "series": "EQ",
+    "subject": " Interim Dividend Re 1 Per Share",
+    "symbol": "PRSMJOHNSN"
+  }
+]

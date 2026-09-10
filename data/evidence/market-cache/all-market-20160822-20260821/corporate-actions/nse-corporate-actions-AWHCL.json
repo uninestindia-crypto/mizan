@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Antony Waste Handling Cell Limited","exDate":"13-Aug-2026","faceVal":"5","ind":"-","isin":"INE01BK01022","ndEndDate":"-","ndStartDate":"-","recDate":"13-Aug-2026","series":"EQ","subject":"Dividend - Re 0.50 Per Share","symbol":"AWHCL"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Antony Waste Handling Cell Limited",
+    "exDate": "13-Aug-2026",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE01BK01022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "13-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.50 Per Share",
+    "symbol": "AWHCL"
+  }
+]

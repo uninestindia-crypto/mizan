@@ -1,1 +1,50 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Mangal Credit and Fincorp Limited","exDate":"17-Sep-2024","faceVal":"10","ind":"-","isin":"INE545L01039","ndEndDate":"-","ndStartDate":"-","recDate":"17-Sep-2024","series":"EQ","subject":"Dividend - Re 0.60 Per Sh","symbol":"MANCREDIT"},{"bcEndDate":"25-Sep-2024","bcStartDate":"18-Sep-2024","caBroadcastDate":null,"comp":"Mangal Credit and Fincorp Limited","exDate":"17-Sep-2024","faceVal":"10","ind":"-","isin":"INE545L01039","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"MANCREDIT"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Mangal Credit and Fincorp Limited","exDate":"17-Sep-2025","faceVal":"10","ind":"-","isin":"INE545L01039","ndEndDate":"-","ndStartDate":"-","recDate":"17-Sep-2025","series":"EQ","subject":"Dividend - Re 0.75 Per Share","symbol":"MANCREDIT"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Mangal Credit and Fincorp Limited",
+    "exDate": "17-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE545L01039",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "17-Sep-2024",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.60 Per Sh",
+    "symbol": "MANCREDIT"
+  },
+  {
+    "bcEndDate": "25-Sep-2024",
+    "bcStartDate": "18-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Mangal Credit and Fincorp Limited",
+    "exDate": "17-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE545L01039",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "MANCREDIT"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Mangal Credit and Fincorp Limited",
+    "exDate": "17-Sep-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE545L01039",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "17-Sep-2025",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.75 Per Share",
+    "symbol": "MANCREDIT"
+  }
+]

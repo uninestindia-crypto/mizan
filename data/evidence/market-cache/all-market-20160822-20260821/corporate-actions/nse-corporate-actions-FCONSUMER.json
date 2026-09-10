@@ -1,1 +1,34 @@
-[{"bcEndDate":"29-Aug-2017","bcStartDate":"23-Aug-2017","caBroadcastDate":null,"comp":"Future Consumer Limited","exDate":"21-Aug-2017","faceVal":"6","ind":"-","isin":"INE220J01025","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"FCONSUMER"},{"bcEndDate":"29-Aug-2018","bcStartDate":"23-Aug-2018","caBroadcastDate":null,"comp":"Future Consumer Limited","exDate":"20-Aug-2018","faceVal":"6","ind":"-","isin":"INE220J01025","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"FCONSUMER"}]
+[
+  {
+    "bcEndDate": "29-Aug-2017",
+    "bcStartDate": "23-Aug-2017",
+    "caBroadcastDate": null,
+    "comp": "Future Consumer Limited",
+    "exDate": "21-Aug-2017",
+    "faceVal": "6",
+    "ind": "-",
+    "isin": "INE220J01025",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "FCONSUMER"
+  },
+  {
+    "bcEndDate": "29-Aug-2018",
+    "bcStartDate": "23-Aug-2018",
+    "caBroadcastDate": null,
+    "comp": "Future Consumer Limited",
+    "exDate": "20-Aug-2018",
+    "faceVal": "6",
+    "ind": "-",
+    "isin": "INE220J01025",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "FCONSUMER"
+  }
+]

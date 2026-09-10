@@ -1,1 +1,50 @@
-[{"bcEndDate":"30-Sep-2022","bcStartDate":"24-Sep-2022","caBroadcastDate":null,"comp":"WE WIN LIMITED","exDate":"23-Sep-2022","faceVal":"10","ind":"-","isin":"INE082W01014","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"WEWIN"},{"bcEndDate":"22-Sep-2023","bcStartDate":"16-Sep-2023","caBroadcastDate":null,"comp":"WE WIN LIMITED","exDate":"15-Sep-2023","faceVal":"10","ind":"-","isin":"INE082W01014","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"WEWIN"},{"bcEndDate":"06-Sep-2024","bcStartDate":"31-Aug-2024","caBroadcastDate":null,"comp":"WE WIN LIMITED","exDate":"30-Aug-2024","faceVal":"10","ind":"-","isin":"INE082W01014","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"WEWIN"}]
+[
+  {
+    "bcEndDate": "30-Sep-2022",
+    "bcStartDate": "24-Sep-2022",
+    "caBroadcastDate": null,
+    "comp": "WE WIN LIMITED",
+    "exDate": "23-Sep-2022",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE082W01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "WEWIN"
+  },
+  {
+    "bcEndDate": "22-Sep-2023",
+    "bcStartDate": "16-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "WE WIN LIMITED",
+    "exDate": "15-Sep-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE082W01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "WEWIN"
+  },
+  {
+    "bcEndDate": "06-Sep-2024",
+    "bcStartDate": "31-Aug-2024",
+    "caBroadcastDate": null,
+    "comp": "WE WIN LIMITED",
+    "exDate": "30-Aug-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE082W01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "WEWIN"
+  }
+]

@@ -1,1 +1,50 @@
-[{"bcEndDate":"27-Sep-2024","bcStartDate":"14-Sep-2024","caBroadcastDate":null,"comp":"Amines & Plasticizers Limited","exDate":"13-Sep-2024","faceVal":"2","ind":"-","isin":"INE275D01022","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"AMNPLST"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Amines & Plasticizers Limited","exDate":"13-Sep-2024","faceVal":"2","ind":"-","isin":"INE275D01022","ndEndDate":"-","ndStartDate":"-","recDate":"13-Sep-2024","series":"EQ","subject":"Dividend - Re 0.5 Per Share","symbol":"AMNPLST"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Amines & Plasticizers Limited","exDate":"12-Sep-2025","faceVal":"2","ind":"-","isin":"INE275D01022","ndEndDate":"-","ndStartDate":"-","recDate":"12-Sep-2025","series":"EQ","subject":"Dividend - Re 0.50 Per Share","symbol":"AMNPLST"}]
+[
+  {
+    "bcEndDate": "27-Sep-2024",
+    "bcStartDate": "14-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Amines & Plasticizers Limited",
+    "exDate": "13-Sep-2024",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE275D01022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "AMNPLST"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Amines & Plasticizers Limited",
+    "exDate": "13-Sep-2024",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE275D01022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "13-Sep-2024",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.5 Per Share",
+    "symbol": "AMNPLST"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Amines & Plasticizers Limited",
+    "exDate": "12-Sep-2025",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE275D01022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "12-Sep-2025",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.50 Per Share",
+    "symbol": "AMNPLST"
+  }
+]

@@ -1,1 +1,50 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Aeroflex Neu Limited","exDate":"07-Jul-2023","faceVal":"10","ind":"-","isin":"INE035801013","ndEndDate":"-","ndStartDate":"-","recDate":"07-Jul-2023","series":"EQ","subject":"Dividend - Rs 0.50 Per Share","symbol":"AERONEU"},{"bcEndDate":"14-Jul-2023","bcStartDate":"08-Jul-2023","caBroadcastDate":null,"comp":"Aeroflex Neu Limited","exDate":"07-Jul-2023","faceVal":"10","ind":"-","isin":"INE035801013","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"AERONEU"},{"bcEndDate":"12-Jul-2024","bcStartDate":"06-Jul-2024","caBroadcastDate":null,"comp":"Aeroflex Neu Limited","exDate":"05-Jul-2024","faceVal":"10","ind":"-","isin":"INE035801013","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"AERONEU"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Aeroflex Neu Limited",
+    "exDate": "07-Jul-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE035801013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "07-Jul-2023",
+    "series": "EQ",
+    "subject": "Dividend - Rs 0.50 Per Share",
+    "symbol": "AERONEU"
+  },
+  {
+    "bcEndDate": "14-Jul-2023",
+    "bcStartDate": "08-Jul-2023",
+    "caBroadcastDate": null,
+    "comp": "Aeroflex Neu Limited",
+    "exDate": "07-Jul-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE035801013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "AERONEU"
+  },
+  {
+    "bcEndDate": "12-Jul-2024",
+    "bcStartDate": "06-Jul-2024",
+    "caBroadcastDate": null,
+    "comp": "Aeroflex Neu Limited",
+    "exDate": "05-Jul-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE035801013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "AERONEU"
+  }
+]

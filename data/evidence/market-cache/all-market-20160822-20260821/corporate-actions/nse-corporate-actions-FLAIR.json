@@ -1,1 +1,66 @@
-[{"bcEndDate":"22-Aug-2024","bcStartDate":"15-Aug-2024","caBroadcastDate":null,"comp":"Flair Writing Industries Limited","exDate":"14-Aug-2024","faceVal":"5","ind":"-","isin":"INE00Y201027","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"FLAIR"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Flair Writing Industries Limited","exDate":"08-Aug-2025","faceVal":"5","ind":"-","isin":"INE00Y201027","ndEndDate":"-","ndStartDate":"-","recDate":"08-Aug-2025","series":"EQ","subject":"Dividend - Re 1 Per Share","symbol":"FLAIR"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Flair Writing Industries Limited","exDate":"04-Feb-2026","faceVal":"5","ind":"-","isin":"INE00Y201027","ndEndDate":"-","ndStartDate":"-","recDate":"04-Feb-2026","series":"EQ","subject":"Interim Dividend - Re 0.50 Per Share","symbol":"FLAIR"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Flair Writing Industries Limited","exDate":"19-Aug-2026","faceVal":"5","ind":"-","isin":"INE00Y201027","ndEndDate":"-","ndStartDate":"-","recDate":"19-Aug-2026","series":"EQ","subject":"Dividend - Re 0.50 Per Share","symbol":"FLAIR"}]
+[
+  {
+    "bcEndDate": "22-Aug-2024",
+    "bcStartDate": "15-Aug-2024",
+    "caBroadcastDate": null,
+    "comp": "Flair Writing Industries Limited",
+    "exDate": "14-Aug-2024",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE00Y201027",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "FLAIR"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Flair Writing Industries Limited",
+    "exDate": "08-Aug-2025",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE00Y201027",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "08-Aug-2025",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "FLAIR"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Flair Writing Industries Limited",
+    "exDate": "04-Feb-2026",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE00Y201027",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "04-Feb-2026",
+    "series": "EQ",
+    "subject": "Interim Dividend - Re 0.50 Per Share",
+    "symbol": "FLAIR"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Flair Writing Industries Limited",
+    "exDate": "19-Aug-2026",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE00Y201027",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "19-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.50 Per Share",
+    "symbol": "FLAIR"
+  }
+]

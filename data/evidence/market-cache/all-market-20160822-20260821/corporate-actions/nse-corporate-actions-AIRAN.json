@@ -1,1 +1,18 @@
-[{"bcEndDate":"24-Aug-2019","bcStartDate":"18-Aug-2019","caBroadcastDate":null,"comp":"Airan Limited","exDate":"14-Aug-2019","faceVal":"2","ind":"-","isin":"INE645W01018","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"AIRAN"}]
+[
+  {
+    "bcEndDate": "24-Aug-2019",
+    "bcStartDate": "18-Aug-2019",
+    "caBroadcastDate": null,
+    "comp": "Airan Limited",
+    "exDate": "14-Aug-2019",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE645W01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "AIRAN"
+  }
+]

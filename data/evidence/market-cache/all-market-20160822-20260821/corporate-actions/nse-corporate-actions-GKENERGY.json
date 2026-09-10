@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "GK Energy Limited",
+    "exDate": "24-Aug-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE1AG301022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "24-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.50 Per Share",
+    "symbol": "GKENERGY"
+  }
+]

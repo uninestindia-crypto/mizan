@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Stallion India Fluorochemicals Limited","exDate":"11-Feb-2026","faceVal":"10","ind":"-","isin":"INE0RYC01010","ndEndDate":"-","ndStartDate":"-","recDate":"11-Feb-2026","series":"EQ","subject":"Rights 19:41 @ Premium Rs 89/-","symbol":"STALLION"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Stallion India Fluorochemicals Limited",
+    "exDate": "11-Feb-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0RYC01010",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "11-Feb-2026",
+    "series": "EQ",
+    "subject": "Rights 19:41 @ Premium Rs 89/-",
+    "symbol": "STALLION"
+  }
+]

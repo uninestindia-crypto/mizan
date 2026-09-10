@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Vascon Engineers Limited","exDate":"21-Aug-2023","faceVal":"10","ind":"-","isin":"INE893I01013","ndEndDate":"-","ndStartDate":"-","recDate":"21-Aug-2023","series":"EQ","subject":"Interim Dividend - Re 0.25 Per Share","symbol":"VASCONEQ"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Vascon Engineers Limited",
+    "exDate": "21-Aug-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE893I01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "21-Aug-2023",
+    "series": "EQ",
+    "subject": "Interim Dividend - Re 0.25 Per Share",
+    "symbol": "VASCONEQ"
+  }
+]

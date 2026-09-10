@@ -1,1 +1,50 @@
-[{"bcEndDate":"29-Jul-2022","bcStartDate":"23-Jul-2022","caBroadcastDate":null,"comp":"Tarsons Products Limited","exDate":"21-Jul-2022","faceVal":"2","ind":"-","isin":"INE144Z01023","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"TARSONS"},{"bcEndDate":"14-Jul-2023","bcStartDate":"08-Jul-2023","caBroadcastDate":null,"comp":"Tarsons Products Limited","exDate":"07-Jul-2023","faceVal":"2","ind":"-","isin":"INE144Z01023","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"TARSONS"},{"bcEndDate":"27-Sep-2024","bcStartDate":"21-Sep-2024","caBroadcastDate":null,"comp":"Tarsons Products Limited","exDate":"20-Sep-2024","faceVal":"2","ind":"-","isin":"INE144Z01023","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Rs 2 Per Share","symbol":"TARSONS"}]
+[
+  {
+    "bcEndDate": "29-Jul-2022",
+    "bcStartDate": "23-Jul-2022",
+    "caBroadcastDate": null,
+    "comp": "Tarsons Products Limited",
+    "exDate": "21-Jul-2022",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE144Z01023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "TARSONS"
+  },
+  {
+    "bcEndDate": "14-Jul-2023",
+    "bcStartDate": "08-Jul-2023",
+    "caBroadcastDate": null,
+    "comp": "Tarsons Products Limited",
+    "exDate": "07-Jul-2023",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE144Z01023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "TARSONS"
+  },
+  {
+    "bcEndDate": "27-Sep-2024",
+    "bcStartDate": "21-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Tarsons Products Limited",
+    "exDate": "20-Sep-2024",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE144Z01023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Rs 2 Per Share",
+    "symbol": "TARSONS"
+  }
+]

@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Inox Green Energy Services Limited","exDate":"31-Jul-2026","faceVal":"10","ind":"-","isin":"INE510W01014","ndEndDate":"-","ndStartDate":"-","recDate":"01-Aug-2026","series":"EQ","subject":"Demerger","symbol":"INOXGREEN"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Inox Green Energy Services Limited",
+    "exDate": "31-Jul-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE510W01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "01-Aug-2026",
+    "series": "EQ",
+    "subject": "Demerger",
+    "symbol": "INOXGREEN"
+  }
+]

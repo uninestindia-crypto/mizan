@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Bengal & Assam Company Limited",
+    "exDate": "01-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE083K01017",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "01-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 50 Per Share",
+    "symbol": "BENGALASM"
+  }
+]

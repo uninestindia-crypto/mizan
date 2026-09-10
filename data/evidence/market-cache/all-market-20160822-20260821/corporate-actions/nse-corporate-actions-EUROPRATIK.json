@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Euro Pratik Sales Limited","exDate":"27-Mar-2026","faceVal":"1","ind":"-","isin":"INE198501012","ndEndDate":"-","ndStartDate":"-","recDate":"27-Mar-2026","series":"EQ","subject":"Interim Dividend - Re 0.20 Per Share","symbol":"EUROPRATIK"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Euro Pratik Sales Limited",
+    "exDate": "27-Mar-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE198501012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "27-Mar-2026",
+    "series": "EQ",
+    "subject": "Interim Dividend - Re 0.20 Per Share",
+    "symbol": "EUROPRATIK"
+  }
+]

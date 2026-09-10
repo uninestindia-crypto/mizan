@@ -1,1 +1,66 @@
-[{"bcEndDate":"30-Sep-2022","bcStartDate":"24-Sep-2022","caBroadcastDate":null,"comp":"Bajaj Healthcare Limited","exDate":"22-Sep-2022","faceVal":"5","ind":"-","isin":"INE411U01027","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Rs  1.50 Per Share","symbol":"BAJAJHCARE"},{"bcEndDate":"30-Sep-2023","bcStartDate":"24-Sep-2023","caBroadcastDate":null,"comp":"Bajaj Healthcare Limited","exDate":"22-Sep-2023","faceVal":"5","ind":"-","isin":"INE411U01027","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Re 1 Per Share","symbol":"BAJAJHCARE"},{"bcEndDate":"30-Sep-2024","bcStartDate":"24-Sep-2024","caBroadcastDate":null,"comp":"Bajaj Healthcare Limited","exDate":"23-Sep-2024","faceVal":"5","ind":"-","isin":"INE411U01027","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Re 1 Per Share","symbol":"BAJAJHCARE"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Bajaj Healthcare Limited","exDate":"19-Sep-2025","faceVal":"5","ind":"-","isin":"INE411U01027","ndEndDate":"-","ndStartDate":"-","recDate":"19-Sep-2025","series":"EQ","subject":"Dividend - Re 1 Per Share","symbol":"BAJAJHCARE"}]
+[
+  {
+    "bcEndDate": "30-Sep-2022",
+    "bcStartDate": "24-Sep-2022",
+    "caBroadcastDate": null,
+    "comp": "Bajaj Healthcare Limited",
+    "exDate": "22-Sep-2022",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE411U01027",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Rs  1.50 Per Share",
+    "symbol": "BAJAJHCARE"
+  },
+  {
+    "bcEndDate": "30-Sep-2023",
+    "bcStartDate": "24-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Bajaj Healthcare Limited",
+    "exDate": "22-Sep-2023",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE411U01027",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Re 1 Per Share",
+    "symbol": "BAJAJHCARE"
+  },
+  {
+    "bcEndDate": "30-Sep-2024",
+    "bcStartDate": "24-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Bajaj Healthcare Limited",
+    "exDate": "23-Sep-2024",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE411U01027",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Re 1 Per Share",
+    "symbol": "BAJAJHCARE"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Bajaj Healthcare Limited",
+    "exDate": "19-Sep-2025",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE411U01027",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "19-Sep-2025",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "BAJAJHCARE"
+  }
+]

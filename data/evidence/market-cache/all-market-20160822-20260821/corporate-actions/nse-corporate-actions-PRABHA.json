@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Prabha Energy Limited","exDate":"11-Mar-2026","faceVal":"1","ind":"-","isin":"INE0I0M01023","ndEndDate":"-","ndStartDate":"-","recDate":"11-Mar-2026","series":"EQ","subject":"Rights 5:14 @ Premium Rs 143/-","symbol":"PRABHA"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Prabha Energy Limited",
+    "exDate": "11-Mar-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE0I0M01023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "11-Mar-2026",
+    "series": "EQ",
+    "subject": "Rights 5:14 @ Premium Rs 143/-",
+    "symbol": "PRABHA"
+  }
+]

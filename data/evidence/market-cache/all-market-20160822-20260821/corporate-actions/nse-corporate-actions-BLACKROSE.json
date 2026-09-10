@@ -1,1 +1,34 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Black Rose Inds. Limited","exDate":"06-Aug-2026","faceVal":"1","ind":"-","isin":"INE761G01016","ndEndDate":"-","ndStartDate":"-","recDate":"06-Aug-2026","series":"EQ","subject":"Interim Dividend - Rs 2 Per Share","symbol":"BLACKROSE"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Black Rose Inds. Limited",
+    "exDate": "06-Aug-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE761G01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "06-Aug-2026",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 2 Per Share",
+    "symbol": "BLACKROSE"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Black Rose Inds. Limited",
+    "exDate": "02-Sep-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE761G01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "02-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.25 Per Share",
+    "symbol": "BLACKROSE"
+  }
+]

@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Shilchar Technologies Limited","exDate":"31-Jul-2026","faceVal":"10","ind":"-","isin":"INE024F01011","ndEndDate":"-","ndStartDate":"-","recDate":"31-Jul-2026","series":"EQ","subject":"Dividend - Rs 12.50 Per Share","symbol":"SHILCTECH"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Shilchar Technologies Limited",
+    "exDate": "31-Jul-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE024F01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "31-Jul-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 12.50 Per Share",
+    "symbol": "SHILCTECH"
+  }
+]

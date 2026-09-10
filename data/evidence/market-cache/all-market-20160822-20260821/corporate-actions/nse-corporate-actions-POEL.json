@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "POCL Enterprises Limited",
+    "exDate": "04-Sep-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE035S01028",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "04-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.80 Per Share",
+    "symbol": "POEL"
+  }
+]

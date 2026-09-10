@@ -1,1 +1,50 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Credo Brands Marketing Limited","exDate":"21-Aug-2024","faceVal":"2","ind":"-","isin":"INE220Q01020","ndEndDate":"-","ndStartDate":"-","recDate":"21-Aug-2024","series":"EQ","subject":"Dividend - Re 0.50 Per Share","symbol":"MUFTI"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Credo Brands Marketing Limited","exDate":"10-Sep-2025","faceVal":"2","ind":"-","isin":"INE220Q01020","ndEndDate":"-","ndStartDate":"-","recDate":"10-Sep-2025","series":"EQ","subject":"Dividend - Rs 3 Per Share","symbol":"MUFTI"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Credo Brands Marketing Limited",
+    "exDate": "21-Aug-2024",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE220Q01020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "21-Aug-2024",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.50 Per Share",
+    "symbol": "MUFTI"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Credo Brands Marketing Limited",
+    "exDate": "10-Sep-2025",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE220Q01020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "10-Sep-2025",
+    "series": "EQ",
+    "subject": "Dividend - Rs 3 Per Share",
+    "symbol": "MUFTI"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Credo Brands Marketing Limited",
+    "exDate": "28-Aug-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE220Q01020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "28-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2 Per Share",
+    "symbol": "MUFTI"
+  }
+]

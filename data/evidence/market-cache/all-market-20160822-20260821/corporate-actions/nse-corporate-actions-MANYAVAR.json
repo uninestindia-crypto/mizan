@@ -1,1 +1,66 @@
-[{"bcEndDate":"08-Sep-2022","bcStartDate":"02-Sep-2022","caBroadcastDate":null,"comp":"Vedant Fashions Limited","exDate":"30-Aug-2022","faceVal":"1","ind":"-","isin":"INE825V01034","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Rs 5 Per Share","symbol":"MANYAVAR"},{"bcEndDate":"24-Aug-2023","bcStartDate":"18-Aug-2023","caBroadcastDate":null,"comp":"Vedant Fashions Limited","exDate":"17-Aug-2023","faceVal":"1","ind":"-","isin":"INE825V01034","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Rs  9 Per Share","symbol":"MANYAVAR"},{"bcEndDate":"30-Aug-2024","bcStartDate":"24-Aug-2024","caBroadcastDate":null,"comp":"Vedant Fashions Limited","exDate":"23-Aug-2024","faceVal":"1","ind":"-","isin":"INE825V01034","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Rs 8.50 Per Share","symbol":"MANYAVAR"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Vedant Fashions Limited","exDate":"28-Aug-2025","faceVal":"1","ind":"-","isin":"INE825V01034","ndEndDate":"-","ndStartDate":"-","recDate":"28-Aug-2025","series":"EQ","subject":"Dividend - Rs 8 Per Share","symbol":"MANYAVAR"}]
+[
+  {
+    "bcEndDate": "08-Sep-2022",
+    "bcStartDate": "02-Sep-2022",
+    "caBroadcastDate": null,
+    "comp": "Vedant Fashions Limited",
+    "exDate": "30-Aug-2022",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE825V01034",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Rs 5 Per Share",
+    "symbol": "MANYAVAR"
+  },
+  {
+    "bcEndDate": "24-Aug-2023",
+    "bcStartDate": "18-Aug-2023",
+    "caBroadcastDate": null,
+    "comp": "Vedant Fashions Limited",
+    "exDate": "17-Aug-2023",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE825V01034",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Rs  9 Per Share",
+    "symbol": "MANYAVAR"
+  },
+  {
+    "bcEndDate": "30-Aug-2024",
+    "bcStartDate": "24-Aug-2024",
+    "caBroadcastDate": null,
+    "comp": "Vedant Fashions Limited",
+    "exDate": "23-Aug-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE825V01034",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Rs 8.50 Per Share",
+    "symbol": "MANYAVAR"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Vedant Fashions Limited",
+    "exDate": "28-Aug-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE825V01034",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "28-Aug-2025",
+    "series": "EQ",
+    "subject": "Dividend - Rs 8 Per Share",
+    "symbol": "MANYAVAR"
+  }
+]

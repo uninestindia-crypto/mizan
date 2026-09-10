@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"RACL Geartech Limited","exDate":"20-Feb-2026","faceVal":"10","ind":"-","isin":"INE704B01017","ndEndDate":"-","ndStartDate":"-","recDate":"20-Feb-2026","series":"EQ","subject":"Interim Dividend - Rs 1.50 Per Share","symbol":"RACLGEAR"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "RACL Geartech Limited",
+    "exDate": "20-Feb-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE704B01017",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "20-Feb-2026",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 1.50 Per Share",
+    "symbol": "RACLGEAR"
+  }
+]

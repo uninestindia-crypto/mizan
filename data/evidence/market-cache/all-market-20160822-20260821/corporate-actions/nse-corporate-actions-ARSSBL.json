@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Anand Rathi Share and Stock Brokers Limited","exDate":"23-Jun-2026","faceVal":"5","ind":"-","isin":"INE549H01021","ndEndDate":"-","ndStartDate":"-","recDate":"23-Jun-2026","series":"EQ","subject":"Dividend - Rs 5 Per Share","symbol":"ARSSBL"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Anand Rathi Share and Stock Brokers Limited",
+    "exDate": "23-Jun-2026",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE549H01021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "23-Jun-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 5 Per Share",
+    "symbol": "ARSSBL"
+  }
+]

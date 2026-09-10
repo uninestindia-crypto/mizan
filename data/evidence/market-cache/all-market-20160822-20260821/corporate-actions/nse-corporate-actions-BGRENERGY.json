@@ -1,1 +1,18 @@
-[{"bcEndDate":"09-Aug-2024","bcStartDate":"03-Aug-2024","caBroadcastDate":null,"comp":"BGR Energy Systems Limited","exDate":"02-Aug-2024","faceVal":"10","ind":"-","isin":"INE661I01014","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"BGRENERGY"}]
+[
+  {
+    "bcEndDate": "09-Aug-2024",
+    "bcStartDate": "03-Aug-2024",
+    "caBroadcastDate": null,
+    "comp": "BGR Energy Systems Limited",
+    "exDate": "02-Aug-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE661I01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "BGRENERGY"
+  }
+]

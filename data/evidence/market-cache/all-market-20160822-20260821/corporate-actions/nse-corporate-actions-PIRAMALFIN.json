@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Piramal Finance Limited","exDate":"12-Jun-2026","faceVal":"2","ind":"-","isin":"INE202B01038","ndEndDate":"-","ndStartDate":"-","recDate":"12-Jun-2026","series":"EQ","subject":"Dividend - Rs 11 Per Share","symbol":"PIRAMALFIN"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Piramal Finance Limited",
+    "exDate": "12-Jun-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE202B01038",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "12-Jun-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 11 Per Share",
+    "symbol": "PIRAMALFIN"
+  }
+]

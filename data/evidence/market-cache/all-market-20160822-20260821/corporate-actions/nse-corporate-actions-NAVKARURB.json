@@ -1,1 +1,50 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Navkar Urbanstructure Limited","exDate":"24-Apr-2025","faceVal":"1","ind":"-","isin":"INE268H01036","ndEndDate":"-","ndStartDate":"-","recDate":"24-Apr-2025","series":"EQ","subject":"Bonus 3:2","symbol":"NAVKARURB"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Navkar Urbanstructure Limited","exDate":"09-May-2025","faceVal":"1","ind":"-","isin":"INE268H01036","ndEndDate":"-","ndStartDate":"-","recDate":"09-May-2025","series":"EQ","subject":"Face Value Split (Sub-Division) - From Rs 2/- Per Share To Re 1/- Per Share","symbol":"NAVKARURB"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Navkar Urbanstructure Limited","exDate":"23-Sep-2025","faceVal":"1","ind":"-","isin":"INE268H01036","ndEndDate":"-","ndStartDate":"-","recDate":"23-Sep-2025","series":"EQ","subject":"Dividend - Re 0.005 Per Share","symbol":"NAVKARURB"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Navkar Urbanstructure Limited",
+    "exDate": "24-Apr-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE268H01036",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "24-Apr-2025",
+    "series": "EQ",
+    "subject": "Bonus 3:2",
+    "symbol": "NAVKARURB"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Navkar Urbanstructure Limited",
+    "exDate": "09-May-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE268H01036",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "09-May-2025",
+    "series": "EQ",
+    "subject": "Face Value Split (Sub-Division) - From Rs 2/- Per Share To Re 1/- Per Share",
+    "symbol": "NAVKARURB"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Navkar Urbanstructure Limited",
+    "exDate": "23-Sep-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE268H01036",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "23-Sep-2025",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.005 Per Share",
+    "symbol": "NAVKARURB"
+  }
+]

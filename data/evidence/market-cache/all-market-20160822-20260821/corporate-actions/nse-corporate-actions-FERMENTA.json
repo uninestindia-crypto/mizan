@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Fermenta Biotech Limited","exDate":"05-Aug-2026","faceVal":"5","ind":"-","isin":"INE225B01021","ndEndDate":"-","ndStartDate":"-","recDate":"05-Aug-2026","series":"EQ","subject":"Dividend - Rs 3.75 Per Share","symbol":"FERMENTA"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Fermenta Biotech Limited",
+    "exDate": "05-Aug-2026",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE225B01021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "05-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 3.75 Per Share",
+    "symbol": "FERMENTA"
+  }
+]

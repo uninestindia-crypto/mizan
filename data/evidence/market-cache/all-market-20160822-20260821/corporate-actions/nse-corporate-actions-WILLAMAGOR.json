@@ -1,1 +1,50 @@
-[{"bcEndDate":"22-Sep-2017","bcStartDate":"15-Sep-2017","caBroadcastDate":null,"comp":"Williamson Magor & Company Limited","exDate":"13-Sep-2017","faceVal":"10","ind":"-","isin":"INE210A01017","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"WILLAMAGOR"},{"bcEndDate":"18-Sep-2018","bcStartDate":"12-Sep-2018","caBroadcastDate":null,"comp":"Williamson Magor & Company Limited","exDate":"10-Sep-2018","faceVal":"10","ind":"-","isin":"INE210A01017","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"WILLAMAGOR"},{"bcEndDate":"26-Sep-2019","bcStartDate":"20-Sep-2019","caBroadcastDate":null,"comp":"Williamson Magor & Company Limited","exDate":"18-Sep-2019","faceVal":"10","ind":"-","isin":"INE210A01017","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"WILLAMAGOR"}]
+[
+  {
+    "bcEndDate": "22-Sep-2017",
+    "bcStartDate": "15-Sep-2017",
+    "caBroadcastDate": null,
+    "comp": "Williamson Magor & Company Limited",
+    "exDate": "13-Sep-2017",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE210A01017",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "WILLAMAGOR"
+  },
+  {
+    "bcEndDate": "18-Sep-2018",
+    "bcStartDate": "12-Sep-2018",
+    "caBroadcastDate": null,
+    "comp": "Williamson Magor & Company Limited",
+    "exDate": "10-Sep-2018",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE210A01017",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "WILLAMAGOR"
+  },
+  {
+    "bcEndDate": "26-Sep-2019",
+    "bcStartDate": "20-Sep-2019",
+    "caBroadcastDate": null,
+    "comp": "Williamson Magor & Company Limited",
+    "exDate": "18-Sep-2019",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE210A01017",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "WILLAMAGOR"
+  }
+]

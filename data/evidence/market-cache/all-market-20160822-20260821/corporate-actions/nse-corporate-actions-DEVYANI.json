@@ -1,1 +1,50 @@
-[{"bcEndDate":"28-Jun-2022","bcStartDate":"21-Jun-2022","caBroadcastDate":null,"comp":"Devyani International Limited","exDate":"17-Jun-2022","faceVal":"1","ind":"-","isin":"INE872J01023","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"DEVYANI"},{"bcEndDate":"03-Jul-2023","bcStartDate":"26-Jun-2023","caBroadcastDate":null,"comp":"Devyani International Limited","exDate":"23-Jun-2023","faceVal":"1","ind":"-","isin":"INE872J01023","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"DEVYANI"},{"bcEndDate":"05-Jul-2024","bcStartDate":"28-Jun-2024","caBroadcastDate":null,"comp":"Devyani International Limited","exDate":"27-Jun-2024","faceVal":"1","ind":"-","isin":"INE872J01023","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"DEVYANI"}]
+[
+  {
+    "bcEndDate": "28-Jun-2022",
+    "bcStartDate": "21-Jun-2022",
+    "caBroadcastDate": null,
+    "comp": "Devyani International Limited",
+    "exDate": "17-Jun-2022",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE872J01023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "DEVYANI"
+  },
+  {
+    "bcEndDate": "03-Jul-2023",
+    "bcStartDate": "26-Jun-2023",
+    "caBroadcastDate": null,
+    "comp": "Devyani International Limited",
+    "exDate": "23-Jun-2023",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE872J01023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "DEVYANI"
+  },
+  {
+    "bcEndDate": "05-Jul-2024",
+    "bcStartDate": "28-Jun-2024",
+    "caBroadcastDate": null,
+    "comp": "Devyani International Limited",
+    "exDate": "27-Jun-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE872J01023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "DEVYANI"
+  }
+]

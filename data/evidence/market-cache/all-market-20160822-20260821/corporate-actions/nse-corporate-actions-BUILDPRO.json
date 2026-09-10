@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Shankara Buildpro Limited","exDate":"24-Jun-2026","faceVal":"10","ind":"-","isin":"INE24OJ01011","ndEndDate":"-","ndStartDate":"-","recDate":"24-Jun-2026","series":"EQ","subject":"Dividend - Rs 5 Per Share","symbol":"BUILDPRO"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Shankara Buildpro Limited",
+    "exDate": "24-Jun-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE24OJ01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "24-Jun-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 5 Per Share",
+    "symbol": "BUILDPRO"
+  }
+]

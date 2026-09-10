@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Rubicon Research Limited","exDate":"07-Aug-2026","faceVal":"1","ind":"-","isin":"INE506V01022","ndEndDate":"-","ndStartDate":"-","recDate":"07-Aug-2026","series":"EQ","subject":"Dividend - Rs 1.50 Per Share","symbol":"RUBICON"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Rubicon Research Limited",
+    "exDate": "07-Aug-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE506V01022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "07-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.50 Per Share",
+    "symbol": "RUBICON"
+  }
+]

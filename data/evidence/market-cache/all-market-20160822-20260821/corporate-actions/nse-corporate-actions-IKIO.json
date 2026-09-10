@@ -1,1 +1,34 @@
-[{"bcEndDate":"14-Sep-2023","bcStartDate":"08-Sep-2023","caBroadcastDate":null,"comp":"IKIO Technologies Limited","exDate":"07-Sep-2023","faceVal":"10","ind":"-","isin":"INE0LOJ01019","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"IKIO"},{"bcEndDate":"20-Aug-2024","bcStartDate":"14-Aug-2024","caBroadcastDate":null,"comp":"IKIO Technologies Limited","exDate":"13-Aug-2024","faceVal":"10","ind":"-","isin":"INE0LOJ01019","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Re 1 Per Share","symbol":"IKIO"}]
+[
+  {
+    "bcEndDate": "14-Sep-2023",
+    "bcStartDate": "08-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "IKIO Technologies Limited",
+    "exDate": "07-Sep-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0LOJ01019",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "IKIO"
+  },
+  {
+    "bcEndDate": "20-Aug-2024",
+    "bcStartDate": "14-Aug-2024",
+    "caBroadcastDate": null,
+    "comp": "IKIO Technologies Limited",
+    "exDate": "13-Aug-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0LOJ01019",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Re 1 Per Share",
+    "symbol": "IKIO"
+  }
+]

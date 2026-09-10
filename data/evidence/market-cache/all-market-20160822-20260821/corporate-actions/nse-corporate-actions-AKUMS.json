@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Akums Drugs and Pharmaceuticals Limited","exDate":"03-Jul-2026","faceVal":"2","ind":"-","isin":"INE09XN01023","ndEndDate":"-","ndStartDate":"-","recDate":"03-Jul-2026","series":"EQ","subject":"Dividend - Re 1 Per Share/Special Dividend - Rs 2 Per Share","symbol":"AKUMS"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Akums Drugs and Pharmaceuticals Limited",
+    "exDate": "03-Jul-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE09XN01023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "03-Jul-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share/Special Dividend - Rs 2 Per Share",
+    "symbol": "AKUMS"
+  }
+]

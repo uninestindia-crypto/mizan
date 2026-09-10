@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Denta Water and Infra Solutions Limited","exDate":"14-Aug-2025","faceVal":"10","ind":"-","isin":"INE0R4L01018","ndEndDate":"-","ndStartDate":"-","recDate":"14-Aug-2025","series":"EQ","subject":"Dividend - Rs 2.50 Per Share","symbol":"DENTA"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Denta Water and Infra Solutions Limited",
+    "exDate": "14-Aug-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0R4L01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "14-Aug-2025",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2.50 Per Share",
+    "symbol": "DENTA"
+  }
+]

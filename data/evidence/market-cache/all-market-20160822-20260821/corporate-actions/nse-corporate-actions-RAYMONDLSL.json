@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Raymond Lifestyle Limited","exDate":"29-Jun-2026","faceVal":"2","ind":"-","isin":"INE02ID01020","ndEndDate":"-","ndStartDate":"-","recDate":"29-Jun-2026","series":"EQ","subject":"Dividend - Re 1 Per Share","symbol":"RAYMONDLSL"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Raymond Lifestyle Limited",
+    "exDate": "29-Jun-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE02ID01020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "29-Jun-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "RAYMONDLSL"
+  }
+]

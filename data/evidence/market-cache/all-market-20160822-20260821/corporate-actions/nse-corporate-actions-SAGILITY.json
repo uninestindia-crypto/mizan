@@ -1,1 +1,34 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"SAGILITY LIMITED","exDate":"12-Nov-2025","faceVal":"10","ind":"-","isin":"INE0W2G01015","ndEndDate":"-","ndStartDate":"-","recDate":"12-Nov-2025","series":"EQ","subject":"Interim Dividend - Re 0.05 Per Share","symbol":"SAGILITY"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"SAGILITY LIMITED","exDate":"07-Aug-2026","faceVal":"10","ind":"-","isin":"INE0W2G01015","ndEndDate":"-","ndStartDate":"-","recDate":"07-Aug-2026","series":"EQ","subject":"Dividend - Re 0.10 Per Share","symbol":"SAGILITY"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "SAGILITY LIMITED",
+    "exDate": "12-Nov-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0W2G01015",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "12-Nov-2025",
+    "series": "EQ",
+    "subject": "Interim Dividend - Re 0.05 Per Share",
+    "symbol": "SAGILITY"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "SAGILITY LIMITED",
+    "exDate": "07-Aug-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0W2G01015",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "07-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.10 Per Share",
+    "symbol": "SAGILITY"
+  }
+]

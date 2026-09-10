@@ -1,1 +1,66 @@
-[{"bcEndDate":"29-Sep-2023","bcStartDate":"22-Sep-2023","caBroadcastDate":null,"comp":"AVG Logistics Limited","exDate":"21-Sep-2023","faceVal":"10","ind":"-","isin":"INE680Z01018","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Re 1 Per Share","symbol":"AVG"},{"bcEndDate":"30-Sep-2024","bcStartDate":"24-Sep-2024","caBroadcastDate":null,"comp":"AVG Logistics Limited","exDate":"23-Sep-2024","faceVal":"10","ind":"-","isin":"INE680Z01018","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Rs 1.2 Per Share","symbol":"AVG"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"AVG Logistics Limited","exDate":"23-Sep-2025","faceVal":"10","ind":"-","isin":"INE680Z01018","ndEndDate":"-","ndStartDate":"-","recDate":"23-Sep-2025","series":"EQ","subject":"Dividend - Rs 1.20 Per Share","symbol":"AVG"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"AVG Logistics Limited","exDate":"21-May-2026","faceVal":"10","ind":"-","isin":"INE680Z01018","ndEndDate":"-","ndStartDate":"-","recDate":"21-May-2026","series":"EQ","subject":"Rights 8:33 @ Premium Rs 135/-","symbol":"AVG"}]
+[
+  {
+    "bcEndDate": "29-Sep-2023",
+    "bcStartDate": "22-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "AVG Logistics Limited",
+    "exDate": "21-Sep-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE680Z01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Re 1 Per Share",
+    "symbol": "AVG"
+  },
+  {
+    "bcEndDate": "30-Sep-2024",
+    "bcStartDate": "24-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "AVG Logistics Limited",
+    "exDate": "23-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE680Z01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Rs 1.2 Per Share",
+    "symbol": "AVG"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "AVG Logistics Limited",
+    "exDate": "23-Sep-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE680Z01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "23-Sep-2025",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.20 Per Share",
+    "symbol": "AVG"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "AVG Logistics Limited",
+    "exDate": "21-May-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE680Z01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "21-May-2026",
+    "series": "EQ",
+    "subject": "Rights 8:33 @ Premium Rs 135/-",
+    "symbol": "AVG"
+  }
+]

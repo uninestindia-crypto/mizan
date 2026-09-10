@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Vadilal Enterprises Limited",
+    "exDate": "01-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE693D01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "01-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.50 Per Share",
+    "symbol": "VADILENT"
+  }
+]

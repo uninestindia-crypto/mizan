@@ -1,1 +1,66 @@
-[{"bcEndDate":"18-Sep-2023","bcStartDate":"12-Sep-2023","caBroadcastDate":null,"comp":"Landmark Cars Limited","exDate":"11-Sep-2023","faceVal":"5","ind":"-","isin":"INE559R01029","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Dividend - Rs 2.25 Per Share","symbol":"LANDMARK"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Landmark Cars Limited","exDate":"13-Sep-2024","faceVal":"5","ind":"-","isin":"INE559R01029","ndEndDate":"-","ndStartDate":"-","recDate":"13-Sep-2024","series":"EQ","subject":"Dividend - Rs 1.50 Per Share","symbol":"LANDMARK"},{"bcEndDate":"20-Sep-2024","bcStartDate":"14-Sep-2024","caBroadcastDate":null,"comp":"Landmark Cars Limited","exDate":"13-Sep-2024","faceVal":"5","ind":"-","isin":"INE559R01029","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"LANDMARK"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Landmark Cars Limited","exDate":"15-Sep-2025","faceVal":"5","ind":"-","isin":"INE559R01029","ndEndDate":"-","ndStartDate":"-","recDate":"15-Sep-2025","series":"EQ","subject":"Dividend - Re 0.50 Per Share","symbol":"LANDMARK"}]
+[
+  {
+    "bcEndDate": "18-Sep-2023",
+    "bcStartDate": "12-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Landmark Cars Limited",
+    "exDate": "11-Sep-2023",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE559R01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2.25 Per Share",
+    "symbol": "LANDMARK"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Landmark Cars Limited",
+    "exDate": "13-Sep-2024",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE559R01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "13-Sep-2024",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.50 Per Share",
+    "symbol": "LANDMARK"
+  },
+  {
+    "bcEndDate": "20-Sep-2024",
+    "bcStartDate": "14-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Landmark Cars Limited",
+    "exDate": "13-Sep-2024",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE559R01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "LANDMARK"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Landmark Cars Limited",
+    "exDate": "15-Sep-2025",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE559R01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "15-Sep-2025",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.50 Per Share",
+    "symbol": "LANDMARK"
+  }
+]

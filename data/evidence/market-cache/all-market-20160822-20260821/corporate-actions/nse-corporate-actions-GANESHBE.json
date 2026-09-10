@@ -1,1 +1,66 @@
-[{"bcEndDate":"27-Sep-2021","bcStartDate":"21-Sep-2021","caBroadcastDate":null,"comp":"Ganesh Benzoplast Limited","exDate":"17-Sep-2021","faceVal":"1","ind":"-","isin":"INE388A01029","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"GANESHBE"},{"bcEndDate":"27-Sep-2022","bcStartDate":"21-Sep-2022","caBroadcastDate":null,"comp":"Ganesh Benzoplast Limited","exDate":"19-Sep-2022","faceVal":"1","ind":"-","isin":"INE388A01029","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"GANESHBE"},{"bcEndDate":"29-Sep-2023","bcStartDate":"23-Sep-2023","caBroadcastDate":null,"comp":"Ganesh Benzoplast Limited","exDate":"22-Sep-2023","faceVal":"1","ind":"-","isin":"INE388A01029","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"GANESHBE"},{"bcEndDate":"25-Sep-2024","bcStartDate":"19-Sep-2024","caBroadcastDate":null,"comp":"Ganesh Benzoplast Limited","exDate":"17-Sep-2024","faceVal":"1","ind":"-","isin":"INE388A01029","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"GANESHBE"}]
+[
+  {
+    "bcEndDate": "27-Sep-2021",
+    "bcStartDate": "21-Sep-2021",
+    "caBroadcastDate": null,
+    "comp": "Ganesh Benzoplast Limited",
+    "exDate": "17-Sep-2021",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE388A01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "GANESHBE"
+  },
+  {
+    "bcEndDate": "27-Sep-2022",
+    "bcStartDate": "21-Sep-2022",
+    "caBroadcastDate": null,
+    "comp": "Ganesh Benzoplast Limited",
+    "exDate": "19-Sep-2022",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE388A01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "GANESHBE"
+  },
+  {
+    "bcEndDate": "29-Sep-2023",
+    "bcStartDate": "23-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Ganesh Benzoplast Limited",
+    "exDate": "22-Sep-2023",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE388A01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "GANESHBE"
+  },
+  {
+    "bcEndDate": "25-Sep-2024",
+    "bcStartDate": "19-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Ganesh Benzoplast Limited",
+    "exDate": "17-Sep-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE388A01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "GANESHBE"
+  }
+]

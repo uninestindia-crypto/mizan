@@ -1,1 +1,66 @@
-[{"bcEndDate":"12-Sep-2023","bcStartDate":"06-Sep-2023","caBroadcastDate":null,"comp":"Robust Hotels Limited","exDate":"05-Sep-2023","faceVal":"10","ind":"-","isin":"INE508K01013","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"RHL"},{"bcEndDate":"19-Dec-2023","bcStartDate":"13-Dec-2023","caBroadcastDate":null,"comp":"Robust Hotels Limited","exDate":"12-Dec-2023","faceVal":"10","ind":"-","isin":"INE508K01013","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Extra Ordinary General Meeting","symbol":"RHL"},{"bcEndDate":"02-Feb-2024","bcStartDate":"27-Jan-2024","caBroadcastDate":null,"comp":"Robust Hotels Limited","exDate":"25-Jan-2024","faceVal":"10","ind":"-","isin":"INE508K01013","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Extra Ordinary General Meeting","symbol":"RHL"},{"bcEndDate":"25-Sep-2024","bcStartDate":"19-Sep-2024","caBroadcastDate":null,"comp":"Robust Hotels Limited","exDate":"17-Sep-2024","faceVal":"10","ind":"-","isin":"INE508K01013","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"RHL"}]
+[
+  {
+    "bcEndDate": "12-Sep-2023",
+    "bcStartDate": "06-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Robust Hotels Limited",
+    "exDate": "05-Sep-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE508K01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "RHL"
+  },
+  {
+    "bcEndDate": "19-Dec-2023",
+    "bcStartDate": "13-Dec-2023",
+    "caBroadcastDate": null,
+    "comp": "Robust Hotels Limited",
+    "exDate": "12-Dec-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE508K01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Extra Ordinary General Meeting",
+    "symbol": "RHL"
+  },
+  {
+    "bcEndDate": "02-Feb-2024",
+    "bcStartDate": "27-Jan-2024",
+    "caBroadcastDate": null,
+    "comp": "Robust Hotels Limited",
+    "exDate": "25-Jan-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE508K01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Extra Ordinary General Meeting",
+    "symbol": "RHL"
+  },
+  {
+    "bcEndDate": "25-Sep-2024",
+    "bcStartDate": "19-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Robust Hotels Limited",
+    "exDate": "17-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE508K01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "RHL"
+  }
+]

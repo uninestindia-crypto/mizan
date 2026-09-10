@@ -1,1 +1,34 @@
-[{"bcEndDate":"30-Sep-2023","bcStartDate":"24-Sep-2023","caBroadcastDate":null,"comp":"Elin Electronics Limited","exDate":"22-Sep-2023","faceVal":"5","ind":"-","isin":"INE050401020","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"ELIN"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Elin Electronics Limited","exDate":"22-Sep-2023","faceVal":"5","ind":"-","isin":"INE050401020","ndEndDate":"-","ndStartDate":"-","recDate":"22-Sep-2023","series":"EQ","subject":"Dividend - Re 1 Per Share","symbol":"ELIN"}]
+[
+  {
+    "bcEndDate": "30-Sep-2023",
+    "bcStartDate": "24-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Elin Electronics Limited",
+    "exDate": "22-Sep-2023",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE050401020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "ELIN"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Elin Electronics Limited",
+    "exDate": "22-Sep-2023",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE050401020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "22-Sep-2023",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "ELIN"
+  }
+]

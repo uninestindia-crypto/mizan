@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "M & B Engineering Limited",
+    "exDate": "10-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE08N601015",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "10-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "MBEL"
+  }
+]

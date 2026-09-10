@@ -1,1 +1,34 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"R&B Denims Limited","exDate":"02-Apr-2026","faceVal":"1","ind":"-","isin":"INE012Q01021","ndEndDate":"-","ndStartDate":"-","recDate":"03-Apr-2026","series":"EQ","subject":"Bonus 1:2","symbol":"RNBDENIMS"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"R&B Denims Limited","exDate":"02-Apr-2026","faceVal":"1","ind":"-","isin":"INE012Q01021","ndEndDate":"-","ndStartDate":"-","recDate":"03-Apr-2026","series":"EQ","subject":"Face Value Split (Sub-Division) - From Rs 2/- Per Share To Re 1/- Per Share","symbol":"RNBDENIMS"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "R&B Denims Limited",
+    "exDate": "02-Apr-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE012Q01021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "03-Apr-2026",
+    "series": "EQ",
+    "subject": "Bonus 1:2",
+    "symbol": "RNBDENIMS"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "R&B Denims Limited",
+    "exDate": "02-Apr-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE012Q01021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "03-Apr-2026",
+    "series": "EQ",
+    "subject": "Face Value Split (Sub-Division) - From Rs 2/- Per Share To Re 1/- Per Share",
+    "symbol": "RNBDENIMS"
+  }
+]

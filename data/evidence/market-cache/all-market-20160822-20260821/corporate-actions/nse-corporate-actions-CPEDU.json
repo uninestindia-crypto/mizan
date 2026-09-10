@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Career Point Edutech Limited","exDate":"21-Nov-2025","faceVal":"10","ind":"-","isin":"INE0P6P01016","ndEndDate":"-","ndStartDate":"-","recDate":"21-Nov-2025","series":"EQ","subject":"Interim Dividend - Rs 2.50 Per Share","symbol":"CPEDU"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Career Point Edutech Limited",
+    "exDate": "21-Nov-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0P6P01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "21-Nov-2025",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 2.50 Per Share",
+    "symbol": "CPEDU"
+  }
+]

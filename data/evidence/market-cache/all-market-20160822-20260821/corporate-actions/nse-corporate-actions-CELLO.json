@@ -1,1 +1,50 @@
-[{"bcEndDate":"10-Aug-2024","bcStartDate":"03-Aug-2024","caBroadcastDate":null,"comp":"Cello World Limited","exDate":"02-Aug-2024","faceVal":"5","ind":"-","isin":"INE0LMW01024","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Rs 1.50 Per Sh","symbol":"CELLO"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Cello World Limited","exDate":"01-Aug-2025","faceVal":"5","ind":"-","isin":"INE0LMW01024","ndEndDate":"-","ndStartDate":"-","recDate":"01-Aug-2025","series":"EQ","subject":"Dividend - Rs 1.50 Per Share","symbol":"CELLO"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Cello World Limited","exDate":"31-Jul-2026","faceVal":"5","ind":"-","isin":"INE0LMW01024","ndEndDate":"-","ndStartDate":"-","recDate":"31-Jul-2026","series":"EQ","subject":"Dividend - Rs 1.50 Per Share","symbol":"CELLO"}]
+[
+  {
+    "bcEndDate": "10-Aug-2024",
+    "bcStartDate": "03-Aug-2024",
+    "caBroadcastDate": null,
+    "comp": "Cello World Limited",
+    "exDate": "02-Aug-2024",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE0LMW01024",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Rs 1.50 Per Sh",
+    "symbol": "CELLO"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Cello World Limited",
+    "exDate": "01-Aug-2025",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE0LMW01024",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "01-Aug-2025",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.50 Per Share",
+    "symbol": "CELLO"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Cello World Limited",
+    "exDate": "31-Jul-2026",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE0LMW01024",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "31-Jul-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.50 Per Share",
+    "symbol": "CELLO"
+  }
+]

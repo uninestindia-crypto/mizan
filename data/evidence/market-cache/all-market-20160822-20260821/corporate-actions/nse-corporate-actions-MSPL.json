@@ -1,1 +1,66 @@
-[{"bcEndDate":"22-Sep-2016","bcStartDate":"17-Sep-2016","caBroadcastDate":null,"comp":"MSP Steel & Power Limited","exDate":"15-Sep-2016","faceVal":"10","ind":"-","isin":"INE752G01015","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"MSPL"},{"bcEndDate":"12-Jul-2017","bcStartDate":"07-Jul-2017","caBroadcastDate":null,"comp":"MSP Steel & Power Limited","exDate":"05-Jul-2017","faceVal":"10","ind":"-","isin":"INE752G01015","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Extra Ordinary General Meeting","symbol":"MSPL"},{"bcEndDate":"22-Sep-2017","bcStartDate":"15-Sep-2017","caBroadcastDate":null,"comp":"MSP Steel & Power Limited","exDate":"13-Sep-2017","faceVal":"10","ind":"-","isin":"INE752G01015","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"MSPL"},{"bcEndDate":"12-Mar-2019","bcStartDate":"06-Mar-2019","caBroadcastDate":null,"comp":"MSP Steel & Power Limited","exDate":"01-Mar-2019","faceVal":"10","ind":"-","isin":"INE752G01015","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Extra Ordinary General Meeting","symbol":"MSPL"}]
+[
+  {
+    "bcEndDate": "22-Sep-2016",
+    "bcStartDate": "17-Sep-2016",
+    "caBroadcastDate": null,
+    "comp": "MSP Steel & Power Limited",
+    "exDate": "15-Sep-2016",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE752G01015",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "MSPL"
+  },
+  {
+    "bcEndDate": "12-Jul-2017",
+    "bcStartDate": "07-Jul-2017",
+    "caBroadcastDate": null,
+    "comp": "MSP Steel & Power Limited",
+    "exDate": "05-Jul-2017",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE752G01015",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Extra Ordinary General Meeting",
+    "symbol": "MSPL"
+  },
+  {
+    "bcEndDate": "22-Sep-2017",
+    "bcStartDate": "15-Sep-2017",
+    "caBroadcastDate": null,
+    "comp": "MSP Steel & Power Limited",
+    "exDate": "13-Sep-2017",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE752G01015",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "MSPL"
+  },
+  {
+    "bcEndDate": "12-Mar-2019",
+    "bcStartDate": "06-Mar-2019",
+    "caBroadcastDate": null,
+    "comp": "MSP Steel & Power Limited",
+    "exDate": "01-Mar-2019",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE752G01015",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Extra Ordinary General Meeting",
+    "symbol": "MSPL"
+  }
+]

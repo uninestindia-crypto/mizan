@@ -1,1 +1,50 @@
-[{"bcEndDate":"07-Jul-2017","bcStartDate":"01-Jul-2017","caBroadcastDate":null,"comp":"Teamlease Services Limited","exDate":"29-Jun-2017","faceVal":"10","ind":"-","isin":"INE985S01024","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"TEAMLEASE"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Teamlease Services Limited","exDate":"03-Apr-2023","faceVal":"10","ind":"-","isin":"INE985S01024","ndEndDate":"-","ndStartDate":"-","recDate":"03-Apr-2023","series":"EQ","subject":"Buy Back","symbol":"TEAMLEASE"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Teamlease Services Limited","exDate":"03-Jul-2026","faceVal":"10","ind":"-","isin":"INE985S01024","ndEndDate":"-","ndStartDate":"-","recDate":"03-Jul-2026","series":"EQ","subject":"Buy Back","symbol":"TEAMLEASE"}]
+[
+  {
+    "bcEndDate": "07-Jul-2017",
+    "bcStartDate": "01-Jul-2017",
+    "caBroadcastDate": null,
+    "comp": "Teamlease Services Limited",
+    "exDate": "29-Jun-2017",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE985S01024",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "TEAMLEASE"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Teamlease Services Limited",
+    "exDate": "03-Apr-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE985S01024",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "03-Apr-2023",
+    "series": "EQ",
+    "subject": "Buy Back",
+    "symbol": "TEAMLEASE"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Teamlease Services Limited",
+    "exDate": "03-Jul-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE985S01024",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "03-Jul-2026",
+    "series": "EQ",
+    "subject": "Buy Back",
+    "symbol": "TEAMLEASE"
+  }
+]

@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Elantas Beck India Limited","exDate":"05-May-2026","faceVal":"10","ind":"-","isin":"INE280B01018","ndEndDate":"-","ndStartDate":"-","recDate":"05-May-2026","series":"EQ","subject":"Dividend - Rs. 7.50 Per Share","symbol":"ELANTAS"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Elantas Beck India Limited",
+    "exDate": "05-May-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE280B01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "05-May-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs. 7.50 Per Share",
+    "symbol": "ELANTAS"
+  }
+]

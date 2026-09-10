@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Garuda Construction and Engineering Limited","exDate":"17-Feb-2025","faceVal":"5","ind":"-","isin":"INE0JVO01026","ndEndDate":"-","ndStartDate":"-","recDate":"17-Feb-2025","series":"EQ","subject":"Interim Dividend - Re 0.025 Per Share","symbol":"GARUDA"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Garuda Construction and Engineering Limited",
+    "exDate": "17-Feb-2025",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE0JVO01026",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "17-Feb-2025",
+    "series": "EQ",
+    "subject": "Interim Dividend - Re 0.025 Per Share",
+    "symbol": "GARUDA"
+  }
+]

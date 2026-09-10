@@ -1,1 +1,66 @@
-[{"bcEndDate":"30-Sep-2022","bcStartDate":"24-Sep-2022","caBroadcastDate":null,"comp":"Euro India Fresh Foods Limited","exDate":"22-Sep-2022","faceVal":"10","ind":"-","isin":"INE546V01010","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"EIFFL"},{"bcEndDate":"29-Sep-2023","bcStartDate":"23-Sep-2023","caBroadcastDate":null,"comp":"Euro India Fresh Foods Limited","exDate":"22-Sep-2023","faceVal":"10","ind":"-","isin":"INE546V01010","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"EIFFL"},{"bcEndDate":"24-Apr-2024","bcStartDate":"18-Apr-2024","caBroadcastDate":null,"comp":"Euro India Fresh Foods Limited","exDate":"16-Apr-2024","faceVal":"10","ind":"-","isin":"INE546V01010","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Extra Ordinary General Meeting","symbol":"EIFFL"},{"bcEndDate":"27-Sep-2024","bcStartDate":"21-Sep-2024","caBroadcastDate":null,"comp":"Euro India Fresh Foods Limited","exDate":"20-Sep-2024","faceVal":"10","ind":"-","isin":"INE546V01010","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"EIFFL"}]
+[
+  {
+    "bcEndDate": "30-Sep-2022",
+    "bcStartDate": "24-Sep-2022",
+    "caBroadcastDate": null,
+    "comp": "Euro India Fresh Foods Limited",
+    "exDate": "22-Sep-2022",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE546V01010",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "EIFFL"
+  },
+  {
+    "bcEndDate": "29-Sep-2023",
+    "bcStartDate": "23-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Euro India Fresh Foods Limited",
+    "exDate": "22-Sep-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE546V01010",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "EIFFL"
+  },
+  {
+    "bcEndDate": "24-Apr-2024",
+    "bcStartDate": "18-Apr-2024",
+    "caBroadcastDate": null,
+    "comp": "Euro India Fresh Foods Limited",
+    "exDate": "16-Apr-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE546V01010",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Extra Ordinary General Meeting",
+    "symbol": "EIFFL"
+  },
+  {
+    "bcEndDate": "27-Sep-2024",
+    "bcStartDate": "21-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Euro India Fresh Foods Limited",
+    "exDate": "20-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE546V01010",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "EIFFL"
+  }
+]

@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Arkade Developers Limited","exDate":"01-Aug-2025","faceVal":"10","ind":"-","isin":"INE0QRL01017","ndEndDate":"-","ndStartDate":"-","recDate":"01-Aug-2025","series":"EQ","subject":"Interim Dividend - Re 1 Per Share","symbol":"ARKADE"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Arkade Developers Limited",
+    "exDate": "01-Aug-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0QRL01017",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "01-Aug-2025",
+    "series": "EQ",
+    "subject": "Interim Dividend - Re 1 Per Share",
+    "symbol": "ARKADE"
+  }
+]

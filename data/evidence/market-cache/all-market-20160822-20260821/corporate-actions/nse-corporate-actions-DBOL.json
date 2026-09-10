@@ -1,1 +1,66 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Dhampur Bio Organics Limited","exDate":"23-Jun-2023","faceVal":"10","ind":"-","isin":"INE0I3401014","ndEndDate":"-","ndStartDate":"-","recDate":"23-Jun-2023","series":"EQ","subject":"Dividend - Rs 3.50 Per Share","symbol":"DBOL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Dhampur Bio Organics Limited","exDate":"28-Jun-2024","faceVal":"10","ind":"-","isin":"INE0I3401014","ndEndDate":"-","ndStartDate":"-","recDate":"28-Jun-2024","series":"EQ","subject":"Dividend - Rs 2.50 Per Share","symbol":"DBOL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Dhampur Bio Organics Limited","exDate":"04-Jul-2025","faceVal":"10","ind":"-","isin":"INE0I3401014","ndEndDate":"-","ndStartDate":"-","recDate":"04-Jul-2025","series":"EQ","subject":"Dividend - Rs 1.25 Per Share","symbol":"DBOL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Dhampur Bio Organics Limited","exDate":"17-Jul-2026","faceVal":"10","ind":"-","isin":"INE0I3401014","ndEndDate":"-","ndStartDate":"-","recDate":"17-Jul-2026","series":"EQ","subject":"Dividend - Rs 1.50 Per Share","symbol":"DBOL"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Dhampur Bio Organics Limited",
+    "exDate": "23-Jun-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0I3401014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "23-Jun-2023",
+    "series": "EQ",
+    "subject": "Dividend - Rs 3.50 Per Share",
+    "symbol": "DBOL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Dhampur Bio Organics Limited",
+    "exDate": "28-Jun-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0I3401014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "28-Jun-2024",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2.50 Per Share",
+    "symbol": "DBOL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Dhampur Bio Organics Limited",
+    "exDate": "04-Jul-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0I3401014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "04-Jul-2025",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.25 Per Share",
+    "symbol": "DBOL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Dhampur Bio Organics Limited",
+    "exDate": "17-Jul-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0I3401014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "17-Jul-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.50 Per Share",
+    "symbol": "DBOL"
+  }
+]

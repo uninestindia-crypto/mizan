@@ -1,1 +1,66 @@
-[{"bcEndDate":"29-Sep-2021","bcStartDate":"25-Sep-2021","caBroadcastDate":null,"comp":"Pritika Auto Industries Limited","exDate":"23-Sep-2021","faceVal":"2","ind":"-","isin":"INE583R01029","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"PRITIKAUTO"},{"bcEndDate":"29-Sep-2022","bcStartDate":"26-Sep-2022","caBroadcastDate":null,"comp":"Pritika Auto Industries Limited","exDate":"22-Sep-2022","faceVal":"2","ind":"-","isin":"INE583R01029","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"PRITIKAUTO"},{"bcEndDate":"29-Dec-2023","bcStartDate":"26-Dec-2023","caBroadcastDate":null,"comp":"Pritika Auto Industries Limited","exDate":"22-Dec-2023","faceVal":"2","ind":"-","isin":"INE583R01029","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"PRITIKAUTO"},{"bcEndDate":"17-Jul-2024","bcStartDate":"15-Jul-2024","caBroadcastDate":null,"comp":"Pritika Auto Industries Limited","exDate":"12-Jul-2024","faceVal":"2","ind":"-","isin":"INE583R01029","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"PRITIKAUTO"}]
+[
+  {
+    "bcEndDate": "29-Sep-2021",
+    "bcStartDate": "25-Sep-2021",
+    "caBroadcastDate": null,
+    "comp": "Pritika Auto Industries Limited",
+    "exDate": "23-Sep-2021",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE583R01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "PRITIKAUTO"
+  },
+  {
+    "bcEndDate": "29-Sep-2022",
+    "bcStartDate": "26-Sep-2022",
+    "caBroadcastDate": null,
+    "comp": "Pritika Auto Industries Limited",
+    "exDate": "22-Sep-2022",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE583R01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "PRITIKAUTO"
+  },
+  {
+    "bcEndDate": "29-Dec-2023",
+    "bcStartDate": "26-Dec-2023",
+    "caBroadcastDate": null,
+    "comp": "Pritika Auto Industries Limited",
+    "exDate": "22-Dec-2023",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE583R01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "PRITIKAUTO"
+  },
+  {
+    "bcEndDate": "17-Jul-2024",
+    "bcStartDate": "15-Jul-2024",
+    "caBroadcastDate": null,
+    "comp": "Pritika Auto Industries Limited",
+    "exDate": "12-Jul-2024",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE583R01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "PRITIKAUTO"
+  }
+]

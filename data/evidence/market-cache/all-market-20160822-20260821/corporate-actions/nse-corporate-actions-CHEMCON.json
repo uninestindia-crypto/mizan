@@ -1,1 +1,66 @@
-[{"bcEndDate":"28-Sep-2021","bcStartDate":"22-Sep-2021","caBroadcastDate":null,"comp":"Chemcon Speciality Chemicals Limited","exDate":"20-Sep-2021","faceVal":"10","ind":"-","isin":"INE03YM01018","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"CHEMCON"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Chemcon Speciality Chemicals Limited","exDate":"18-Jul-2022","faceVal":"10","ind":"-","isin":"INE03YM01018","ndEndDate":"-","ndStartDate":"-","recDate":"19-Jul-2022","series":"EQ","subject":"Annual General Meeting","symbol":"CHEMCON"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Chemcon Speciality Chemicals Limited","exDate":"22-Aug-2022","faceVal":"10","ind":"-","isin":"INE03YM01018","ndEndDate":"-","ndStartDate":"-","recDate":"23-Aug-2022","series":"EQ","subject":"Interim Dividend - Rs 4 Per Share","symbol":"CHEMCON"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Chemcon Speciality Chemicals Limited","exDate":"27-May-2026","faceVal":"10","ind":"-","isin":"INE03YM01018","ndEndDate":"-","ndStartDate":"-","recDate":"28-May-2026","series":"EQ","subject":"Interim Dividend - Rs 6.50 Per Share","symbol":"CHEMCON"}]
+[
+  {
+    "bcEndDate": "28-Sep-2021",
+    "bcStartDate": "22-Sep-2021",
+    "caBroadcastDate": null,
+    "comp": "Chemcon Speciality Chemicals Limited",
+    "exDate": "20-Sep-2021",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE03YM01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "CHEMCON"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Chemcon Speciality Chemicals Limited",
+    "exDate": "18-Jul-2022",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE03YM01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "19-Jul-2022",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "CHEMCON"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Chemcon Speciality Chemicals Limited",
+    "exDate": "22-Aug-2022",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE03YM01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "23-Aug-2022",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 4 Per Share",
+    "symbol": "CHEMCON"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Chemcon Speciality Chemicals Limited",
+    "exDate": "27-May-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE03YM01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "28-May-2026",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 6.50 Per Share",
+    "symbol": "CHEMCON"
+  }
+]

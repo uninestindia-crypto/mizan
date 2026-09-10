@@ -1,1 +1,34 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Allcargo Terminals Limited","exDate":"08-Sep-2023","faceVal":"2","ind":"-","isin":"INE0NN701020","ndEndDate":"-","ndStartDate":"-","recDate":"09-Sep-2023","series":"EQ","subject":"Dividend - Re 0.50 Per Share","symbol":"ATL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Allcargo Terminals Limited","exDate":"14-Nov-2025","faceVal":"2","ind":"-","isin":"INE0NN701020","ndEndDate":"-","ndStartDate":"-","recDate":"14-Nov-2025","series":"EQ","subject":"Rights 3:19 @ Premium Rs 18/-","symbol":"ATL"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Allcargo Terminals Limited",
+    "exDate": "08-Sep-2023",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0NN701020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "09-Sep-2023",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.50 Per Share",
+    "symbol": "ATL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Allcargo Terminals Limited",
+    "exDate": "14-Nov-2025",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0NN701020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "14-Nov-2025",
+    "series": "EQ",
+    "subject": "Rights 3:19 @ Premium Rs 18/-",
+    "symbol": "ATL"
+  }
+]

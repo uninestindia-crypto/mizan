@@ -1,1 +1,34 @@
-[{"bcEndDate":"29-Sep-2023","bcStartDate":"23-Sep-2023","caBroadcastDate":null,"comp":"Ashoka Metcast Limited","exDate":"22-Sep-2023","faceVal":"10","ind":"-","isin":"INE760Y01011","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"ASHOKAMET"},{"bcEndDate":"12-Sep-2024","bcStartDate":"07-Sep-2024","caBroadcastDate":null,"comp":"Ashoka Metcast Limited","exDate":"06-Sep-2024","faceVal":"10","ind":"-","isin":"INE760Y01011","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"ASHOKAMET"}]
+[
+  {
+    "bcEndDate": "29-Sep-2023",
+    "bcStartDate": "23-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Ashoka Metcast Limited",
+    "exDate": "22-Sep-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE760Y01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "ASHOKAMET"
+  },
+  {
+    "bcEndDate": "12-Sep-2024",
+    "bcStartDate": "07-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Ashoka Metcast Limited",
+    "exDate": "06-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE760Y01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "ASHOKAMET"
+  }
+]

@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Birla Precision Technologies Limited",
+    "exDate": "03-Sep-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE372E01025",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "03-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.05 Per Share",
+    "symbol": "BIRLAPREC"
+  }
+]

@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"PAKKA LIMITED","exDate":"22-Sep-2023","faceVal":"10","ind":"-","isin":"INE551D01018","ndEndDate":"-","ndStartDate":"-","recDate":"22-Sep-2023","series":"EQ","subject":"Dividend - Rs 2.40 Per Share","symbol":"PAKKA"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "PAKKA LIMITED",
+    "exDate": "22-Sep-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE551D01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "22-Sep-2023",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2.40 Per Share",
+    "symbol": "PAKKA"
+  }
+]

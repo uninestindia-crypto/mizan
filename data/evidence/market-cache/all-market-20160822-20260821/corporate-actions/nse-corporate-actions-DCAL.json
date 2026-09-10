@@ -1,1 +1,18 @@
-[{"bcEndDate":"24-Sep-2019","bcStartDate":"14-Sep-2019","caBroadcastDate":null,"comp":"Dishman Carbogen Amcis Limited","exDate":"12-Sep-2019","faceVal":"2","ind":"-","isin":"INE385W01011","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Dividend - Rs 0.20 Per Share","symbol":"DCAL"}]
+[
+  {
+    "bcEndDate": "24-Sep-2019",
+    "bcStartDate": "14-Sep-2019",
+    "caBroadcastDate": null,
+    "comp": "Dishman Carbogen Amcis Limited",
+    "exDate": "12-Sep-2019",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE385W01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Dividend - Rs 0.20 Per Share",
+    "symbol": "DCAL"
+  }
+]

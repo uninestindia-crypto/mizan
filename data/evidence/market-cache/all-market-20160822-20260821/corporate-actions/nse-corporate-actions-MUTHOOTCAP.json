@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Muthoot Capital Services Limited","exDate":"12-Jun-2017","faceVal":"10","ind":"-","isin":"INE296G01013","ndEndDate":"-","ndStartDate":"-","recDate":"13-Jun-2017","series":"EQ","subject":" Bonus 1:10","symbol":"MUTHOOTCAP"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Muthoot Capital Services Limited",
+    "exDate": "12-Jun-2017",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE296G01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "13-Jun-2017",
+    "series": "EQ",
+    "subject": " Bonus 1:10",
+    "symbol": "MUTHOOTCAP"
+  }
+]

@@ -1,1 +1,34 @@
-[{"bcEndDate":"22-Sep-2023","bcStartDate":"21-Sep-2023","caBroadcastDate":null,"comp":"Faze Three Limited","exDate":"20-Sep-2023","faceVal":"10","ind":"-","isin":"INE963C01033","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"FAZE3Q"},{"bcEndDate":"26-Sep-2024","bcStartDate":"20-Sep-2024","caBroadcastDate":null,"comp":"Faze Three Limited","exDate":"19-Sep-2024","faceVal":"10","ind":"-","isin":"INE963C01033","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"FAZE3Q"}]
+[
+  {
+    "bcEndDate": "22-Sep-2023",
+    "bcStartDate": "21-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Faze Three Limited",
+    "exDate": "20-Sep-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE963C01033",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "FAZE3Q"
+  },
+  {
+    "bcEndDate": "26-Sep-2024",
+    "bcStartDate": "20-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Faze Three Limited",
+    "exDate": "19-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE963C01033",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "FAZE3Q"
+  }
+]

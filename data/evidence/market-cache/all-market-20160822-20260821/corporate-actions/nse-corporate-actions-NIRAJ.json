@@ -1,1 +1,66 @@
-[{"bcEndDate":"30-Sep-2021","bcStartDate":"24-Sep-2021","caBroadcastDate":null,"comp":"Niraj Cement Structurals Limited","exDate":"22-Sep-2021","faceVal":"10","ind":"-","isin":"INE368I01016","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"NIRAJ"},{"bcEndDate":"29-Sep-2022","bcStartDate":"23-Sep-2022","caBroadcastDate":null,"comp":"Niraj Cement Structurals Limited","exDate":"21-Sep-2022","faceVal":"10","ind":"-","isin":"INE368I01016","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"NIRAJ"},{"bcEndDate":"26-Sep-2023","bcStartDate":"18-Sep-2023","caBroadcastDate":null,"comp":"Niraj Cement Structurals Limited","exDate":"15-Sep-2023","faceVal":"10","ind":"-","isin":"INE368I01016","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"NIRAJ"},{"bcEndDate":"26-Sep-2024","bcStartDate":"18-Sep-2024","caBroadcastDate":null,"comp":"Niraj Cement Structurals Limited","exDate":"17-Sep-2024","faceVal":"10","ind":"-","isin":"INE368I01016","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"NIRAJ"}]
+[
+  {
+    "bcEndDate": "30-Sep-2021",
+    "bcStartDate": "24-Sep-2021",
+    "caBroadcastDate": null,
+    "comp": "Niraj Cement Structurals Limited",
+    "exDate": "22-Sep-2021",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE368I01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "NIRAJ"
+  },
+  {
+    "bcEndDate": "29-Sep-2022",
+    "bcStartDate": "23-Sep-2022",
+    "caBroadcastDate": null,
+    "comp": "Niraj Cement Structurals Limited",
+    "exDate": "21-Sep-2022",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE368I01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "NIRAJ"
+  },
+  {
+    "bcEndDate": "26-Sep-2023",
+    "bcStartDate": "18-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Niraj Cement Structurals Limited",
+    "exDate": "15-Sep-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE368I01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "NIRAJ"
+  },
+  {
+    "bcEndDate": "26-Sep-2024",
+    "bcStartDate": "18-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Niraj Cement Structurals Limited",
+    "exDate": "17-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE368I01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "NIRAJ"
+  }
+]

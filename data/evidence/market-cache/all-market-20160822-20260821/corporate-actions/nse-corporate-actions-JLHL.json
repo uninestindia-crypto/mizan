@@ -1,1 +1,66 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Jupiter Life Line Hospitals Limited","exDate":"02-Aug-2024","faceVal":"2","ind":"-","isin":"INE682M01012","ndEndDate":"-","ndStartDate":"-","recDate":"02-Aug-2024","series":"EQ","subject":"Dividend - Re 1 Per Share","symbol":"JLHL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Jupiter Life Line Hospitals Limited","exDate":"04-Jul-2025","faceVal":"2","ind":"-","isin":"INE682M01012","ndEndDate":"-","ndStartDate":"-","recDate":"04-Jul-2025","series":"EQ","subject":"Dividend - Re 1 Per Share","symbol":"JLHL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Jupiter Life Line Hospitals Limited","exDate":"22-May-2026","faceVal":"2","ind":"-","isin":"INE682M01012","ndEndDate":"-","ndStartDate":"-","recDate":"22-May-2026","series":"EQ","subject":"Interim Dividend - Re 1 Per Share","symbol":"JLHL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Jupiter Life Line Hospitals Limited","exDate":"24-Jul-2026","faceVal":"2","ind":"-","isin":"INE682M01012","ndEndDate":"-","ndStartDate":"-","recDate":"24-Jul-2026","series":"EQ","subject":"Face Value Split (Sub-Division) - From Rs 10/- Per Share To Rs 2/- Per Share","symbol":"JLHL"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Jupiter Life Line Hospitals Limited",
+    "exDate": "02-Aug-2024",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE682M01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "02-Aug-2024",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "JLHL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Jupiter Life Line Hospitals Limited",
+    "exDate": "04-Jul-2025",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE682M01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "04-Jul-2025",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "JLHL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Jupiter Life Line Hospitals Limited",
+    "exDate": "22-May-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE682M01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "22-May-2026",
+    "series": "EQ",
+    "subject": "Interim Dividend - Re 1 Per Share",
+    "symbol": "JLHL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Jupiter Life Line Hospitals Limited",
+    "exDate": "24-Jul-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE682M01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "24-Jul-2026",
+    "series": "EQ",
+    "subject": "Face Value Split (Sub-Division) - From Rs 10/- Per Share To Rs 2/- Per Share",
+    "symbol": "JLHL"
+  }
+]

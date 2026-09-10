@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Aegis Vopak Terminals Limited","exDate":"10-Jul-2026","faceVal":"10","ind":"-","isin":"INE0INX01018","ndEndDate":"-","ndStartDate":"-","recDate":"10-Jul-2026","series":"EQ","subject":"Dividend - Rs 0.20 Per Share","symbol":"AEGISVOPAK"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Aegis Vopak Terminals Limited",
+    "exDate": "10-Jul-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0INX01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "10-Jul-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 0.20 Per Share",
+    "symbol": "AEGISVOPAK"
+  }
+]

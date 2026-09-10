@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Sterling and Wilson Renewable Energy Limited","exDate":"24-Feb-2020","faceVal":"1","ind":"-","isin":"INE00M201021","ndEndDate":"-","ndStartDate":"-","recDate":"25-Feb-2020","series":"EQ","subject":" Interim Dividend - Rs 6 Per Share","symbol":"SWSOLAR"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Sterling and Wilson Renewable Energy Limited",
+    "exDate": "24-Feb-2020",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE00M201021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "25-Feb-2020",
+    "series": "EQ",
+    "subject": " Interim Dividend - Rs 6 Per Share",
+    "symbol": "SWSOLAR"
+  }
+]

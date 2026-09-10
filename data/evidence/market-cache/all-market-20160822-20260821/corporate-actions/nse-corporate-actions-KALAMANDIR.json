@@ -1,1 +1,50 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Sai Silks (Kalamandir) Limited","exDate":"20-Sep-2024","faceVal":"2","ind":"-","isin":"INE438K01021","ndEndDate":"-","ndStartDate":"-","recDate":"20-Sep-2024","series":"EQ","subject":"Dividend - Re 1 Per Share","symbol":"KALAMANDIR"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Sai Silks (Kalamandir) Limited","exDate":"22-Aug-2025","faceVal":"2","ind":"-","isin":"INE438K01021","ndEndDate":"-","ndStartDate":"-","recDate":"22-Aug-2025","series":"EQ","subject":"Dividend - Re 1 Per Share","symbol":"KALAMANDIR"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Sai Silks (Kalamandir) Limited","exDate":"03-Aug-2026","faceVal":"2","ind":"-","isin":"INE438K01021","ndEndDate":"-","ndStartDate":"-","recDate":"03-Aug-2026","series":"EQ","subject":"Dividend - Rs 1.50 Per Share","symbol":"KALAMANDIR"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Sai Silks (Kalamandir) Limited",
+    "exDate": "20-Sep-2024",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE438K01021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "20-Sep-2024",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "KALAMANDIR"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Sai Silks (Kalamandir) Limited",
+    "exDate": "22-Aug-2025",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE438K01021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "22-Aug-2025",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "KALAMANDIR"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Sai Silks (Kalamandir) Limited",
+    "exDate": "03-Aug-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE438K01021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "03-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.50 Per Share",
+    "symbol": "KALAMANDIR"
+  }
+]

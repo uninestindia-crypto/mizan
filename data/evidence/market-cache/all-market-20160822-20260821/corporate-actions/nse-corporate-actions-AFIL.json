@@ -1,1 +1,34 @@
-[{"bcEndDate":"28-Sep-2024","bcStartDate":"22-Sep-2024","caBroadcastDate":null,"comp":"Akme Fintrade (India) Limited","exDate":"20-Sep-2024","faceVal":"1","ind":"-","isin":"INE916Y01019","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"AFIL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Akme Fintrade (India) Limited","exDate":"17-Apr-2025","faceVal":"1","ind":"-","isin":"INE916Y01019","ndEndDate":"-","ndStartDate":"-","recDate":"18-Apr-2025","series":"EQ","subject":"Face Value Split (Sub-Division) - From Rs 10/- Per Share To Re 1/- Per Share","symbol":"AFIL"}]
+[
+  {
+    "bcEndDate": "28-Sep-2024",
+    "bcStartDate": "22-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Akme Fintrade (India) Limited",
+    "exDate": "20-Sep-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE916Y01019",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "AFIL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Akme Fintrade (India) Limited",
+    "exDate": "17-Apr-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE916Y01019",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "18-Apr-2025",
+    "series": "EQ",
+    "subject": "Face Value Split (Sub-Division) - From Rs 10/- Per Share To Re 1/- Per Share",
+    "symbol": "AFIL"
+  }
+]

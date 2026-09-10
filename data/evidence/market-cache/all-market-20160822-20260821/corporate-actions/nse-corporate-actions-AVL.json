@@ -1,1 +1,34 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Aditya Vision Limited","exDate":"08-Jul-2025","faceVal":"1","ind":"-","isin":"INE679V01027","ndEndDate":"-","ndStartDate":"-","recDate":"08-Jul-2025","series":"EQ","subject":"Annual General Meeting/Dividend - Rs 1.10 Per Share","symbol":"AVL"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Aditya Vision Limited",
+    "exDate": "08-Jul-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE679V01027",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "08-Jul-2025",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Rs 1.10 Per Share",
+    "symbol": "AVL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Aditya Vision Limited",
+    "exDate": "25-Aug-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE679V01027",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "26-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.25 Per Share",
+    "symbol": "AVL"
+  }
+]

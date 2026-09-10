@@ -1,1 +1,50 @@
-[{"bcEndDate":"07-Sep-2020","bcStartDate":"31-Aug-2020","caBroadcastDate":null,"comp":"Ramco Systems Limited","exDate":"27-Aug-2020","faceVal":"10","ind":"-","isin":"INE246B01019","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"RAMCOSYS"},{"bcEndDate":"19-Aug-2021","bcStartDate":"12-Aug-2021","caBroadcastDate":null,"comp":"Ramco Systems Limited","exDate":"10-Aug-2021","faceVal":"10","ind":"-","isin":"INE246B01019","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"RAMCOSYS"},{"bcEndDate":"10-Aug-2022","bcStartDate":"03-Aug-2022","caBroadcastDate":null,"comp":"Ramco Systems Limited","exDate":"01-Aug-2022","faceVal":"10","ind":"-","isin":"INE246B01019","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"RAMCOSYS"}]
+[
+  {
+    "bcEndDate": "07-Sep-2020",
+    "bcStartDate": "31-Aug-2020",
+    "caBroadcastDate": null,
+    "comp": "Ramco Systems Limited",
+    "exDate": "27-Aug-2020",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE246B01019",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "RAMCOSYS"
+  },
+  {
+    "bcEndDate": "19-Aug-2021",
+    "bcStartDate": "12-Aug-2021",
+    "caBroadcastDate": null,
+    "comp": "Ramco Systems Limited",
+    "exDate": "10-Aug-2021",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE246B01019",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "RAMCOSYS"
+  },
+  {
+    "bcEndDate": "10-Aug-2022",
+    "bcStartDate": "03-Aug-2022",
+    "caBroadcastDate": null,
+    "comp": "Ramco Systems Limited",
+    "exDate": "01-Aug-2022",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE246B01019",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "RAMCOSYS"
+  }
+]

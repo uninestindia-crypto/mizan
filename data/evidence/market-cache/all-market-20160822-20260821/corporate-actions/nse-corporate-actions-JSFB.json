@@ -1,1 +1,18 @@
-[{"bcEndDate":"19-Jun-2024","bcStartDate":"12-Jun-2024","caBroadcastDate":null,"comp":"Jana Small Finance Bank Limited","exDate":"11-Jun-2024","faceVal":"10","ind":"-","isin":"INE953L01027","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"JSFB"}]
+[
+  {
+    "bcEndDate": "19-Jun-2024",
+    "bcStartDate": "12-Jun-2024",
+    "caBroadcastDate": null,
+    "comp": "Jana Small Finance Bank Limited",
+    "exDate": "11-Jun-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE953L01027",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "JSFB"
+  }
+]

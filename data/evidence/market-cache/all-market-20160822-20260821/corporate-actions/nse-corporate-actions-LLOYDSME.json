@@ -1,1 +1,66 @@
-[{"bcEndDate":"29-Jul-2024","bcStartDate":"23-Jul-2024","caBroadcastDate":null,"comp":"Lloyds Metals And Energy Limited","exDate":"22-Jul-2024","faceVal":"1","ind":"-","isin":"INE281B01032","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Extra Ordinary General Meeting","symbol":"LLOYDSME"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Lloyds Metals And Energy Limited","exDate":"13-Aug-2024","faceVal":"1","ind":"-","isin":"INE281B01032","ndEndDate":"-","ndStartDate":"-","recDate":"13-Aug-2024","series":"EQ","subject":"Annual General Meeting/Dividend - Re 1 Per Share","symbol":"LLOYDSME"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Lloyds Metals And Energy Limited","exDate":"26-May-2025","faceVal":"1","ind":"-","isin":"INE281B01032","ndEndDate":"-","ndStartDate":"-","recDate":"26-May-2025","series":"EQ","subject":"Dividend - Re 1 Per Share","symbol":"LLOYDSME"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Lloyds Metals And Energy Limited","exDate":"12-Jun-2026","faceVal":"1","ind":"-","isin":"INE281B01032","ndEndDate":"-","ndStartDate":"-","recDate":"12-Jun-2026","series":"EQ","subject":"Dividend - Rs 1 Per Share","symbol":"LLOYDSME"}]
+[
+  {
+    "bcEndDate": "29-Jul-2024",
+    "bcStartDate": "23-Jul-2024",
+    "caBroadcastDate": null,
+    "comp": "Lloyds Metals And Energy Limited",
+    "exDate": "22-Jul-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE281B01032",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Extra Ordinary General Meeting",
+    "symbol": "LLOYDSME"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Lloyds Metals And Energy Limited",
+    "exDate": "13-Aug-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE281B01032",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "13-Aug-2024",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Re 1 Per Share",
+    "symbol": "LLOYDSME"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Lloyds Metals And Energy Limited",
+    "exDate": "26-May-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE281B01032",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "26-May-2025",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "LLOYDSME"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Lloyds Metals And Energy Limited",
+    "exDate": "12-Jun-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE281B01032",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "12-Jun-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1 Per Share",
+    "symbol": "LLOYDSME"
+  }
+]

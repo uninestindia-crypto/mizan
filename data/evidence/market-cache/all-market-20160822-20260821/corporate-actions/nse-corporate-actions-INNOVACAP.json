@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Innova Captab Limited","exDate":"30-Jan-2026","faceVal":"10","ind":"-","isin":"INE0DUT01020","ndEndDate":"-","ndStartDate":"-","recDate":"30-Jan-2026","series":"EQ","subject":"Interim Dividend - Rs 2 Per Share","symbol":"INNOVACAP"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Innova Captab Limited",
+    "exDate": "30-Jan-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0DUT01020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "30-Jan-2026",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 2 Per Share",
+    "symbol": "INNOVACAP"
+  }
+]

@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Menon Pistons Limited","exDate":"28-Jul-2026","faceVal":"1","ind":"-","isin":"INE650G01029","ndEndDate":"-","ndStartDate":"-","recDate":"28-Jul-2026","series":"EQ","subject":"Dividend - Re 1 Per Share","symbol":"MENNPIS"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Menon Pistons Limited",
+    "exDate": "28-Jul-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE650G01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "28-Jul-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "MENNPIS"
+  }
+]

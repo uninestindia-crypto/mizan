@@ -1,1 +1,34 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Ganesh Consumer Products Limited","exDate":"14-Nov-2025","faceVal":"10","ind":"-","isin":"INE652V01016","ndEndDate":"-","ndStartDate":"-","recDate":"14-Nov-2025","series":"EQ","subject":"Interim Dividend - Rs 2.50 Per Share","symbol":"GANESHCP"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Ganesh Consumer Products Limited","exDate":"14-Aug-2026","faceVal":"10","ind":"-","isin":"INE652V01016","ndEndDate":"-","ndStartDate":"-","recDate":"14-Aug-2026","series":"EQ","subject":"Dividend - Rs 2.50 Per Share","symbol":"GANESHCP"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Ganesh Consumer Products Limited",
+    "exDate": "14-Nov-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE652V01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "14-Nov-2025",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 2.50 Per Share",
+    "symbol": "GANESHCP"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Ganesh Consumer Products Limited",
+    "exDate": "14-Aug-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE652V01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "14-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2.50 Per Share",
+    "symbol": "GANESHCP"
+  }
+]

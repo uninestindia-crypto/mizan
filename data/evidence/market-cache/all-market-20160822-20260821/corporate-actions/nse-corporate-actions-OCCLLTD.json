@@ -1,1 +1,50 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"OCCL Limited","exDate":"21-Jul-2025","faceVal":"2","ind":"-","isin":"INE0PK601023","ndEndDate":"-","ndStartDate":"-","recDate":"21-Jul-2025","series":"EQ","subject":"Dividend - Rs 1.50 Per Share","symbol":"OCCLLTD"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"OCCL Limited","exDate":"07-Nov-2025","faceVal":"2","ind":"-","isin":"INE0PK601023","ndEndDate":"-","ndStartDate":"-","recDate":"07-Nov-2025","series":"EQ","subject":"Interim Dividend - Re 1 Per Share","symbol":"OCCLLTD"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"OCCL Limited","exDate":"20-Aug-2026","faceVal":"2","ind":"-","isin":"INE0PK601023","ndEndDate":"-","ndStartDate":"-","recDate":"20-Aug-2026","series":"EQ","subject":"Dividend - Rs 1.80 Per Share","symbol":"OCCLLTD"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "OCCL Limited",
+    "exDate": "21-Jul-2025",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0PK601023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "21-Jul-2025",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.50 Per Share",
+    "symbol": "OCCLLTD"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "OCCL Limited",
+    "exDate": "07-Nov-2025",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0PK601023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "07-Nov-2025",
+    "series": "EQ",
+    "subject": "Interim Dividend - Re 1 Per Share",
+    "symbol": "OCCLLTD"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "OCCL Limited",
+    "exDate": "20-Aug-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0PK601023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "20-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.80 Per Share",
+    "symbol": "OCCLLTD"
+  }
+]

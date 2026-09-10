@@ -1,1 +1,18 @@
-[{"bcEndDate":"06-Sep-2024","bcStartDate":"30-Aug-2024","caBroadcastDate":null,"comp":"Digidrive Distributors Limited","exDate":"29-Aug-2024","faceVal":"10","ind":"-","isin":"INE0PSC01024","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"DIGIDRIVE"}]
+[
+  {
+    "bcEndDate": "06-Sep-2024",
+    "bcStartDate": "30-Aug-2024",
+    "caBroadcastDate": null,
+    "comp": "Digidrive Distributors Limited",
+    "exDate": "29-Aug-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0PSC01024",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "DIGIDRIVE"
+  }
+]

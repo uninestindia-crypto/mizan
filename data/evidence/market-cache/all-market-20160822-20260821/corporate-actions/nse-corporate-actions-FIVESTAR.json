@@ -1,1 +1,34 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Five-Star Business Finance Limited","exDate":"14-Aug-2025","faceVal":"1","ind":"-","isin":"INE128S01021","ndEndDate":"-","ndStartDate":"-","recDate":"14-Aug-2025","series":"EQ","subject":"Dividend - Rs 2 Per Share","symbol":"FIVESTAR"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Five-Star Business Finance Limited","exDate":"31-Jul-2026","faceVal":"1","ind":"-","isin":"INE128S01021","ndEndDate":"-","ndStartDate":"-","recDate":"31-Jul-2026","series":"EQ","subject":"Dividend - Rs 2 Per Share","symbol":"FIVESTAR"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Five-Star Business Finance Limited",
+    "exDate": "14-Aug-2025",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE128S01021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "14-Aug-2025",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2 Per Share",
+    "symbol": "FIVESTAR"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Five-Star Business Finance Limited",
+    "exDate": "31-Jul-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE128S01021",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "31-Jul-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2 Per Share",
+    "symbol": "FIVESTAR"
+  }
+]

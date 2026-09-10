@@ -1,1 +1,34 @@
-[{"bcEndDate":"22-Aug-2017","bcStartDate":"18-Aug-2017","caBroadcastDate":null,"comp":"Flexituff Ventures International Limited","exDate":"14-Aug-2017","faceVal":"10","ind":"-","isin":"INE060J01017","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"FLEXITUFF"},{"bcEndDate":"19-Sep-2018","bcStartDate":"08-Sep-2018","caBroadcastDate":null,"comp":"Flexituff Ventures International Limited","exDate":"06-Sep-2018","faceVal":"10","ind":"-","isin":"INE060J01017","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"FLEXITUFF"}]
+[
+  {
+    "bcEndDate": "22-Aug-2017",
+    "bcStartDate": "18-Aug-2017",
+    "caBroadcastDate": null,
+    "comp": "Flexituff Ventures International Limited",
+    "exDate": "14-Aug-2017",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE060J01017",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "FLEXITUFF"
+  },
+  {
+    "bcEndDate": "19-Sep-2018",
+    "bcStartDate": "08-Sep-2018",
+    "caBroadcastDate": null,
+    "comp": "Flexituff Ventures International Limited",
+    "exDate": "06-Sep-2018",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE060J01017",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "FLEXITUFF"
+  }
+]

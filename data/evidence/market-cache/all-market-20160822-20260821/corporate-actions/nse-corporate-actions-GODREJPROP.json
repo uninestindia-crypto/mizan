@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Godrej Properties Limited","exDate":"28-Jul-2026","faceVal":"5","ind":"-","isin":"INE484J01019","ndEndDate":"-","ndStartDate":"-","recDate":"28-Jul-2026","series":"EQ","subject":"Dividend - Rs 10 Per Share","symbol":"GODREJPROP"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Godrej Properties Limited",
+    "exDate": "28-Jul-2026",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE484J01019",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "28-Jul-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 10 Per Share",
+    "symbol": "GODREJPROP"
+  }
+]

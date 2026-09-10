@@ -1,1 +1,66 @@
-[{"bcEndDate":"30-Sep-2016","bcStartDate":"24-Sep-2016","caBroadcastDate":null,"comp":"Indosolar Limited","exDate":"22-Sep-2016","faceVal":"10","ind":"-","isin":"INE866K01023","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"WAAREEINDO"},{"bcEndDate":"28-Sep-2017","bcStartDate":"22-Sep-2017","caBroadcastDate":null,"comp":"Indosolar Limited","exDate":"20-Sep-2017","faceVal":"10","ind":"-","isin":"INE866K01023","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"WAAREEINDO"},{"bcEndDate":"28-Sep-2018","bcStartDate":"22-Sep-2018","caBroadcastDate":null,"comp":"Indosolar Limited","exDate":"19-Sep-2018","faceVal":"10","ind":"-","isin":"INE866K01023","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"WAAREEINDO"},{"bcEndDate":"28-Sep-2020","bcStartDate":"22-Sep-2020","caBroadcastDate":null,"comp":"Indosolar Limited","exDate":"18-Sep-2020","faceVal":"10","ind":"-","isin":"INE866K01023","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"WAAREEINDO"}]
+[
+  {
+    "bcEndDate": "30-Sep-2016",
+    "bcStartDate": "24-Sep-2016",
+    "caBroadcastDate": null,
+    "comp": "Indosolar Limited",
+    "exDate": "22-Sep-2016",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE866K01023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "WAAREEINDO"
+  },
+  {
+    "bcEndDate": "28-Sep-2017",
+    "bcStartDate": "22-Sep-2017",
+    "caBroadcastDate": null,
+    "comp": "Indosolar Limited",
+    "exDate": "20-Sep-2017",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE866K01023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "WAAREEINDO"
+  },
+  {
+    "bcEndDate": "28-Sep-2018",
+    "bcStartDate": "22-Sep-2018",
+    "caBroadcastDate": null,
+    "comp": "Indosolar Limited",
+    "exDate": "19-Sep-2018",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE866K01023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "WAAREEINDO"
+  },
+  {
+    "bcEndDate": "28-Sep-2020",
+    "bcStartDate": "22-Sep-2020",
+    "caBroadcastDate": null,
+    "comp": "Indosolar Limited",
+    "exDate": "18-Sep-2020",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE866K01023",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "WAAREEINDO"
+  }
+]

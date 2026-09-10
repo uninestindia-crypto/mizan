@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Industrial & Prudential Investment Company Limited","exDate":"12-Aug-2026","faceVal":"10","ind":"-","isin":"INE620D01011","ndEndDate":"-","ndStartDate":"-","recDate":"12-Aug-2026","series":"EQ","subject":"Dividend - Rs 120 Per Share","symbol":"INDPRUD"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Industrial & Prudential Investment Company Limited",
+    "exDate": "12-Aug-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE620D01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "12-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 120 Per Share",
+    "symbol": "INDPRUD"
+  }
+]

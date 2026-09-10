@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Valiant Laboratories Limited","exDate":"18-Jul-2025","faceVal":"10","ind":"-","isin":"INE0JWS01017","ndEndDate":"-","ndStartDate":"-","recDate":"19-Jul-2025","series":"EQ","subject":"Rights 1:4 @ Premium Rs 65/-","symbol":"VALIANTLAB"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Valiant Laboratories Limited",
+    "exDate": "18-Jul-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0JWS01017",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "19-Jul-2025",
+    "series": "EQ",
+    "subject": "Rights 1:4 @ Premium Rs 65/-",
+    "symbol": "VALIANTLAB"
+  }
+]

@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Spandana Sphoorty Financial Limited","exDate":"24-Jul-2025","faceVal":"10","ind":"-","isin":"INE572J01011","ndEndDate":"-","ndStartDate":"-","recDate":"24-Jul-2025","series":"EQ","subject":"Rights 10:41 @ Premium Rs 220/-","symbol":"SPANDANA"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Spandana Sphoorty Financial Limited",
+    "exDate": "24-Jul-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE572J01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "24-Jul-2025",
+    "series": "EQ",
+    "subject": "Rights 10:41 @ Premium Rs 220/-",
+    "symbol": "SPANDANA"
+  }
+]

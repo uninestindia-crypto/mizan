@@ -1,1 +1,34 @@
-[{"bcEndDate":"09-Sep-2024","bcStartDate":"03-Sep-2024","caBroadcastDate":null,"comp":"Lancor Holdings Limited","exDate":"02-Sep-2024","faceVal":"2","ind":"-","isin":"INE572G01025","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Re 0.20 Per Share","symbol":"LANCORHOL"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Lancor Holdings Limited","exDate":"16-Sep-2025","faceVal":"2","ind":"-","isin":"INE572G01025","ndEndDate":"-","ndStartDate":"-","recDate":"16-Sep-2025","series":"EQ","subject":"Dividend - Rs 0.20 Per Share","symbol":"LANCORHOL"}]
+[
+  {
+    "bcEndDate": "09-Sep-2024",
+    "bcStartDate": "03-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Lancor Holdings Limited",
+    "exDate": "02-Sep-2024",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE572G01025",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Re 0.20 Per Share",
+    "symbol": "LANCORHOL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Lancor Holdings Limited",
+    "exDate": "16-Sep-2025",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE572G01025",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "16-Sep-2025",
+    "series": "EQ",
+    "subject": "Dividend - Rs 0.20 Per Share",
+    "symbol": "LANCORHOL"
+  }
+]

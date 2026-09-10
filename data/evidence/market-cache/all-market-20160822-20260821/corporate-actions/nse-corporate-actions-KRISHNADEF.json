@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Krishna Defence and Allied Industries Limited","exDate":"08-Jul-2026","faceVal":"10","ind":"-","isin":"INE0J5601015","ndEndDate":"-","ndStartDate":"-","recDate":"08-Jul-2026","series":"EQ","subject":"Dividend - Rs 1.25 Per Share","symbol":"KRISHNADEF"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Krishna Defence and Allied Industries Limited",
+    "exDate": "08-Jul-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE0J5601015",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "08-Jul-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.25 Per Share",
+    "symbol": "KRISHNADEF"
+  }
+]

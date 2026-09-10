@@ -1,1 +1,50 @@
-[{"bcEndDate":"29-Sep-2023","bcStartDate":"22-Sep-2023","caBroadcastDate":null,"comp":"Lexus Granito (India) Limited","exDate":"21-Sep-2023","faceVal":"10","ind":"-","isin":"INE500X01013","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"LEXUS"},{"bcEndDate":"27-Sep-2024","bcStartDate":"24-Sep-2024","caBroadcastDate":null,"comp":"Lexus Granito (India) Limited","exDate":"23-Sep-2024","faceVal":"10","ind":"-","isin":"INE500X01013","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"LEXUS"},{"bcEndDate":"25-Oct-2024","bcStartDate":"23-Oct-2024","caBroadcastDate":null,"comp":"Lexus Granito (India) Limited","exDate":"22-Oct-2024","faceVal":"10","ind":"-","isin":"INE500X01013","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Extra Ordinary General Meeting","symbol":"LEXUS"}]
+[
+  {
+    "bcEndDate": "29-Sep-2023",
+    "bcStartDate": "22-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Lexus Granito (India) Limited",
+    "exDate": "21-Sep-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE500X01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "LEXUS"
+  },
+  {
+    "bcEndDate": "27-Sep-2024",
+    "bcStartDate": "24-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Lexus Granito (India) Limited",
+    "exDate": "23-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE500X01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "LEXUS"
+  },
+  {
+    "bcEndDate": "25-Oct-2024",
+    "bcStartDate": "23-Oct-2024",
+    "caBroadcastDate": null,
+    "comp": "Lexus Granito (India) Limited",
+    "exDate": "22-Oct-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE500X01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Extra Ordinary General Meeting",
+    "symbol": "LEXUS"
+  }
+]

@@ -1,1 +1,34 @@
-[{"bcEndDate":"28-Sep-2023","bcStartDate":"25-Sep-2023","caBroadcastDate":null,"comp":"Lords Chloro Alkali Limited","exDate":"22-Sep-2023","faceVal":"10","ind":"-","isin":"INE846D01012","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"LORDSCHLO"},{"bcEndDate":"23-Sep-2024","bcStartDate":"17-Sep-2024","caBroadcastDate":null,"comp":"Lords Chloro Alkali Limited","exDate":"13-Sep-2024","faceVal":"10","ind":"-","isin":"INE846D01012","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"LORDSCHLO"}]
+[
+  {
+    "bcEndDate": "28-Sep-2023",
+    "bcStartDate": "25-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Lords Chloro Alkali Limited",
+    "exDate": "22-Sep-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE846D01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "LORDSCHLO"
+  },
+  {
+    "bcEndDate": "23-Sep-2024",
+    "bcStartDate": "17-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Lords Chloro Alkali Limited",
+    "exDate": "13-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE846D01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "LORDSCHLO"
+  }
+]

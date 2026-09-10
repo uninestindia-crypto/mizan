@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Dr Agarwals Eye Hospital Limited",
+    "exDate": "02-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE934C01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "02-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 4 Per Share",
+    "symbol": "DRAGARWQ"
+  }
+]

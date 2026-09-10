@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Tamboli Industries Limited","exDate":"19-Aug-2026","faceVal":"10","ind":"-","isin":"INE864J01012","ndEndDate":"-","ndStartDate":"-","recDate":"19-Aug-2026","series":"EQ","subject":"Dividend - Rs 1.20 Per Share","symbol":"TAMBOLIIN"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Tamboli Industries Limited",
+    "exDate": "19-Aug-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE864J01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "19-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.20 Per Share",
+    "symbol": "TAMBOLIIN"
+  }
+]

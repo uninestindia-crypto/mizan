@@ -1,1 +1,66 @@
-[{"bcEndDate":"30-Sep-2021","bcStartDate":"24-Sep-2021","caBroadcastDate":null,"comp":"Andrew Yule & Company Limited","exDate":"22-Sep-2021","faceVal":"2","ind":"-","isin":"INE449C01025","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"ANDREWYU"},{"bcEndDate":"29-Sep-2022","bcStartDate":"23-Sep-2022","caBroadcastDate":null,"comp":"Andrew Yule & Company Limited","exDate":"21-Sep-2022","faceVal":"2","ind":"-","isin":"INE449C01025","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"ANDREWYU"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Andrew Yule & Company Limited","exDate":"24-Aug-2023","faceVal":"2","ind":"-","isin":"INE449C01025","ndEndDate":"-","ndStartDate":"-","recDate":"24-Aug-2023","series":"EQ","subject":"Dividend - Re 0.007 Per Share","symbol":"ANDREWYU"},{"bcEndDate":"31-Aug-2023","bcStartDate":"25-Aug-2023","caBroadcastDate":null,"comp":"Andrew Yule & Company Limited","exDate":"24-Aug-2023","faceVal":"2","ind":"-","isin":"INE449C01025","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"ANDREWYU"}]
+[
+  {
+    "bcEndDate": "30-Sep-2021",
+    "bcStartDate": "24-Sep-2021",
+    "caBroadcastDate": null,
+    "comp": "Andrew Yule & Company Limited",
+    "exDate": "22-Sep-2021",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE449C01025",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "ANDREWYU"
+  },
+  {
+    "bcEndDate": "29-Sep-2022",
+    "bcStartDate": "23-Sep-2022",
+    "caBroadcastDate": null,
+    "comp": "Andrew Yule & Company Limited",
+    "exDate": "21-Sep-2022",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE449C01025",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "ANDREWYU"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Andrew Yule & Company Limited",
+    "exDate": "24-Aug-2023",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE449C01025",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "24-Aug-2023",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.007 Per Share",
+    "symbol": "ANDREWYU"
+  },
+  {
+    "bcEndDate": "31-Aug-2023",
+    "bcStartDate": "25-Aug-2023",
+    "caBroadcastDate": null,
+    "comp": "Andrew Yule & Company Limited",
+    "exDate": "24-Aug-2023",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE449C01025",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "ANDREWYU"
+  }
+]

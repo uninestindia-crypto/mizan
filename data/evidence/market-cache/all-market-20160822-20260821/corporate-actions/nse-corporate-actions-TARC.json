@@ -1,1 +1,34 @@
-[{"bcEndDate":"21-Dec-2021","bcStartDate":"16-Dec-2021","caBroadcastDate":null,"comp":"TARC Limited","exDate":"14-Dec-2021","faceVal":"2","ind":"-","isin":"INE0EK901012","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting","symbol":"TARC"},{"bcEndDate":"30-Sep-2022","bcStartDate":"26-Sep-2022","caBroadcastDate":null,"comp":"TARC Limited","exDate":"22-Sep-2022","faceVal":"2","ind":"-","isin":"INE0EK901012","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"TARC"}]
+[
+  {
+    "bcEndDate": "21-Dec-2021",
+    "bcStartDate": "16-Dec-2021",
+    "caBroadcastDate": null,
+    "comp": "TARC Limited",
+    "exDate": "14-Dec-2021",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0EK901012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
+    "symbol": "TARC"
+  },
+  {
+    "bcEndDate": "30-Sep-2022",
+    "bcStartDate": "26-Sep-2022",
+    "caBroadcastDate": null,
+    "comp": "TARC Limited",
+    "exDate": "22-Sep-2022",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0EK901012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "TARC"
+  }
+]

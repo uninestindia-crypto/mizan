@@ -1,1 +1,18 @@
-[{"bcEndDate":"19-Sep-2024","bcStartDate":"13-Sep-2024","caBroadcastDate":null,"comp":"Juniper Hotels Limited","exDate":"12-Sep-2024","faceVal":"10","ind":"-","isin":"INE696F01016","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting","symbol":"JUNIPER"}]
+[
+  {
+    "bcEndDate": "19-Sep-2024",
+    "bcStartDate": "13-Sep-2024",
+    "caBroadcastDate": null,
+    "comp": "Juniper Hotels Limited",
+    "exDate": "12-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE696F01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
+    "symbol": "JUNIPER"
+  }
+]

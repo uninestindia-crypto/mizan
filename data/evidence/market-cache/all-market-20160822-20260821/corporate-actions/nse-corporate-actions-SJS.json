@@ -1,1 +1,50 @@
-[{"bcEndDate":"20-Aug-2024","bcStartDate":"14-Aug-2024","caBroadcastDate":null,"comp":"S.J.S. Enterprises Limited","exDate":"13-Aug-2024","faceVal":"10","ind":"-","isin":"INE284S01014","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Rs 2 Per Share","symbol":"SJS"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"S.J.S. Enterprises Limited","exDate":"09-Jul-2025","faceVal":"10","ind":"-","isin":"INE284S01014","ndEndDate":"-","ndStartDate":"-","recDate":"09-Jul-2025","series":"EQ","subject":"Dividend - Rs 2.50 Per Share","symbol":"SJS"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"S.J.S. Enterprises Limited","exDate":"25-Jun-2026","faceVal":"10","ind":"-","isin":"INE284S01014","ndEndDate":"-","ndStartDate":"-","recDate":"26-Jun-2026","series":"EQ","subject":"Dividend - Rs 3.50 Per Share","symbol":"SJS"}]
+[
+  {
+    "bcEndDate": "20-Aug-2024",
+    "bcStartDate": "14-Aug-2024",
+    "caBroadcastDate": null,
+    "comp": "S.J.S. Enterprises Limited",
+    "exDate": "13-Aug-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE284S01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Rs 2 Per Share",
+    "symbol": "SJS"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "S.J.S. Enterprises Limited",
+    "exDate": "09-Jul-2025",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE284S01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "09-Jul-2025",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2.50 Per Share",
+    "symbol": "SJS"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "S.J.S. Enterprises Limited",
+    "exDate": "25-Jun-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE284S01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "26-Jun-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 3.50 Per Share",
+    "symbol": "SJS"
+  }
+]

@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Haldyn Glass Limited",
+    "exDate": "28-Aug-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE506D01020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "28-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.70 Per Share",
+    "symbol": "HALDYNGL"
+  }
+]

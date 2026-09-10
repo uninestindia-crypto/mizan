@@ -1,1 +1,66 @@
-[{"bcEndDate":"12-Aug-2021","bcStartDate":"06-Aug-2021","caBroadcastDate":null,"comp":"Goodyear India Limited","exDate":"04-Aug-2021","faceVal":"10","ind":"-","isin":"INE533A01012","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":" Annual General Meeting/Dividend - Rs 18 Per Share Special Dividend Rs 80 Per Share","symbol":"GOODYEAR"},{"bcEndDate":"01-Aug-2022","bcStartDate":"26-Jul-2022","caBroadcastDate":null,"comp":"Goodyear India Limited","exDate":"22-Jul-2022","faceVal":"10","ind":"-","isin":"INE533A01012","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Dividend - Rs 20 Per Share/Special Dividend- Rs 80 Per Share","symbol":"GOODYEAR"},{"bcEndDate":"02-Aug-2023","bcStartDate":"27-Jul-2023","caBroadcastDate":null,"comp":"Goodyear India Limited","exDate":"26-Jul-2023","faceVal":"10","ind":"-","isin":"INE533A01012","ndEndDate":"-","ndStartDate":"-","recDate":"-","series":"EQ","subject":"Annual General Meeting/Dividend - Rs 26.50 Per Share","symbol":"GOODYEAR"},{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Goodyear India Limited","exDate":"05-Aug-2026","faceVal":"10","ind":"-","isin":"INE533A01012","ndEndDate":"-","ndStartDate":"-","recDate":"05-Aug-2026","series":"EQ","subject":"Dividend - Rs 26.50 Per Share","symbol":"GOODYEAR"}]
+[
+  {
+    "bcEndDate": "12-Aug-2021",
+    "bcStartDate": "06-Aug-2021",
+    "caBroadcastDate": null,
+    "comp": "Goodyear India Limited",
+    "exDate": "04-Aug-2021",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE533A01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting/Dividend - Rs 18 Per Share Special Dividend Rs 80 Per Share",
+    "symbol": "GOODYEAR"
+  },
+  {
+    "bcEndDate": "01-Aug-2022",
+    "bcStartDate": "26-Jul-2022",
+    "caBroadcastDate": null,
+    "comp": "Goodyear India Limited",
+    "exDate": "22-Jul-2022",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE533A01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Dividend - Rs 20 Per Share/Special Dividend- Rs 80 Per Share",
+    "symbol": "GOODYEAR"
+  },
+  {
+    "bcEndDate": "02-Aug-2023",
+    "bcStartDate": "27-Jul-2023",
+    "caBroadcastDate": null,
+    "comp": "Goodyear India Limited",
+    "exDate": "26-Jul-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE533A01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting/Dividend - Rs 26.50 Per Share",
+    "symbol": "GOODYEAR"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Goodyear India Limited",
+    "exDate": "05-Aug-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE533A01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "05-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 26.50 Per Share",
+    "symbol": "GOODYEAR"
+  }
+]

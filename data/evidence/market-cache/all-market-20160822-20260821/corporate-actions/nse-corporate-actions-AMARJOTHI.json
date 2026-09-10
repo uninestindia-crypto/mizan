@@ -1,1 +1,18 @@
-[{"bcEndDate":"-","bcStartDate":"-","caBroadcastDate":null,"comp":"Amarjothi Spinning Mills Limited","exDate":"21-Aug-2026","faceVal":"10","ind":"-","isin":"INE484D01012","ndEndDate":"-","ndStartDate":"-","recDate":"21-Aug-2026","series":"EQ","subject":"Dividend - Rs 2.20 Per Share","symbol":"AMARJOTHI"}]
+[
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Amarjothi Spinning Mills Limited",
+    "exDate": "21-Aug-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE484D01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "21-Aug-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2.20 Per Share",
+    "symbol": "AMARJOTHI"
+  }
+]
