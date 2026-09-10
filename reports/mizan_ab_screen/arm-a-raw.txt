@@ -1,0 +1,31 @@
+=== MIZAN corrected specification: train on 43, test on the other 380 ===
+features: 8 cross-sectionally ranked
+hold 10 sessions, net of 0.2225%, long top 20%
+
+train symbols (governed) : 45
+test  symbols (untouched): 378
+labels          : RAW (unadjusted)
+symbols with forward returns: 423
+
+training rows (43 names) : 108,585
+test rows (380 names)    : 902,582
+
+fitted coefficients (trained on the 43 only):
+   return_1                      -0.001982
+   return_5                      -0.002382
+   return_21                     -0.003125
+   rsi_14_centered               -0.001066
+   sma_20_distance               +0.008082
+   sma_50_distance               -0.005073
+   volume_zscore                 -0.001033
+   money_flow_multiplier         -0.000545
+
+OUT-OF-SAMPLE on the 380 names that never produced the hypothesis:
+long top 20% by Mizan score        n=2413 mean=+0.006528 t= +5.86 sharpe= +0.60  vs equal-weight +0.006550
+equal-weight all names (bench)     n=2413 mean=+0.006550 t= +6.80 sharpe= +0.69  vs equal-weight +0.006550
+
+selection edge over benchmark      n=2413 mean=-0.000022 t= -0.07 sharpe= -0.01  vs equal-weight +0.000000
+
+Rebalances overlap at a 10-session hold, so these t-statistics are optimistic.
+The benchmark is the honest comparator: beating zero is not the test, beating
+equal-weight is, because equal-weight requires no model at all.

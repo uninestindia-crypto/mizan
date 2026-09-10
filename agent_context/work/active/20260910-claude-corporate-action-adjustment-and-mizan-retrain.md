@@ -184,6 +184,56 @@ rename, not by a gate.
 
 None. `modeling/**` is read-only here by design.
 
+## A/B RESULT — the correction does not rescue the model
+
+Both arms complete, on the committed tree at `9dd5b62f`. Arm A is the control; it reproduces the
+published baseline exactly, which is what makes Arm B interpretable.
+
+| | Arm A — RAW | Arm B — corporate-action adjusted |
+|---|---:|---:|
+| Labels | RAW opens | adjusted, total return |
+| Test rows (380 names) | 902,582 | **899,840** |
+| Model: mean / t / Sharpe | +0.006528 / +5.86 / +0.60 | +0.007249 / +6.61 / +0.68 |
+| Equal-weight: mean / t / Sharpe | +0.006550 / +6.80 / +0.69 | +0.007433 / +7.73 / +0.79 |
+| **Selection edge** | **-0.000022** | **-0.000185** |
+| **t** | **-0.07** | **-0.66** |
+| Sharpe | -0.01 | -0.07 |
+
+**Arm A reproduces `-0.000022, t = -0.07` to the digit.** The harness measures what it is believed
+to measure, so Arm B carries information rather than noise about the plumbing.
+
+**The edge stays negative and moves slightly further negative** — from -0.000022 to -0.000185, t from
+-0.07 to -0.66. Neither is significant; the correction does not turn a loss into a win, or a null
+into a signal. Equal-weight beats the model in both arms, and beats it by *more* after correction.
+
+**Why both absolute levels rose** (+0.65% -> +0.72% per period): that is the dividend add-back from
+the total-return basis, and it lifts the model arm and the benchmark arm together. It cancels in the
+difference, which is exactly why the selection edge is the number to read and the absolute return is
+not.
+
+**Why Arm B has 2,742 fewer test rows**: 56 unresolved ratio-less actions on 49 symbols black out the
+windows that span them. That is the fail-closed path working — those observations are refused rather
+than published as fabricated returns.
+
+**Fitted coefficients are stable across arms.** Every sign is preserved and magnitudes barely move
+(e.g. `sma_20_distance` +0.008082 -> +0.008177, still the only positive of the eight). The model
+learns the same thing from corrected data; there was no hidden signal that bad corporate-action
+handling was masking.
+
+### Conclusion
+
+**Do not spend the ordinal.** The retrain was justified on the premise that corrected corporate
+actions would change the measured edge. Measured: it does not. The governed retrain would publish
+another `RESEARCH_ONLY` model and consume a multiplicity ordinal to reproduce a null that two
+ungoverned screens have now established at 902,582 and 899,840 test rows.
+
+Caveat that travels with this: the demerger correction here is **exclusion, not repair**. The
+validated-factor pass returned **0 validated / 56 refused** out of 54 ratio-less actions -- the
+value-continuity method could not confirm a single one -- so no demerger was actually re-sized. Arm B
+therefore measures "dividends added back, contaminated windows dropped", not "demergers corrected".
+A future validated-factor source would change what Arm B means, though on this evidence it is very
+unlikely to change the sign.
+
 ## Reclaimed 2026-09-10T13:35Z — A/B running from an isolated snapshot
 
 Founder instruction: *"take it back and finish the A/B"*. PROTOCOL §8.3 makes that the sanctioned

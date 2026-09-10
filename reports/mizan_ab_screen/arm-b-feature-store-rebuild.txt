@@ -1,0 +1,12 @@
+universe        : 423 names
+macro           : VIX 2478d, NIFTY 2479d
+deduplicated    : 3267 symbols
+in universe     : 423 symbols
+skipped (short) : 0
+corp actions    : 4,590 factors on 391 symbols
+adjustment basis: total return (dividends removed)
+unresolved      : 56 actions on 49 symbols; up to 2,712 feature rows blacked out
+rows            : 1,013,170
+symbols         : 423
+dates           : 2,427
+written         : C:\Users\teenl\AppData\Local\Temp\claude\D--quant-system\d8090daf-3a33-400a-8da9-f90c35c5c1cd\scratchpad\fs_adjB\mizan_feature_store.csv.gz
