@@ -22,6 +22,7 @@ param(
     [string]$Python = "D:/quant_system_workspaces/scratch/timesfm-probe-20260910/Scripts/python.exe",
     [string]$Out    = "reports/short_horizon/timesfm-forecasts.json",
     [string]$Log    = "reports/short_horizon/timesfm-generation.log",
+    [string]$ErrLog = "reports/short_horizon/timesfm-generation.err.log",
     [int]$MaxAttempts = 20,
     [int]$BackoffSeconds = 15
 )
@@ -45,10 +46,19 @@ for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
     }
     Write-Output "attempt $attempt/$MaxAttempts - resuming from $resumed checkpointed forecast(s)"
 
-    # Stderr is merged into the log rather than redirected away: a silent kill leaves no traceback,
-    # and the log is the only place the reason would appear.
-    & $Python -u scripts/generate_timesfm_forecasts.py --out $Out *>> $Log
-    $code = $LASTEXITCODE
+    # Start-Process, not `& ... *>> $Log`. In Windows PowerShell 5.1, redirecting a native command's
+    # stderr inside PowerShell wraps every line in an ErrorRecord, and under
+    # $ErrorActionPreference = "Stop" that makes any stderr output a TERMINATING error. The
+    # HuggingFace "unauthenticated requests" warning -- entirely harmless, written to stderr on every
+    # run -- killed the first version of this supervisor on attempt 1 before the generator had done
+    # any work. Start-Process redirects at the OS level and never marshals stderr into ErrorRecords.
+    #
+    # Stdout and stderr go to separate files because Start-Process refuses to merge them into one.
+    $proc = Start-Process -FilePath $Python `
+        -ArgumentList @("-u", "scripts/generate_timesfm_forecasts.py", "--out", $Out) `
+        -NoNewWindow -Wait -PassThru `
+        -RedirectStandardOutput $Log -RedirectStandardError $ErrLog
+    $code = $proc.ExitCode
 
     if (Test-Path $Out) {
         Write-Output "COMPLETE: $Out written on attempt $attempt (exit $code)."
@@ -60,5 +70,5 @@ for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
 }
 
 Write-Output "GIVING UP after $MaxAttempts attempts. The checkpoint is preserved at $partial."
-Write-Output "This is a reportable failure, not a transient one - read $Log before retrying."
+Write-Output "This is a reportable failure, not a transient one - read $Log and $ErrLog first."
 exit 1

@@ -92,6 +92,51 @@ clear instead of the gate -- `GatePolicyV1.min_deflated_sharpe = 0.95` is unchan
 It can only make a *passing-looking* number interpretable, by showing whether the configuration hands
 out similar numbers to a forecaster that knows nothing.
 
+## NOISE CONTROL RESULT: the deflated Sharpe here is not measuring skill
+
+30 seeds, identical subset, folds, costs and abstention grid. This is the most consequential
+measurement in the study and it is about the **method**, not the models.
+
+| Hold | Ridge DSR | Noise DSR min | Noise DSR median | Noise DSR max | Ridge Sharpe | Noise median Sharpe | Buy-and-hold Sharpe |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 0.0265 | 0.0000 | **0.0000** | 0.0000 | -0.2162 | -1.3001 | -1.4340 |
+| 2 | 0.0593 | 0.0577 | **0.1615** | 0.2410 | -0.0888 | +0.1063 | -0.0018 |
+| 3 | 0.0947 | 0.3197 | **0.5504** | 0.7063 | -0.0041 | +0.4863 | +0.4922 |
+
+**At hold 3 all thirty noise seeds beat the ridge.** The worst random draw scored DSR 0.3197 against
+the ridge's 0.0947, and the median random draw scored **0.5504** -- higher than this repository's
+best-ever recorded result of `0.397794`.
+
+### Why, measured rather than speculated
+
+The noise median Sharpe tracks buy-and-hold at every hold:
+
+| Hold | Buy-and-hold Sharpe | Noise median Sharpe | Noise exposure |
+|---|---:|---:|---:|
+| 1 | -1.4340 | -1.3001 | 0.169 |
+| 2 | -0.0018 | +0.1063 | 0.459 |
+| 3 | **+0.4922** | **+0.4863** | 0.500 |
+
+Random long-only selection at ~50% exposure **is a diluted buy-and-hold**. Halving exposure scales
+mean and volatility together, so the Sharpe survives almost intact. The deflated Sharpe as computed
+tests the candidate against **zero** -- and in a rising market every long-only rule beats zero,
+including one that knows nothing.
+
+### What follows
+
+1. **A DSR below the noise median is worse than it looks.** The ridge at hold 3 (0.0947) did not
+   merely fail the gate; it underperformed thirty out of thirty coin flips. Its abstention rule took
+   it *out* of a market that rose, which is a worse outcome than having no opinion.
+2. **Buy-and-hold is the comparator that matters here**, not zero. Every result in this study is
+   reported against it.
+3. **This does not weaken the gate and is not an excuse.** `GatePolicyV1.min_deflated_sharpe = 0.95`
+   is unchanged. Nothing passed it, nothing is promotable, and no threshold was adjusted.
+4. **A question this raises about prior work, stated as a question.** The repository's historical best
+   of `0.397794` sits below the noise median measured here. That does *not* establish the earlier
+   figure was drift rather than skill -- it came from per-instrument campaigns with different
+   exposure characteristics, and re-deriving it is outside this study. But it is a specific,
+   checkable hypothesis that someone should test rather than leave implied.
+
 ## Search that already happened, and must be priced in
 
 This study does not start from zero multiplicity. The repository has already screened this market

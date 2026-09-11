@@ -1,20 +1,23 @@
 # Current QuantOS snapshot
 
-UPDATED_UTC: 2026-08-25T10:30:00Z  
-SNAPSHOT_OWNER: reconciled by Claude Code on founder instruction; coordination remains Codex / Antigravity  
+UPDATED_UTC: 2026-09-11T07:10:00Z  
+SNAPSHOT_OWNER: reconciled by Claude Code on founder instruction ("update CURRENT.md with all of
+today's findings"); `CURRENT.md` is claimed by `20260820-codex-slice4-ridge-training.md` (ACTIVE) and
+that record's own content elsewhere in this file is unaltered  
 BRANCH: `main`  
-HEAD_AT_SNAPSHOT: `f5423455`
+HEAD_AT_SNAPSHOT: `2e28d76e`
 
 ## Formal release state
 
-Measured at `f5423455`, not restated from another document.
+Measured at `2e28d76e`, not restated from another document.
 
 | | State |
 |---|---|
 | Tier / phase | T2, P5 per `.launch/STATE.md` |
 | Slices | All 12 CODE_COMPLETE |
-| Tests | **929 passing** |
-| Static gate | Ruff clean; strict Mypy clean across **125 source files** |
+| Tests | **1,473 passing**, forwards and in reverse file order |
+| Static gate | Ruff lint and format clean; strict Mypy clean across **205 source files** |
+| CI | **GREEN**, run `34570564419`, every step. See Major #1 |
 | Live-money routing | Explicitly out of scope. Nothing has ever placed an order |
 
 ### The phase label and the adjudication record contradict each other
@@ -43,7 +46,7 @@ What has **not**: the training runner, the campaign driver, and every research r
 
 | # | Was | Now |
 |---|---|---|
-| 1 | CI workflow and branch protection | **REOPENED 2026-09-01.** The workflow is on `main` and run `#32936340154` did pass on 2026-08-20. It has not run since **2026-08-29T17:30Z**: 25 consecutive runs failed in ~3s on `recent account payments have failed or your spending limit needs to be increased`. The gate is red for **billing**, not code. Branch protection remains impossible on this plan (`403 Upgrade to GitHub Pro or make this repository public`) |
+| 1 | CI workflow and branch protection | **GATE CLOSED 2026-09-11; branch protection still open.** The billing failure is gone -- runs execute normally. It was then red for a *different* reason for over a week, and that is now fixed too: run **`34570564419` passed every step in 26m18s**, the first fully green run since 2026-09-02 (35 of the 40 runs before it failed). Detail below. Branch protection remains impossible on this plan (`403 Upgrade to GitHub Pro or make this repository public`) and is the only part of this major still open |
 | 2 | Craft baseline regressed ~4x | **Test-craft 100% clean.** 87/87 test files pass with 0 `sleep-in-test` flakiness risks and 0 unannotated loops. Code craft has 240 structural lines/nesting primarily in UI HTML templates |
 | 3 | Provenance mechanism closed, artifact stale | **CLOSED.** Artifact rebuilt at `dab7f7b3`; 125 `quant_system` modules verified in archive, SBOM matches `uv.lock`, provenance binds HEAD |
 | 4 | Capability claims exceed behaviour | **CLOSED.** Corrected at `5a0447b`; unsupported US Equities & Fundamental claims removed; honest boundaries established |
