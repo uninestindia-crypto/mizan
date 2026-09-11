@@ -53,6 +53,7 @@ from build_mizan_feature_store import (  # noqa: E402
     authority_manifest_hash,
     code_revision,
     load_corporate_actions,
+    manifest_index,
     raw_bar_points,
     read_universe,
 )
@@ -97,7 +98,20 @@ is a coincidence until the filing says otherwise. Nothing here writes a factor.
 """
 
 RATIO_MATCH_TOLERANCE = Decimal("0.08")
-"""How close an implied ratio must sit to a clean one to be worth a human opening the filing."""
+"""How close an implied ratio must sit to a clean one to be worth a human opening the filing.
+
+**Measured false-discovery rate: 8.51%.** Across 2,091 candidate/action pairs on the real corpus,
+178 cleared this tolerance. Ten clean ratios each with an 8% relative window cover roughly that much
+of the plausible price range, so a fit is close to what chance produces -- for ABFRL's 2025-05-22
+demerger the *correct* resulting company (ABLBL, implied 1.0237) ranked **fourth**, behind SILKY
+(0.9997) which has nothing to do with it.
+
+So the ratio fit alone does not identify anything. It is kept as a secondary sort only, and the
+shortlist is ordered by :func:`name_stem_score` first.
+"""
+
+MINIMUM_STEM = 3
+"""Shortest shared symbol prefix worth treating as evidence of a corporate relationship."""
 
 CONTINUITY_TOLERANCE = Decimal("0.05")
 """Fractional tolerance on the value-continuity identity.
@@ -140,107 +154,6 @@ def load_entitlements(path: Path | None) -> dict[tuple[str, date], Entitlement]:
     return out
 
 
-def manifest_index(store_root: Path, cache_path: Path) -> tuple[dict[str, date], dict[str, str]]:
-    """The header index, cached to disk so it is built once rather than on every run.
-
-    The caching is not just a speed optimisation, it is what makes the run survive. Parsing 3,322
-    manifest documents (~122 KB each) and then asking for the large contiguous allocations that
-    ``canonical_sha256`` needs, in the same process, exhausts this machine -- the run died with
-    ``MemoryError`` inside ``json.dumps`` on the *first* bar load, after the header scan had churned
-    the allocator. Doing the scan once and reading a small JSON file thereafter keeps the two phases
-    from competing.
-
-    The cache is rebuilt whenever the dataset catalog has more entries than the cache describes, so
-    a newly ingested instrument is never silently missed.
-    """
-    catalog_size = sum(1 for _ in (store_root / "datasets").iterdir())
-    if cache_path.is_file():
-        try:
-            payload = json.loads(cache_path.read_text(encoding="utf-8"))
-            if int(payload.get("catalog_size", -1)) == catalog_size:
-                return (
-                    {s: date.fromisoformat(v) for s, v in payload["first_traded"].items()},
-                    dict(payload["dataset_ids"]),
-                )
-        except (OSError, ValueError, KeyError, TypeError):
-            pass  # a damaged cache is rebuilt, never trusted
-
-    starts, dataset_ids = scan_manifest_headers(store_root)
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    cache_path.write_text(
-        json.dumps(
-            {
-                "catalog_size": catalog_size,
-                "dataset_ids": dataset_ids,
-                "first_traded": {s: v.isoformat() for s, v in starts.items()},
-                "store_root": store_root.as_posix(),
-            },
-            indent=0,
-            sort_keys=True,
-        ),
-        encoding="utf-8",
-    )
-    gc.collect()
-    return starts, dataset_ids
-
-
-def scan_manifest_headers(store_root: Path) -> tuple[dict[str, date], dict[str, str]]:
-    """Listing dates and the best dataset id per symbol, from manifest **headers** only.
-
-    Reconstructing all 3,322 acquisitions is what killed two earlier runs of this script:
-    ``historical_acquisition_from_verified`` rehashes every record through ``canonical_sha256``, and
-    the attempts died with ``MemoryError`` inside ``json.dumps``. Everything needed to *choose* which
-    datasets to open is already in the manifest headers, which are small and cheap to read.
-
-    Returns:
-        - first traded session per symbol. Where a symbol has two DATASET resources -- 55 do -- the
-          **earlier** start wins, because the question is "when did this instrument first trade".
-        - the dataset id to open per symbol, chosen by **longest** history with ties broken by
-          provider instrument id. That is the same dedup rule as the feature-store builder, so this
-          script cannot select a different dataset than the builder would.
-    """
-    starts: dict[str, date] = {}
-    best: dict[str, tuple[int, str, str]] = {}
-    for directory in sorted((store_root / "datasets").iterdir()):
-        manifest_path = directory / "manifest.json"
-        if not manifest_path.is_file():
-            continue
-        block = _find_dataset_block(json.loads(manifest_path.read_text(encoding="utf-8")))
-        if block is None:
-            continue
-        try:
-            symbol = str(block["symbol"])
-            start = date.fromisoformat(str(block["received_range"]["start"]))
-            rows = int(block["row_count"])
-            instrument = str(block.get("provider_instrument_id", ""))
-        except (KeyError, TypeError, ValueError):
-            continue
-        incumbent_start = starts.get(symbol)
-        if incumbent_start is None or start < incumbent_start:
-            starts[symbol] = start
-        candidate = (rows, instrument, directory.name)
-        if symbol not in best or candidate > best[symbol]:
-            best[symbol] = candidate
-    return starts, {symbol: entry[2] for symbol, entry in best.items()}
-
-
-def _find_dataset_block(node: object) -> dict[str, Any] | None:
-    """The dataset-manifest payload nested inside an evidence manifest."""
-    if isinstance(node, dict):
-        if "symbol" in node and "received_range" in node:
-            return node
-        for value in node.values():
-            block = _find_dataset_block(value)
-            if block is not None:
-                return block
-    elif isinstance(node, list):
-        for value in node:
-            block = _find_dataset_block(value)
-            if block is not None:
-                return block
-    return None
-
-
 def first_opens(
     store: EvidenceStore, symbols: set[str], dataset_ids: dict[str, str]
 ) -> dict[str, tuple[date, Decimal]]:
@@ -264,12 +177,33 @@ def first_opens(
     return out
 
 
+def name_stem_score(parent: str, candidate: str) -> int:
+    """Length of the shared leading stem between two NSE symbols.
+
+    A demerged entity usually keeps the parent's name stem, because the brand is the point: SKFINDIA
+    spun out SKFINDUS, ABFRL spun out ABLBL (both Aditya Birla), RAYMOND spun out a Raymond entity.
+    An unrelated IPO listing in the same window shares nothing.
+
+    This is the discriminator the price fit is not. Measured on the corpus, 8.51% of arbitrary
+    candidates fit a clean ratio; almost none share a three-character stem with the parent by
+    accident. It is still only a **lead** -- the ratio remains a legal fact in the filing, and a
+    conglomerate demerger can rename entirely.
+    """
+    shared = 0
+    for left, right in zip(parent, candidate, strict=False):
+        if left != right:
+            break
+        shared += 1
+    return shared if shared >= MINIMUM_STEM else 0
+
+
 def rank_candidates(
+    parent: str,
     cum_close: Decimal,
     ex_open: Decimal,
     candidates: dict[str, tuple[date, Decimal]],
 ) -> list[dict[str, Any]]:
-    """Shortlist the candidates whose first traded price is consistent with a clean entitlement.
+    """Shortlist the plausible resulting companies for one ratio-less action.
 
     For a resulting company priced ``P`` on listing, value continuity requires::
 
@@ -305,9 +239,12 @@ def rank_candidates(
                 "implied_ratio": f"{float(implied):.4f}",
                 "nearest_clean_ratio": best_label,
                 "relative_gap": f"{float(best_gap):.4f}",
+                "shared_name_stem": name_stem_score(parent, symbol),
             }
         )
-    ranked.sort(key=lambda item: float(item["relative_gap"]))
+    # Name stem first, ratio fit only to break ties. The ratio fit is close to chance (8.51%
+    # measured); the stem is not.
+    ranked.sort(key=lambda item: (-int(item["shared_name_stem"]), float(item["relative_gap"])))
     return ranked[:CANDIDATE_SHORTLIST]
 
 
@@ -457,7 +394,7 @@ def run(args: argparse.Namespace) -> int:
                 and ex_date <= opened[0]
                 and (opened[0] - ex_date).days <= LISTING_WINDOW_DAYS
             }
-            candidates = rank_candidates(cum_close, ex_open, nearby)
+            candidates = rank_candidates(symbol, cum_close, ex_open, nearby)
 
             record: dict[str, Any] = {
                 "symbol": symbol,

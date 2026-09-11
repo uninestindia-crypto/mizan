@@ -335,11 +335,24 @@ def start_dashboard_server() -> None:
 def build_audit_prompt() -> tuple[str, str]:
     claude_verdict = read_file_safely(OUTPUT_DIR / "00_executive_comparison_and_verdict.md", 30000)
     claude_xs = read_file_safely(OUTPUT_DIR / "02_mizan_xs_monthly_audit.md", 15000)
-    s1_live_state = read_file_safely(REPO_ROOT / "logs" / "paper_runs" / "portfolio_state.json", 6000)
-    s2_live_state = read_file_safely(REPO_ROOT / "logs" / "xs_monthly_new" / "paper_watch" / "state.json", 6000)
-    mizan_ic_screen = read_file_safely(REPO_ROOT / "agent_context" / "work" / "completed" / "20260825-1500Z-claude-mizan-pooled-model.md", 10000)
+    s1_live_state = read_file_safely(
+        REPO_ROOT / "logs" / "paper_runs" / "portfolio_state.json", 6000
+    )
+    s2_live_state = read_file_safely(
+        REPO_ROOT / "logs" / "xs_monthly_new" / "paper_watch" / "state.json", 6000
+    )
+    mizan_ic_screen = read_file_safely(
+        REPO_ROOT
+        / "agent_context"
+        / "work"
+        / "completed"
+        / "20260825-1500Z-claude-mizan-pooled-model.md",
+        10000,
+    )
 
-    dashboard_state["reports"]["claude_verdict"] = claude_verdict[:8000] + "\n\n... [TRUNCATED FOR DISPLAY]"
+    dashboard_state["reports"]["claude_verdict"] = (
+        claude_verdict[:8000] + "\n\n... [TRUNCATED FOR DISPLAY]"
+    )
 
     sys_prompt = (
         "You are an elite Chief Investment Officer and Head of Quantitative Risk at a Tier-1 multi-strategy quantitative fund. "
@@ -480,7 +493,9 @@ def run_gpt56_audit() -> None:
                             if time.time() - last_update > 0.6:
                                 curr = "".join(full_text)
                                 dashboard_state["reports"]["gpt56_second_opinion"] = curr
-                                dashboard_state["status"] = f"GPT-5.6-Sol writing second opinion... ({len(curr):,} chars)"
+                                dashboard_state["status"] = (
+                                    f"GPT-5.6-Sol writing second opinion... ({len(curr):,} chars)"
+                                )
                                 last_update = time.time()
                     usage = obj.get("usage")
                     if usage:

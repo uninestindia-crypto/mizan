@@ -180,9 +180,7 @@ def read_monthly_state() -> MonthlyState:
         closed_legs=len(payload["closed"]),
         capital=Decimal(str(payload["capital"])),
         cash=Decimal(str(payload["cash"])),
-        market_value=sum(
-            (Decimal(str(leg["market_value"])) for leg in open_legs), Decimal(0)
-        ),
+        market_value=sum((Decimal(str(leg["market_value"])) for leg in open_legs), Decimal(0)),
         entry_value=sum((Decimal(str(leg["entry_value"])) for leg in open_legs), Decimal(0)),
         asof_date=asof[-1],
         last_run_at=str(runs[-1]["at"]) if runs else "never",
@@ -545,9 +543,11 @@ def main(argv: list[str] | None = None) -> int:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     first_path = OUTPUT_DIR / FIRST_OPINION_FILE
 
-    if args.reuse_first_opinion and first_path.exists() and first_path.read_text(
-        encoding="utf-8"
-    ).strip():
+    if (
+        args.reuse_first_opinion
+        and first_path.exists()
+        and first_path.read_text(encoding="utf-8").strip()
+    ):
         log_event(f"Reusing existing {FIRST_OPINION_FILE}")
         first = ModelReply(
             model=config.gpt6_model_id,

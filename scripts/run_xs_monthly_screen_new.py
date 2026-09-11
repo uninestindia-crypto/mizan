@@ -17,6 +17,7 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
@@ -53,7 +54,7 @@ def main(argv: list[str] | None = None) -> int:
         max_datasets=args.max_datasets or None,
     )
     missing = sorted(wanted - set(bars))
-    result: dict = {
+    result: dict[str, Any] = {
         "pre_declaration": {
             "validated_rule": "longTopFrac_hold21",
             "diagnostics": ["longOnly_hold2", "longShort_hold2", "longShort_hold21"],
@@ -98,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _print_line(label: str, leg: dict) -> None:
+def _print_line(label: str, leg: dict[str, Any]) -> None:
     print(
         f"{label}: n={leg['n_periods']} mean={leg['mean_net']} "
         f"t={leg.get('t_stat')} sharpe_ann={leg.get('sharpe_annualized')} "
@@ -106,7 +107,7 @@ def _print_line(label: str, leg: dict) -> None:
     )
 
 
-def _render_markdown(result: dict) -> str:
+def _render_markdown(result: dict[str, Any]) -> str:
     lines = [
         "# XS-monthly screen (new stack, RESEARCH_ONLY)",
         "",
@@ -145,7 +146,7 @@ def _render_markdown(result: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _leg_table(leg: dict, title: str = "leg") -> str:
+def _leg_table(leg: dict[str, Any], title: str = "leg") -> str:
     return (
         f"- {title}: n={leg['n_periods']} mean={leg['mean_net']} "
         f"sd={leg['stdev_net']} t={leg.get('t_stat')} "

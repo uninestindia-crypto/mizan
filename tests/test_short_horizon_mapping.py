@@ -83,9 +83,7 @@ def test_the_declared_horizon_really_holds_that_many_sessions(held_sessions: int
     universe = governed_universe()
     acquisition = governed_acquisition(count=count, calendar=calendar, universe=universe)
     features = build_feature_dataset(acquisition, CANDIDATE, calendar, universe)
-    quotes = _quotes_for_horizon(
-        acquisition, calendar, horizon_sessions=horizon, cost=Decimal("0")
-    )
+    quotes = _quotes_for_horizon(acquisition, calendar, horizon_sessions=horizon, cost=Decimal("0"))
 
     labels = build_label_dataset(features, acquisition, calendar, quotes, horizon_sessions=horizon)
     assert labels.rows, "the fixture must produce at least one matured label"
@@ -110,9 +108,7 @@ def test_entry_is_always_the_next_eligible_open_after_the_decision(held_sessions
     universe = governed_universe()
     acquisition = governed_acquisition(count=count, calendar=calendar, universe=universe)
     features = build_feature_dataset(acquisition, CANDIDATE, calendar, universe)
-    quotes = _quotes_for_horizon(
-        acquisition, calendar, horizon_sessions=horizon, cost=Decimal("0")
-    )
+    quotes = _quotes_for_horizon(acquisition, calendar, horizon_sessions=horizon, cost=Decimal("0"))
 
     labels = build_label_dataset(features, acquisition, calendar, quotes, horizon_sessions=horizon)
     closes = [session.close_at for session in calendar.sessions]

@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, localcontext
 from math import sqrt
-from typing import Final
+from typing import Any, Final
 
 from quant_system.research_xs_monthly.bars import Bar
 
@@ -199,7 +199,7 @@ def run_screen(
     bars_by_symbol: dict[str, list[Bar]],
     hold: int = HOLD_SESSIONS,
     top_frac: Decimal = TOP_FRAC,
-) -> dict:
+) -> dict[str, Any]:
     """Run one long top-fraction leg plus IC accounting over all rebalances."""
     if hold < 1:
         raise ScreenError("BAD_PARAM: hold must be >= 1")
@@ -349,7 +349,7 @@ def run_long_short(
     bars_by_symbol: dict[str, list[Bar]],
     hold: int,
     top_frac: Decimal = TOP_FRAC,
-) -> dict:
+) -> dict[str, Any]:
     """Diagnostic long-short leg: long top frac, short bottom frac, equal weight."""
     if hold < 1:
         raise ScreenError("BAD_PARAM: hold must be >= 1")

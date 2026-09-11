@@ -128,12 +128,16 @@ def test_an_unadjusted_manifest_emits_the_exact_version_one_payload() -> None:
 @pytest.mark.parametrize(
     "manifest_path",
     sorted(
-        (REPO_ROOT / "data/evidence/market-cache/nifty50-current-20160822-20260821/store/datasets")
-        .glob("*/manifest.json")
+        (
+            REPO_ROOT
+            / "data/evidence/market-cache/nifty50-current-20160822-20260821/store/datasets"
+        ).glob("*/manifest.json")
     )[:20],
     ids=lambda p: p.parent.name,
 )
-def test_real_committed_manifests_still_hash_to_their_recorded_identity(manifest_path: Path) -> None:
+def test_real_committed_manifests_still_hash_to_their_recorded_identity(
+    manifest_path: Path,
+) -> None:
     """The regression that matters: no hash in the repository may move.
 
     Recomputes each stored manifest's hash from its own canonical payload and compares it against
@@ -176,7 +180,9 @@ def test_the_code_still_emits_the_same_payload_shape_as_committed_evidence() -> 
     stored.pop("dataset_id", None)
 
     produced = _manifest().to_canonical_dict(include_identity=False)
-    assert set(produced) == set(stored), "canonical manifest key set drifted from committed evidence"
+    assert set(produced) == set(stored), (
+        "canonical manifest key set drifted from committed evidence"
+    )
     assert produced["adjustment"] == stored["adjustment"]
     assert produced["schema_version"] == stored["schema_version"]
     assert produced["schema_id"] == stored["schema_id"]

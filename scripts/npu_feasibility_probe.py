@@ -127,7 +127,7 @@ def onnx_providers() -> dict[str, Any]:
     failure this reports.
     """
     try:
-        import onnxruntime  # noqa: PLC0415
+        import onnxruntime  # type: ignore[import-not-found]  # noqa: PLC0415
     except ImportError as error:
         return {"installed": False, "detail": str(error), "providers": []}
     return {

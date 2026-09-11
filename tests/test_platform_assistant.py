@@ -135,9 +135,7 @@ def test_assistant_api_endpoints(client: TestClient) -> None:
 def test_assistant_audit_model_strategy_intent() -> None:
     """Tests model and strategy profitability audit intent routing in assistant."""
     service = PlatformAssistantService()
-    resp = service.process_chat(
-        AssistantChatRequest(prompt="Is my model and strategy profitable?")
-    )
+    resp = service.process_chat(AssistantChatRequest(prompt="Is my model and strategy profitable?"))
     assert "UNPROFITABLE AFTER STATUTORY COSTS" in resp.message
     assert "Ridge Intercept" in resp.message or "Intercept Drift" in resp.message
     assert "0.224%" in resp.message

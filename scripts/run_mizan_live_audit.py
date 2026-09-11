@@ -410,12 +410,33 @@ def get_mizan_flagship_context() -> tuple[str, str]:
         "and its live active portfolio holdings."
     )
 
-    mizan_model_code = read_file_safely(REPO_ROOT / "src" / "quant_system" / "modeling" / "mizan_model.py", 14000)
-    mizan_features_code = read_file_safely(REPO_ROOT / "src" / "quant_system" / "modeling" / "mizan_features.py", 12000)
-    live_status = read_file_safely(REPO_ROOT / "logs" / "paper_runs" / "live_paper_status.json", 8000)
-    portfolio_state = read_file_safely(REPO_ROOT / "logs" / "paper_runs" / "portfolio_state.json", 8000)
-    mizan_history = read_file_safely(REPO_ROOT / "agent_context" / "work" / "completed" / "20260825-1500Z-claude-mizan-pooled-model.md", 12000)
-    mizan_decision = read_file_safely(REPO_ROOT / "agent_context" / "decisions" / "20260826-label-horizon-is-a-declared-parameter.md", 6000)
+    mizan_model_code = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "modeling" / "mizan_model.py", 14000
+    )
+    mizan_features_code = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "modeling" / "mizan_features.py", 12000
+    )
+    live_status = read_file_safely(
+        REPO_ROOT / "logs" / "paper_runs" / "live_paper_status.json", 8000
+    )
+    portfolio_state = read_file_safely(
+        REPO_ROOT / "logs" / "paper_runs" / "portfolio_state.json", 8000
+    )
+    mizan_history = read_file_safely(
+        REPO_ROOT
+        / "agent_context"
+        / "work"
+        / "completed"
+        / "20260825-1500Z-claude-mizan-pooled-model.md",
+        12000,
+    )
+    mizan_decision = read_file_safely(
+        REPO_ROOT
+        / "agent_context"
+        / "decisions"
+        / "20260826-label-horizon-is-a-declared-parameter.md",
+        6000,
+    )
 
     user_prompt = f"""# QuantOS Deep Audit — Phase 1: Mīzān Flagship Alpha (Live ₹10 Lakh Paper Pilot)
 
@@ -489,10 +510,23 @@ def get_mizan_xs_monthly_context() -> tuple[str, str]:
         "Evaluate its 21-day holding horizon, top-20% momentum selection, 10-year backtest performance, and live 99-leg paper holdings."
     )
 
-    xs_paper_code = read_file_safely(REPO_ROOT / "src" / "quant_system" / "research_xs_monthly" / "paper.py", 12000)
-    xs_ranker_code = read_file_safely(REPO_ROOT / "src" / "quant_system" / "research_xs_monthly" / "ranker.py", 10000)
-    xs_state = read_file_safely(REPO_ROOT / "logs" / "xs_monthly_new" / "paper_watch" / "state.json", 12000)
-    xs_active_record = read_file_safely(REPO_ROOT / "agent_context" / "work" / "active" / "20260903-hermes-xs-monthly-screen-new.md", 15000)
+    xs_paper_code = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "research_xs_monthly" / "paper.py", 12000
+    )
+    xs_ranker_code = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "research_xs_monthly" / "ranker.py", 10000
+    )
+    xs_state = read_file_safely(
+        REPO_ROOT / "logs" / "xs_monthly_new" / "paper_watch" / "state.json", 12000
+    )
+    xs_active_record = read_file_safely(
+        REPO_ROOT
+        / "agent_context"
+        / "work"
+        / "active"
+        / "20260903-hermes-xs-monthly-screen-new.md",
+        15000,
+    )
 
     user_prompt = f"""# QuantOS Deep Audit — Phase 2: Mīzān XS-Monthly Momentum (Live ₹10 Lakh Paper Watch)
 
@@ -599,11 +633,13 @@ Synthesize your evaluations of the two live-running ₹10 Lakh Mīzān systems i
 # ==============================================================================
 def main() -> int:
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:
         pass
 
-    parser = argparse.ArgumentParser(description="Audit the 2 Live Mīzān ₹10L Systems with Claude Opus 5")
+    parser = argparse.ArgumentParser(
+        description="Audit the 2 Live Mīzān ₹10L Systems with Claude Opus 5"
+    )
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR), help="Output directory")
     args = parser.parse_args()
 
@@ -612,7 +648,10 @@ def main() -> int:
 
     api_key = load_env_keys()
     if not api_key:
-        print("[!] FATAL: No API key found in .env (expected LIGHTNING_API_KEY or ANTHROPIC_API_KEY)", file=sys.stderr)
+        print(
+            "[!] FATAL: No API key found in .env (expected LIGHTNING_API_KEY or ANTHROPIC_API_KEY)",
+            file=sys.stderr,
+        )
         return 1
 
     start_dashboard_server()
@@ -634,10 +673,10 @@ def main() -> int:
     log_event("Starting Phase 1: Mīzān Flagship Alpha (Intraday Paper Pilot, ₹10L)...")
 
     sys_1, usr_1 = get_mizan_flagship_context()
-    mizan_flagship_rpt = call_claude_opus(
-        client, api_key, sys_1, usr_1, phase_key="mizan_flagship"
+    mizan_flagship_rpt = call_claude_opus(client, api_key, sys_1, usr_1, phase_key="mizan_flagship")
+    (output_dir / "01_mizan_flagship_alpha_audit.md").write_text(
+        mizan_flagship_rpt, encoding="utf-8"
     )
-    (output_dir / "01_mizan_flagship_alpha_audit.md").write_text(mizan_flagship_rpt, encoding="utf-8")
 
     # Phase 2: Mīzān XS-Monthly Momentum
     dashboard_state["phase"] = "Phase 2: Mīzān XS-Monthly Momentum (₹10L)"
@@ -645,9 +684,7 @@ def main() -> int:
     log_event("Starting Phase 2: Mīzān XS-Monthly Momentum (21-Day Paper Watch, ₹10L)...")
 
     sys_2, usr_2 = get_mizan_xs_monthly_context()
-    mizan_xs_rpt = call_claude_opus(
-        client, api_key, sys_2, usr_2, phase_key="mizan_xs_monthly"
-    )
+    mizan_xs_rpt = call_claude_opus(client, api_key, sys_2, usr_2, phase_key="mizan_xs_monthly")
     (output_dir / "02_mizan_xs_monthly_audit.md").write_text(mizan_xs_rpt, encoding="utf-8")
 
     # Phase 3: Comparative Executive Synthesis
@@ -656,10 +693,10 @@ def main() -> int:
     log_event("Starting Phase 3: Comparative Executive Synthesis & Capital Allocation...")
 
     sys_3, usr_3 = get_comparative_synthesis_context(mizan_flagship_rpt, mizan_xs_rpt)
-    consensus_rpt = call_claude_opus(
-        client, api_key, sys_3, usr_3, phase_key="consensus"
+    consensus_rpt = call_claude_opus(client, api_key, sys_3, usr_3, phase_key="consensus")
+    (output_dir / "00_executive_comparison_and_verdict.md").write_text(
+        consensus_rpt, encoding="utf-8"
     )
-    (output_dir / "00_executive_comparison_and_verdict.md").write_text(consensus_rpt, encoding="utf-8")
 
     # Metadata & Cost
     metadata = {
@@ -674,11 +711,17 @@ def main() -> int:
             "02_mizan_xs_monthly_audit.md",
         ],
     }
-    (output_dir / "audit_metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    (output_dir / "audit_metadata.json").write_text(
+        json.dumps(metadata, indent=2), encoding="utf-8"
+    )
 
     dashboard_state["phase"] = "COMPLETED"
-    dashboard_state["status"] = f"Mīzān Audit Completed! Total Cost: ${dashboard_state['cost_usd']:.4f}"
-    log_event(f"Audit finished successfully! Total accumulated cost: ${dashboard_state['cost_usd']:.4f}")
+    dashboard_state["status"] = (
+        f"Mīzān Audit Completed! Total Cost: ${dashboard_state['cost_usd']:.4f}"
+    )
+    log_event(
+        f"Audit finished successfully! Total accumulated cost: ${dashboard_state['cost_usd']:.4f}"
+    )
 
     print("\n" + "=" * 70)
     print(" Mīzān Live Dual-Model Audit Finished Successfully!")

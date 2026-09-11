@@ -1,1190 +1,2118 @@
 {
   "actions": [
     {
-      "candidate_new_listings": [
-        "360ONE",
-        "ABINFRA",
-        "ABSLBANETF",
-        "AFFLE",
-        "APOLLOPIPE",
-        "ASCOM",
-        "BAHETI",
-        "BANKIETF",
-        "CSBBANK",
-        "DCI"
-      ],
+      "candidates_listed_nearby": 19,
       "cum_close": "450.3",
       "ex_date": "2019-07-03",
       "ex_date_gap": "-0.042194",
       "ex_open": "431.3",
-      "excess_over_market": "-0.042816",
-      "market_median_move": "+0.000622",
+      "excess_over_market": "-0.043322",
+      "market_median_move": "+0.001128",
+      "ranked_candidates": [
+        {
+          "candidate": "WEL",
+          "first_open": "9.3",
+          "implied_ratio": "2.0430",
+          "listed_on": "2019-08-06",
+          "nearest_clean_ratio": "2:1",
+          "relative_gap": "0.0215"
+        },
+        {
+          "candidate": "AFFLE",
+          "first_open": "185.2",
+          "implied_ratio": "0.1026",
+          "listed_on": "2019-08-08",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0259"
+        },
+        {
+          "candidate": "SATIA",
+          "first_open": "73.9",
+          "implied_ratio": "0.2571",
+          "listed_on": "2019-07-17",
+          "nearest_clean_ratio": "1:4",
+          "relative_gap": "0.0284"
+        },
+        {
+          "candidate": "DCMNVL",
+          "first_open": "54.9",
+          "implied_ratio": "0.3461",
+          "listed_on": "2019-07-16",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0383"
+        },
+        {
+          "candidate": "HNDFDS",
+          "first_open": "80.2",
+          "implied_ratio": "0.2369",
+          "listed_on": "2019-08-20",
+          "nearest_clean_ratio": "1:4",
+          "relative_gap": "0.0524"
+        }
+      ],
       "subject": "Scheme Of Demerger",
       "symbol": "AARTIIND"
     },
     {
-      "candidate_new_listings": [
-        "ACI",
-        "AEROENTER",
-        "AERONEU",
-        "AFSL",
-        "AGARWALFT",
-        "AKI",
-        "AMIABLE",
-        "ANLON",
-        "ARHAM",
-        "ARIHANTACA"
-      ],
+      "candidates_listed_nearby": 33,
       "cum_close": "744.9",
       "ex_date": "2022-10-19",
       "ex_date_gap": "-0.127265",
       "ex_open": "650.1",
-      "excess_over_market": "-0.125916",
-      "market_median_move": "-0.001350",
+      "excess_over_market": "-0.124935",
+      "market_median_move": "-0.002330",
+      "ranked_candidates": [
+        {
+          "candidate": "DCXINDIA",
+          "first_open": "287",
+          "implied_ratio": "0.3303",
+          "listed_on": "2022-11-11",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0091"
+        },
+        {
+          "candidate": "FIVESTAR",
+          "first_open": "468.8",
+          "implied_ratio": "0.2022",
+          "listed_on": "2022-11-21",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0111"
+        },
+        {
+          "candidate": "PPLPHARMA",
+          "first_open": "195.3",
+          "implied_ratio": "0.4854",
+          "listed_on": "2022-10-19",
+          "nearest_clean_ratio": "1:2",
+          "relative_gap": "0.0292"
+        },
+        {
+          "candidate": "OSIAHYPER",
+          "first_open": "32.9",
+          "implied_ratio": "2.8815",
+          "listed_on": "2022-12-01",
+          "nearest_clean_ratio": "3:1",
+          "relative_gap": "0.0395"
+        },
+        {
+          "candidate": "PHANTOMFX",
+          "first_open": "300",
+          "implied_ratio": "0.3160",
+          "listed_on": "2022-10-21",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0520"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "AARTIIND"
     },
     {
-      "candidate_new_listings": [
-        "ALOKINDS",
-        "ARTEMISMED",
-        "ASALCBR",
-        "BAFNAPH",
-        "COHANCE",
-        "DCI",
-        "EBBETF0430",
-        "HINDWAREAP",
-        "HPIL",
-        "LGHL"
-      ],
+      "candidates_listed_nearby": 13,
       "cum_close": "1154.1",
       "ex_date": "2019-12-20",
       "ex_date_gap": "+0.147214",
       "ex_open": "1324",
-      "excess_over_market": "+0.147242",
-      "market_median_move": "-0.000027",
+      "excess_over_market": "+0.147932",
+      "market_median_move": "-0.000718",
+      "ranked_candidates": [],
       "subject": "Demerger",
       "symbol": "ABB"
     },
     {
-      "candidate_new_listings": [
-        "AAKAAR",
-        "AARADHYA",
-        "ABLBL",
-        "ADVANCE",
-        "ADVENTHTL",
-        "AEGISVOPAK",
-        "AHCL",
-        "ALLTIME",
-        "AMANTA",
-        "AMCL"
-      ],
+      "candidates_listed_nearby": 67,
       "cum_close": "268.95",
       "ex_date": "2025-05-22",
       "ex_date_gap": "-0.635620",
       "ex_open": "98",
-      "excess_over_market": "-0.632504",
-      "market_median_move": "-0.003116",
+      "excess_over_market": "-0.632689",
+      "market_median_move": "-0.002931",
+      "ranked_candidates": [
+        {
+          "candidate": "SILKY",
+          "first_open": "171",
+          "implied_ratio": "0.9997",
+          "listed_on": "2025-07-07",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0003"
+        },
+        {
+          "candidate": "MAYASHEEL",
+          "first_open": "58",
+          "implied_ratio": "2.9474",
+          "listed_on": "2025-06-27",
+          "nearest_clean_ratio": "3:1",
+          "relative_gap": "0.0175"
+        },
+        {
+          "candidate": "FISCHER",
+          "first_open": "839.9",
+          "implied_ratio": "0.2035",
+          "listed_on": "2025-07-10",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0177"
+        },
+        {
+          "candidate": "ABLBL",
+          "first_open": "167",
+          "implied_ratio": "1.0237",
+          "listed_on": "2025-06-23",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0237"
+        },
+        {
+          "candidate": "HDBFS",
+          "first_open": "835",
+          "implied_ratio": "0.2047",
+          "listed_on": "2025-07-02",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0237"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "ABFRL"
     },
     {
-      "candidate_new_listings": [
-        "ABSLBANETF",
-        "ALOKINDS",
-        "APOLLOPIPE",
-        "ARTEMISMED",
-        "ASALCBR",
-        "ASCOM",
-        "BAFNAPH",
-        "COHANCE",
-        "CSBBANK",
-        "DCI"
-      ],
+      "candidates_listed_nearby": 10,
       "cum_close": "882.2",
       "ex_date": "2019-10-11",
       "ex_date_gap": "-0.557923",
       "ex_open": "390",
-      "excess_over_market": "-0.557923",
-      "market_median_move": "+0.000000",
+      "excess_over_market": "-0.559014",
+      "market_median_move": "+0.001091",
+      "ranked_candidates": [
+        {
+          "candidate": "KUANTUM",
+          "first_open": "45.6",
+          "implied_ratio": "10.7939",
+          "listed_on": "2019-10-23",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0794"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "ABREL"
     },
     {
-      "candidate_new_listings": [
-        "ADANIGREEN",
-        "AKG",
-        "ALIVUS",
-        "AMBANIORGO",
-        "AVG",
-        "AVROIND",
-        "BORORENEW",
-        "BSE500IETF",
-        "CHEMFAB",
-        "CREDITACC"
-      ],
+      "candidates_listed_nearby": 18,
       "cum_close": "151.45",
       "ex_date": "2018-04-05",
       "ex_date_gap": "-0.121822",
       "ex_open": "133",
-      "excess_over_market": "-0.140013",
-      "market_median_move": "+0.018191",
+      "excess_over_market": "-0.140048",
+      "market_median_move": "+0.018225",
+      "ranked_candidates": [
+        {
+          "candidate": "HAVISHA",
+          "first_open": "1.85",
+          "implied_ratio": "9.9730",
+          "listed_on": "2018-04-12",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0027"
+        },
+        {
+          "candidate": "MMP",
+          "first_open": "190",
+          "implied_ratio": "0.0971",
+          "listed_on": "2018-04-12",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0289"
+        },
+        {
+          "candidate": "MAHICKRA",
+          "first_open": "35",
+          "implied_ratio": "0.5271",
+          "listed_on": "2018-04-26",
+          "nearest_clean_ratio": "1:2",
+          "relative_gap": "0.0543"
+        },
+        {
+          "candidate": "PIGL",
+          "first_open": "35",
+          "implied_ratio": "0.5271",
+          "listed_on": "2018-04-23",
+          "nearest_clean_ratio": "1:2",
+          "relative_gap": "0.0543"
+        },
+        {
+          "candidate": "BORORENEW",
+          "first_open": "69.95",
+          "implied_ratio": "0.2638",
+          "listed_on": "2018-05-25",
+          "nearest_clean_ratio": "1:4",
+          "relative_gap": "0.0550"
+        }
+      ],
       "subject": "Scheme Of Arrangement",
       "symbol": "ADANIENT"
     },
     {
-      "candidate_new_listings": [
-        "AAVAS",
-        "ABSLNN50ET",
-        "AKG",
-        "ANUP",
-        "ATGL",
-        "CHALET",
-        "CREATIVEYE",
-        "DALBHARAT",
-        "DRSDILIP",
-        "GRSE"
-      ],
+      "candidates_listed_nearby": 13,
       "cum_close": "210.95",
       "ex_date": "2018-09-06",
       "ex_date_gap": "-0.288931",
       "ex_open": "150",
-      "excess_over_market": "-0.293085",
-      "market_median_move": "+0.004154",
+      "excess_over_market": "-0.292636",
+      "market_median_move": "+0.003705",
+      "ranked_candidates": [
+        {
+          "candidate": "SILGO",
+          "first_open": "31.25",
+          "implied_ratio": "1.9504",
+          "listed_on": "2018-10-10",
+          "nearest_clean_ratio": "2:1",
+          "relative_gap": "0.0248"
+        },
+        {
+          "candidate": "PARIN",
+          "first_open": "64",
+          "implied_ratio": "0.9523",
+          "listed_on": "2018-10-09",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0477"
+        }
+      ],
       "subject": "Scheme Of Arrangement",
       "symbol": "ADANIENT"
     },
     {
-      "candidate_new_listings": [
-        "AARTECH",
-        "AATMAJ",
-        "ACL",
-        "AEROFLEX",
-        "AGUL",
-        "ARABIAN",
-        "ASHOKAMET",
-        "ATAM",
-        "ATL",
-        "AUROIMPEX"
-      ],
+      "candidates_listed_nearby": 28,
       "cum_close": "86.45",
       "ex_date": "2023-04-18",
       "ex_date_gap": "-0.247542",
       "ex_open": "65.05",
-      "excess_over_market": "-0.247598",
-      "market_median_move": "+0.000056",
+      "excess_over_market": "-0.248716",
+      "market_median_move": "+0.001174",
+      "ranked_candidates": [
+        {
+          "candidate": "REMUS",
+          "first_open": "213.9",
+          "implied_ratio": "0.1000",
+          "listed_on": "2023-05-29",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0005"
+        },
+        {
+          "candidate": "DENTALKART",
+          "first_open": "211",
+          "implied_ratio": "0.1014",
+          "listed_on": "2023-06-02",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0142"
+        },
+        {
+          "candidate": "SADHNANIQ",
+          "first_open": "108.75",
+          "implied_ratio": "0.1968",
+          "listed_on": "2023-05-08",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0161"
+        },
+        {
+          "candidate": "GOLDADD",
+          "first_open": "62.8",
+          "implied_ratio": "0.3408",
+          "listed_on": "2023-05-08",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0223"
+        },
+        {
+          "candidate": "INFOLLION",
+          "first_open": "209",
+          "implied_ratio": "0.1024",
+          "listed_on": "2023-06-08",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0239"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "ALLCARGO"
     },
     {
-      "candidate_new_listings": [
-        "3BBLACKBIO",
-        "AARNAV",
-        "ABANSENT",
-        "ABMKNO",
-        "ABSL10BANK",
-        "ABSLMSCIN",
-        "ACETEC",
-        "ACSTECH",
-        "ADISOFT",
-        "ADVAIT"
-      ],
+      "candidates_listed_nearby": 66,
       "cum_close": "33.87",
       "ex_date": "2025-11-12",
       "ex_date_gap": "-0.687039",
       "ex_open": "10.6",
-      "excess_over_market": "-0.691108",
-      "market_median_move": "+0.004069",
+      "excess_over_market": "-0.692055",
+      "market_median_move": "+0.005016",
+      "ranked_candidates": [
+        {
+          "candidate": "ALGOQUANT",
+          "first_open": "70",
+          "implied_ratio": "0.3324",
+          "listed_on": "2026-01-06",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0027"
+        },
+        {
+          "candidate": "NEXT50ADD",
+          "first_open": "69.4",
+          "implied_ratio": "0.3353",
+          "listed_on": "2026-01-09",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0059"
+        },
+        {
+          "candidate": "SOCL",
+          "first_open": "68.8",
+          "implied_ratio": "0.3382",
+          "listed_on": "2025-12-30",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0147"
+        },
+        {
+          "candidate": "CSSL",
+          "first_open": "119",
+          "implied_ratio": "0.1955",
+          "listed_on": "2025-12-08",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0223"
+        },
+        {
+          "candidate": "GROWWMC150",
+          "first_open": "226",
+          "implied_ratio": "0.1030",
+          "listed_on": "2025-11-17",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0296"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "ALLCARGO"
     },
     {
-      "candidate_new_listings": [
-        "AAATECH",
-        "ACCURACY",
-        "ANURAS",
-        "ATALREAL",
-        "AWHCL",
-        "BCLIND",
-        "BESTAGRO",
-        "BNKETFAXIS",
-        "BSHSL",
-        "BTML"
-      ],
+      "candidates_listed_nearby": 21,
       "cum_close": "21",
       "ex_date": "2020-10-06",
       "ex_date_gap": "-0.076190",
       "ex_open": "19.4",
-      "excess_over_market": "-0.079569",
-      "market_median_move": "+0.003378",
+      "excess_over_market": "-0.079332",
+      "market_median_move": "+0.003141",
+      "ranked_candidates": [
+        {
+          "candidate": "SHRADHA",
+          "first_open": "7.92",
+          "implied_ratio": "0.2020",
+          "listed_on": "2020-10-22",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0101"
+        },
+        {
+          "candidate": "ATALREAL",
+          "first_open": "4.7",
+          "implied_ratio": "0.3404",
+          "listed_on": "2020-10-15",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0213"
+        },
+        {
+          "candidate": "BTML",
+          "first_open": "1.7",
+          "implied_ratio": "0.9412",
+          "listed_on": "2020-10-21",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0588"
+        },
+        {
+          "candidate": "ORCHPHARMA",
+          "first_open": "17.15",
+          "implied_ratio": "0.0933",
+          "listed_on": "2020-11-03",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0671"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "ANANTRAJ"
     },
     {
-      "candidate_new_listings": [
-        "ABSLNN50ET",
-        "ANUP",
-        "ARVINDFASN",
-        "CHALET",
-        "CREATIVEYE",
-        "DALBHARAT",
-        "DRSDILIP",
-        "KHFM",
-        "KPITTECH",
-        "LATENTVIEW"
-      ],
+      "candidates_listed_nearby": 9,
       "cum_close": "248.85",
       "ex_date": "2018-11-28",
       "ex_date_gap": "-0.560177",
       "ex_open": "109.45",
-      "excess_over_market": "-0.553260",
-      "market_median_move": "-0.006917",
+      "excess_over_market": "-0.552033",
+      "market_median_move": "-0.008144",
+      "ranked_candidates": [
+        {
+          "candidate": "ABSLNN50ET",
+          "first_open": "28.3",
+          "implied_ratio": "4.9258",
+          "listed_on": "2018-12-27",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0148"
+        },
+        {
+          "candidate": "TECHNOE",
+          "first_open": "264",
+          "implied_ratio": "0.5280",
+          "listed_on": "2018-12-18",
+          "nearest_clean_ratio": "1:2",
+          "relative_gap": "0.0561"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "ARVIND"
     },
     {
-      "candidate_new_listings": [
-        "ACCENTMIC",
-        "ADDICTIVE",
-        "AKANKSHA",
-        "ALPEXSOLAR",
-        "ALPHAETF",
-        "AMNPLST",
-        "APS",
-        "ARABIAN",
-        "ARVINDPORT",
-        "ASKAUTOLTD"
-      ],
+      "candidates_listed_nearby": 67,
       "cum_close": "775.3",
       "ex_date": "2023-09-14",
       "ex_date_gap": "+0.322069",
       "ex_open": "1025",
-      "excess_over_market": "+0.314493",
-      "market_median_move": "+0.007576",
+      "excess_over_market": "+0.315060",
+      "market_median_move": "+0.007009",
+      "ranked_candidates": [],
       "subject": "Demerger",
       "symbol": "BAJAJELEC"
     },
     {
-      "candidate_new_listings": [
-        "ACI",
-        "AEROENTER",
-        "AERONEU",
-        "AFSL",
-        "AGARWALFT",
-        "AMEYA",
-        "AMIABLE",
-        "ANLON",
-        "ANNAPURNA",
-        "ARHAM"
-      ],
+      "candidates_listed_nearby": 28,
       "cum_close": "919.5",
       "ex_date": "2022-09-08",
       "ex_date_gap": "-0.203915",
       "ex_open": "732",
-      "excess_over_market": "-0.207057",
-      "market_median_move": "+0.003142",
+      "excess_over_market": "-0.205813",
+      "market_median_move": "+0.001898",
+      "ranked_candidates": [
+        {
+          "candidate": "HDFCMOMENT",
+          "first_open": "19.2",
+          "implied_ratio": "9.7656",
+          "listed_on": "2022-10-17",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0234"
+        },
+        {
+          "candidate": "HDFCQUAL",
+          "first_open": "38.5",
+          "implied_ratio": "4.8701",
+          "listed_on": "2022-09-29",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0260"
+        },
+        {
+          "candidate": "PPLPHARMA",
+          "first_open": "195.3",
+          "implied_ratio": "0.9601",
+          "listed_on": "2022-10-19",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0399"
+        },
+        {
+          "candidate": "BOHRAIND",
+          "first_open": "65.4",
+          "implied_ratio": "2.8670",
+          "listed_on": "2022-10-27",
+          "nearest_clean_ratio": "3:1",
+          "relative_gap": "0.0443"
+        },
+        {
+          "candidate": "HDFCGROWTH",
+          "first_open": "89",
+          "implied_ratio": "2.1067",
+          "listed_on": "2022-09-29",
+          "nearest_clean_ratio": "2:1",
+          "relative_gap": "0.0534"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "BEML"
     },
     {
-      "candidate_new_listings": [
-        "ABINFRA",
-        "ANUP",
-        "ARVINDFASN",
-        "BANKIETF",
-        "CHALET",
-        "CONFIPET",
-        "DALBHARAT",
-        "DCMNVL",
-        "DGCONTENT",
-        "DRSDILIP"
-      ],
+      "candidates_listed_nearby": 15,
       "cum_close": "122.7",
       "ex_date": "2019-01-24",
       "ex_date_gap": "+0.100244",
       "ex_open": "135",
-      "excess_over_market": "+0.105789",
-      "market_median_move": "-0.005544",
+      "excess_over_market": "+0.103241",
+      "market_median_move": "-0.002996",
+      "ranked_candidates": [],
       "subject": "Composite Scheme Of Arrangement",
       "symbol": "BSOFT"
     },
     {
-      "candidate_new_listings": [
-        "ACCURACY",
-        "AMBICAAGAR",
-        "ANMOL",
-        "ANURAS",
-        "AWHCL",
-        "BCLIND",
-        "BESTAGRO",
-        "CARYSIL",
-        "CLSEL",
-        "CRAFTSMAN"
-      ],
+      "candidates_listed_nearby": 11,
       "cum_close": "21.9",
       "ex_date": "2020-12-10",
       "ex_date_gap": "+0.004566",
       "ex_open": "22",
-      "excess_over_market": "+0.013241",
-      "market_median_move": "-0.008674",
+      "excess_over_market": "+0.013437",
+      "market_median_move": "-0.008871",
+      "ranked_candidates": [],
       "subject": "Demerger",
       "symbol": "CCAVENUE"
     },
     {
-      "candidate_new_listings": [
-        "ABHAPOWER",
-        "ACMESOLAR",
-        "AFCONS",
-        "AFFORDABLE",
-        "AGARWALEYE",
-        "AGARWALTUF",
-        "AJAXENGG",
-        "ANUHPHR",
-        "ANYA",
-        "AONETOTAL"
-      ],
+      "candidates_listed_nearby": 66,
       "cum_close": "30.43",
       "ex_date": "2024-09-11",
       "ex_date_gap": "-0.046993",
       "ex_open": "29",
-      "excess_over_market": "-0.040077",
-      "market_median_move": "-0.006916",
+      "excess_over_market": "-0.037754",
+      "market_median_move": "-0.009239",
+      "ranked_candidates": [
+        {
+          "candidate": "VAL30IETF",
+          "first_open": "14.14",
+          "implied_ratio": "0.1011",
+          "listed_on": "2024-10-22",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0113"
+        },
+        {
+          "candidate": "GROWWGOLD",
+          "first_open": "7.64",
+          "implied_ratio": "0.1872",
+          "listed_on": "2024-10-24",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0641"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "CCAVENUE"
     },
     {
-      "candidate_new_listings": [
-        "ABSLNN50ET",
-        "ANUP",
-        "ARVINDFASN",
-        "ATGL",
-        "CHALET",
-        "CREATIVEYE",
-        "DALBHARAT",
-        "DRSDILIP",
-        "KHFM",
-        "KPITTECH"
-      ],
+      "candidates_listed_nearby": 7,
       "cum_close": "75.55",
       "ex_date": "2018-10-30",
       "ex_date_gap": "-0.109199",
       "ex_open": "67.3",
-      "excess_over_market": "-0.113829",
-      "market_median_move": "+0.004630",
+      "excess_over_market": "-0.114654",
+      "market_median_move": "+0.005455",
+      "ranked_candidates": [
+        {
+          "candidate": "RADAAN",
+          "first_open": "1.7",
+          "implied_ratio": "4.8529",
+          "listed_on": "2018-12-03",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0294"
+        },
+        {
+          "candidate": "CREATIVEYE",
+          "first_open": "2.95",
+          "implied_ratio": "2.7966",
+          "listed_on": "2018-12-12",
+          "nearest_clean_ratio": "3:1",
+          "relative_gap": "0.0678"
+        }
+      ],
       "subject": "Composite Scheme Of Arrangement",
       "symbol": "CESC"
     },
     {
-      "candidate_new_listings": [
-        "AETHER",
-        "AGNI",
-        "AKSHAR",
-        "AMEYA",
-        "ANNAPURNA",
-        "AXITA",
-        "BGLOBAL",
-        "BLUECOAST",
-        "BOHRAIND",
-        "CHEVIOT"
-      ],
+      "candidates_listed_nearby": 20,
       "cum_close": "360.2",
       "ex_date": "2022-05-13",
       "ex_date_gap": "-0.114381",
       "ex_open": "319",
-      "excess_over_market": "-0.126932",
-      "market_median_move": "+0.012551",
+      "excess_over_market": "-0.121344",
+      "market_median_move": "+0.006963",
+      "ranked_candidates": [
+        {
+          "candidate": "MANORAMA",
+          "first_open": "200",
+          "implied_ratio": "0.2060",
+          "listed_on": "2022-07-01",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0300"
+        },
+        {
+          "candidate": "LICI",
+          "first_open": "436",
+          "implied_ratio": "0.0945",
+          "listed_on": "2022-05-17",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0550"
+        },
+        {
+          "candidate": "PARADEEP",
+          "first_open": "44",
+          "implied_ratio": "0.9364",
+          "listed_on": "2022-05-27",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0636"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "DHAMPURSUG"
     },
     {
-      "candidate_new_listings": [
-        "AARTECH",
-        "AATMAJ",
-        "AEROFLEX",
-        "ALPHAETF",
-        "AMNPLST",
-        "ARABIAN",
-        "ARVINDPORT",
-        "ASHOKAMET",
-        "ASKAUTOLTD",
-        "ATL"
-      ],
+      "candidates_listed_nearby": 35,
       "cum_close": "44.9",
       "ex_date": "2023-06-02",
       "ex_date_gap": "-0.220490",
       "ex_open": "35",
-      "excess_over_market": "-0.224577",
-      "market_median_move": "+0.004087",
+      "excess_over_market": "-0.225110",
+      "market_median_move": "+0.004620",
+      "ranked_candidates": [
+        {
+          "candidate": "ASHOKAMET",
+          "first_open": "19.95",
+          "implied_ratio": "0.4962",
+          "listed_on": "2023-06-27",
+          "nearest_clean_ratio": "1:2",
+          "relative_gap": "0.0075"
+        },
+        {
+          "candidate": "CELLPOINT",
+          "first_open": "100",
+          "implied_ratio": "0.0990",
+          "listed_on": "2023-06-28",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0100"
+        },
+        {
+          "candidate": "ITADD",
+          "first_open": "30",
+          "implied_ratio": "0.3300",
+          "listed_on": "2023-07-13",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0100"
+        },
+        {
+          "candidate": "UTKARSHBNK",
+          "first_open": "40",
+          "implied_ratio": "0.2475",
+          "listed_on": "2023-07-21",
+          "nearest_clean_ratio": "1:4",
+          "relative_gap": "0.0100"
+        },
+        {
+          "candidate": "VILINBIO",
+          "first_open": "30",
+          "implied_ratio": "0.3300",
+          "listed_on": "2023-06-30",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0100"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "EDELWEISS"
     },
     {
-      "candidate_new_listings": [
-        "AARTECH",
-        "AATMAJ",
-        "ACL",
-        "AEROFLEX",
-        "AGUL",
-        "AKI",
-        "ASHOKAMET",
-        "ATAM",
-        "ATL",
-        "AUROIMPEX"
-      ],
+      "candidates_listed_nearby": 27,
       "cum_close": "543.25",
       "ex_date": "2023-04-06",
       "ex_date_gap": "-0.061206",
       "ex_open": "510",
-      "excess_over_market": "-0.067101",
-      "market_median_move": "+0.005895",
+      "excess_over_market": "-0.065140",
+      "market_median_move": "+0.003934",
+      "ranked_candidates": [
+        {
+          "candidate": "SAHYADRI",
+          "first_open": "348.45",
+          "implied_ratio": "0.0954",
+          "listed_on": "2023-04-06",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0458"
+        },
+        {
+          "candidate": "GOLDADD",
+          "first_open": "62.8",
+          "implied_ratio": "0.5295",
+          "listed_on": "2023-05-08",
+          "nearest_clean_ratio": "1:2",
+          "relative_gap": "0.0589"
+        },
+        {
+          "candidate": "INFINIUM",
+          "first_open": "70.75",
+          "implied_ratio": "0.4700",
+          "listed_on": "2023-04-17",
+          "nearest_clean_ratio": "1:2",
+          "relative_gap": "0.0601"
+        },
+        {
+          "candidate": "AKI",
+          "first_open": "15.6",
+          "implied_ratio": "2.1314",
+          "listed_on": "2023-04-06",
+          "nearest_clean_ratio": "2:1",
+          "relative_gap": "0.0657"
+        },
+        {
+          "candidate": "VIRINCHI",
+          "first_open": "35.95",
+          "implied_ratio": "0.9249",
+          "listed_on": "2023-05-03",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0751"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "GHCL"
     },
     {
-      "candidate_new_listings": [
-        "ABCOTS",
-        "AETHER",
-        "AGSTRA",
-        "AKSHAR",
-        "AUTOBEES",
-        "AUTOIETF",
-        "AWL",
-        "AXITA",
-        "CAMPUS",
-        "CHEVIOT"
-      ],
+      "candidates_listed_nearby": 22,
       "cum_close": "48.45",
       "ex_date": "2022-01-11",
       "ex_date_gap": "-0.097007",
       "ex_open": "43.75",
-      "excess_over_market": "-0.095949",
-      "market_median_move": "-0.001058",
+      "excess_over_market": "-0.095556",
+      "market_median_move": "-0.001451",
+      "ranked_candidates": [
+        {
+          "candidate": "FIBERWEB",
+          "first_open": "48.75",
+          "implied_ratio": "0.0964",
+          "listed_on": "2022-02-16",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0359"
+        },
+        {
+          "candidate": "GSEC5IETF",
+          "first_open": "50",
+          "implied_ratio": "0.0940",
+          "listed_on": "2022-03-10",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0600"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "GMRAIRPORT"
     },
     {
-      "candidate_new_listings": [
-        "21STCENMGM",
-        "5PAISA",
-        "AARVI",
-        "ABCAPITAL",
-        "AIROLAM",
-        "AISL",
-        "APEX",
-        "ARENTERP",
-        "ASIANENE",
-        "ASTRON"
-      ],
+      "candidates_listed_nearby": 18,
       "cum_close": "1302.6",
       "ex_date": "2017-07-19",
       "ex_date_gap": "-0.181790",
       "ex_open": "1065.8",
-      "excess_over_market": "-0.188293",
-      "market_median_move": "+0.006503",
+      "excess_over_market": "-0.189562",
+      "market_median_move": "+0.007772",
+      "ranked_candidates": [
+        {
+          "candidate": "GANGESSECU",
+          "first_open": "75.75",
+          "implied_ratio": "3.1261",
+          "listed_on": "2017-07-28",
+          "nearest_clean_ratio": "3:1",
+          "relative_gap": "0.0420"
+        },
+        {
+          "candidate": "ABCAPITAL",
+          "first_open": "250",
+          "implied_ratio": "0.9472",
+          "listed_on": "2017-09-01",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0528"
+        },
+        {
+          "candidate": "COCHINSHIP",
+          "first_open": "220.1",
+          "implied_ratio": "1.0759",
+          "listed_on": "2017-08-11",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0759"
+        },
+        {
+          "candidate": "BIOFILCHEM",
+          "first_open": "22",
+          "implied_ratio": "10.7636",
+          "listed_on": "2017-07-27",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0764"
+        },
+        {
+          "candidate": "SIS",
+          "first_open": "439.9",
+          "implied_ratio": "0.5383",
+          "listed_on": "2017-08-10",
+          "nearest_clean_ratio": "1:2",
+          "relative_gap": "0.0766"
+        }
+      ],
       "subject": "Scheme Of Arrangement",
       "symbol": "GRASIM"
     },
     {
-      "candidate_new_listings": [
-        "AASTHA",
-        "ACGL",
-        "ADDIND",
-        "ADVIKCA",
-        "AGL",
-        "ALFREDHE",
-        "ALPINETEX",
-        "ALUFLUOR",
-        "AMAL",
-        "AMARJOTHI"
-      ],
+      "candidates_listed_nearby": 199,
       "cum_close": "340",
       "ex_date": "2026-07-02",
       "ex_date_gap": "-0.147059",
       "ex_open": "290",
-      "excess_over_market": "-0.152118",
-      "market_median_move": "+0.005059",
+      "excess_over_market": "-0.154724",
+      "market_median_move": "+0.007665",
+      "ranked_candidates": [
+        {
+          "candidate": "LASERPOWER",
+          "first_open": "250",
+          "implied_ratio": "0.2000",
+          "listed_on": "2026-07-16",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0000"
+        },
+        {
+          "candidate": "SAICAPI",
+          "first_open": "149.95",
+          "implied_ratio": "0.3334",
+          "listed_on": "2026-08-17",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0003"
+        },
+        {
+          "candidate": "CMLL",
+          "first_open": "500.25",
+          "implied_ratio": "0.1000",
+          "listed_on": "2026-07-24",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0005"
+        },
+        {
+          "candidate": "POEL",
+          "first_open": "150.1",
+          "implied_ratio": "0.3331",
+          "listed_on": "2026-08-17",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0007"
+        },
+        {
+          "candidate": "ARCL",
+          "first_open": "249.68",
+          "implied_ratio": "0.2003",
+          "listed_on": "2026-08-17",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0013"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "GUJENERGY"
     },
     {
-      "candidate_new_listings": [
-        "3BBLACKBIO",
-        "AARNAV",
-        "ABANSENT",
-        "ABMKNO",
-        "ABSL10BANK",
-        "ABSLMSCIN",
-        "ACETEC",
-        "ACSTECH",
-        "ADISOFT",
-        "ADVAIT"
-      ],
+      "candidates_listed_nearby": 45,
       "cum_close": "2462.2",
       "ex_date": "2025-12-05",
       "ex_date_gap": "-0.016327",
       "ex_open": "2422",
-      "excess_over_market": "-0.012595",
-      "market_median_move": "-0.003732",
+      "excess_over_market": "-0.014522",
+      "market_median_move": "-0.001805",
+      "ranked_candidates": [
+        {
+          "candidate": "GKSL",
+          "first_open": "120",
+          "implied_ratio": "0.3350",
+          "listed_on": "2025-12-30",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0050"
+        },
+        {
+          "candidate": "MEESHO",
+          "first_open": "162.5",
+          "implied_ratio": "0.2474",
+          "listed_on": "2025-12-10",
+          "nearest_clean_ratio": "1:4",
+          "relative_gap": "0.0105"
+        },
+        {
+          "candidate": "ENCOMPAS",
+          "first_open": "203.3",
+          "implied_ratio": "0.1977",
+          "listed_on": "2025-12-12",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0113"
+        },
+        {
+          "candidate": "PARKHOSPS",
+          "first_open": "158.8",
+          "implied_ratio": "0.2531",
+          "listed_on": "2025-12-17",
+          "nearest_clean_ratio": "1:4",
+          "relative_gap": "0.0126"
+        },
+        {
+          "candidate": "CSSL",
+          "first_open": "119",
+          "implied_ratio": "0.3378",
+          "listed_on": "2025-12-08",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0134"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "HINDUNILVR"
     },
     {
-      "candidate_new_listings": [
-        "21STCENMGM",
-        "5PAISA",
-        "AISL",
-        "ALIVUS",
-        "AMBER",
-        "APOLLO",
-        "ARENTERP",
-        "ASIANENE",
-        "ASTERDM",
-        "ASTRON"
-      ],
+      "candidates_listed_nearby": 23,
       "cum_close": "597.8",
       "ex_date": "2017-10-17",
       "ex_date_gap": "-0.018568",
       "ex_open": "586.7",
-      "excess_over_market": "-0.018568",
-      "market_median_move": "+0.000000",
+      "excess_over_market": "-0.018691",
+      "market_median_move": "+0.000123",
+      "ranked_candidates": [
+        {
+          "candidate": "FELIX",
+          "first_open": "35.5",
+          "implied_ratio": "0.3127",
+          "listed_on": "2017-12-05",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0620"
+        },
+        {
+          "candidate": "ZODIAC",
+          "first_open": "31.2",
+          "implied_ratio": "0.3558",
+          "listed_on": "2017-12-05",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0673"
+        },
+        {
+          "candidate": "AISL",
+          "first_open": "120",
+          "implied_ratio": "0.0925",
+          "listed_on": "2017-11-20",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0750"
+        },
+        {
+          "candidate": "SILVERTUC",
+          "first_open": "12",
+          "implied_ratio": "0.9250",
+          "listed_on": "2017-12-01",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0750"
+        },
+        {
+          "candidate": "ICICIB22",
+          "first_open": "36.11",
+          "implied_ratio": "0.3074",
+          "listed_on": "2017-11-28",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0778"
+        }
+      ],
       "subject": "Scheme Of Arrangement",
       "symbol": "IIFL"
     },
     {
-      "candidate_new_listings": [
-        "360ONE",
-        "ABINFRA",
-        "ABSLBANETF",
-        "AFFLE",
-        "APOLLOPIPE",
-        "BAHETI",
-        "BANKIETF",
-        "CONFIPET",
-        "DCMNVL",
-        "DGCONTENT"
-      ],
+      "candidates_listed_nearby": 12,
       "cum_close": "405.5",
       "ex_date": "2019-05-30",
       "ex_date_gap": "-0.497041",
       "ex_open": "203.95",
-      "excess_over_market": "-0.497041",
-      "market_median_move": "+0.000000",
+      "excess_over_market": "-0.497930",
+      "market_median_move": "+0.000890",
+      "ranked_candidates": [
+        {
+          "candidate": "INDIAMART",
+          "first_open": "590",
+          "implied_ratio": "0.3416",
+          "listed_on": "2019-07-04",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0248"
+        },
+        {
+          "candidate": "CONFIPET",
+          "first_open": "41.4",
+          "implied_ratio": "4.8684",
+          "listed_on": "2019-06-13",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0263"
+        },
+        {
+          "candidate": "OAL",
+          "first_open": "207.75",
+          "implied_ratio": "0.9702",
+          "listed_on": "2019-07-11",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0298"
+        }
+      ],
       "subject": "Scheme Of Arrangement",
       "symbol": "IIFL"
     },
     {
-      "candidate_new_listings": [
-        "AAKAAR",
-        "ABLBL",
-        "ACTIVEINFR",
-        "AEGISVOPAK",
-        "AGARWALEYE",
-        "AJAXENGG",
-        "AONELIQUID",
-        "AONENIFTY",
-        "AONETOTAL",
-        "ARIS"
-      ],
+      "candidates_listed_nearby": 50,
       "cum_close": "481.6",
       "ex_date": "2025-01-06",
       "ex_date_gap": "-0.053987",
       "ex_open": "455.6",
-      "excess_over_market": "-0.020516",
-      "market_median_move": "-0.033470",
+      "excess_over_market": "-0.021141",
+      "market_median_move": "-0.032846",
+      "ranked_candidates": [
+        {
+          "candidate": "MCLOUD",
+          "first_open": "77.9",
+          "implied_ratio": "0.3338",
+          "listed_on": "2025-02-07",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0013"
+        },
+        {
+          "candidate": "INDOFARM",
+          "first_open": "256",
+          "implied_ratio": "0.1016",
+          "listed_on": "2025-01-07",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0156"
+        },
+        {
+          "candidate": "NATCAPSUQ",
+          "first_open": "264.8",
+          "implied_ratio": "0.0982",
+          "listed_on": "2025-02-14",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0181"
+        },
+        {
+          "candidate": "DDEVPLSTIK",
+          "first_open": "265",
+          "implied_ratio": "0.0981",
+          "listed_on": "2025-01-15",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0189"
+        },
+        {
+          "candidate": "GUJTHEM",
+          "first_open": "269.85",
+          "implied_ratio": "0.0963",
+          "listed_on": "2025-02-25",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0365"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "ITC"
     },
     {
-      "candidate_new_listings": [
-        "ABSLLIQUID",
-        "AGROPHOS",
-        "AJOONI",
-        "ALCODIS",
-        "ANGELONE",
-        "ARTNIRMAN",
-        "BBTCL",
-        "BECTORFOOD",
-        "BHANDARI",
-        "BIGBLOC"
-      ],
+      "candidates_listed_nearby": 34,
       "cum_close": "25.9",
       "ex_date": "2016-08-25",
       "ex_date_gap": "-0.069498",
       "ex_open": "24.1",
-      "excess_over_market": "-0.066330",
-      "market_median_move": "-0.003168",
+      "excess_over_market": "-0.065736",
+      "market_median_move": "-0.003762",
+      "ranked_candidates": [
+        {
+          "candidate": "CYBERMEDIA",
+          "first_open": "9.5",
+          "implied_ratio": "0.1895",
+          "listed_on": "2016-10-10",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0526"
+        },
+        {
+          "candidate": "NV20IETF",
+          "first_open": "3.8",
+          "implied_ratio": "0.4737",
+          "listed_on": "2016-08-31",
+          "nearest_clean_ratio": "1:2",
+          "relative_gap": "0.0526"
+        }
+      ],
       "subject": "Scheme Of Arrangement",
       "symbol": "JINDALSAW"
     },
     {
-      "candidate_new_listings": [
-        "AMBICAAGAR",
-        "ANMOL",
-        "ANURAS",
-        "ARIHANTCAP",
-        "BCLIND",
-        "BESTAGRO",
-        "CLEAN",
-        "CLSEL",
-        "CRAFTSMAN",
-        "DEEPINDS"
-      ],
+      "candidates_listed_nearby": 24,
       "cum_close": "1025.6",
       "ex_date": "2021-02-04",
       "ex_date_gap": "-0.132215",
       "ex_open": "890",
-      "excess_over_market": "-0.139678",
-      "market_median_move": "+0.007463",
+      "excess_over_market": "-0.142921",
+      "market_median_move": "+0.010705",
+      "ranked_candidates": [
+        {
+          "candidate": "CRAFTSMAN",
+          "first_open": "1359",
+          "implied_ratio": "0.0998",
+          "listed_on": "2021-03-25",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0022"
+        },
+        {
+          "candidate": "PARTYCRUS",
+          "first_open": "27",
+          "implied_ratio": "5.0222",
+          "listed_on": "2021-03-05",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0044"
+        },
+        {
+          "candidate": "ITAXIS",
+          "first_open": "269.96",
+          "implied_ratio": "0.5023",
+          "listed_on": "2021-03-31",
+          "nearest_clean_ratio": "1:2",
+          "relative_gap": "0.0046"
+        },
+        {
+          "candidate": "ANURAS",
+          "first_open": "520",
+          "implied_ratio": "0.2608",
+          "listed_on": "2021-03-24",
+          "nearest_clean_ratio": "1:4",
+          "relative_gap": "0.0431"
+        },
+        {
+          "candidate": "IT",
+          "first_open": "25.6",
+          "implied_ratio": "5.2969",
+          "listed_on": "2021-03-05",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0594"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "JUBLPHARMA"
     },
     {
-      "candidate_new_listings": [
-        "AETHER",
-        "AGSTRA",
-        "AKSHAR",
-        "AUTOBEES",
-        "AUTOIETF",
-        "AWL",
-        "AXITA",
-        "CAMPUS",
-        "CHEVIOT",
-        "CHOICEIN"
-      ],
+      "candidates_listed_nearby": 21,
       "cum_close": "93.37",
       "ex_date": "2022-01-14",
       "ex_date_gap": "-0.072079",
       "ex_open": "86.64",
-      "excess_over_market": "-0.074889",
-      "market_median_move": "+0.002810",
+      "excess_over_market": "-0.073112",
+      "market_median_move": "+0.001033",
+      "ranked_candidates": [
+        {
+          "candidate": "SILVERIETF",
+          "first_open": "66.6",
+          "implied_ratio": "0.1011",
+          "listed_on": "2022-01-31",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0105"
+        },
+        {
+          "candidate": "DEVIT",
+          "first_open": "27.6",
+          "implied_ratio": "0.2438",
+          "listed_on": "2022-02-15",
+          "nearest_clean_ratio": "1:4",
+          "relative_gap": "0.0246"
+        },
+        {
+          "candidate": "SILVER",
+          "first_open": "63.4",
+          "implied_ratio": "0.1062",
+          "listed_on": "2022-02-03",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0615"
+        },
+        {
+          "candidate": "MHLXMIRU",
+          "first_open": "72",
+          "implied_ratio": "0.0935",
+          "listed_on": "2022-01-27",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0653"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "MOTHERSON"
     },
     {
-      "candidate_new_listings": [
-        "AARTECH",
-        "AATMAJ",
-        "AEROFLEX",
-        "ALPHAETF",
-        "AMNPLST",
-        "ARABIAN",
-        "ARVINDPORT",
-        "ASHOKAMET",
-        "ASKAUTOLTD",
-        "ATL"
-      ],
+      "candidates_listed_nearby": 39,
       "cum_close": "405.4",
       "ex_date": "2023-06-08",
       "ex_date_gap": "-0.772694",
       "ex_open": "92.15",
-      "excess_over_market": "-0.766119",
-      "market_median_move": "-0.006574",
+      "excess_over_market": "-0.766651",
+      "market_median_move": "-0.006043",
+      "ranked_candidates": [
+        {
+          "candidate": "HMAAGRO",
+          "first_open": "62.5",
+          "implied_ratio": "5.0120",
+          "listed_on": "2023-07-04",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0024"
+        },
+        {
+          "candidate": "GREENCHEF",
+          "first_open": "104",
+          "implied_ratio": "3.0120",
+          "listed_on": "2023-07-06",
+          "nearest_clean_ratio": "3:1",
+          "relative_gap": "0.0040"
+        },
+        {
+          "candidate": "NETWEB",
+          "first_open": "947",
+          "implied_ratio": "0.3308",
+          "listed_on": "2023-07-27",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0077"
+        },
+        {
+          "candidate": "SPECTSTM",
+          "first_open": "155",
+          "implied_ratio": "2.0210",
+          "listed_on": "2023-06-22",
+          "nearest_clean_ratio": "2:1",
+          "relative_gap": "0.0105"
+        },
+        {
+          "candidate": "PTCIL",
+          "first_open": "3090",
+          "implied_ratio": "0.1014",
+          "listed_on": "2023-06-09",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0138"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "NIITLTD"
     },
     {
-      "candidate_new_listings": [
-        "ACI",
-        "AEROENTER",
-        "AERONEU",
-        "AFSL",
-        "AGARWALFT",
-        "AGUL",
-        "AKI",
-        "AMIABLE",
-        "ANLON",
-        "ARHAM"
-      ],
+      "candidates_listed_nearby": 35,
       "cum_close": "16.3",
       "ex_date": "2022-10-27",
       "ex_date_gap": "+0.710429",
       "ex_open": "27.88",
-      "excess_over_market": "+0.709174",
-      "market_median_move": "+0.001255",
+      "excess_over_market": "+0.705483",
+      "market_median_move": "+0.004947",
+      "ranked_candidates": [],
       "subject": "Demerger",
       "symbol": "NMDC"
     },
     {
-      "candidate_new_listings": [
-        "360ONE",
-        "ABINFRA",
-        "AFFLE",
-        "BAHETI",
-        "BANKIETF",
-        "CONFIPET",
-        "DCMNVL",
-        "DGCONTENT",
-        "DOLATALGO",
-        "EMAMIPAP"
-      ],
+      "candidates_listed_nearby": 8,
       "cum_close": "88.45",
       "ex_date": "2019-04-23",
       "ex_date_gap": "-0.138496",
       "ex_open": "76.2",
-      "excess_over_market": "-0.136327",
-      "market_median_move": "-0.002169",
+      "excess_over_market": "-0.136401",
+      "market_median_move": "-0.002095",
+      "ranked_candidates": [
+        {
+          "candidate": "ONEPOINT",
+          "first_open": "5.85",
+          "implied_ratio": "2.0940",
+          "listed_on": "2019-05-09",
+          "nearest_clean_ratio": "2:1",
+          "relative_gap": "0.0470"
+        },
+        {
+          "candidate": "PAR",
+          "first_open": "52.9",
+          "implied_ratio": "0.2316",
+          "listed_on": "2019-05-16",
+          "nearest_clean_ratio": "1:4",
+          "relative_gap": "0.0737"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "PRAKASH"
     },
     {
-      "candidate_new_listings": [
-        "AAKAAR",
-        "AARADHYA",
-        "ABLBL",
-        "ADVANCE",
-        "AEGISVOPAK",
-        "AHCL",
-        "ALLTIME",
-        "AMANTA",
-        "AMCL",
-        "ANONDITA"
-      ],
+      "candidates_listed_nearby": 31,
       "cum_close": "604.9",
       "ex_date": "2025-04-15",
       "ex_date_gap": "-0.530501",
       "ex_open": "284",
-      "excess_over_market": "-0.556378",
-      "market_median_move": "+0.025877",
+      "excess_over_market": "-0.559273",
+      "market_median_move": "+0.028772",
+      "ranked_candidates": [
+        {
+          "candidate": "MONEXT50",
+          "first_open": "65.07",
+          "implied_ratio": "4.9316",
+          "listed_on": "2025-05-14",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0137"
+        },
+        {
+          "candidate": "DCCL",
+          "first_open": "65.15",
+          "implied_ratio": "4.9256",
+          "listed_on": "2025-05-28",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0149"
+        },
+        {
+          "candidate": "ATHERENERG",
+          "first_open": "328",
+          "implied_ratio": "0.9784",
+          "listed_on": "2025-05-06",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0216"
+        },
+        {
+          "candidate": "TINNARUBR",
+          "first_open": "1021",
+          "implied_ratio": "0.3143",
+          "listed_on": "2025-04-17",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0571"
+        },
+        {
+          "candidate": "EQUAL50",
+          "first_open": "303.44",
+          "implied_ratio": "1.0575",
+          "listed_on": "2025-05-15",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0575"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "QUESS"
     },
     {
-      "candidate_new_listings": [
-        "ABHAPOWER",
-        "ACMESOLAR",
-        "AERON",
-        "AESTHETIK",
-        "AFCONS",
-        "AFFORDABLE",
-        "AGARWALTUF",
-        "AGIIL",
-        "AKUMS",
-        "ANUHPHR"
-      ],
+      "candidates_listed_nearby": 65,
       "cum_close": "3156.1",
       "ex_date": "2024-07-11",
       "ex_date_gap": "-0.396090",
       "ex_open": "1906",
-      "excess_over_market": "-0.398552",
-      "market_median_move": "+0.002462",
+      "excess_over_market": "-0.396878",
+      "market_median_move": "+0.000788",
+      "ranked_candidates": [
+        {
+          "candidate": "CEIGALL",
+          "first_open": "419",
+          "implied_ratio": "2.9835",
+          "listed_on": "2024-08-08",
+          "nearest_clean_ratio": "3:1",
+          "relative_gap": "0.0055"
+        },
+        {
+          "candidate": "INTERARCH",
+          "first_open": "1299",
+          "implied_ratio": "0.9624",
+          "listed_on": "2024-08-26",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0376"
+        },
+        {
+          "candidate": "BULKCORP",
+          "first_open": "130",
+          "implied_ratio": "9.6162",
+          "listed_on": "2024-08-06",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0384"
+        },
+        {
+          "candidate": "SSEGL",
+          "first_open": "260",
+          "implied_ratio": "4.8081",
+          "listed_on": "2024-08-06",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0384"
+        },
+        {
+          "candidate": "FIRSTCRY",
+          "first_open": "651",
+          "implied_ratio": "1.9203",
+          "listed_on": "2024-08-13",
+          "nearest_clean_ratio": "2:1",
+          "relative_gap": "0.0399"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "RAYMOND"
     },
     {
-      "candidate_new_listings": [
-        "AAKAAR",
-        "AARADHYA",
-        "ABLBL",
-        "ADVANCE",
-        "AEGISVOPAK",
-        "AHCL",
-        "ALLTIME",
-        "AMANTA",
-        "AMCL",
-        "ANONDITA"
-      ],
+      "candidates_listed_nearby": 65,
       "cum_close": "1564.3",
       "ex_date": "2025-05-14",
       "ex_date_gap": "-0.664387",
       "ex_open": "525",
-      "excess_over_market": "-0.675254",
-      "market_median_move": "+0.010867",
+      "excess_over_market": "-0.675041",
+      "market_median_move": "+0.010655",
+      "ranked_candidates": [
+        {
+          "candidate": "ARIS",
+          "first_open": "205",
+          "implied_ratio": "5.0698",
+          "listed_on": "2025-06-25",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0140"
+        },
+        {
+          "candidate": "BELRISE",
+          "first_open": "100",
+          "implied_ratio": "10.3930",
+          "listed_on": "2025-05-28",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0393"
+        },
+        {
+          "candidate": "RAYMONDREL",
+          "first_open": "1000",
+          "implied_ratio": "1.0393",
+          "listed_on": "2025-07-01",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0393"
+        },
+        {
+          "candidate": "SUNTECH",
+          "first_open": "109.1",
+          "implied_ratio": "9.5261",
+          "listed_on": "2025-07-02",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0474"
+        },
+        {
+          "candidate": "MOPSE",
+          "first_open": "99",
+          "implied_ratio": "10.4980",
+          "listed_on": "2025-06-05",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0498"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "RAYMOND"
     },
     {
-      "candidate_new_listings": [
-        "ACCENTMIC",
-        "AEROFLEX",
-        "AKANKSHA",
-        "ALPHAETF",
-        "AMNPLST",
-        "ARABIAN",
-        "ARVINDPORT",
-        "ASKAUTOLTD",
-        "ATL",
-        "AZAD"
-      ],
+      "candidates_listed_nearby": 47,
       "cum_close": "1354.4",
       "ex_date": "2023-07-20",
       "ex_date_gap": "-0.047549",
       "ex_open": "1290",
-      "excess_over_market": "-0.047549",
-      "market_median_move": "+0.000000",
+      "excess_over_market": "-0.047665",
+      "market_median_move": "+0.000116",
+      "ranked_candidates": [
+        {
+          "candidate": "YCCL",
+          "first_open": "32",
+          "implied_ratio": "2.0125",
+          "listed_on": "2023-08-03",
+          "nearest_clean_ratio": "2:1",
+          "relative_gap": "0.0063"
+        },
+        {
+          "candidate": "JLHL",
+          "first_open": "194.6",
+          "implied_ratio": "0.3309",
+          "listed_on": "2023-09-18",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0072"
+        },
+        {
+          "candidate": "SAROJA",
+          "first_open": "65",
+          "implied_ratio": "0.9908",
+          "listed_on": "2023-09-13",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0092"
+        },
+        {
+          "candidate": "AEROFLEX",
+          "first_open": "190",
+          "implied_ratio": "0.3389",
+          "listed_on": "2023-08-31",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0168"
+        },
+        {
+          "candidate": "JIOFIN",
+          "first_open": "262",
+          "implied_ratio": "0.2458",
+          "listed_on": "2023-08-21",
+          "nearest_clean_ratio": "1:4",
+          "relative_gap": "0.0168"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "RELIANCE"
     },
     {
-      "candidate_new_listings": [
-        "ABDL",
-        "ABGSEC",
-        "ABHAPOWER",
-        "ACMESOLAR",
-        "AERON",
-        "AESTHETIK",
-        "AFCONS",
-        "AFFORDABLE",
-        "AFIL",
-        "AGARWALTUF"
-      ],
+      "candidates_listed_nearby": 61,
       "cum_close": "10072.65",
       "ex_date": "2024-06-13",
       "ex_date_gap": "-0.374544",
       "ex_open": "6300",
-      "excess_over_market": "-0.377987",
-      "market_median_move": "+0.003443",
+      "excess_over_market": "-0.378297",
+      "market_median_move": "+0.003753",
+      "ranked_candidates": [
+        {
+          "candidate": "AKUMS",
+          "first_open": "725",
+          "implied_ratio": "5.2037",
+          "listed_on": "2024-08-06",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0407"
+        },
+        {
+          "candidate": "GGBL",
+          "first_open": "361",
+          "implied_ratio": "10.4506",
+          "listed_on": "2024-07-12",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0451"
+        },
+        {
+          "candidate": "EMCURE",
+          "first_open": "1325.05",
+          "implied_ratio": "2.8472",
+          "listed_on": "2024-07-10",
+          "nearest_clean_ratio": "3:1",
+          "relative_gap": "0.0509"
+        },
+        {
+          "candidate": "BANSALWIRE",
+          "first_open": "356",
+          "implied_ratio": "10.5973",
+          "listed_on": "2024-07-10",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0597"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "SANOFI"
     },
     {
-      "candidate_new_listings": [
-        "ACCENTMIC",
-        "AEROFLEX",
-        "AKANKSHA",
-        "ALPHAETF",
-        "AMNPLST",
-        "APS",
-        "ARABIAN",
-        "ARVINDPORT",
-        "ASKAUTOLTD",
-        "ATL"
-      ],
+      "candidates_listed_nearby": 51,
       "cum_close": "397.4",
       "ex_date": "2023-07-27",
       "ex_date_gap": "-0.001007",
       "ex_open": "397",
-      "excess_over_market": "-0.000603",
-      "market_median_move": "-0.000404",
+      "excess_over_market": "-0.001007",
+      "market_median_move": "+0.000000",
+      "ranked_candidates": [],
       "subject": "Demerger",
       "symbol": "SAREGAMA"
     },
     {
-      "candidate_new_listings": [
-        "AARTECH",
-        "AATMAJ",
-        "ACL",
-        "AEROFLEX",
-        "AGUL",
-        "AKI",
-        "ASHOKAMET",
-        "ATAM",
-        "ATL",
-        "AUROIMPEX"
-      ],
+      "candidates_listed_nearby": 27,
       "cum_close": "72",
       "ex_date": "2023-03-31",
       "ex_date_gap": "+0.300000",
       "ex_open": "93.6",
-      "excess_over_market": "+0.288985",
-      "market_median_move": "+0.011015",
+      "excess_over_market": "+0.289418",
+      "market_median_move": "+0.010582",
+      "ranked_candidates": [],
       "subject": "Demerger",
       "symbol": "SCI"
     },
     {
-      "candidate_new_listings": [
-        "AAKAAR",
-        "AARADHYA",
-        "ABLBL",
-        "AEGISVOPAK",
-        "AHCL",
-        "ALLTIME",
-        "AMANTA",
-        "AMCL",
-        "ANONDITA",
-        "ANTHEM"
-      ],
+      "candidates_listed_nearby": 27,
       "cum_close": "4928.15",
       "ex_date": "2025-04-07",
       "ex_date_gap": "-0.502856",
       "ex_open": "2450",
-      "excess_over_market": "-0.463358",
-      "market_median_move": "-0.039498",
+      "excess_over_market": "-0.465704",
+      "market_median_move": "-0.037152",
+      "ranked_candidates": [
+        {
+          "candidate": "BORANA",
+          "first_open": "243",
+          "implied_ratio": "10.1981",
+          "listed_on": "2025-05-27",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0198"
+        },
+        {
+          "candidate": "WAAREERTL",
+          "first_open": "884.95",
+          "implied_ratio": "2.8003",
+          "listed_on": "2025-04-09",
+          "nearest_clean_ratio": "3:1",
+          "relative_gap": "0.0666"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "SIEMENS"
     },
     {
-      "candidate_new_listings": [
-        "AARNAV",
-        "ABSL10BANK",
-        "ABSLMSCIN",
-        "ACETEC",
-        "ADVAIT",
-        "ADVENTHTL",
-        "AEPL",
-        "AEQUS",
-        "AEROPLANE",
-        "AHLWEST"
-      ],
+      "candidates_listed_nearby": 59,
       "cum_close": "5008.4",
       "ex_date": "2025-10-15",
       "ex_date_gap": "-0.540772",
       "ex_open": "2300",
-      "excess_over_market": "-0.545304",
-      "market_median_move": "+0.004533",
+      "excess_over_market": "-0.548836",
+      "market_median_move": "+0.008065",
+      "ranked_candidates": [
+        {
+          "candidate": "SKFINDUS",
+          "first_open": "2630",
+          "implied_ratio": "1.0298",
+          "listed_on": "2025-12-05",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0298"
+        },
+        {
+          "candidate": "CRAMC",
+          "first_open": "280.25",
+          "implied_ratio": "9.6642",
+          "listed_on": "2025-10-16",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0336"
+        },
+        {
+          "candidate": "STUDDS",
+          "first_open": "565",
+          "implied_ratio": "4.7936",
+          "listed_on": "2025-11-07",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0413"
+        },
+        {
+          "candidate": "CAPILLARY",
+          "first_open": "571.9",
+          "implied_ratio": "4.7358",
+          "listed_on": "2025-11-21",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0528"
+        },
+        {
+          "candidate": "TENNIND",
+          "first_open": "505",
+          "implied_ratio": "5.3632",
+          "listed_on": "2025-11-19",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0726"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "SKFINDIA"
     },
     {
-      "candidate_new_listings": [
-        "ADANIGREEN",
-        "AKG",
-        "ALIVUS",
-        "AMBANIORGO",
-        "AVG",
-        "AVROIND",
-        "BORORENEW",
-        "BSE500IETF",
-        "CHEMFAB",
-        "CREDITACC"
-      ],
+      "candidates_listed_nearby": 19,
       "cum_close": "653.55",
       "ex_date": "2018-04-06",
       "ex_date_gap": "-0.032209",
       "ex_open": "632.5",
-      "excess_over_market": "-0.035373",
-      "market_median_move": "+0.003165",
+      "excess_over_market": "-0.035404",
+      "market_median_move": "+0.003195",
+      "ranked_candidates": [
+        {
+          "candidate": "HITECH",
+          "first_open": "42.45",
+          "implied_ratio": "0.4959",
+          "listed_on": "2018-05-07",
+          "nearest_clean_ratio": "1:2",
+          "relative_gap": "0.0082"
+        },
+        {
+          "candidate": "DCMFINSERV",
+          "first_open": "2.15",
+          "implied_ratio": "9.7907",
+          "listed_on": "2018-04-26",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0209"
+        },
+        {
+          "candidate": "LEMONTREE",
+          "first_open": "61.6",
+          "implied_ratio": "0.3417",
+          "listed_on": "2018-04-09",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0252"
+        },
+        {
+          "candidate": "DIL",
+          "first_open": "10.15",
+          "implied_ratio": "2.0739",
+          "listed_on": "2018-06-05",
+          "nearest_clean_ratio": "2:1",
+          "relative_gap": "0.0369"
+        },
+        {
+          "candidate": "KFINTECH",
+          "first_open": "11",
+          "implied_ratio": "1.9136",
+          "listed_on": "2018-05-28",
+          "nearest_clean_ratio": "2:1",
+          "relative_gap": "0.0432"
+        }
+      ],
       "subject": "Scheme Of Arrangement",
       "symbol": "STAR"
     },
     {
-      "candidate_new_listings": [
-        "ACTIVEINFR",
-        "AEGISVOPAK",
-        "AGARWALEYE",
-        "AJAXENGG",
-        "ANUHPHR",
-        "ANYA",
-        "AONELIQUID",
-        "AONENIFTY",
-        "AONETOTAL",
-        "ARUNAYA"
-      ],
+      "candidates_listed_nearby": 46,
       "cum_close": "1485.05",
       "ex_date": "2024-12-06",
       "ex_date_gap": "-0.562271",
       "ex_open": "650.05",
-      "excess_over_market": "-0.565026",
-      "market_median_move": "+0.002755",
+      "excess_over_market": "-0.564597",
+      "market_median_move": "+0.002327",
+      "ranked_candidates": [
+        {
+          "candidate": "CEWATER",
+          "first_open": "826",
+          "implied_ratio": "1.0109",
+          "listed_on": "2024-12-27",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0109"
+        },
+        {
+          "candidate": "SANATHAN",
+          "first_open": "422.3",
+          "implied_ratio": "1.9773",
+          "listed_on": "2024-12-27",
+          "nearest_clean_ratio": "2:1",
+          "relative_gap": "0.0114"
+        },
+        {
+          "candidate": "SETL",
+          "first_open": "172",
+          "implied_ratio": "4.8547",
+          "listed_on": "2025-01-13",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0291"
+        },
+        {
+          "candidate": "AGARWALEYE",
+          "first_open": "402",
+          "implied_ratio": "2.0771",
+          "listed_on": "2025-02-04",
+          "nearest_clean_ratio": "2:1",
+          "relative_gap": "0.0386"
+        },
+        {
+          "candidate": "DELTIC",
+          "first_open": "175",
+          "implied_ratio": "4.7714",
+          "listed_on": "2025-01-14",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0457"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "STAR"
     },
     {
-      "candidate_new_listings": [
-        "AAKAAR",
-        "AARADHYA",
-        "ABLBL",
-        "ADVANCE",
-        "AEGISVOPAK",
-        "AHCL",
-        "ALLTIME",
-        "AMANTA",
-        "AMCL",
-        "ANONDITA"
-      ],
+      "candidates_listed_nearby": 37,
       "cum_close": "86.97",
       "ex_date": "2025-04-24",
       "ex_date_gap": "-0.297344",
       "ex_open": "61.11",
-      "excess_over_market": "-0.296746",
-      "market_median_move": "-0.000598",
+      "excess_over_market": "-0.296910",
+      "market_median_move": "-0.000433",
+      "ranked_candidates": [
+        {
+          "candidate": "RAJOOENG",
+          "first_open": "131",
+          "implied_ratio": "0.1974",
+          "listed_on": "2025-05-29",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0130"
+        },
+        {
+          "candidate": "NEPTUNE",
+          "first_open": "132.75",
+          "implied_ratio": "0.1948",
+          "listed_on": "2025-06-04",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0260"
+        },
+        {
+          "candidate": "SUMEETINDS",
+          "first_open": "53.3",
+          "implied_ratio": "0.4852",
+          "listed_on": "2025-06-19",
+          "nearest_clean_ratio": "1:2",
+          "relative_gap": "0.0296"
+        },
+        {
+          "candidate": "BELRISE",
+          "first_open": "100",
+          "implied_ratio": "0.2586",
+          "listed_on": "2025-05-28",
+          "nearest_clean_ratio": "1:4",
+          "relative_gap": "0.0344"
+        },
+        {
+          "candidate": "MOPSE",
+          "first_open": "99",
+          "implied_ratio": "0.2612",
+          "listed_on": "2025-06-05",
+          "nearest_clean_ratio": "1:4",
+          "relative_gap": "0.0448"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "STLTECH"
     },
     {
-      "candidate_new_listings": [
-        "ADANIGREEN",
-        "ALIVUS",
-        "AMBANIORGO",
-        "ASTERDM",
-        "AVG",
-        "AVROIND",
-        "BANDHANBNK",
-        "BANKA",
-        "BDL",
-        "BORORENEW"
-      ],
+      "candidates_listed_nearby": 25,
       "cum_close": "1767.2",
       "ex_date": "2018-02-01",
       "ex_date_gap": "-0.044817",
       "ex_open": "1688",
-      "excess_over_market": "-0.043140",
-      "market_median_move": "-0.001677",
+      "excess_over_market": "-0.043546",
+      "market_median_move": "-0.001271",
+      "ranked_candidates": [
+        {
+          "candidate": "OSWALAGRO",
+          "first_open": "15.6",
+          "implied_ratio": "5.0769",
+          "listed_on": "2018-02-01",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0154"
+        },
+        {
+          "candidate": "GMMPFAUDLR",
+          "first_open": "241.65",
+          "implied_ratio": "0.3277",
+          "listed_on": "2018-03-05",
+          "nearest_clean_ratio": "1:3",
+          "relative_gap": "0.0168"
+        },
+        {
+          "candidate": "TSFINV",
+          "first_open": "305.7",
+          "implied_ratio": "0.2591",
+          "listed_on": "2018-03-27",
+          "nearest_clean_ratio": "1:4",
+          "relative_gap": "0.0363"
+        }
+      ],
       "subject": "Scheme Of Arrangement",
       "symbol": "SUNDARMFIN"
     },
     {
-      "candidate_new_listings": [
-        "AARTISURF",
-        "ALPL30IETF",
-        "BOROLTD",
-        "COHANCE",
-        "EBBETF0431",
-        "HDFCNIFBAN",
-        "ITBEES",
-        "ITIETF",
-        "KSOLVES",
-        "LGHL"
-      ],
+      "candidates_listed_nearby": 5,
       "cum_close": "719.65",
       "ex_date": "2020-03-04",
       "ex_date_gap": "-0.562287",
       "ex_open": "315",
-      "excess_over_market": "-0.544633",
-      "market_median_move": "-0.017654",
+      "excess_over_market": "-0.547749",
+      "market_median_move": "-0.014538",
+      "ranked_candidates": [],
       "subject": "Demerger",
       "symbol": "TATACHEM"
     },
     {
-      "candidate_new_listings": [
-        "360ONE",
-        "ABSLBANETF",
-        "ALOKINDS",
-        "APOLLOPIPE",
-        "ARTEMISMED",
-        "ASALCBR",
-        "ASCOM",
-        "BAFNAPH",
-        "COHANCE",
-        "CSBBANK"
-      ],
+      "candidates_listed_nearby": 10,
       "cum_close": "426.8",
       "ex_date": "2019-09-17",
       "ex_date_gap": "-0.379100",
       "ex_open": "265",
-      "excess_over_market": "-0.363161",
-      "market_median_move": "-0.015939",
+      "excess_over_market": "-0.359141",
+      "market_median_move": "-0.019959",
+      "ranked_candidates": [
+        {
+          "candidate": "ABSLBANETF",
+          "first_open": "33",
+          "implied_ratio": "4.9030",
+          "listed_on": "2019-10-30",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0194"
+        },
+        {
+          "candidate": "360ONE",
+          "first_open": "302.5",
+          "implied_ratio": "0.5349",
+          "listed_on": "2019-09-19",
+          "nearest_clean_ratio": "1:2",
+          "relative_gap": "0.0698"
+        },
+        {
+          "candidate": "FLUOROCHEM",
+          "first_open": "750",
+          "implied_ratio": "0.2157",
+          "listed_on": "2019-10-16",
+          "nearest_clean_ratio": "1:5",
+          "relative_gap": "0.0787"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "TATACOMM"
     },
     {
-      "candidate_new_listings": [
-        "AARNAV",
-        "ABSL10BANK",
-        "ABSLMSCIN",
-        "ACETEC",
-        "ADVAIT",
-        "ADVENTHTL",
-        "AEPL",
-        "AEQUS",
-        "AEROPLANE",
-        "AHLWEST"
-      ],
+      "candidates_listed_nearby": 61,
       "cum_close": "660.75",
       "ex_date": "2025-10-14",
       "ex_date_gap": "-0.394627",
       "ex_open": "400",
-      "excess_over_market": "-0.384620",
-      "market_median_move": "-0.010007",
+      "excess_over_market": "-0.384646",
+      "market_median_move": "-0.009982",
+      "ranked_candidates": [
+        {
+          "candidate": "VIDYAWIRES",
+          "first_open": "52",
+          "implied_ratio": "5.0144",
+          "listed_on": "2025-12-10",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0029"
+        },
+        {
+          "candidate": "ESENSEX",
+          "first_open": "86.65",
+          "implied_ratio": "3.0092",
+          "listed_on": "2025-11-27",
+          "nearest_clean_ratio": "3:1",
+          "relative_gap": "0.0031"
+        },
+        {
+          "candidate": "MONIFTY100",
+          "first_open": "26.18",
+          "implied_ratio": "9.9599",
+          "listed_on": "2025-10-16",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0040"
+        },
+        {
+          "candidate": "SKFINDUS",
+          "first_open": "2630",
+          "implied_ratio": "0.0991",
+          "listed_on": "2025-12-05",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0086"
+        },
+        {
+          "candidate": "ENIFTY",
+          "first_open": "26.34",
+          "implied_ratio": "9.8994",
+          "listed_on": "2025-11-27",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0101"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "TMPV"
     },
     {
-      "candidate_new_listings": [
-        "ACGL",
-        "ADDIND",
-        "ADVIKCA",
-        "ALFREDHE",
-        "ALUFLUOR",
-        "AMAL",
-        "AMARJOTHI",
-        "ANAWIL",
-        "ANDREWYU",
-        "ANSALBU"
-      ],
+      "candidates_listed_nearby": 183,
       "cum_close": "471.5",
       "ex_date": "2026-07-22",
       "ex_date_gap": "-0.385048",
       "ex_open": "289.95",
-      "excess_over_market": "-0.375840",
-      "market_median_move": "-0.009208",
+      "excess_over_market": "-0.374089",
+      "market_median_move": "-0.010958",
+      "ranked_candidates": [
+        {
+          "candidate": "BRAHMINFRA",
+          "first_open": "181.7",
+          "implied_ratio": "0.9992",
+          "listed_on": "2026-08-17",
+          "nearest_clean_ratio": "1:1",
+          "relative_gap": "0.0008"
+        },
+        {
+          "candidate": "HBPOR",
+          "first_open": "60.79",
+          "implied_ratio": "2.9865",
+          "listed_on": "2026-08-17",
+          "nearest_clean_ratio": "3:1",
+          "relative_gap": "0.0045"
+        },
+        {
+          "candidate": "SHIVACEM",
+          "first_open": "17.94",
+          "implied_ratio": "10.1198",
+          "listed_on": "2026-08-17",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0120"
+        },
+        {
+          "candidate": "KAMANWALA",
+          "first_open": "17.9",
+          "implied_ratio": "10.1425",
+          "listed_on": "2026-08-17",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0142"
+        },
+        {
+          "candidate": "LARGEMID50",
+          "first_open": "36.88",
+          "implied_ratio": "4.9227",
+          "listed_on": "2026-08-20",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0155"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "TRIVENI"
     },
     {
-      "candidate_new_listings": [
-        "ABSLMSCIN",
-        "ADVAIT",
-        "ADVANCE",
-        "ADVENTHTL",
-        "AEQUS",
-        "AHCL",
-        "ALGOQUANT",
-        "AMAGI",
-        "AMANTA",
-        "ANONDITA"
-      ],
+      "candidates_listed_nearby": 79,
       "cum_close": "3294.6",
       "ex_date": "2025-08-25",
       "ex_date_gap": "+0.004674",
       "ex_open": "3310",
-      "excess_over_market": "+0.005723",
-      "market_median_move": "-0.001049",
+      "excess_over_market": "+0.005271",
+      "market_median_move": "-0.000596",
+      "ranked_candidates": [],
       "subject": "Scheme Of Arrangement - Bonus Ncrps 4:1",
       "symbol": "TVSMOTOR"
     },
     {
-      "candidate_new_listings": [
-        "AARTECH",
-        "AATMAJ",
-        "AEROFLEX",
-        "ALPHAETF",
-        "AMNPLST",
-        "ARABIAN",
-        "ARVINDPORT",
-        "ASHOKAMET",
-        "ASKAUTOLTD",
-        "ATL"
-      ],
+      "candidates_listed_nearby": 42,
       "cum_close": "17.7",
       "ex_date": "2023-06-15",
       "ex_date_gap": "-0.127119",
       "ex_open": "15.45",
-      "excess_over_market": "-0.124838",
-      "market_median_move": "-0.002280",
+      "excess_over_market": "-0.124892",
+      "market_median_move": "-0.002227",
+      "ranked_candidates": [
+        {
+          "candidate": "PVTBANKADD",
+          "first_open": "23.39",
+          "implied_ratio": "0.0962",
+          "listed_on": "2023-08-02",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0381"
+        },
+        {
+          "candidate": "SINDHUTRAD",
+          "first_open": "24.25",
+          "implied_ratio": "0.0928",
+          "listed_on": "2023-06-20",
+          "nearest_clean_ratio": "1:10",
+          "relative_gap": "0.0722"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "VAKRANGEE"
     },
     {
-      "candidate_new_listings": [
-        "AASTHA",
-        "ACGL",
-        "ADDIND",
-        "ADISOFT",
-        "ADVIKCA",
-        "AGL",
-        "ALFREDHE",
-        "ALPINETEX",
-        "ALUFLUOR",
-        "AMAL"
-      ],
+      "candidates_listed_nearby": 29,
       "cum_close": "773.6",
       "ex_date": "2026-04-30",
       "ex_date_gap": "-0.625776",
       "ex_open": "289.5",
-      "excess_over_market": "-0.619717",
-      "market_median_move": "-0.006059",
+      "excess_over_market": "-0.616232",
+      "market_median_move": "-0.009543",
+      "ranked_candidates": [
+        {
+          "candidate": "HEXAGON",
+          "first_open": "48.25",
+          "implied_ratio": "10.0332",
+          "listed_on": "2026-06-12",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0033"
+        },
+        {
+          "candidate": "SIMCA",
+          "first_open": "156",
+          "implied_ratio": "3.1032",
+          "listed_on": "2026-05-15",
+          "nearest_clean_ratio": "3:1",
+          "relative_gap": "0.0344"
+        },
+        {
+          "candidate": "SMALLGROWW",
+          "first_open": "46.6",
+          "implied_ratio": "10.3884",
+          "listed_on": "2026-06-18",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0388"
+        },
+        {
+          "candidate": "FMCGADD",
+          "first_open": "50.38",
+          "implied_ratio": "9.6090",
+          "listed_on": "2026-05-22",
+          "nearest_clean_ratio": "10:1",
+          "relative_gap": "0.0391"
+        },
+        {
+          "candidate": "GENXAI",
+          "first_open": "92.8",
+          "implied_ratio": "5.2166",
+          "listed_on": "2026-06-12",
+          "nearest_clean_ratio": "5:1",
+          "relative_gap": "0.0433"
+        }
+      ],
       "subject": "Demerger",
       "symbol": "VEDL"
     },
     {
-      "candidate_new_listings": [
-        "ADANIGREEN",
-        "AKG",
-        "ALIVUS",
-        "AMBANIORGO",
-        "AVG",
-        "AVROIND",
-        "BORORENEW",
-        "BSE500IETF",
-        "CHEMFAB",
-        "CREDITACC"
-      ],
+      "candidates_listed_nearby": 19,
       "cum_close": "57.95",
       "ex_date": "2018-04-06",
       "ex_date_gap": "+0.155306",
       "ex_open": "66.95",
-      "excess_over_market": "+0.152142",
-      "market_median_move": "+0.003165",
+      "excess_over_market": "+0.152111",
+      "market_median_move": "+0.003195",
+      "ranked_candidates": [],
       "subject": "Scheme Of Arrangement",
       "symbol": "VIYASH"
     }

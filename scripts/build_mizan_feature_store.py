@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gc
 import gzip
 import hashlib
 import json
@@ -103,6 +104,10 @@ def deduplicate_by_symbol(store: EvidenceStore) -> dict[str, Any]:
 
     55 symbols in the all-market cache carry two DATASET resources. Keeping both is exactly what
     double-counted the previous feature store.
+
+    Loads and holds **every** instrument in the cache. Prefer :func:`selected_acquisitions` when only
+    a declared universe is needed -- this one reconstructs 3,322 acquisitions to keep 423 of them,
+    which on a 16 GB machine is both slow and close to the memory ceiling.
     """
     best: dict[str, Any] = {}
     for verified in store.list_verified(EvidenceResourceType.DATASET):
@@ -115,6 +120,31 @@ def deduplicate_by_symbol(store: EvidenceStore) -> dict[str, Any]:
         ) > (len(incumbent.records), incumbent.manifest.provider_instrument_id):
             best[symbol] = acquisition
     return best
+
+
+def selected_acquisitions(
+    store: EvidenceStore, symbols: set[str], dataset_ids: dict[str, str]
+) -> dict[str, Any]:
+    """One acquisition per requested symbol, opening no other dataset.
+
+    ``dataset_ids`` comes from :func:`manifest_index`, which picks the same dataset
+    :func:`deduplicate_by_symbol` would -- longest history, ties broken by provider instrument id --
+    from manifest headers alone. So this selects identically while touching ~8x less of the store.
+
+    Each dataset is still opened through ``open_verified``, so integrity checking is not skipped;
+    only the datasets outside the declared universe are never read.
+    """
+    found: dict[str, Any] = {}
+    for index, symbol in enumerate(sorted(symbols), 1):
+        dataset_id = dataset_ids.get(symbol)
+        if dataset_id is None:
+            continue
+        verified = store.open_verified(EvidenceResourceType.DATASET, dataset_id)
+        found[symbol] = historical_acquisition_from_verified(verified)
+        if index % 100 == 0:
+            print(f"  loaded {index}/{len(symbols)} acquisitions", flush=True)
+            gc.collect()
+    return found
 
 
 def _parse_ex_date(value: object) -> date | None:
@@ -141,6 +171,107 @@ def load_corporate_actions(ca_dir: Path, symbol: str) -> list[tuple[date, str]]:
         if ex_date is not None:
             out.append((ex_date, str(item.get("subject", ""))))
     return out
+
+
+def manifest_index(store_root: Path, cache_path: Path) -> tuple[dict[str, date], dict[str, str]]:
+    """The header index, cached to disk so it is built once rather than on every run.
+
+    The caching is not just a speed optimisation, it is what makes the run survive. Parsing 3,322
+    manifest documents (~122 KB each) and then asking for the large contiguous allocations that
+    ``canonical_sha256`` needs, in the same process, exhausts this machine -- the run died with
+    ``MemoryError`` inside ``json.dumps`` on the *first* bar load, after the header scan had churned
+    the allocator. Doing the scan once and reading a small JSON file thereafter keeps the two phases
+    from competing.
+
+    The cache is rebuilt whenever the dataset catalog has more entries than the cache describes, so
+    a newly ingested instrument is never silently missed.
+    """
+    catalog_size = sum(1 for _ in (store_root / "datasets").iterdir())
+    if cache_path.is_file():
+        try:
+            payload = json.loads(cache_path.read_text(encoding="utf-8"))
+            if int(payload.get("catalog_size", -1)) == catalog_size:
+                return (
+                    {s: date.fromisoformat(v) for s, v in payload["first_traded"].items()},
+                    dict(payload["dataset_ids"]),
+                )
+        except (OSError, ValueError, KeyError, TypeError):
+            pass  # a damaged cache is rebuilt, never trusted
+
+    starts, dataset_ids = scan_manifest_headers(store_root)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(
+        json.dumps(
+            {
+                "catalog_size": catalog_size,
+                "dataset_ids": dataset_ids,
+                "first_traded": {s: v.isoformat() for s, v in starts.items()},
+                "store_root": store_root.as_posix(),
+            },
+            indent=0,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    gc.collect()
+    return starts, dataset_ids
+
+
+def scan_manifest_headers(store_root: Path) -> tuple[dict[str, date], dict[str, str]]:
+    """Listing dates and the best dataset id per symbol, from manifest **headers** only.
+
+    Reconstructing all 3,322 acquisitions is what killed two earlier runs of this script:
+    ``historical_acquisition_from_verified`` rehashes every record through ``canonical_sha256``, and
+    the attempts died with ``MemoryError`` inside ``json.dumps``. Everything needed to *choose* which
+    datasets to open is already in the manifest headers, which are small and cheap to read.
+
+    Returns:
+        - first traded session per symbol. Where a symbol has two DATASET resources -- 55 do -- the
+          **earlier** start wins, because the question is "when did this instrument first trade".
+        - the dataset id to open per symbol, chosen by **longest** history with ties broken by
+          provider instrument id. That is the same dedup rule as the feature-store builder, so this
+          script cannot select a different dataset than the builder would.
+    """
+    starts: dict[str, date] = {}
+    best: dict[str, tuple[int, str, str]] = {}
+    for directory in sorted((store_root / "datasets").iterdir()):
+        manifest_path = directory / "manifest.json"
+        if not manifest_path.is_file():
+            continue
+        block = _find_dataset_block(json.loads(manifest_path.read_text(encoding="utf-8")))
+        if block is None:
+            continue
+        try:
+            symbol = str(block["symbol"])
+            start = date.fromisoformat(str(block["received_range"]["start"]))
+            rows = int(block["row_count"])
+            instrument = str(block.get("provider_instrument_id", ""))
+        except (KeyError, TypeError, ValueError):
+            continue
+        incumbent_start = starts.get(symbol)
+        if incumbent_start is None or start < incumbent_start:
+            starts[symbol] = start
+        candidate = (rows, instrument, directory.name)
+        if symbol not in best or candidate > best[symbol]:
+            best[symbol] = candidate
+    return starts, {symbol: entry[2] for symbol, entry in best.items()}
+
+
+def _find_dataset_block(node: object) -> dict[str, Any] | None:
+    """The dataset-manifest payload nested inside an evidence manifest."""
+    if isinstance(node, dict):
+        if "symbol" in node and "received_range" in node:
+            return node
+        for value in node.values():
+            block = _find_dataset_block(value)
+            if block is not None:
+                return block
+    elif isinstance(node, list):
+        for value in node:
+            block = _find_dataset_block(value)
+            if block is not None:
+                return block
+    return None
 
 
 def code_revision() -> str:
@@ -382,6 +513,7 @@ def build(
     corporate_actions_dir: Path | None = None,
     total_return: bool = True,
     validated_factors_path: Path | None = None,
+    index_cache: Path | None = None,
 ) -> None:
     universe = read_universe(universe_path)
     vix_by_date = load_macro(macro_dir, "INDIAVIX")
@@ -389,12 +521,15 @@ def build(
     print(f"universe        : {len(universe)} names", flush=True)
     print(f"macro           : VIX {len(vix_by_date)}d, NIFTY {len(nifty_by_date)}d", flush=True)
 
-    store = EvidenceStore(EvidenceStoreConfig(root=store_root))
-    acquisitions = deduplicate_by_symbol(store)
-    print(f"deduplicated    : {len(acquisitions)} symbols", flush=True)
+    cache_path = index_cache or (
+        ROOT_DIR / "reports/corporate_action_validation/store-manifest-index.json"
+    )
+    _, dataset_ids = manifest_index(store_root, cache_path)
+    print(f"catalog index   : {len(dataset_ids)} symbols (manifest headers only)", flush=True)
 
-    selected = {s: a for s, a in acquisitions.items() if s in universe}
-    print(f"in universe     : {len(selected)} symbols", flush=True)
+    store = EvidenceStore(EvidenceStoreConfig(root=store_root))
+    selected = selected_acquisitions(store, set(universe), dataset_ids)
+    print(f"in universe     : {len(selected)} of {len(universe)} symbols loaded", flush=True)
 
     validated = load_validated_demerger_factors(validated_factors_path)
     if validated:
@@ -495,7 +630,7 @@ def build(
             ),
         },
         "cross_sectional_dates": len(by_date),
-        "deduplicated_symbols": len(acquisitions),
+        "catalog_symbols": len(dataset_ids),
         "feature_names": list(FEATURE_NAMES_V3),
         "feature_schema_id": "quantos.mizan_crosssectional_fifteen",
         "feature_schema_version": 1,

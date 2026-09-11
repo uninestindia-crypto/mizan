@@ -887,4 +887,3 @@ def test_multiple_runs_on_the_same_date_do_not_advance_the_hold_clock() -> None:
     assert run3.sessions_completed == 4
     assert run3.sessions_held == 4
     assert run3.last_completed_on == next_day
-

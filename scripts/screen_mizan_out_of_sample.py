@@ -41,6 +41,7 @@ sys.path.insert(0, str(ROOT_DIR / "src"))
 from build_mizan_feature_store import (  # noqa: E402
     adjusted_bar_points,
     load_corporate_actions,
+    load_validated_demerger_factors,
 )
 from cached_nifty50_evidence import historical_acquisition_from_verified  # noqa: E402
 
@@ -88,12 +89,19 @@ def forward_returns(
     *,
     corporate_actions_dir: Path | None = None,
     total_return: bool = True,
+    validated_factors_path: Path | None = None,
 ) -> dict[str, dict[date, float]]:
     """Net return from next open to the open HOLD_SESSIONS later.
 
-    Bars are RAW, so a split or demerger between the two opens reads as a genuine -80% target.
     Adjusting the **label** matters at least as much as adjusting the feature: a screen that fixes
-    one and not the other is measuring a mismatch rather than a model.
+    one and not the other is measuring a mismatch rather than a model. The features here come from
+    the adjusted feature store, so the targets must sit on the same basis.
+
+    A window spanning a corporate action of **unknown size** produces no observation at all. Nothing
+    sized it, so the adjusted series cannot correct it, and the raw ratio across it is a fabricated
+    return -- on this corpus that would mean reading NIITLTD's -77.3% demerger gap as a real target.
+    The window is dropped, matching what ``modeling.labels.build_label_dataset`` does with the
+    governed labels, so the screen and the governed path agree about which observations exist.
     """
     store = EvidenceStore(EvidenceStoreConfig(root=store_root))
     best: dict[str, Any] = {}
@@ -104,23 +112,39 @@ def forward_returns(
             continue
         if symbol not in best or len(acquisition.records) > len(best[symbol].records):
             best[symbol] = acquisition
+    validated = load_validated_demerger_factors(
+        validated_factors_path if corporate_actions_dir is not None else None
+    )
     out: dict[str, dict[date, float]] = {}
+    refused = 0
     for symbol, acquisition in best.items():
         actions = (
             load_corporate_actions(corporate_actions_dir, symbol)
             if corporate_actions_dir is not None
             else []
         )
-        bars, _, _ = adjusted_bar_points(acquisition, actions, total_return=total_return)
+        bars, plan = adjusted_bar_points(
+            acquisition,
+            actions,
+            total_return=total_return,
+            validated_factors=validated.get(symbol),
+        )
+        unresolved = sorted(item.ex_date for item in plan.unresolved)
         opens = [float(bar.open) for bar in bars]
         dates = [bar.on for bar in bars]
         series: dict[date, float] = {}
         for i in range(len(opens) - HOLD_SESSIONS - 1):
-            if opens[i + 1] > 0:
-                series[dates[i]] = (
-                    opens[i + 1 + HOLD_SESSIONS] / opens[i + 1] - 1.0 - ROUND_TRIP_COST
-                )
+            if opens[i + 1] <= 0:
+                continue
+            entry_on, exit_on = dates[i + 1], dates[i + 1 + HOLD_SESSIONS]
+            # (entry, exit] -- an action on the entry date is already in the entry price.
+            if any(entry_on < ex_date <= exit_on for ex_date in unresolved):
+                refused += 1
+                continue
+            series[dates[i]] = opens[i + 1 + HOLD_SESSIONS] / opens[i + 1] - 1.0 - ROUND_TRIP_COST
         out[symbol] = series
+    if refused:
+        print(f"  refused {refused} windows spanning an unsized corporate action", flush=True)
     return out
 
 
@@ -174,6 +198,7 @@ def run(args: argparse.Namespace) -> int:
         all_symbols,
         corporate_actions_dir=None if args.no_adjust else args.corporate_actions_dir,
         total_return=not args.price_return,
+        validated_factors_path=None if args.no_adjust else args.validated_factors,
     )
     print(
         f"labels          : {'RAW (unadjusted)' if args.no_adjust else 'corporate-action adjusted'}",
@@ -274,6 +299,13 @@ def main() -> int:
         action="store_true",
         help="Compute labels from RAW opens, as this screen did before adjustment existed. "
         "Use with a RAW feature store to reproduce the -0.000022 baseline.",
+    )
+    parser.add_argument(
+        "--validated-factors",
+        type=Path,
+        default=ROOT_DIR / "data/authorities/nse-validated-demerger-factors.json",
+        help="Independently validated demerger factors. A ratio-less action absent from this file "
+        "stays unresolved and every window spanning it is dropped rather than measured.",
     )
     parser.add_argument("--price-return", action="store_true")
     return run(parser.parse_args())

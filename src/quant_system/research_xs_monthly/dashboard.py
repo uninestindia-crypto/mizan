@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import html
 from datetime import datetime
+from typing import Any
 
 
 def _esc(value: object) -> str:
@@ -22,7 +23,7 @@ def _inr(value: object) -> str:
     return f"\u20b9{number:,.2f}"
 
 
-def render_dashboard(state: dict) -> str:
+def render_dashboard(state: dict[str, Any]) -> str:
     capital = state.get("capital", "?")
     cash = state.get("cash", "?")
     open_legs = state.get("open", [])

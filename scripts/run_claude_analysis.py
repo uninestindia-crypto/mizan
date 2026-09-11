@@ -342,6 +342,7 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
 
 def start_dashboard_server() -> None:
     """Launch background dashboard server on port 8092."""
+
     class ReusableTCPServer(socketserver.TCPServer):
         allow_reuse_address = True
 
@@ -388,9 +389,7 @@ def call_claude_with_cache(
                 "cache_control": {"type": "ephemeral"},
             }
         ],
-        "messages": [
-            {"role": "user", "content": user_prompt}
-        ],
+        "messages": [{"role": "user", "content": user_prompt}],
     }
 
     log_event(f"Streaming from {model} (Adaptive Thinking: max, max_tokens: {max_tokens})...")
@@ -509,7 +508,11 @@ def resolve_openai_model(client: httpx.Client, oai_key: str) -> str:
         r = client.post(
             OPENAI_ENDPOINT,
             headers={"Authorization": f"Bearer {oai_key}", "Content-Type": "application/json"},
-            json={"model": OPENAI_PREFERRED_MODEL, "messages": [{"role": "user", "content": "ping"}], "max_tokens": 8},
+            json={
+                "model": OPENAI_PREFERRED_MODEL,
+                "messages": [{"role": "user", "content": "ping"}],
+                "max_tokens": 8,
+            },
             timeout=10.0,
         )
         if r.status_code == 200:
@@ -519,7 +522,9 @@ def resolve_openai_model(client: httpx.Client, oai_key: str) -> str:
 
     # Fallback lookup
     try:
-        r = client.get(OPENAI_MODELS_ENDPOINT, headers={"Authorization": f"Bearer {oai_key}"}, timeout=10.0)
+        r = client.get(
+            OPENAI_MODELS_ENDPOINT, headers={"Authorization": f"Bearer {oai_key}"}, timeout=10.0
+        )
         if r.status_code == 200:
             avail = [m["id"] for m in r.json().get("data", [])]
             for candidate in ["o1", "o3-mini", "gpt-4o"]:
@@ -599,7 +604,8 @@ def call_openai_model(
 
     choices = data.get("choices", [])
     if choices:
-        return choices[0].get("message", {}).get("content", "").strip()
+        content: str = choices[0].get("message", {}).get("content", "")
+        return content.strip()
     return ""
 
 
@@ -615,11 +621,21 @@ def get_distilled_model_context() -> tuple[str, str]:
     )
 
     # High-signal code distillation
-    ridge_core = read_file_safely(REPO_ROOT / "src" / "quant_system" / "modeling" / "ridge.py", 15000)
-    purging_core = read_file_safely(REPO_ROOT / "src" / "quant_system" / "modeling" / "purging.py", 12000)
-    features_core = read_file_safely(REPO_ROOT / "src" / "quant_system" / "modeling" / "features.py", 12000)
-    labels_core = read_file_safely(REPO_ROOT / "src" / "quant_system" / "modeling" / "labels.py", 12000)
-    multiplicity_core = read_file_safely(REPO_ROOT / "src" / "quant_system" / "analytics" / "multiplicity.py", 15000)
+    ridge_core = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "modeling" / "ridge.py", 15000
+    )
+    purging_core = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "modeling" / "purging.py", 12000
+    )
+    features_core = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "modeling" / "features.py", 12000
+    )
+    labels_core = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "modeling" / "labels.py", 12000
+    )
+    multiplicity_core = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "analytics" / "multiplicity.py", 15000
+    )
     current_md = read_file_safely(REPO_ROOT / "agent_context" / "CURRENT.md", 20000)
 
     user_prompt = f"""# QuantOS Institutional Audit — Phase 1: Quantitative Model Analysis
@@ -694,10 +710,23 @@ def get_distilled_strategy_context() -> tuple[str, str]:
         "cross-sectional vs single-name portfolio construction, and execution realism."
     )
 
-    governed_core = read_file_safely(REPO_ROOT / "src" / "quant_system" / "execution" / "governed_strategy.py", 15000)
-    ml_equity_core = read_file_safely(REPO_ROOT / "src" / "quant_system" / "strategies" / "ml_equity.py", 12000)
-    governor_core = read_file_safely(REPO_ROOT / "src" / "quant_system" / "risk" / "governor.py", 15000)
-    hermes_active = read_file_safely(REPO_ROOT / "agent_context" / "work" / "active" / "20260903-hermes-xs-monthly-screen-new.md", 15000)
+    governed_core = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "execution" / "governed_strategy.py", 15000
+    )
+    ml_equity_core = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "strategies" / "ml_equity.py", 12000
+    )
+    governor_core = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "risk" / "governor.py", 15000
+    )
+    hermes_active = read_file_safely(
+        REPO_ROOT
+        / "agent_context"
+        / "work"
+        / "active"
+        / "20260903-hermes-xs-monthly-screen-new.md",
+        15000,
+    )
 
     user_prompt = f"""# QuantOS Institutional Audit — Phase 2: Trading Strategy & Economics
 
@@ -798,13 +827,15 @@ Compare and synthesize the independent audits from Claude Fable 5.1 and OpenAI.
 # ==============================================================================
 def main() -> int:
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:
         pass
 
     parser = argparse.ArgumentParser(description="QuantOS Dual-AI Deep Analysis Pipeline")
     parser.add_argument("--skip-openai", action="store_true", help="Run Claude only")
-    parser.add_argument("--model", default=None, help="Claude model (e.g. claude-opus-5, claude-fable-5-1)")
+    parser.add_argument(
+        "--model", default=None, help="Claude model (e.g. claude-opus-5, claude-fable-5-1)"
+    )
     parser.add_argument("--endpoint", default=None, help="Claude API endpoint URL")
     parser.add_argument("--output-dir", default=None, help="Output directory")
     args = parser.parse_args()
@@ -823,7 +854,9 @@ def main() -> int:
     selected_endpoint = args.endpoint or default_endpoint
 
     default_output_name = "claude_opus_audit" if "opus" in selected_model else "claude_fable_audit"
-    output_dir = Path(args.output_dir) if args.output_dir else (REPO_ROOT / "reports" / default_output_name)
+    output_dir = (
+        Path(args.output_dir) if args.output_dir else (REPO_ROOT / "reports" / default_output_name)
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Start live dashboard server
@@ -870,7 +903,9 @@ def main() -> int:
 
     oai_model_rpt = ""
     if not args.skip_openai and oai_key:
-        dashboard_state["status"] = f"Running Phase 1: Model Analysis with OpenAI ({openai_model})..."
+        dashboard_state["status"] = (
+            f"Running Phase 1: Model Analysis with OpenAI ({openai_model})..."
+        )
         log_event(f"Starting Phase 1: Model Analysis Second Opinion ({openai_model})...")
         oai_model_rpt = call_openai_model(client, oai_key, openai_model, sys_m, usr_m)
         dashboard_state["reports"]["openai"]["model"] = oai_model_rpt
@@ -898,7 +933,9 @@ def main() -> int:
 
     oai_strat_rpt = ""
     if not args.skip_openai and oai_key:
-        dashboard_state["status"] = f"Running Phase 2: Strategy Analysis with OpenAI ({openai_model})..."
+        dashboard_state["status"] = (
+            f"Running Phase 2: Strategy Analysis with OpenAI ({openai_model})..."
+        )
         log_event(f"Starting Phase 2: Strategy Analysis Second Opinion ({openai_model})...")
         oai_strat_rpt = call_openai_model(client, oai_key, openai_model, sys_s, usr_s)
         dashboard_state["reports"]["openai"]["strategy"] = oai_strat_rpt
@@ -951,7 +988,9 @@ Synthesize your deep evaluations of the QuantOS Model and Trading Strategy into 
         (output_dir / "01_model_analysis.md").write_text(claude_model_rpt, encoding="utf-8")
         (output_dir / "02_strategy_analysis.md").write_text(claude_strat_rpt, encoding="utf-8")
     else:
-        sys_c, usr_c = get_consensus_prompt(claude_model_rpt, oai_model_rpt, claude_strat_rpt, oai_strat_rpt)
+        sys_c, usr_c = get_consensus_prompt(
+            claude_model_rpt, oai_model_rpt, claude_strat_rpt, oai_strat_rpt
+        )
         consensus_rpt = call_claude_with_cache(
             client,
             effective_claude_key,
@@ -978,16 +1017,22 @@ Synthesize your deep evaluations of the QuantOS Model and Trading Strategy into 
             "02_strategy_analysis.md",
         ],
     }
-    (output_dir / "audit_metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    (output_dir / "audit_metadata.json").write_text(
+        json.dumps(metadata, indent=2), encoding="utf-8"
+    )
 
     dashboard_state["phase"] = "COMPLETED"
     dashboard_state["status"] = f"Audit Completed! Total Cost: ${dashboard_state['cost_usd']:.4f}"
-    log_event(f"Audit pipeline finished successfully! Total accumulated cost: ${dashboard_state['cost_usd']:.4f}")
+    log_event(
+        f"Audit pipeline finished successfully! Total accumulated cost: ${dashboard_state['cost_usd']:.4f}"
+    )
 
     print("\n" + "=" * 70)
     print(f" {selected_model} Audit Finished Successfully!")
     print(f" Total Cost Accumulated : ${dashboard_state['cost_usd']:.4f} USD")
-    print(f" Total Input Tokens     : {dashboard_state['tokens']['input']:,} (Cache read: {dashboard_state['tokens']['cache_read']:,})")
+    print(
+        f" Total Input Tokens     : {dashboard_state['tokens']['input']:,} (Cache read: {dashboard_state['tokens']['cache_read']:,})"
+    )
     print(f" Total Output Tokens    : {dashboard_state['tokens']['output']:,}")
     print(f" Reports Saved to       : {output_dir}")
     print(f" Dashboard Viewable at  : http://127.0.0.1:{DASHBOARD_PORT}")

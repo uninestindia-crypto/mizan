@@ -1696,4 +1696,3 @@ def test_concurrent_portfolio_write_during_session_detected_at_save(tmp_path) ->
     my_updated_state = runner.PaperPortfolioState(cash=Decimal("900000.00"), sessions_completed=1)
     with pytest.raises(runner.PaperPortfolioError, match="changed since this session loaded it"):
         runner.save_portfolio(state_path, my_updated_state, expected_prior_hash=load_hash)
-

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal, localcontext
-from typing import Final
+from typing import Any, Final
 
 from quant_system.research_xs_monthly.bars import Bar
 from quant_system.research_xs_monthly.screen import (
@@ -42,9 +42,9 @@ NOTIONAL_CAPITAL_INR: Final = Decimal("1000000")
 
 
 def size_positions(
-    holdings: list[dict],
+    holdings: list[dict[str, Any]],
     capital: Decimal = NOTIONAL_CAPITAL_INR,
-) -> tuple[list[dict], Decimal]:
+) -> tuple[list[dict[str, Any]], Decimal]:
     """Split capital equally across holdings into integer shares (NSE cash has
     no fractional shares). Returns (legs, cash_leftover)."""
     if not holdings:
@@ -52,7 +52,7 @@ def size_positions(
     if capital <= 0:
         raise ScreenError("BAD_PARAM: capital must be positive")
     per_leg = capital / Decimal(len(holdings))
-    legs: list[dict] = []
+    legs: list[dict[str, Any]] = []
     used = Decimal(0)
     for h in holdings:
         entry = Decimal(str(h["entry_open"]))
@@ -71,7 +71,7 @@ def size_positions(
     return legs, capital - used
 
 
-def _book_closed(pos: dict, exit_bar_open: Decimal) -> dict:
+def _book_closed(pos: dict[str, Any], exit_bar_open: Decimal) -> dict[str, Any]:
     """Cash fields for a closed leg. Cost = full round trip on entry notional,
     charged exactly once — same 0.224% model as the screen."""
     shares = int(pos.get("shares", 0))
@@ -94,7 +94,7 @@ def _book_closed(pos: dict, exit_bar_open: Decimal) -> dict:
     }
 
 
-def _book_open(pos: dict, latest_open: Decimal) -> dict:
+def _book_open(pos: dict[str, Any], latest_open: Decimal) -> dict[str, Any]:
     shares = int(pos.get("shares", 0))
     entry_value = Decimal(str(pos.get("entry_value", "0")))
     with localcontext() as ctx:
@@ -112,7 +112,7 @@ def _book_open(pos: dict, latest_open: Decimal) -> dict:
 def latest_signal(
     bars_by_symbol: dict[str, list[Bar]],
     top_frac: Decimal = TOP_FRAC,
-) -> dict:
+) -> dict[str, Any]:
     """Compute the latest complete rebalance signal.
 
     Decision date = last calendar session with a following session available
@@ -136,7 +136,7 @@ def latest_signal(
     scored.sort(key=lambda item: item[1], reverse=True)
     width = max(1, int(Decimal(len(scored)) * top_frac))
     entry_pos = decision_pos + 1
-    holdings: list[dict] = []
+    holdings: list[dict[str, Any]] = []
     skipped_locked = 0
     skipped_missing = 0
     for symbol, score in scored[:width]:
@@ -168,10 +168,10 @@ def latest_signal(
 
 
 def settle_positions(
-    positions: list[dict],
+    positions: list[dict[str, Any]],
     bars_by_symbol: dict[str, list[Bar]],
     hold: int = HOLD_SESSIONS,
-) -> dict:
+) -> dict[str, Any]:
     """Split positions into closed legs vs open marks at the latest bar.
 
     Closed leg: exit open exists hold sessions after entry → full COST_RATIO
@@ -181,8 +181,8 @@ def settle_positions(
     calendar = build_calendar(bars_by_symbol)
     indexed = {symbol: _index_symbol(bars) for symbol, bars in bars_by_symbol.items()}
     pos_of = {d: i for i, d in enumerate(calendar)}
-    closed: list[dict] = []
-    opened: list[dict] = []
+    closed: list[dict[str, Any]] = []
+    opened: list[dict[str, Any]] = []
     for pos in positions:
         symbol = pos["symbol"]
         entry_open = Decimal(str(pos["entry_open"]))

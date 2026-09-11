@@ -1,0 +1,57 @@
+{
+  "books": {
+    "Flagship (Mizan, 10 held sessions)": {
+      "detail": "Flagship (Mizan, 10 held sessions): mark date 2026-08-21 precedes the earliest entry 2026-08-31. Marking here would value a position at a price from before it was opened. No price source in this repository covers this book's holding period.",
+      "label": "Flagship (Mizan, 10 held sessions)",
+      "open_positions": 97,
+      "status": "REFUSED_NO_PRICE_SOURCE"
+    },
+    "XS-Monthly (frozen momentum rule, 21 held sessions)": {
+      "cash": "137184.02",
+      "cash_alternative_pnl": "0",
+      "entry_consideration": "853390.98",
+      "excess_over_benchmark_net": "6417.180410242115802908361227",
+      "gross_pnl": "4155.67",
+      "initial_capital": "1000000",
+      "label": "XS-Monthly (frozen momentum rule, 21 held sessions)",
+      "mark_date": "2026-09-09",
+      "mark_source": "book's own recorded marks",
+      "marked_value": "857546.65",
+      "matched_benchmark": {
+        "available": true,
+        "construction": "equal-weight the same names, same entry prices, book's own marks",
+        "entry_consideration": "853390.9800000000000000000034",
+        "gross_pnl": "-2275.9171654928197190790984",
+        "marked_value": "851115.0628345071802809209050",
+        "modelled_entry_costs": "0",
+        "names": 91,
+        "net_pnl": "-4182.414906242115802908361227",
+        "prospective_exit_costs": "1906.497740749296083829262827"
+      },
+      "modelled_round_trip_cost_ratio": "0.00224",
+      "net_pnl": "2234.7655040",
+      "net_return_on_initial_capital": "+0.223477%",
+      "open_positions": 91,
+      "paid_costs": "0",
+      "positions_without_a_mark": [],
+      "prospective_exit_costs": "1920.9044960",
+      "status": "MARKED",
+      "unpriced_assets": [
+        {
+          "detail": "HEG's demerger has ex-date and record date 2026-09-07, entitling one resulting company share per HEG share per the company filing. The resulting company has no price anywhere in this repository -- the market cache ends 2026-08-21. Excluded from marked value rather than valued at zero: booking the full quote drop as a loss would assert the entitlement is worthless, which no evidence here supports.",
+          "entry_price": "725",
+          "entry_value": "9425",
+          "filing": "https://bazaarwatch.com/announcement/88270/heg-ltd-attached",
+          "quantity": "13",
+          "reason": "DEMERGER_ENTITLEMENT_UNPRICED",
+          "symbol": "HEG"
+        }
+      ]
+    }
+  },
+  "code_revision": "30316c77bf2e6f47fa1f84cba270cdfe0d68011b-dirty",
+  "generated_at": "2026-09-10T17:44:01.278570+00:00",
+  "mark_date": "2026-08-21",
+  "note": "Marks come from the research market cache, whose last session is earlier than the books' own live marks. These figures are therefore a like-for-like comparison against the benchmark at one common date, NOT a restatement of either book's live valuation.",
+  "store_root": "D:/quant_system/data/evidence/market-cache/all-market-20160822-20260821/store"
+}

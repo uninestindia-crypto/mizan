@@ -16,6 +16,7 @@ import sys
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
@@ -31,9 +32,10 @@ from quant_system.research_xs_monthly.paper import (
 STATE_NAME = "state.json"
 
 
-def _load_state(state_path: Path) -> dict:
+def _load_state(state_path: Path) -> dict[str, Any]:
     if state_path.is_file():
-        return json.loads(state_path.read_text(encoding="utf-8"))
+        payload: dict[str, Any] = json.loads(state_path.read_text(encoding="utf-8"))
+        return payload
     return {"rule": FROZEN_RULE, "open": [], "closed": [], "runs": []}
 
 
@@ -82,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
         if "proceeds" in leg:
             cash += Decimal(str(leg["proceeds"]))
 
-    opened_now: list[dict] = []
+    opened_now: list[dict[str, Any]] = []
     if not state["open"]:
         signal = latest_signal(bars)
         last_exit = max((leg["exit_date"] for leg in state["closed"]), default="")
@@ -135,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _render(state: dict, run_note: dict, load_stats: dict) -> str:
+def _render(state: dict[str, Any], run_note: dict[str, Any], load_stats: dict[str, Any]) -> str:
     lines = [
         "# XS-monthly paper watch (RESEARCH_ONLY, no orders)",
         "",

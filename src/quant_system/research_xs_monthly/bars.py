@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -38,7 +39,7 @@ def _pos_decimal(value: object) -> Decimal | None:
     return d
 
 
-def _parse_bar(record: dict, fallback_symbol: str | None = None) -> Bar | None:
+def _parse_bar(record: dict[str, Any], fallback_symbol: str | None = None) -> Bar | None:
     try:
         symbol = str(record.get("symbol") or fallback_symbol or "").strip()
         ex_date = date.fromisoformat(str(record.get("exchange_date")))

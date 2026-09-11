@@ -114,7 +114,7 @@ This has three named consequences:
 **(c) Squared-error loss on ±1 is the wrong loss for the economic objective anyway.** You do not care about $\mathbb{E}[(y-\hat s)^2]$. You care about $\mathbb{E}[r \cdot \mathbb{1}\{s>\tau\}]$. Discretising a continuous net return into ±1 discards the entire magnitude distribution — a $+3\%$ day and a $+0.01\%$ day are the same label. Given that the net-return distribution of Indian large caps is leptokurtic with $\kappa \approx 6$–$9$, **you have thrown away the fat tail that is the only part of the distribution where a real edge could show up.** The label constructor in `labels.py` already computes `net_return` in full Decimal precision and then destroys it on the final line:
 
 ```python
-target="UP" if Decimal(net_return_text) > 0 else "DOWN",
+target = ("UP" if Decimal(net_return_text) > 0 else "DOWN",)
 ```
 
 This single line is, in my assessment, the **largest single information destruction event in the stack.**
@@ -673,15 +673,17 @@ The last row is the most important line in this document. **FII/DII flow data, p
 **Phase B (if and only if Phase A shows IC > 0.02 net):** LightGBM with hard constraints:
 ```python
 LGBMRegressor(
-    objective="huber",          # robust to return outliers
-    num_leaves=15,              # hard cap — financial data supports ~4 interactions max
+    objective="huber",  # robust to return outliers
+    num_leaves=15,  # hard cap — financial data supports ~4 interactions max
     max_depth=4,
-    min_child_samples=200,      # large; prevents leaf-level noise fitting
+    min_child_samples=200,  # large; prevents leaf-level noise fitting
     learning_rate=0.02,
     n_estimators=400,
-    subsample=0.7, subsample_freq=1,
+    subsample=0.7,
+    subsample_freq=1,
     colsample_bytree=0.7,
-    reg_alpha=1.0, reg_lambda=10.0,
+    reg_alpha=1.0,
+    reg_lambda=10.0,
     monotone_constraints=[...],  # ENFORCE economic priors
 )
 ```

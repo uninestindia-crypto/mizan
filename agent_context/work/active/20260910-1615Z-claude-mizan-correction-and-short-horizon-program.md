@@ -99,11 +99,11 @@ Inherited from the predecessor record (unchanged, same owner):
 | A | Ownership resolution and this record | **DONE** |
 | B | Corporate-action correctness: tolerance defect, independent demerger validation, HEG entitlement | **DONE except HEG paper accounting** |
 | C | Adjustment provenance on `DatasetManifest`; adjusted bars reach `build_label_dataset` | **DONE** |
-| D | Governed Mizan retrain (1 ordinal) on consistent features/labels/P&L | pending |
-| E | Re-evaluate Flagship and XS-Monthly against cash and a same-universe benchmark | pending |
+| D | Governed Mizan retrain (1 ordinal) on consistent features/labels/P&L | **DONE** — `trial_mizan_h11_003`, ordinal 3, DSR 0.2466, `RESEARCH_ONLY` |
+| E | Re-evaluate Flagship and XS-Monthly against cash and a same-universe benchmark | **PARTIAL** — XS-Monthly done; Flagship **refused**, no price source covers its holding period |
 | F | Short-horizon experiment: QuantOS simple model vs TimesFM 3.0, holds 1/2/3 | **IN PROGRESS** — budget frozen, holds mapping proven, TimesFM environment built |
 | G | NPU feasibility test, bounded | **DONE — `NPU_UNREACHABLE`, documented** |
-| H | Independent verification, audits, comparison report and model cards | pending |
+| H | Independent verification, audits, comparison report and model cards | **PARTIAL** — audits PASS, reports written; **no independent adjudication** |
 
 ## Step B findings, measured before anything was changed
 
@@ -277,6 +277,119 @@ bytes differ from their committed blobs. That is the **predecessor record's** co
 authority refetch, present in `git status` before this session started, not something this work
 caused.
 
+## Session-2 additions
+
+### A caller defect the peer session flagged, verified and repaired
+
+`20260910-NOTICE-predecessor-left-uncommitted-screen-edit-and-broken-caller.md` reported
+`build_mizan_feature_store.py` broken against the `AdjustmentPlan` contract. **Verified: that half
+was already stale** -- the builder was repaired before the notice landed, and `AdjustmentPlan.__iter__`
+keeps the old two-tuple unpacking working anyway.
+
+The second half was **real and current**: `screen_mizan_out_of_sample.py:114` unpacked
+`bars, _, _ = adjusted_bar_points(...)` from a function that now returns two values. It imported
+cleanly and would have failed only at call time. Repaired, and while there the screen was brought
+into line with the governed label path: it now refuses windows spanning an unresolved corporate
+action instead of measuring across them, so the screen and `build_label_dataset` agree about which
+observations exist.
+
+### The store scan was rebuilt after two `MemoryError` kills
+
+Reconstructing all 3,322 acquisitions to use 423 of them exhausted the machine twice, dying inside
+`json.dumps` in `canonical_sha256`. Replaced with a two-phase design now shared by the builder and
+the validator: a cached index over manifest **headers** picks the dataset per symbol (same rule as
+`deduplicate_by_symbol` -- longest history, ties by provider instrument id), then only those datasets
+are opened, each still through `open_verified`. ~8x less of the store is touched and integrity
+checking is not skipped.
+
+### Independent demerger validation ran, and validated nothing
+
+| Outcome | Count |
+|---|---:|
+| Ratio-less actions examined | 54 |
+| **Independently validated** | **0** |
+| Refused `NO_FILING_RATIO` | 54 |
+| Refused `NO_EX_DATE_BAR` | 2 (including **HEG**) |
+
+Zero is the correct result. Entitlement ratios are legal facts in issuer filings and this repository
+holds one. Every unvalidated action stays unresolved and its windows are refused.
+
+**HEG returns `NO_EX_DATE_BAR`**: ex-date 2026-09-07, cache `received_end` 2026-08-21. The resulting
+company has no price anywhere in this repository, so the entitlement is an **unpriced asset** -- which
+is exactly what lets the XS-Monthly book disclose it rather than book a fabricated loss or recovery.
+
+### The discovery worklist ranking was measured and found near-useless on price alone
+
+Ranking candidates by how well their first traded price implies a clean entitlement ratio has a
+**measured false-discovery rate of 8.51%** (178 of 2,091 candidate/action pairs). Concretely: for
+ABFRL the correct resulting company **ABLBL ranked fourth**, behind SILKY which is unrelated;
+ARVIND's top price-fit candidate was an **ETF**.
+
+Re-ranked on **shared name stem** first, price fit only breaking ties. SKFINDIA -> SKFINDUS and
+ABFRL -> ABLBL are the kind of lead that is actually informative. It remains discovery, not
+validation.
+
+### Short-horizon validation machinery, with its own tests
+
+- `research_short_horizon/walkforward.py` -- purged, embargoed, chronological folds. The leak it
+  prevents is silent: a split at session `s` scores training rows on prices inside the validation
+  period whenever `k + horizon >= s`. Tested by checking **every training row of every fold**, not by
+  asserting the split code was called.
+- `research_short_horizon/abstention.py` -- the cash rule, scored **per decision rather than per
+  trade**, because per-trade scoring rewards abstaining down to a handful of lucky decisions. A
+  threshold leaving fewer than `minimum_trades` acted-on decisions is refused: "never trade" is the
+  cash baseline, not a model result. Ties prefer the *less* selective threshold.
+
+16 tests. Total across this session's suites: **116 passing**.
+
+## TimesFM 3.0: it runs, and the throughput redesigned the study
+
+`scripts/timesfm_probe.py` -> `reports/short_horizon/timesfm-probe.json`, written up in
+`reports/short_horizon/TIMESFM-FEASIBILITY.md`.
+
+| Measure | Value |
+|---|---:|
+| Checkpoint | `google/timesfm-3.0-pytorch`, revision **`43046b85ec22d584a13f8098c2ed39c889e129c2`** |
+| Load | 5.2 s |
+| **Peak working set** | **2,568.8 MiB** |
+| Single-series forecast, holds 1/2/3 | 283 / 264 / 291 ms |
+| Batched (>=8 series) | **~116 ms/series** |
+
+**The throughput is a design constraint, not a footnote.** 423 names x 2,427 decision dates x 0.116 s
+is about **33 days** of compute. The scope was therefore declared in the trial ledger *before any
+TimesFM trial ran*: 50 highest-turnover names, full history, ~3.9 hours -- and **both** arms
+restricted to the identical subset, because a full-universe simple model against a subset TimesFM
+would confound model quality with sample size.
+
+Two probe defects worth recording, both of which produced plausible-looking wrong output:
+
+1. **The 2.5 loader read as a 3.0 platform failure.** `TimesFM_2p5_200M_torch.from_pretrained`
+   against the 3.0 checkpoint raises `Missing key(s) in state_dict: "tokenizer.hidden_layer.weight"`,
+   which looks like "3.0 is broken here". It is not -- 3.0 has its own class, `TimesFM3Forecaster`,
+   and loads in 5 seconds. The probe now dumps the module's attributes on a load failure.
+2. **Peak memory printed `None` beside real timings.** `GetProcessMemoryInfo` was called without
+   explicit `argtypes`, so ctypes marshalled the process HANDLE as a 32-bit int and the call failed
+   silently on 64-bit Windows. "None MiB" next to genuine latencies reads as "used no memory". The
+   real answer is 2.57 GB.
+
+## The multiplicity guard fired, and the honest fix was to obey it
+
+The first retrain attempt targeted a **fresh** evidence root and passed `--multiplicity-ordinal 3`.
+`require_next_persisted_trial` refused it: `MULTIPLICITY_INVALID: trial ordinal must be 1 from
+persisted history`.
+
+The tempting reading is "use ordinal 1 then". That would have been wrong. `data/evidence/models/
+mizan-v1` already holds **two terminal trials** on the same candidate `cand_mizan_v1`, so a fresh
+store at ordinal 1 would deflate a third attempt as if it were a first. The retrain was re-pointed at
+the existing store as **ordinal 3**, which is what the guard was protecting.
+
+## Operational note: two jobs, one 16 GB machine
+
+A governed retrain was lost to memory exhaustion while the TimesFM probe held 2.57 GB. The store scan
+had already been rebuilt once for the same reason. TimesFM work and training work must not be
+scheduled concurrently on this machine, and that is now stated in the TimesFM report rather than
+rediscovered.
+
 ## Experiment budget (frozen here, before any result is seen)
 
 Declared in advance so it cannot be widened after a disappointing number. Counted in
@@ -321,11 +434,143 @@ exact defect class this work exists to remove, so routing around it would be sel
 - `torch`, `pandas`, `transformers` and `huggingface_hub` are absent from `.venv`, and the machine is
   Windows ARM64. TimesFM 3.0 viability on this platform is an open measurement, not an assumption.
 
+## Step D result: the retrain ran, and the candidate loses money
+
+`trial_mizan_h11_003` in `data/evidence/models/mizan-v1`, **ordinal 3** (appended to the existing
+Mizan history, not a fresh store, so deflation counts all three attempts). 598 factors applied,
+7 unresolved actions had their label windows refused. Horizon 11, matching what the live Flagship
+book runs.
+
+| Strategy | Sharpe | Total return | Accuracy | Trades |
+|---|---:|---:|---:|---:|
+| **RIDGE (candidate)** | **+0.1672** | **-5.82%** | 0.4843 | 3,080 |
+| NO_TRADE | 0.0000 | 0.00% | 0.4895 | 0 |
+| BUY_AND_HOLD | +1.4037 | +64.03% | 0.5105 | 10,714 |
+| PREVIOUS_SIGN | **+1.6312** | **+71.48%** | 0.4957 | 5,394 |
+| EQUITY_DUAL_MOMENTUM | -0.2724 | -15.98% | 0.4808 | 4,824 |
+
+`deflated_sharpe_ratio = 0.246621` against a `0.95` gate. Verdict **`RESEARCH_ONLY`**.
+
+**What the correction bought:** DSR 0.176 -> 0.247 *while deflating against a harsher attempt count*
+(3 rather than 2). A real improvement attributable to the data, and nowhere near enough.
+
+Two guards fired correctly and were obeyed rather than worked around: `MULTIPLICITY_INVALID` on a
+fresh store (which would have deflated a third attempt as a first), and `EvidenceConflict` refusing a
+duplicate commit of the same trial id.
+
+## Step E result: one refused, one reframed
+
+**Flagship: REFUSED.** It opened on 2026-08-31; the deepest research cache ends 2026-08-27 and its
+session reports carry only aggregate performance. **No price source in this repository covers its
+holding period**, so no matched benchmark can be computed. Precise external blocker: it needs either a
+cache refresh covering 2026-08-31 onward, or per-name marks persisted in the session reports.
+
+The near-miss is the important part. The first version of the script did **not** refuse -- it marked
+positions at the last price on or before 2026-08-21, *ten days before the positions existed*, and
+produced entirely plausible numbers (gross +9,229.09, net +6,224.14, "underperforms its benchmark by
+8,269.25"). Nothing about the output looked wrong. It now raises `MarkDateBeforeEntry`.
+
+**XS-Monthly: the displayed loss is dominated by one unpriceable position.** Marked 2026-09-09 on the
+book's own recorded marks, HEG excluded from **both** entry consideration and marked value:
+
+| | INR |
+|---|---:|
+| Gross P&L (91 priced legs) | **+4,155.67** |
+| Paid costs | 0.00 |
+| Prospective exit costs | 1,920.90 |
+| **Net P&L** | **+2,234.77** |
+| Matched benchmark, net | -4,182.41 |
+| **Excess over benchmark** | **+6,417.18** |
+| Unpriced: HEG | 9,425.00 of capital, no defensible value |
+
+The **+4,155.67 reproduces the loss diagnosis exactly** ("other 98 selected legs combined =
+INR +4,155.67"), by a different route -- an independent check that the decomposition reads the book
+correctly.
+
+A defect caught in my own script during this: excluding HEG's *value* while keeping its *entry cost*
+implicitly marks the position at zero, which is a larger error than the one being corrected. Both
+sides are now excluded and the entry cost reported separately.
+
+## Step F: the harness, and three defects it caught before they mattered
+
+Built: `research_short_horizon/evaluation.py` (purged walk-forward, train-only standardisation,
+closed-form ridge, per-decision scoring, five baselines on the identical decision set),
+`scripts/run_short_horizon_experiment.py`, `scripts/generate_timesfm_forecasts.py`.
+
+**41 tests**, including a **leak control**: it plants the target as a feature and asserts the harness
+reports Sharpe > 3. That direction is deliberate -- if a *known* leak did not show up, the harness
+could not detect an unknown one and none of its honest-looking numbers would mean anything.
+
+Labels come from the governed `build_label_dataset` against derived adjusted acquisitions, so the
+return is on the adjusted basis, the costs are dated NSE rules on raw executable opens, and a window
+spanning an unsized corporate action produces no label.
+
+### Defect 1: the subset selector dropped the largest names
+
+Selecting each symbol's **longest** acquisition and then filtering for universe authority reduced the
+subset to **19 names**, losing RELIANCE, HDFCBANK, ICICIBANK and SBIN -- precisely what a turnover
+rule exists to select. Several symbols carry two datasets where the longer one is *unbound*. Fixed to
+select the longest **among the bound ones**, which is what `train_mizan.governed_acquisitions`
+already did. Subset is **45 names**. Both the experiment and the forecast generator now share that
+one selector: two scripts disagreeing about the subset would mean the arms were not evaluating the
+same experiment.
+
+### Defect 2: a stale run silently overwrote a good result
+
+Two ridge runs wrote to one output path. The **older** one, carrying the defective selector, finished
+last and replaced the corrected output. It was caught only because the payload records its own subset
+and a 19-name result sat where a 45-name one belonged.
+
+The contaminated numbers were directionally consistent with the clean ones, which is exactly why this
+is worth recording: a plausible wrong result is harder to notice than an implausible one. The runner
+now moves an incumbent aside rather than replacing it.
+
+### Defect 3: every hold was about to read the 1-step forecast
+
+`_load_forecasts` returned a single `predicted_return` regardless of hold, so a 3-session hold would
+have been scored against a **1-session** forecast -- testing a model nobody proposed, silently. One
+`horizon=3` pass returns steps 1, 2 and 3; each hold now reads its own. Verified against a synthetic
+payload before the 2.5-hour forecast run could make it expensive.
+
+### Declared scope, amended twice and both times before results
+
+- **45 names**, not 50: only 45 research-universe names have a universe-bound governed acquisition.
+  A data-availability fact, not a choice.
+- **Both arms on the identical subset.** The ridge could have used the full universe in minutes;
+  letting it would confound model quality with sample size.
+
+## Verification state
+
+| Gate | Result |
+|---|---|
+| `scripts/audit-agent-claims.ps1` | **PASS** |
+| `scripts/audit-disk-layout.ps1` | **PASS** |
+| Ruff check + format, all owned files | clean |
+| Mypy, owned `src/` | **Success, 22 source files** |
+| This session's suites | **116 passing** |
+
+**No independent adjudication.** Everything here is author-verified. The training path was already
+the largest evidence gap in `CURRENT.md` and this work does not close it -- it adds to it.
+
 ## Stop point
 
-Record filed. No source file edited yet under this record.
+Steps A, B, C, D, G complete. E partial (Flagship refused for want of data). F has complete
+infrastructure and a frozen budget but **none of its six trials has run**. H has passing audits and
+written reports but **no independent adjudication**.
+
+Working tree carries this session's edits; the auto-sync commits on its own schedule.
 
 ## Next safe action
 
-Step B: repair the structural gap-verification tolerance in `corporate_actions.py` (absolute
-tolerance in factor space misclassifies small ratios), then build independent demerger validation.
+The short-horizon trials, in this order:
+
+1. Build the evaluation harness that joins `walk_forward_folds`, `calibrate_threshold` and the
+   governed cost path into a runnable trial. It does not exist yet.
+2. Materialise the declared 50-name subset from the universe authority.
+3. Run the three simple-model holds (minutes), then the three TimesFM holds (~3.9 hours, and **not**
+   concurrently with anything else -- 2.57 GB peak cost a governed retrain to OOM in this session).
+4. Only after all six are recorded in the ledger, evaluate the frozen candidate once on the reserved
+   holdout.
+
+Do **not** start step 4 before steps 1-3 are complete and logged. And nothing here justifies changing
+either running book: Flagship's re-evaluation is still blocked on data, not on analysis.

@@ -68,9 +68,15 @@ def read_file_safely(path: Path, max_chars: int = 30000) -> str:
 
 def build_audit_dossier() -> str:
     """Build the comprehensive data dossier for both Mīzān models."""
-    mizan_features = read_file_safely(REPO_ROOT / "src" / "quant_system" / "modeling" / "mizan_features.py", 10000)
-    mizan_model = read_file_safely(REPO_ROOT / "src" / "quant_system" / "modeling" / "mizan_model.py", 10000)
-    xs_paper = read_file_safely(REPO_ROOT / "src" / "quant_system" / "research_xs_monthly" / "paper.py", 10000)
+    mizan_features = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "modeling" / "mizan_features.py", 10000
+    )
+    mizan_model = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "modeling" / "mizan_model.py", 10000
+    )
+    xs_paper = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "research_xs_monthly" / "paper.py", 10000
+    )
 
     dossier = f"""# QuantOS Institutional Audit Dossier: Dual Mīzān Systems
 
@@ -185,17 +191,20 @@ def call_router_model(
     usage = data.get("usage", {})
     in_tok = usage.get("prompt_tokens", 0)
     out_tok = usage.get("completion_tokens", 0)
-    log_event(f"{model} completed in {elapsed:.1f}s | Prompt: {in_tok}, Completion: {out_tok} tokens")
+    log_event(
+        f"{model} completed in {elapsed:.1f}s | Prompt: {in_tok}, Completion: {out_tok} tokens"
+    )
 
     choices = data.get("choices", [])
     if choices:
-        return choices[0].get("message", {}).get("content", "").strip()
+        content: str = choices[0].get("message", {}).get("content", "")
+        return content.strip()
     return ""
 
 
 def main() -> int:
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:
         pass
 
@@ -254,9 +263,13 @@ Your audit must thoroughly address:
             gpt6_opinion = gpt6_file.read_text(encoding="utf-8")
         else:
             log_event("=== Launching Step 1: GPT-6-Astra First Opinion ===")
-            gpt6_opinion = call_router_model(client, api_key, MODEL_GPT6, gpt6_sys, gpt6_user, max_tokens=4096)
+            gpt6_opinion = call_router_model(
+                client, api_key, MODEL_GPT6, gpt6_sys, gpt6_user, max_tokens=4096
+            )
             gpt6_file.write_text(gpt6_opinion, encoding="utf-8")
-            log_event("Saved Step 1 report to reports/mizan_live_audit/04_gpt_6_astra_first_opinion.md")
+            log_event(
+                "Saved Step 1 report to reports/mizan_live_audit/04_gpt_6_astra_first_opinion.md"
+            )
 
         # ======================================================================
         # Step 2: Second Opinion from Claude Fable 5.1
@@ -319,9 +332,15 @@ Your Second Opinion must address:
 """
 
         log_event("=== Launching Step 2: Claude Fable 5.1 Second Opinion ===")
-        claude_opinion = call_router_model(client, api_key, MODEL_CLAUDE, claude_sys, claude_user, max_tokens=3000)
-        (OUTPUT_DIR / "05_claude_fable_second_opinion.md").write_text(claude_opinion, encoding="utf-8")
-        log_event("Saved Step 2 report to reports/mizan_live_audit/05_claude_fable_second_opinion.md")
+        claude_opinion = call_router_model(
+            client, api_key, MODEL_CLAUDE, claude_sys, claude_user, max_tokens=3000
+        )
+        (OUTPUT_DIR / "05_claude_fable_second_opinion.md").write_text(
+            claude_opinion, encoding="utf-8"
+        )
+        log_event(
+            "Saved Step 2 report to reports/mizan_live_audit/05_claude_fable_second_opinion.md"
+        )
 
         # ======================================================================
         # Step 3: Synthesis
@@ -357,7 +376,9 @@ Your Second Opinion must address:
 - [Claude Fable 5.1 Second Opinion](05_claude_fable_second_opinion.md)
 """
         (OUTPUT_DIR / "06_dual_ai_system_verdict.md").write_text(synthesis, encoding="utf-8")
-        log_event("Saved Consensus verdict to reports/mizan_live_audit/06_dual_ai_system_verdict.md")
+        log_event(
+            "Saved Consensus verdict to reports/mizan_live_audit/06_dual_ai_system_verdict.md"
+        )
 
     print("\n[✓] Dual-AI Audit Pipeline completed successfully!")
     return 0

@@ -14,14 +14,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from typing import Any
+
 from quant_system.research_xs_monthly.dashboard import render_dashboard
 
 STATE_DEFAULT = Path("logs/xs_monthly_new/paper_watch/state.json")
 
 
-def _load_state(path: Path) -> dict:
+def _load_state(path: Path) -> dict[str, Any]:
     if path.is_file():
-        return json.loads(path.read_text(encoding="utf-8"))
+        payload: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+        return payload
     return {"capital": "?", "cash": "?", "open": [], "closed": [], "runs": []}
 
 

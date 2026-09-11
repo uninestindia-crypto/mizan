@@ -1,0 +1,93 @@
+{
+  "batch_throughput": {
+    "1": {
+      "milliseconds_per_series": 279.26,
+      "outputs": 1,
+      "seconds_total": 0.2793
+    },
+    "128": {
+      "milliseconds_per_series": 116.12,
+      "outputs": 128,
+      "seconds_total": 14.8634
+    },
+    "32": {
+      "milliseconds_per_series": 149.49,
+      "outputs": 32,
+      "seconds_total": 4.7837
+    },
+    "8": {
+      "milliseconds_per_series": 115.66,
+      "outputs": 8,
+      "seconds_total": 0.9252
+    }
+  },
+  "checkpoint": "google/timesfm-3.0-pytorch",
+  "context_length": 512,
+  "cuda_available": false,
+  "fine_tuned": false,
+  "forecast_timings": {
+    "1": {
+      "finite": true,
+      "milliseconds_each": 283.37,
+      "point_shape": [
+        1
+      ],
+      "quantile_shape": [
+        1,
+        9
+      ],
+      "seconds_total": 1.4169
+    },
+    "2": {
+      "finite": true,
+      "milliseconds_each": 263.77,
+      "point_shape": [
+        2
+      ],
+      "quantile_shape": [
+        2,
+        9
+      ],
+      "seconds_total": 1.3189
+    },
+    "3": {
+      "finite": true,
+      "milliseconds_each": 291.38,
+      "point_shape": [
+        3
+      ],
+      "quantile_shape": [
+        3,
+        9
+      ],
+      "seconds_total": 1.4569
+    }
+  },
+  "generated_at": "2026-09-10T17:33:25.681685+00:00",
+  "horizons": [
+    1,
+    2,
+    3
+  ],
+  "interpreter": {
+    "emulated": true,
+    "executable": "D:/quant_system_workspaces/scratch/timesfm-probe-20260910/Scripts/python.exe",
+    "pe_machine": "AMD64",
+    "processor_architecture_env": "AMD64",
+    "python_version": "3.13.15",
+    "reported_machine": "ARM64",
+    "sysconfig_platform": "win-amd64"
+  },
+  "load_seconds": 5.248,
+  "peak_memory_mb": 2568.8,
+  "peak_memory_mb_after_load": 2568.8,
+  "repeats": 5,
+  "resolved_revision": "43046b85ec22d584a13f8098c2ed39c889e129c2",
+  "status": "OK",
+  "torch_threads": 8,
+  "versions": {
+    "numpy": "2.5.3",
+    "timesfm": "unknown",
+    "torch": "2.14.0+cpu"
+  }
+}

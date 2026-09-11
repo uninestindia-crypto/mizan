@@ -435,9 +435,7 @@ def load_portfolio(path: Path) -> PaperPortfolioState | None:
         risk_halted=bool(payload["risk_halted"]),
         halted_on=(date.fromisoformat(payload["halted_on"]) if payload.get("halted_on") else None),
         halt_reason=str(payload.get("halt_reason", "")),
-        last_completed_on=(
-            date.fromisoformat(last_completed) if last_completed else None
-        ),
+        last_completed_on=(date.fromisoformat(last_completed) if last_completed else None),
     )
 
 
@@ -522,6 +520,8 @@ def state_from_ledger(
             1 if rebalanced else previous.sessions_held + (1 if should_increment else 0)
         ),
         last_completed_on=(
-            session_date if (session_completed or already_counted_today) else previous.last_completed_on
+            session_date
+            if (session_completed or already_counted_today)
+            else previous.last_completed_on
         ),
     )

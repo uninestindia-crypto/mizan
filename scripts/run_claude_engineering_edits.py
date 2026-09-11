@@ -53,7 +53,11 @@ def read_file_safely(path: Path, max_chars: int = 25000) -> str:
         content = path.read_text(encoding="utf-8", errors="replace")
         if len(content) > max_chars:
             half = max_chars // 2
-            return content[:half] + f"\n\n... [TRUNCATED {len(content) - max_chars} CHARS] ...\n\n" + content[-half:]
+            return (
+                content[:half]
+                + f"\n\n... [TRUNCATED {len(content) - max_chars} CHARS] ...\n\n"
+                + content[-half:]
+            )
         return content
     except Exception as e:
         return f"[ERROR READING FILE {path}: {e}]"
@@ -66,7 +70,9 @@ def build_engineering_prompt() -> tuple[str, str]:
         "Decimal arithmetic (never float for prices or fees), next-bar execution, fail-closed safety, and zero external dependencies."
     )
 
-    paper_code = read_file_safely(REPO_ROOT / "src" / "quant_system" / "research_xs_monthly" / "paper.py")
+    paper_code = read_file_safely(
+        REPO_ROOT / "src" / "quant_system" / "research_xs_monthly" / "paper.py"
+    )
     audit_code = read_file_safely(REPO_ROOT / "scripts" / "run_mizan_live_audit.py", 18000)
 
     user_prompt = rf"""# QuantOS Engineering Implementation Task: The 3 Core Upgrades
@@ -130,7 +136,7 @@ Write the code clearly, cleanly, and completely so it can be integrated directly
 
 def main() -> int:
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:
         pass
 
@@ -199,7 +205,9 @@ def main() -> int:
                             chunk = delta.get("text", "")
                             full_text.append(chunk)
                             if len("".join(full_text)) % 2000 < 100:
-                                log_event(f"Generating code... (~{len(''.join(full_text)):,} chars)")
+                                log_event(
+                                    f"Generating code... (~{len(''.join(full_text)):,} chars)"
+                                )
                 except Exception:
                     pass
 

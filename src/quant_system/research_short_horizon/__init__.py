@@ -12,16 +12,29 @@ That cost asymmetry is the whole reason this study is hard, and it is why the ab
 is a first-class part of the candidate rather than a post-hoc filter.
 """
 
+from quant_system.research_short_horizon.abstention import (
+    DECLARED_THRESHOLD_GRID,
+    AbstentionPolicy,
+    CalibrationOutcome,
+    calibrate_threshold,
+)
 from quant_system.research_short_horizon.horizon import (
     HOLD_TO_HORIZON_SESSIONS,
     HoldSpec,
     hold_specs,
     horizon_for_hold,
 )
+from quant_system.research_short_horizon.walkforward import Fold, walk_forward_folds
 
 __all__ = [
+    "DECLARED_THRESHOLD_GRID",
     "HOLD_TO_HORIZON_SESSIONS",
+    "AbstentionPolicy",
+    "CalibrationOutcome",
+    "Fold",
     "HoldSpec",
+    "calibrate_threshold",
     "hold_specs",
     "horizon_for_hold",
+    "walk_forward_folds",
 ]
