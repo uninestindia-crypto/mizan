@@ -48,22 +48,6 @@
     "symbol": "DEEPAKFERT"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "Deepak Fertilizers and Petrochemicals Corporation Limited",
-    "exDate": "16-Sep-2020",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE501A01019",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "17-Sep-2020",
-    "series": "EQ",
-    "subject": " Rights 3:20 @ Premium Rs 123/-",
-    "symbol": "DEEPAKFERT"
-  },
-  {
     "bcEndDate": "21-Sep-2020",
     "bcStartDate": "18-Sep-2020",
     "caBroadcastDate": null,
@@ -77,6 +61,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": " Annual General Meeting/Dividend - Rs  3 Per Share",
+    "symbol": "DEEPAKFERT"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Deepak Fertilizers and Petrochemicals Corporation Limited",
+    "exDate": "16-Sep-2020",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE501A01019",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "17-Sep-2020",
+    "series": "EQ",
+    "subject": " Rights 3:20 @ Premium Rs 123/-",
     "symbol": "DEEPAKFERT"
   },
   {

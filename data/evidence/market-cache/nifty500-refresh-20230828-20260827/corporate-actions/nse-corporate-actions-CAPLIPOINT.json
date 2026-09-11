@@ -224,22 +224,6 @@
     "symbol": "CAPLIPOINT"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "Caplin Point Laboratories Limited",
-    "exDate": "23-Sep-2024",
-    "faceVal": "2",
-    "ind": "-",
-    "isin": "INE475E01018",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "23-Sep-2024",
-    "series": "EQ",
-    "subject": "Dividend - Rs 2.50 Per Share",
-    "symbol": "CAPLIPOINT"
-  },
-  {
     "bcEndDate": "30-Sep-2024",
     "bcStartDate": "24-Sep-2024",
     "caBroadcastDate": null,
@@ -253,6 +237,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": "Annual General Meeting",
+    "symbol": "CAPLIPOINT"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Caplin Point Laboratories Limited",
+    "exDate": "23-Sep-2024",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE475E01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "23-Sep-2024",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2.50 Per Share",
     "symbol": "CAPLIPOINT"
   },
   {

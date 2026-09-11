@@ -224,22 +224,6 @@
     "symbol": "BEML"
   },
   {
-    "bcEndDate": "27-Sep-2023",
-    "bcStartDate": "21-Sep-2023",
-    "caBroadcastDate": null,
-    "comp": "BEML Limited",
-    "exDate": "20-Sep-2023",
-    "faceVal": "5",
-    "ind": "-",
-    "isin": "INE258A01016",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": "Annual General Meeting",
-    "symbol": "BEML"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -253,6 +237,22 @@
     "recDate": "20-Sep-2023",
     "series": "EQ",
     "subject": "Dividend - Rs 5 Per Share",
+    "symbol": "BEML"
+  },
+  {
+    "bcEndDate": "27-Sep-2023",
+    "bcStartDate": "21-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "BEML Limited",
+    "exDate": "20-Sep-2023",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE258A01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
     "symbol": "BEML"
   },
   {

@@ -144,22 +144,6 @@
     "symbol": "SCI"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "Shipping Corporation Of India Limited",
-    "exDate": "06-Sep-2024",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE109A01011",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "06-Sep-2024",
-    "series": "EQ",
-    "subject": "Dividend - Re 0.50 Per Share",
-    "symbol": "SCI"
-  },
-  {
     "bcEndDate": "18-Sep-2024",
     "bcStartDate": "07-Sep-2024",
     "caBroadcastDate": null,
@@ -173,6 +157,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": "Annual General Meeting",
+    "symbol": "SCI"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Shipping Corporation Of India Limited",
+    "exDate": "06-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE109A01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "06-Sep-2024",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.50 Per Share",
     "symbol": "SCI"
   },
   {

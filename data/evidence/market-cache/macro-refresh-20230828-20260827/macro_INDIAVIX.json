@@ -2,12 +2,21 @@
   "symbol": "INDIAVIX",
   "instrument_key": "NSE_INDEX|India VIX",
   "name": "India VIX (Market Volatility Index)",
-  "bars_count": 744,
+  "bars_count": 745,
   "received_start": "2023-09-11T00:00:00+05:30",
-  "received_end": "2026-09-09T00:00:00+05:30",
-  "latest_close": 11.92,
-  "ingested_at": "2026-09-10T03:38:27.273753+00:00",
+  "received_end": "2026-09-10T00:00:00+05:30",
+  "latest_close": 11.8,
+  "ingested_at": "2026-09-11T06:30:32.975689+00:00",
   "candles": [
+    [
+      "2026-09-10T00:00:00+05:30",
+      11.92,
+      11.96,
+      11.53,
+      11.8,
+      0,
+      0
+    ],
     [
       "2026-09-09T00:00:00+05:30",
       11.23,

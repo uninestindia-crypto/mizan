@@ -160,22 +160,6 @@
     "symbol": "PIDILITIND"
   },
   {
-    "bcEndDate": "10-Aug-2023",
-    "bcStartDate": "28-Jul-2023",
-    "caBroadcastDate": null,
-    "comp": "Pidilite Industries Limited",
-    "exDate": "27-Jul-2023",
-    "faceVal": "1",
-    "ind": "-",
-    "isin": "INE318A01026",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": "Annual General Meeting",
-    "symbol": "PIDILITIND"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -189,6 +173,22 @@
     "recDate": "27-Jul-2023",
     "series": "EQ",
     "subject": "Dividend - Rs 11 Per Share",
+    "symbol": "PIDILITIND"
+  },
+  {
+    "bcEndDate": "10-Aug-2023",
+    "bcStartDate": "28-Jul-2023",
+    "caBroadcastDate": null,
+    "comp": "Pidilite Industries Limited",
+    "exDate": "27-Jul-2023",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE318A01026",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
     "symbol": "PIDILITIND"
   },
   {

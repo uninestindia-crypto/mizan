@@ -300,7 +300,7 @@
     "ndStartDate": "-",
     "recDate": "21-Apr-2023",
     "series": "EQ",
-    "subject": "Interim Dividend - Rs  27 Per Share",
+    "subject": "Final Dividend - Rs 75 Per Share",
     "symbol": "NESTLEIND"
   },
   {
@@ -316,7 +316,7 @@
     "ndStartDate": "-",
     "recDate": "21-Apr-2023",
     "series": "EQ",
-    "subject": "Final Dividend - Rs 75 Per Share",
+    "subject": "Interim Dividend - Rs  27 Per Share",
     "symbol": "NESTLEIND"
   },
   {
@@ -476,7 +476,7 @@
     "ndStartDate": "-",
     "recDate": "10-Jul-2026",
     "series": "EQ",
-    "subject": "Dividend - Rs 5 Per Share",
+    "subject": "Special Dividend - Rs 2 Per Share",
     "symbol": "NESTLEIND"
   },
   {
@@ -492,7 +492,7 @@
     "ndStartDate": "-",
     "recDate": "10-Jul-2026",
     "series": "EQ",
-    "subject": "Special Dividend - Rs 2 Per Share",
+    "subject": "Dividend - Rs 5 Per Share",
     "symbol": "NESTLEIND"
   }
 ]

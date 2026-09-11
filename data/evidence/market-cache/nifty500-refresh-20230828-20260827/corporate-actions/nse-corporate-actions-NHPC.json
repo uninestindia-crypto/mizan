@@ -208,22 +208,6 @@
     "symbol": "NHPC"
   },
   {
-    "bcEndDate": "29-Sep-2021",
-    "bcStartDate": "18-Sep-2021",
-    "caBroadcastDate": null,
-    "comp": "NHPC Limited",
-    "exDate": "16-Sep-2021",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE848E01016",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": " Annual General Meeting",
-    "symbol": "NHPC"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -237,6 +221,22 @@
     "recDate": "17-Sep-2021",
     "series": "EQ",
     "subject": " Dividend - Rs 0.35  Per Share",
+    "symbol": "NHPC"
+  },
+  {
+    "bcEndDate": "29-Sep-2021",
+    "bcStartDate": "18-Sep-2021",
+    "caBroadcastDate": null,
+    "comp": "NHPC Limited",
+    "exDate": "16-Sep-2021",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE848E01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
     "symbol": "NHPC"
   },
   {
@@ -304,22 +304,6 @@
     "symbol": "NHPC"
   },
   {
-    "bcEndDate": "31-Aug-2023",
-    "bcStartDate": "23-Aug-2023",
-    "caBroadcastDate": null,
-    "comp": "NHPC Limited",
-    "exDate": "22-Aug-2023",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE848E01016",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": "Annual General Meeting",
-    "symbol": "NHPC"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -333,6 +317,22 @@
     "recDate": "22-Aug-2023",
     "series": "EQ",
     "subject": "Dividend - Rs 0.45 Per Share",
+    "symbol": "NHPC"
+  },
+  {
+    "bcEndDate": "31-Aug-2023",
+    "bcStartDate": "23-Aug-2023",
+    "caBroadcastDate": null,
+    "comp": "NHPC Limited",
+    "exDate": "22-Aug-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE848E01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
     "symbol": "NHPC"
   },
   {
