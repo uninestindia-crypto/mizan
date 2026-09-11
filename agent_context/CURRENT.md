@@ -53,13 +53,183 @@ What has **not**: the training runner, the campaign driver, and every research r
 
 ## Active work & coordination
 
-- 43 active work records. Multi-agent coordination remains live in `agent_context/`; assume any
-  registered worktree or non-default branch is an agent whose claim you cannot see (PROTOCOL §8).
-- 22 adjudication reports under `.launch/reports/`. One is **quarantined** as unreproducible —
+- **91 active work records** (43 at the previous snapshot), 3 registered worktrees, 4 local branches.
+  Multi-agent coordination remains live in `agent_context/`; assume any registered worktree or
+  non-default branch is an agent whose claim you cannot see (PROTOCOL §8).
+- **Two Claude Code sessions worked the same files simultaneously on 2026-09-10.** It was survivable
+  only because both filed records and neither reverted the other; see "Concurrency" below for what it
+  actually cost.
+- 35 adjudication reports under `.launch/reports/`. One is **quarantined** as unreproducible —
   `.launch/reports/quarantine/README.md` — and nothing there may be cited as a passing gate.
 - `CURRENT.md` is claimed by `20260820-codex-slice4-ridge-training.md` and
   `20260821-claude-ci-workflow.md`. The sections above were reconciled on explicit founder
   instruction; nothing those records wrote elsewhere in this file was altered.
+
+## Corporate actions, 2026-09-10/11: two wrong premises, both measured and both corrected
+
+This is the largest single correction in this file. It began as a paper-book loss and ended up
+rewriting what "RAW bars" means in this repository. Both premises below were *my own*, stated to the
+founder with confidence, and both were false. They are recorded in full because each was caught by
+measurement rather than by any gate, and the gates would have passed either way.
+
+### What started it: one unadjusted demerger cost a book more than its entire P&L
+
+The XS-Monthly paper book showed a loss. The whole of it was one position:
+
+| | Value |
+|---|---:|
+| Book gross return | **-0.2235%** |
+| `HEG` leg alone (demerged 2026-09-07, quoted -64.3% overnight on 3.6M shares) | **-0.608 pp of NAV** |
+| Book gross **excluding HEG** | **+0.4870%** |
+| Legs positive | 57 / 99, median +0.597% |
+
+The flagship Mizan book's loss over the same window was **not** a model failure either. Decomposed:
+market -1.34 pp, fees -0.11 pp, and the model's own stock selection **-0.13 pp** — with the sign of
+that selection term flipping depending on whether it is measured from the 08-31 open or close, which
+is what "indistinguishable from zero" looks like at seven sessions.
+
+### Root cause: the corporate-action authority could not see the event
+
+`scripts/ingest_all_market_data.py` carried three compounding defects, repaired at **`ee1b0cb3`**:
+
+1. `build_corporate_action_authority` hardcoded `effective_from`/`effective_to`/`publication_date`,
+   so every dataset ingested on any date claimed coverage to 2026-08-21;
+2. `fetch_or_load_corporate_actions` returned any existing file unconditionally, freezing a symbol's
+   record permanently on first write;
+3. every fetch failure wrote `[]`, which (2) then trusted forever — one network blip permanently
+   poisoning a symbol.
+
+Fixing (1) alone would have been *worse* than leaving it: the window would then have claimed to
+cover today while holding weeks-old content. A provenance sidecar now records what was fetched and
+when; freshness requires `status=FETCHED`, `effective_from <= start`, `effective_to >= end`, age
+<= 24h. A failed fetch reports the window it can stand behind and retries next run.
+
+All **3,359** all-market authorities were then re-pulled: 3,359 FETCHED, 0 stale, 0 unavailable,
+window 2016-08-22..2026-09-10.
+
+### Wrong premise 1 — "the bars are RAW, so every published action needs applying"
+
+**False, and acting on it is destructive rather than merely useless.** The manifest's `status: RAW`
+describes provenance, not arithmetic. Measured across the 423-name research universe: **212 of 212
+published-ratio structural actions already show an ex-date gap of ~1.0** — the provider back-adjusts
+splits and bonuses itself.
+
+Applying the published ratio on top turned TATASTEEL's 10:1 split into a **+945%** day and BEL's into
+**+952%**. A full feature-store rebuild on that logic would have silently corrupted every row, and
+the corruption would have looked like signal.
+
+It was caught by a **five-symbol smoke build**, before the full rebuild and before any ordinal was
+spent. No gate would have caught it: 28 unit tests, ruff and mypy all passed, because they encoded
+the same wrong premise as the code.
+
+**The figure "250 structural actions pollute the training data, affecting ~59% of names" was given to
+the founder and is withdrawn.**
+
+### Wrong premise 2 — "a ratio-less action can be sized from its ex-date gap when the gap is big"
+
+Also false, and found by the concurrent session rather than by me. A gap is the corporate action
+*plus* whatever the market did that day, and nothing separates the two. On the real corpus that rule
+would have inferred an **upward** correction for **NMDC (+71.0%), BAJAJELEC (+32.2%) and SCI
+(+30.0%)** — a demerger cannot raise the parent's price, so those gaps are market movement, and
+"correcting" them would have erased a genuine move *and* invented a fake one.
+
+The contract now: score the ex-date gap against both provider hypotheses in log-return space and
+apply a published ratio only when the data says it is missing; **never** size a ratio-less action
+from price; accept one only when a caller validated it against independent evidence; treat dividends
+as a return-definition choice rather than a repair. Anything unsized is reported **unresolved** and
+consumers drop the window instead of publishing a fabricated return.
+
+`scripts/validate_demerger_factors.py` attempts that independent validation via value-continuity
+against the resulting company's first traded price. On this corpus it returns **0 validated /
+56 refused** across 54 ratio-less actions. So demergers are currently handled by **exclusion, not
+repair** — a stated limitation, not a solved problem.
+
+### The A/B: correcting the data does not rescue the model
+
+Ungoverned screen, **no evidence store written and no multiplicity ordinal spent**. Full evidence and
+raw output: `reports/mizan_ab_screen/`.
+
+| | Arm A — RAW | Arm B — corporate-action adjusted |
+|---|---:|---:|
+| Labels | RAW opens | adjusted, total return |
+| Test rows (380 names) | 902,582 | 899,840 |
+| Model: mean / t / Sharpe | +0.006528 / +5.86 / +0.60 | +0.007249 / +6.61 / +0.68 |
+| Equal-weight: mean / t / Sharpe | +0.006550 / +6.80 / +0.69 | +0.007433 / +7.73 / +0.79 |
+| **Selection edge** | **-0.000022** | **-0.000185** |
+| **t** | **-0.07** | **-0.66** |
+
+**Arm A reproduces the published `-0.000022, t = -0.07` to the digit**, which is what makes Arm B
+interpretable rather than a statement about the harness. The edge stays negative and drifts slightly
+further negative; neither figure is significant. Equal-weight beats the candidate in both arms, and
+by more after correction. Fitted coefficients are stable across arms, every sign preserved
+(`sma_20_distance` +0.008082 -> +0.008177, still the only positive of eight): **no signal was being
+masked by bad corporate-action handling.**
+
+Both absolute levels rose (+0.65% -> +0.72% per period) purely from the dividend add-back in the
+total-return basis. It lifts model and benchmark together and cancels in the difference, which is why
+the selection edge is the number to read and the absolute return is not.
+
+**Conclusion: do not spend the ordinal on a governed retrain of this candidate.** It would publish
+another `RESEARCH_ONLY` model to reproduce a null now established on ~900,000 test rows per arm.
+
+### A cost figure given to the founder, corrected
+
+The governed Mizan retrain costs **one** multiplicity ordinal, not the "~50" first reported here in
+conversation. That figure came from the old per-instrument campaigns (51, then 50 trials, one ordinal
+per name). `scripts/train_mizan.py` is a single pooled study.
+
+Records: `20260910-claude-corporate-action-authority-refresh-cadence.md`,
+`20260910-claude-corporate-action-adjustment-and-mizan-retrain.md`, and the NOTICEs dated 2026-09-10.
+
+## CI: green for the first time since 2026-09-02
+
+The billing failure recorded under Major #1 is **gone**. It was then red for a different reason for
+over a week, and that reason mattered more than it looked:
+
+**`Ruff format` is step 2 of the workflow, so its failure skipped `Strict mypy` and both test steps.**
+The repository was not failing a lint check — **it was running no tests at all**, including on the
+commits pushed during that window.
+
+| Gate | Before | After |
+|---|---:|---:|
+| `ruff format --check .` | 12 files | **633 formatted, 0 failures** |
+| `mypy src launcher.py scripts` | 41 errors, 13 files | **Success, 205 files** |
+| `pytest tests/ -q` | never reached in CI | **1,473 passed** |
+| `pytest` reverse file order | never reached in CI | **1,473 passed** |
+
+None of the 41 mypy errors were defects: 24 bare `dict` generics, 5 optional dependencies imported
+inside guarded functions and deliberately absent from the lock file, 5 suppressions mypy no longer
+needs on `windows-latest`, and 7 `sys.stdout.reconfigure` / `json.loads` `Any`-returns. The suite
+passed at 1,473 forwards and backwards before and after; the baseline moved 1,455 -> 1,473 during the
+work because the concurrent session added 18 tests.
+
+Every failing path belonged to another agent's claim, so the repair was made only after explicit
+founder instruction. Record: `20260910-claude-ci-gate-green.md`. Notice:
+`20260910-NOTICE-ci-gate-red-blocks-all-verification.md`.
+
+**Branch protection is still not possible on this plan** and remains the open half of Major #1.
+
+## Concurrency: two sessions, same files, one afternoon
+
+Recorded because it is a live operational risk, not a historical curiosity.
+
+Two Claude Code sessions worked `corporate_actions.py`, `build_mizan_feature_store.py` and
+`screen_mizan_out_of_sample.py` simultaneously on 2026-09-10. `corporate_actions.py` was rewritten
+three times inside one 45-second observation window. What it cost, concretely:
+
+- A 25-minute screen run died on `ValueError: not enough values to unpack` because the module's
+  return signature changed mid-run.
+- A feature-store rebuild died at exit 1 for the same reason.
+- One session's uncommitted repairs were swept into the other's commit (`6131d84a`), so the CI fix
+  is in the history under a commit whose message does not mention it.
+
+What made it survivable: both sessions filed records, neither reverted the other, and the second
+session's work was **better** — it caught wrong premise 2 and fixed a `MemoryError` that had killed
+two rebuilds. PROTOCOL §8 worked as designed; the cost was wasted compute, not lost work.
+
+**The lesson for the next founder instruction that spans sessions:** ownership resolves *who may
+edit*, but it does not make concurrent edits to one file safe. A separate worktree is the only real
+lock.
 
 ## The research result, in one line
 
@@ -541,6 +711,25 @@ Records: `agent_context/work/completed/20260823-claude-redteam-repair-b1-b3.md`,
 `20260822-claude-governed-execution-adapter.md`, `20260822-claude-maturity-horizon.md`,
 `20260822-claude-dotenv-loading.md`, `20260823-claude-real-governed-shadow-session.md`.
 
+## In flight, not reconciled here (2026-09-11)
+
+A concurrent session is running a **short-horizon program** under
+`20260910-1615Z-claude-mizan-correction-and-short-horizon-program.md` (ACTIVE): holds {1,2,3},
+QuantOS model versus `google/timesfm-3.0-pytorch` zero-shot, with a trial ledger **frozen before any
+result was seen** (`reports/short_horizon/TRIAL-LEDGER.md`, 6 published trials + 1 calibration grid).
+Governed Mizan retrain trials `trial_mizan_h11_002` and `_003` exist in
+`data/evidence/models/mizan-v1/trials/`.
+
+**None of its results are restated in this file, because this snapshot's author did not verify them.**
+Read that record and its reports directly; do not cite numbers from them as reconciled state until
+someone has checked them. The ledger's own rule applies: a trial not listed there cannot be added
+after a result is seen.
+
+One caveat carried forward from the TimesFM assessment, which is a licensing fact rather than a
+measurement: `timesfm-non-commercial-license-v1.0` permits research and **prohibits production
+deployment and revenue generation**. A commercial licence from Google is a separate grant. Any
+QuantOS path toward live money cannot route through those weights as licensed.
+
 ## Reference development machine
 
 - ASUS Vivobook 14 X1407QA, Windows 11 ARM64.
@@ -558,26 +747,15 @@ attempt raises the multiplicity bar for whatever comes next.
 
 Engineering, in priority order:
 
-1. **Restore GitHub Actions billing** (Major #1, and it is not what this line used to say).
-   Corrected 2026-09-01 against the live API; every clause of the previous text was out of date.
+1. **Decide branch protection** — the only part of Major #1 still open, and it needs the founder.
+   The billing failure is fixed and the gate is green (run `34570564419`), but branch protection
+   returns `403 Upgrade to GitHub Pro or make this repository public`; the repository is `private`,
+   plan `User`. That is a paid-plan decision or a disclosure decision, not an engineering one. See
+   `20260826-NOTICE-branch-protection-unavailable-on-plan.md`.
 
-   - The workflow **is** on `main` (`.github/workflows/ci.yml`) and the token **does** carry
-     `workflow` scope (`gh auth status`: `'gist', 'read:org', 'repo', 'workflow'`). Both halves of
-     the old blocker are gone.
-   - **CI has not run since 2026-08-29T17:30Z.** Run `33265792098` is the last success; the 25 runs
-     since — 8 on 08-30, 17 on 08-31 — all failed in about 3 seconds with
-     `The job was not started because recent account payments have failed or your spending limit
-     needs to be increased`. **The gate is red for billing, not for code**, and no commit in that
-     window has been checked by it.
-   - **Branch protection cannot be set on this plan at all.** `gh api
-     repos/uninestindia-crypto/quant-system/branches/main/protection` returns `403 Upgrade to
-     GitHub Pro or make this repository public`; the repository is `private`, plan `User`. Calling
-     it "a repository setting no agent can make" implied the founder could simply make it. They
-     cannot, without GitHub Pro or making the repository public. See
-     `20260826-NOTICE-branch-protection-unavailable-on-plan.md`.
-
-   Founder actions, in order: fix the Actions billing, then decide between GitHub Pro and a public
-   repository for branch protection.
+   **Keep the gate green.** It was red for over a week on `ruff format` alone, and because that is
+   step 2, *no tests ran at all* in that window. A red format check is not cosmetic here; it silently
+   disables verification for every agent.
 2. **Independently adjudicate the training path** (largest remaining evidence gap). The brief is
    written at `.launch/ADJUDICATION-BRIEF-TRAINING-PATH.md`. It must be run by an agent that did not
    author the training runner or the campaign driver.
@@ -595,7 +773,14 @@ Engineering, in priority order:
 Standing constraints that outlive any of the above:
 
 - No model is promotable. Best deflated Sharpe `0.397794` against a `0.95` gate, and every published
-  model is pre-schema-v2 or `RESEARCH_ONLY`.
+  model is pre-schema-v2 or `RESEARCH_ONLY`. **Corporate-action correction does not change this** —
+  measured, not assumed: selection edge `-0.000022` -> `-0.000185`.
+- **Demergers are excluded, not corrected.** 0 of 54 ratio-less actions could be validated against
+  independent evidence, so windows spanning one are dropped. Any result computed across a demerger is
+  refused rather than published, and that refusal is the current state of the art here.
+- **Bars are not RAW in the way the manifest says.** The provider back-adjusts splits and bonuses
+  (212/212 measured). Re-applying a published ratio corrupts the series. Never adjust without first
+  checking whether the provider already did.
 - Nothing has ever placed an order, by design.
 - A strategy embedding an ungoverned model without declaring `research_only` is still not detected.
   The guard reads a declaration, not the code.
