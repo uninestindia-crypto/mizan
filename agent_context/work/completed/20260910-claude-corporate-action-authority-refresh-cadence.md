@@ -1,6 +1,6 @@
 # Active work: corporate-action authority refresh cadence
 
-STATUS: ACTIVE
+STATUS: COMPLETED
 OWNER: Claude Code
 TOOL: Claude Code
 STARTED_UTC: 2026-09-10

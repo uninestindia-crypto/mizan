@@ -1,6 +1,6 @@
 # Active work: corporate-action price adjustment and the Mizan retrain
 
-STATUS: ACTIVE (reclaimed 2026-09-10T13:35Z on founder instruction)
+STATUS: COMPLETED (reclaimed 2026-09-10T13:35Z on founder instruction; A/B delivered, governed retrain deliberately not run -- see the A/B result)
 OWNER: Claude Code
 TOOL: Claude Code
 STARTED_UTC: 2026-09-10

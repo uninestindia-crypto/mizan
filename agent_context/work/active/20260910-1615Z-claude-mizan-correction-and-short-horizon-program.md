@@ -101,7 +101,7 @@ Inherited from the predecessor record (unchanged, same owner):
 | C | Adjustment provenance on `DatasetManifest`; adjusted bars reach `build_label_dataset` | **DONE** |
 | D | Governed Mizan retrain (1 ordinal) on consistent features/labels/P&L | **DONE** — `trial_mizan_h11_003`, ordinal 3, DSR 0.2466, `RESEARCH_ONLY` |
 | E | Re-evaluate Flagship and XS-Monthly against cash and a same-universe benchmark | **PARTIAL** — XS-Monthly done; Flagship **refused**, no price source covers its holding period |
-| F | Short-horizon experiment: QuantOS simple model vs TimesFM 3.0, holds 1/2/3 | **IN PROGRESS** — budget frozen, holds mapping proven, TimesFM environment built |
+| F | Short-horizon experiment: QuantOS simple model vs TimesFM 3.0, holds 1/2/3 | **DONE** — all 6 trials spent; neither model has an edge; noise control shows the DSR rewarded exposure |
 | G | NPU feasibility test, bounded | **DONE — `NPU_UNREACHABLE`, documented** |
 | H | Independent verification, audits, comparison report and model cards | **PARTIAL** — audits PASS, reports written; **no independent adjudication** |
 
