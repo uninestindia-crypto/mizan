@@ -134,6 +134,36 @@ class BookDecomposition:
         }
 
 
+def load_flagship_marks(path: Path) -> tuple[dict[str, Decimal], date | None]:
+    """Flagship's own per-name marks, from the live status the dashboard writes.
+
+    The research cache cannot value this book -- it opened on 2026-08-31 and the deepest cache ends
+    2026-08-27 -- and the session reports carry only aggregate performance. `live_paper_status.json`
+    is the one artifact in the repository holding a **per-name** current price for every open
+    position, which is what a matched benchmark needs.
+
+    Using the book's own marks for both the book and its benchmark makes the comparison internally
+    consistent: any staleness or error in a quote moves both sides identically and cancels in the
+    difference. It is deliberately not a restatement of the book's live valuation.
+    """
+    if not path.is_file():
+        return {}, None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    marks = {
+        str(item["symbol"]): Decimal(str(item["market_value"]))
+        for item in payload.get("positions_detail", [])
+        if item.get("market_value") is not None
+    }
+    stamped = str(payload.get("closed_at_ist") or "")
+    marked_on: date | None = None
+    if stamped:
+        try:
+            marked_on = date.fromisoformat(stamped.split()[0])
+        except ValueError:
+            marked_on = None
+    return marks, marked_on
+
+
 def load_flagship(path: Path) -> BookDecomposition:
     payload = json.loads(path.read_text(encoding="utf-8"))["payload"]
     positions = [
@@ -402,7 +432,14 @@ def run(args: argparse.Namespace) -> int:
     }
 
     flagship = load_flagship(args.flagship_state)
+    flagship_marks, flagship_asof = load_flagship_marks(args.flagship_status)
     xs_monthly, xs_cost, xs_marks, xs_asof = load_xs_monthly(args.xs_state)
+    if flagship_marks:
+        print(
+            f"flagship marks: {len(flagship_marks)} positions from live status, "
+            f"as of {flagship_asof}",
+            flush=True,
+        )
     print(f"flagship  : {len(flagship.positions)} open positions", flush=True)
     print(f"xs-monthly: {len(xs_monthly.positions)} funded legs", flush=True)
 
@@ -425,7 +462,12 @@ def run(args: argparse.Namespace) -> int:
     }
 
     plans = (
-        (flagship, args.flagship_cost_ratio, None, args.mark_on),
+        (
+            flagship,
+            args.flagship_cost_ratio,
+            flagship_marks or None,
+            flagship_asof or args.mark_on,
+        ),
         (xs_monthly, xs_cost, xs_marks, xs_asof),
     )
     for book, cost_ratio, book_marks, mark_on in plans:
@@ -503,6 +545,13 @@ def main() -> int:
     )
     parser.add_argument(
         "--xs-state", type=Path, default=ROOT_DIR / "logs/xs_monthly_new/paper_watch/state.json"
+    )
+    parser.add_argument(
+        "--flagship-status",
+        type=Path,
+        default=ROOT_DIR / "logs/paper_runs/live_paper_status.json",
+        help="Live status carrying Flagship's per-name marks. The only price source in this "
+        "repository that covers its holding period.",
     )
     parser.add_argument(
         "--store-root",

@@ -1,0 +1,874 @@
+{
+  "a_name_is_a_lead_not_a_factor": "every name here still needs a human to open the attachment and confirm both the entity and the ratio; the search window spans +/-540 days and can admit a different scheme",
+  "actions": 56,
+  "fetch_failures": [],
+  "generated_at": "2026-09-12T07:41:50.902291+00:00",
+  "matches_rejected_as_unusable": 4,
+  "named_with_qualifying_flags": 1,
+  "resulting_company_named": 17,
+  "results": [
+    {
+      "announcements_scanned": 1325,
+      "ex_date": "2019-07-03",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "AARTIIND"
+    },
+    {
+      "announcements_scanned": 1325,
+      "ex_date": "2022-10-19",
+      "matches": [
+        {
+          "announced_on": "2021-11-10",
+          "attachment": "https://nsearchives.nseindia.com/corporate/AARTIIND_10112021145822_AARTIIND_30.pdf",
+          "demerged_company": "Aarti Industries Limited",
+          "flags": [],
+          "quote": "E Limited and National Stock Exchange of India Limited in relation to the proposed Scheme of Arrangement between the Aarti Industries Limited (\"AIL\" / Demerged Company) and Aarti Pharmalabs Limited (Formerly Known as Aarti Organics Limited) (\" APL\"/ Resulting Company) and their respective Shareholders'.",
+          "resulting_company": "Aarti Pharmalabs Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "Aarti Pharmalabs Limited",
+      "rejected_matches": 0,
+      "symbol": "AARTIIND"
+    },
+    {
+      "announcements_scanned": 1099,
+      "ex_date": "2019-12-20",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "ABB"
+    },
+    {
+      "announcements_scanned": 1417,
+      "ex_date": "2025-05-22",
+      "matches": [
+        {
+          "announced_on": "2025-05-22",
+          "attachment": "https://nsearchives.nseindia.com/corporate/ABFRL_22052025113207_SE_Cost_Apportionment.pdf",
+          "demerged_company": "Equity Shares of Aditya Birla Fashion and Retail Limited",
+          "flags": [],
+          "quote": "ted has informed the Exchange regarding 'Apportionment of cost of acquisition of Equity Shares of Aditya Birla Fashion and Retail Limited ( Demerged Company / Company ) and Aditya Birla Lifestyle Brands Limited ( Resulting Company / ABLBL )'.",
+          "resulting_company": "Aditya Birla Lifestyle Brands Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2025-05-15",
+          "attachment": "https://nsearchives.nseindia.com/corporate/ABFRL_15052025113802_SE_intimation-appointment_of_CS_and_CFO.pdf",
+          "demerged_company": "Aditya Birla Fashion and Retail Limited",
+          "flags": [],
+          "quote": "d has informed the Exchange about Material Information/Updates about the Scheme of Arrangement among Aditya Birla Fashion and Retail Limited ( Demerged Company/Company ), Aditya Birla Lifestyle Brands Limited ( Resulting Company ) and their respective shareholders and creditors",
+          "resulting_company": "Aditya Birla Lifestyle Brands Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2025-04-23",
+          "attachment": "https://nsearchives.nseindia.com/corporate/ABFRL_23042025152515_SE.pdf",
+          "demerged_company": "Aditya Birla Fashion and Retail Limited",
+          "flags": [],
+          "quote": "Fashion and Retail Limited has informed the Exchange Effective date of Scheme of Arrangement among Aditya Birla Fashion and Retail Limited ( Demerged Company / ABFRL ),Aditya Birla Lifestyle Brands Limited ( Resulting Company / ABLBL ) and their respective shareholders and creditors (",
+          "resulting_company": "Birla Lifestyle Brands Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "Aditya Birla Lifestyle Brands Limited",
+      "rejected_matches": 0,
+      "symbol": "ABFRL"
+    },
+    {
+      "announcements_scanned": 1050,
+      "ex_date": "2019-10-11",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "ABREL"
+    },
+    {
+      "announcements_scanned": 1520,
+      "ex_date": "2018-04-05",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "ADANIENT"
+    },
+    {
+      "announcements_scanned": 1520,
+      "ex_date": "2018-09-06",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "ADANIENT"
+    },
+    {
+      "announcements_scanned": 1275,
+      "ex_date": "2023-04-18",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "ALLCARGO"
+    },
+    {
+      "announcements_scanned": 1275,
+      "ex_date": "2025-11-12",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "ALLCARGO"
+    },
+    {
+      "announcements_scanned": 839,
+      "ex_date": "2020-10-06",
+      "matches": [
+        {
+          "announced_on": "2020-09-14",
+          "attachment": "https://nsearchives.nseindia.com/corporate/ANANTRAJ_14092020202026_Outcome_14092020_M.pdf",
+          "demerged_company": "Anant Raj Limited",
+          "flags": [],
+          "quote": "s order dated and pronounced on 24th August, 2020 amongst Anant Raj Agencies Private Limited ( Amalgamating Company ), Anant Raj Limited ( Amalgamated Company/ Demerged Company ) and Anant Raj Global Limited ( Resulting Company ) and their respective shareholders and creditors under Com",
+          "resulting_company": "Anant Raj Global Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2020-08-28",
+          "attachment": "https://nsearchives.nseindia.com/corporate/ANANTRAJ_28082020185736_OutcomeBM_28082020.pdf",
+          "demerged_company": null,
+          "flags": [],
+          "quote": "y'/ 'ARAPL') pursuant to the amalgamation of Anant Raj Agencies Private Limited with the Company in terms of Chapter 2 of the Composite Scheme of Arrangement for amalgamation and demerger among ARAPL, the Company and Anant Raj Global Limited ('Resulting Company'/ 'ARGL') and their respective shareholders and creditors (",
+          "resulting_company": "and Anant Raj Global Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2020-08-26",
+          "attachment": "https://nsearchives.nseindia.com/corporate/ANANTRAJ_26082020210904_NCLTCTC26082020.pdf",
+          "demerged_company": "Anant Raj Limited",
+          "flags": [],
+          "quote": "cheme for Arrangement for amalgamation and demerger among Anant Raj Agencies Private Limited ( Amalgamating Company ), Anant Raj Limited ( Amalgamated Company/ Demerged Company ) and Anant Raj Global Limited ( Resulting Company ) and their respective shareholders and creditors under Sec",
+          "resulting_company": "Anant Raj Global Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "Anant Raj Global Limited",
+      "rejected_matches": 0,
+      "symbol": "ANANTRAJ"
+    },
+    {
+      "announcements_scanned": 1279,
+      "ex_date": "2018-11-28",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "ARVIND"
+    },
+    {
+      "announcements_scanned": 1204,
+      "ex_date": "2023-09-14",
+      "matches": [
+        {
+          "announced_on": "2023-11-11",
+          "attachment": "https://nsearchives.nseindia.com/corporate/BAJAJELEC_11112023010407_SignedSEIntimationforUndertakingCumIndemnity.pdf",
+          "demerged_company": "Bajaj Electricals Limited",
+          "flags": [],
+          "quote": "ons and Disclosure Requirements) Regulations, 2015, as amended ( SEBI Listing Regulations ) by Bajaj Electricals Limited (the Demerged Company / Company ) Execution of the Undertaking cum Indemnity agreements by Bajel Projects Limited (the Resulting Company , and together with the Demerged Company, the Companies ) ",
+          "resulting_company": "Bajel Projects Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2023-09-16",
+          "attachment": "https://nsearchives.nseindia.com/corporate/BAJAJELEC_16092023182415_BELSEIntimation.pdf",
+          "demerged_company": "Bajaj Electricals Limited",
+          "flags": [],
+          "quote": "e Material Information/Updates about Bajel Projects Limited In the matterof the Scheme of Arrangement between Bajaj Electricals Limited ( Demerged Company / Company ) and Bajel Projects Limited ( Resulting Company ) and their respectiveshareholders under Sections 230 to 23",
+          "resulting_company": "Bajel Projects Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2023-08-28",
+          "attachment": "https://nsearchives.nseindia.com/corporate/BAJAJELEC_28082023201812_OutcomeofBoardMeetingApptofDirectorKMPRevised.pdf",
+          "demerged_company": "Bajaj Electricals Limited",
+          "flags": [],
+          "quote": "Material Information/Updates about Bajel Projects Limited In the matter of the Scheme of Arrangement between Bajaj Electricals Limited ( Demerged Company / Company ) and Bajel Projects Limited ( Resulting Company ) and their respective shareholders under Sections 230 to 2",
+          "resulting_company": "Bajel Projects Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "Bajel Projects Limited",
+      "rejected_matches": 0,
+      "symbol": "BAJAJELEC"
+    },
+    {
+      "announcements_scanned": 996,
+      "ex_date": "2022-09-08",
+      "matches": [
+        {
+          "announced_on": "2022-08-02",
+          "attachment": "https://nsearchives.nseindia.com/corporate/BEML_02082022172239_BSE_NSE_MCA_Order_02.08.2022.pdf",
+          "demerged_company": "BEML Limited",
+          "flags": [],
+          "quote": "lations, 2015:Order of Ministry of Corporate Affairs (MCA) sanctioning the Scheme of Arrangement for Demerger between M/s BEML Limited (Demerged Company) and M/s BEML Land Assets Limited (Resulting Company) \ufffd\ufffd\ufffd Reg.",
+          "resulting_company": "BEML Land Assets Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2022-08-02",
+          "attachment": "https://nsearchives.nseindia.com/corporate/BEML_02082022172115_BSE_NSE_MCA_Order_02.08.2022.pdf",
+          "demerged_company": "BEML Limited",
+          "flags": [],
+          "quote": "hange about : Order of Ministry of Corporate Affairs (MCA) sanctioning the Scheme of Arrangement for Demerger between M/s BEML Limited (Demerged Company) and M/s BEML Land Assets Limited (Resulting Company) \ufffd\ufffd\ufffd Reg.",
+          "resulting_company": "BEML Land Assets Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2022-04-18",
+          "attachment": "https://nsearchives.nseindia.com/corporate/BEML_18042022122400_Stock_Exchange_Disclosure_18042022.pdf",
+          "demerged_company": "BEML Limited",
+          "flags": [],
+          "quote": "hange about Newspaper Advertisements - Notice of hearing of Petition in connectionwith Scheme of Arrangement between M/s BEML Limited (Demerged Company) and M/s BEML Land Assets Limited (Resulting Company) - Reg",
+          "resulting_company": "BEML Land Assets Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "BEML Land Assets Limited",
+      "rejected_matches": 0,
+      "symbol": "BEML"
+    },
+    {
+      "announcements_scanned": 1334,
+      "ex_date": "2019-01-24",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "BSOFT"
+    },
+    {
+      "announcements_scanned": 891,
+      "ex_date": "2020-12-10",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "CCAVENUE"
+    },
+    {
+      "announcements_scanned": 891,
+      "ex_date": "2024-09-11",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "CCAVENUE"
+    },
+    {
+      "announcements_scanned": 1053,
+      "ex_date": "2018-10-30",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "CESC"
+    },
+    {
+      "announcements_scanned": 916,
+      "ex_date": "2022-05-13",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "DHAMPURSUG"
+    },
+    {
+      "announcements_scanned": 1431,
+      "ex_date": "2023-06-02",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "EDELWEISS"
+    },
+    {
+      "announcements_scanned": 1943,
+      "ex_date": "2023-04-06",
+      "matches": [
+        {
+          "announced_on": "2022-03-04",
+          "attachment": "https://nsearchives.nseindia.com/corporate/GHCL_04032022130019_GHCL_Intimation_Observation_Letter_NSE_BSE_04_03_2022.pdf",
+          "demerged_company": "GHCL Limited",
+          "flags": [],
+          "quote": " and the National Stock Exchange of India Limited in relation to the proposed Scheme of Arrangement between GHCL Limited (\ufffd\ufffd\ufffdGHCL\ufffd\ufffd\ufffd or \ufffd\ufffd\ufffdDemerged Company\ufffd\ufffd\ufffd) and GHCL Textiles Limited (\ufffd\ufffd\ufffdGHCL Textiles\ufffd\ufffd\ufffd or \ufffd\ufffd\ufffdResulting Company\ufffd\ufffd\ufffd) and their respective shareholders and creditors (\ufffd\ufffd\ufffdSch",
+          "resulting_company": "GHCL Textiles Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "GHCL Textiles Limited",
+      "rejected_matches": 0,
+      "symbol": "GHCL"
+    },
+    {
+      "announcements_scanned": 1665,
+      "ex_date": "2022-01-11",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "GMRAIRPORT"
+    },
+    {
+      "announcements_scanned": 1946,
+      "ex_date": "2017-07-19",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "GRASIM"
+    },
+    {
+      "announcements_scanned": 688,
+      "ex_date": "2026-07-02",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "GUJENERGY"
+    },
+    {
+      "announcements_scanned": 1448,
+      "ex_date": "2026-09-07",
+      "matches": [
+        {
+          "announced_on": "2026-08-18",
+          "attachment": "https://nsearchives.nseindia.com/corporate/HEG_18082026191322_Stxintimation18082026.pdf",
+          "demerged_company": "HEG Limited",
+          "flags": [],
+          "quote": " of the Order passed by the Hon ble National Company Law Tribunal, Indore Bench ( Tribunal ), sanctioning the Composite Scheme of Arrangement amongst HEG Limited ( Company or Demerged Company or Transferee Company ), HEG Graphite Limited ( Resulting Company ) and Bhilwara Energy Limited ( Transferor Company ) and th",
+          "resulting_company": "HEG Graphite Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "HEG Graphite Limited",
+      "rejected_matches": 0,
+      "symbol": "HEG"
+    },
+    {
+      "announcements_scanned": 1722,
+      "ex_date": "2025-12-05",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "HINDUNILVR"
+    },
+    {
+      "announcements_scanned": 1841,
+      "ex_date": "2017-10-17",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "IIFL"
+    },
+    {
+      "announcements_scanned": 1841,
+      "ex_date": "2019-05-30",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "IIFL"
+    },
+    {
+      "announcements_scanned": 908,
+      "ex_date": "2026-09-02",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "INDIAGLYCO"
+    },
+    {
+      "announcements_scanned": 1732,
+      "ex_date": "2025-01-06",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "ITC"
+    },
+    {
+      "announcements_scanned": 1018,
+      "ex_date": "2016-08-25",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "JINDALSAW"
+    },
+    {
+      "announcements_scanned": 1369,
+      "ex_date": "2021-02-04",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "JUBLPHARMA"
+    },
+    {
+      "announcements_scanned": 1702,
+      "ex_date": "2022-01-14",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "MOTHERSON"
+    },
+    {
+      "announcements_scanned": 1697,
+      "ex_date": "2023-06-08",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "NIITLTD"
+    },
+    {
+      "announcements_scanned": 1249,
+      "ex_date": "2022-10-27",
+      "matches": [
+        {
+          "announced_on": "2022-10-13",
+          "attachment": "https://nsearchives.nseindia.com/corporate/NMDC_13102022202339_Exchanges.pdf",
+          "demerged_company": "NMDC Limited",
+          "flags": [],
+          "quote": "oard Meeting held on 13th October 2022 and Record Date for the purpose of the Scheme of Arrangement between NMDC Limited (\ufffd\ufffd\ufffdNMDC\ufffd\ufffd\ufffd or \ufffd\ufffd\ufffdDemerged Company\ufffd\ufffd\ufffd) and NMDC Steel Limited (\ufffd\ufffd\ufffdResulting Company\ufffd\ufffd\ufffd) and their respective shareholders and creditors (\ufffd\ufffd\ufffdthe",
+          "resulting_company": "NMDC Steel Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "NMDC Steel Limited",
+      "rejected_matches": 0,
+      "symbol": "NMDC"
+    },
+    {
+      "announcements_scanned": 871,
+      "ex_date": "2019-04-23",
+      "matches": [
+        {
+          "announced_on": "2019-03-15",
+          "attachment": "https://nsearchives.nseindia.com/corporate/Mchheda_1532019175558_Intimation_regarding_NCLT_Order_14032K19_141.pdf",
+          "demerged_company": "Prakash Industries Limited",
+          "flags": [],
+          "quote": "Scheme of Arrangement Prakash Industries Limited has informed the Exchange about Sanction of Scheme of Arrangement between Prakash Industries Limited (Demerged Company) and Prakash Pipes Limited (Resulting Company) by NCLT, Chandigarh Bench",
+          "resulting_company": "Prakash Pipes Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "Prakash Pipes Limited",
+      "rejected_matches": 0,
+      "symbol": "PRAKASH"
+    },
+    {
+      "announcements_scanned": 1058,
+      "ex_date": "2025-04-15",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "QUESS"
+    },
+    {
+      "announcements_scanned": 1742,
+      "ex_date": "2024-07-11",
+      "matches": [
+        {
+          "announced_on": "2024-07-10",
+          "attachment": "https://nsearchives.nseindia.com/corporate/RAYMOND_10072024230934_SEintimationsigned.pdf",
+          "demerged_company": "Cost of Acquisition of Equity Shares of Raymond Limited",
+          "flags": [],
+          "quote": " Raymond Limited has informed the Exchange regarding 'Apportionment of Cost of Acquisition of Equity Shares of Raymond Limited (\"RL\" or the \"Demerged Company\") and Raymond Lifestyle Limited (formerly known as Raymond Consumer Care Limited) (\"RLL\" or the \"Resulting Company\" or the \"Transferee Company\")'.",
+          "resulting_company": "Raymond Lifestyle Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2024-06-30",
+          "attachment": "https://nsearchives.nseindia.com/corporate/RAYMOND_30062024213427_SEintimaionsigned.pdf",
+          "demerged_company": "Composite Scheme of Arrangement of Raymond Limited",
+          "flags": [],
+          "quote": "Updates Raymond Limited has informed the Exchange regarding 'Update on the Composite Scheme of Arrangement of Raymond Limited (the \"Demerged Company\" or \"RL\") and Raymond Lifestyle Limited (formerly known as Raymond Consumer Care Limited) (\"RLL\" or the \"Resulting Company\" or the \"Transferee Company\") and Ray Global Consumer Tradi",
+          "resulting_company": "Raymond Lifestyle Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "Raymond Lifestyle Limited",
+      "rejected_matches": 0,
+      "symbol": "RAYMOND"
+    },
+    {
+      "announcements_scanned": 1742,
+      "ex_date": "2025-05-14",
+      "matches": [
+        {
+          "announced_on": "2024-07-10",
+          "attachment": "https://nsearchives.nseindia.com/corporate/RAYMOND_10072024230934_SEintimationsigned.pdf",
+          "demerged_company": "Cost of Acquisition of Equity Shares of Raymond Limited",
+          "flags": [
+            "FILING_BELONGS_TO_ANOTHER_EX_DATE"
+          ],
+          "quote": " Raymond Limited has informed the Exchange regarding 'Apportionment of Cost of Acquisition of Equity Shares of Raymond Limited (\"RL\" or the \"Demerged Company\") and Raymond Lifestyle Limited (formerly known as Raymond Consumer Care Limited) (\"RLL\" or the \"Resulting Company\" or the \"Transferee Company\")'.",
+          "resulting_company": "Raymond Lifestyle Limited",
+          "usable": false
+        },
+        {
+          "announced_on": "2024-06-30",
+          "attachment": "https://nsearchives.nseindia.com/corporate/RAYMOND_30062024213427_SEintimaionsigned.pdf",
+          "demerged_company": "Composite Scheme of Arrangement of Raymond Limited",
+          "flags": [
+            "FILING_BELONGS_TO_ANOTHER_EX_DATE"
+          ],
+          "quote": "Updates Raymond Limited has informed the Exchange regarding 'Update on the Composite Scheme of Arrangement of Raymond Limited (the \"Demerged Company\" or \"RL\") and Raymond Lifestyle Limited (formerly known as Raymond Consumer Care Limited) (\"RLL\" or the \"Resulting Company\" or the \"Transferee Company\") and Ray Global Consumer Tradi",
+          "resulting_company": "Raymond Lifestyle Limited",
+          "usable": false
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 2,
+      "symbol": "RAYMOND"
+    },
+    {
+      "announcements_scanned": 3350,
+      "ex_date": "2023-07-20",
+      "matches": [
+        {
+          "announced_on": "2022-10-21",
+          "attachment": "https://nsearchives.nseindia.com/corporate/RELIANCE_21102022215409_DraftDisclosure_Reg.30_EPC_211022.pdf",
+          "demerged_company": "Reliance Projects and Property Management Services Limited",
+          "flags": [
+            "FILER_IS_RESULTING_COMPANY"
+          ],
+          "quote": "Amalgamation/Merger Disclosure under Regulation 30 of the SEBI (Listing Obligations and Disclosure Requirements) Regulations, 2015 - Scheme of Arrangement between i) Reliance Industries Limited (\ufffd\ufffd\ufffdCompany\ufffd\ufffd\ufffd or \ufffd\ufffd\ufffdResulting Company\ufffd\ufffd\ufffd) and its shareholders and creditors, and ii) Reliance Pr",
+          "resulting_company": "Reliance Industries Limited",
+          "usable": false
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 1,
+      "symbol": "RELIANCE"
+    },
+    {
+      "announcements_scanned": 993,
+      "ex_date": "2024-06-13",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "SANOFI"
+    },
+    {
+      "announcements_scanned": 916,
+      "ex_date": "2023-07-27",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "SAREGAMA"
+    },
+    {
+      "announcements_scanned": 1109,
+      "ex_date": "2023-03-31",
+      "matches": [
+        {
+          "announced_on": "2024-03-22",
+          "attachment": "https://nsearchives.nseindia.com/corporate/SCI_22032024180213_SEIntimationtransferofnoncoreassetssigned.pdf",
+          "demerged_company": "Shipping Corporation of India Limited",
+          "flags": [
+            "NAME_MAY_BE_TRUNCATED"
+          ],
+          "quote": " update on Scheme of Arrangement for Demerger of Non-core Assets (''Demerged Undertaking \") of Shipping Corporation of India Limited ('SCI/ Demerged Company ') into Shipping Corporation of india Land and Assets Limited ('Resulting Company') (\"Scheme'')",
+          "resulting_company": "Land and Assets Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2023-11-23",
+          "attachment": "https://nsearchives.nseindia.com/corporate/SCI_23112023123312_IntimationStampDutyWaiverSigned.pdf",
+          "demerged_company": "Shipping Corporation of India Limited",
+          "flags": [],
+          "quote": "d the Exchange about Update on Scheme of Arrangement for Demerger of Non-Core Assets ( Demerged Undertaking ) of Shipping Corporation of India Limited ( SCI / Demerged Company ) into Shipping Corporation of India Land and Assets Limited ( Resulting Company ) ( Scheme )",
+          "resulting_company": "Shipping Corporation of India Land and Assets Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2023-10-13",
+          "attachment": "https://nsearchives.nseindia.com/corporate/SCI_13102023173307_SEmahStampdutywaiverSigned.pdf",
+          "demerged_company": "Shipping Corporation of India Limited",
+          "flags": [],
+          "quote": "t update on Scheme of Arrangement for Demerger of Non-Core Assets (''Demerged Undertaking\") of Shipping Corporation of India Limited ('SCI'/'Demerged Company') into Shipping Corporation of India Land and Assets Limited ('Resulting Company').",
+          "resulting_company": "Shipping Corporation of India Land and Assets Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [
+        "NAME_MAY_BE_TRUNCATED"
+      ],
+      "named_resulting_company": "Land and Assets Limited",
+      "rejected_matches": 0,
+      "symbol": "SCI"
+    },
+    {
+      "announcements_scanned": 1175,
+      "ex_date": "2025-04-07",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "SIEMENS"
+    },
+    {
+      "announcements_scanned": 918,
+      "ex_date": "2025-10-15",
+      "matches": [
+        {
+          "announced_on": "2025-11-28",
+          "attachment": "https://nsearchives.nseindia.com/corporate/SKFINDIA25_28112025194055_NSE.pdf",
+          "demerged_company": "SKF India Limited",
+          "flags": [],
+          "quote": "ation Letter dated March 28, 2025 issued by National Stock Exchange of India Limited ( NSE ) in the matter of Scheme of Arrangement between SKF India Limited ( SKF India or Demerged Company or Company ) and SKF India (Industrial) Limited ( SKF Industrial or Resulting Company ) and their respective shareholders and creditors ( Scheme ",
+          "resulting_company": "SKF India (Industrial) Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2025-10-17",
+          "attachment": "https://nsearchives.nseindia.com/corporate/SKFINDIA22_17102025222058_NSE.pdf",
+          "demerged_company": null,
+          "flags": [],
+          "quote": "mation dated 02nd October 2025 informing the Stock Exchange(s) about the Record Date for the purpose of determining the shareholders of the SKF India Limited ( the Company ) entitled to receive equity shares of SKF India (Industrial) Limited ( SKF Industrial or Resulting Company ) pursuant to the Scheme, we wish to inform you that the Re",
+          "resulting_company": "SKF India (Industrial) Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2025-10-02",
+          "attachment": "https://nsearchives.nseindia.com/corporate/SKFINDIA25_02102025134944_NSE.pdf",
+          "demerged_company": "SKF India Limited",
+          "flags": [],
+          "quote": " ble NCLT ) sanctioning the Scheme and intimation of 01st October 2025 being the effective date of Scheme of Arrangement ( Scheme ) between SKF India Limited ( SKF India or Demerged Company or Company ) and SKF India (Industrial) Limited ( SKF Industrial or Resulting Company ) and their respective shareholders and creditors ( Scheme ",
+          "resulting_company": "SKF India (Industrial) Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "SKF India (Industrial) Limited",
+      "rejected_matches": 0,
+      "symbol": "SKFINDIA"
+    },
+    {
+      "announcements_scanned": 1675,
+      "ex_date": "2018-04-06",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "STAR"
+    },
+    {
+      "announcements_scanned": 1675,
+      "ex_date": "2024-12-06",
+      "matches": [
+        {
+          "announced_on": "2024-12-11",
+          "attachment": "https://nsearchives.nseindia.com/corporate/STAR_11122024193707_StridesSEintimation.pdf",
+          "demerged_company": null,
+          "flags": [
+            "BARE_SUFFIX_NO_NAME"
+          ],
+          "quote": "Demerger Strides Pharma Science Limited has informed the Exchange about allotment of Equity Shares by Onesource (Resulting Company).",
+          "resulting_company": null,
+          "usable": false
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 1,
+      "symbol": "STAR"
+    },
+    {
+      "announcements_scanned": 1512,
+      "ex_date": "2025-04-24",
+      "matches": [
+        {
+          "announced_on": "2025-05-02",
+          "attachment": "https://nsearchives.nseindia.com/corporate/STLTECH_02052025172551_SE_Intimation_-_Apportionment_of_Cost_of_Acquisition_signed.pdf",
+          "demerged_company": "Acquisition of Equity Shares of Sterlite Technologies Limited",
+          "flags": [],
+          "quote": "Updates Sterlite Technologies Limited has informed the Exchange regarding 'Apportionment of Cost of Acquisition of Equity Shares of Sterlite Technologies Limited ( STL or Demerged Company ) and STL Networks Limited ( Resulting Company or STL Networks) consequent upon demerger '.",
+          "resulting_company": "STL Networks Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2025-04-10",
+          "attachment": "https://nsearchives.nseindia.com/corporate/STLTECH_10042025183628_SE_Intimation_-_Record_Date_for_demerger_Signed.pdf",
+          "demerged_company": "Sterlite Technologies Limited",
+          "flags": [],
+          "quote": "Updates Sterlite Technologies Limited has informed the Exchange regarding 'Updates and disclosures in connection with Scheme of Arrangement between Sterlite Technologies Limited ( Demerged Company or STL ) and STL Networks Limited ( Resulting Company or STL Networks ) and their respective shareholders and cre",
+          "resulting_company": "STL Networks Limited",
+          "usable": true
+        },
+        {
+          "announced_on": "2025-03-31",
+          "attachment": "https://nsearchives.nseindia.com/corporate/STLTECH_31032025193920_SE_Disclosure-_Effective_date_updated_signed.pdf",
+          "demerged_company": "Sterlite Technologies Limited",
+          "flags": [],
+          "quote": "Updates Sterlite Technologies Limited has informed the Exchange regarding receipt of Certified copy of NCLT order Scheme of Arrangement between Sterlite Technologies Limited ( Demerged Company ) and STL Networks Limited ( Resulting Company ) and their respective shareholders and creditors under Sec",
+          "resulting_company": "STL Networks Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "STL Networks Limited",
+      "rejected_matches": 0,
+      "symbol": "STLTECH"
+    },
+    {
+      "announcements_scanned": 1449,
+      "ex_date": "2018-02-01",
+      "matches": [
+        {
+          "announced_on": "2018-01-23",
+          "attachment": "https://nsearchives.nseindia.com/corporate/Docs_23012018185827.zip",
+          "demerged_company": null,
+          "flags": [],
+          "quote": "undaram Finance Limited has informed the Exchange that the Company has fixed Record Date as February 2, 2018 for the purpose of determining the entitlement of shareholders to whom share are to be allotted in Sundaram Finance Holdings Limited (the resulting company) in accordance with scheme of arrangement and amalgamation ",
+          "resulting_company": "Sundaram Finance Holdings Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "Sundaram Finance Holdings Limited",
+      "rejected_matches": 0,
+      "symbol": "SUNDARMFIN"
+    },
+    {
+      "announcements_scanned": 1606,
+      "ex_date": "2020-03-04",
+      "matches": [
+        {
+          "announced_on": "2020-02-17",
+          "attachment": "https://nsearchives.nseindia.com/corporate/TATACHEM_17022020155614_TATACHEM.pdf",
+          "demerged_company": "Tata Chemicals Limited",
+          "flags": [],
+          "quote": "Updates Tata Chemicals Limited has informed the Exchange regarding ' Detailed Note on Scheme of Arrangement amongst Tata Chemicals Limited ( the Company or the Demerged Company) and Tata Consumer Products Limited ( TCPL or the Resulting Company) (erstwhile Tata Global Beverages Limited) and their respec",
+          "resulting_company": "Tata Consumer Products Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "Tata Consumer Products Limited",
+      "rejected_matches": 0,
+      "symbol": "TATACHEM"
+    },
+    {
+      "announcements_scanned": 1486,
+      "ex_date": "2019-09-17",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "TATACOMM"
+    },
+    {
+      "announcements_scanned": 2793,
+      "ex_date": "2025-10-14",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "TMPV"
+    },
+    {
+      "announcements_scanned": 915,
+      "ex_date": "2026-07-22",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "TRIVENI"
+    },
+    {
+      "announcements_scanned": 1851,
+      "ex_date": "2025-08-25",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "TVSMOTOR"
+    },
+    {
+      "announcements_scanned": 1029,
+      "ex_date": "2023-06-15",
+      "matches": [
+        {
+          "announced_on": "2023-05-19",
+          "attachment": "https://nsearchives.nseindia.com/corporate/VAKRANGEE_19052023172509_IntimationNCLTApprovalforDemerger.pdf",
+          "demerged_company": "VAKRANGEE LIMITED",
+          "flags": [],
+          "quote": "pany Law Tribunal, Mumbai Bench ('Hon'ble NCLT') approving the Scheme of Arrangement for demerger of E-Governance & IT/ITES Business (Demerged undertaking) of VAKRANGEE LIMITED ( Demerged Company ) into VL E-GOVERNANCE & IT SOLUTIONS LIMITED ( Resulting Company ) and their respective Shareholders (\"Scheme\").'.",
+          "resulting_company": "VL E-GOVERNANCE & IT SOLUTIONS LIMITED",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "VL E-GOVERNANCE & IT SOLUTIONS LIMITED",
+      "rejected_matches": 0,
+      "symbol": "VAKRANGEE"
+    },
+    {
+      "announcements_scanned": 2148,
+      "ex_date": "2026-04-30",
+      "matches": [
+        {
+          "announced_on": "2026-03-31",
+          "attachment": "https://nsearchives.nseindia.com/corporate/VEDL_31032026171850_VEDLSEIntimation31March2026Outcomesigned.pdf",
+          "demerged_company": "Vedanta Limited",
+          "flags": [],
+          "quote": "ed has informed the Exchange regarding 'Extension of timelines for fulfilment of the conditions precedent under the Composite Scheme of Arrangement between Vedanta Limited ( Demerged Company or Company ) and Vedanta Aluminium Metal Limited ( Resulting Company 1 ) and Talwandi Sabo Power Limited ( Resulting Company 2 )",
+          "resulting_company": "Vedanta Aluminium Metal Limited",
+          "usable": true
+        }
+      ],
+      "name_flags": [],
+      "named_resulting_company": "Vedanta Aluminium Metal Limited",
+      "rejected_matches": 0,
+      "symbol": "VEDL"
+    },
+    {
+      "announcements_scanned": 723,
+      "ex_date": "2018-04-06",
+      "matches": [],
+      "name_flags": [],
+      "named_resulting_company": null,
+      "rejected_matches": 0,
+      "symbol": "VIYASH"
+    }
+  ],
+  "source": "NSE corporate-announcements API (issuer filing text)",
+  "what_this_does_not_supply": "the share entitlement ratio, which lives in the PDF attachment and is NOT extracted here -- a misparsed ratio would produce a validated-looking factor that is wrong",
+  "what_this_supplies": "the resulting company named by the issuer"
+}

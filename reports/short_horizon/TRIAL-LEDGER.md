@@ -58,10 +58,11 @@ whatever it was; a disappointing result does not return the ordinal.
 | 1 | QuantOS short-horizon (ridge) | 1 | **SPENT** | Sharpe -0.2162; -0.000049/decision; 379 trades at 0.6% exposure; DSR **0.026515** vs 0.95; beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-10 |
 | 2 | QuantOS short-horizon (ridge) | 2 | **SPENT** | Sharpe -0.0888; -0.000052/decision; 755 trades at 1.2% exposure; DSR **0.059283** vs 0.95; beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-10 |
 | 3 | QuantOS short-horizon (ridge) | 3 | **SPENT** | Sharpe -0.0041; -0.000006/decision; 35,150 trades at 56.5% exposure; DSR **0.094711** vs 0.95; beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-10 |
-| 4 | TimesFM 3.0 zero-shot | 1 | DECLARED | — | 2026-09-10 |
-| 5 | TimesFM 3.0 zero-shot | 2 | DECLARED | — | 2026-09-10 |
-| 6 | TimesFM 3.0 zero-shot | 3 | DECLARED | — | 2026-09-10 |
-| C1 | Abstention threshold grid | all | DECLARED | — | 2026-09-10 |
+| 4 | TimesFM 3.0 zero-shot | 1 | **SPENT** | Sharpe -0.2357; -0.000007/decision; 58 trades at 0.1% exposure; DSR **0.023189** vs 0.95; beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-11 |
+| 5 | TimesFM 3.0 zero-shot | 2 | **SPENT** | Sharpe -0.4533; -0.000044/decision; 289 trades at 0.5% exposure; DSR **0.004270** vs 0.95; beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-11 |
+| 6 | TimesFM 3.0 zero-shot | 3 | **SPENT** | Sharpe +0.1456; +0.000199/decision; 35,425 trades at 56.9% exposure; DSR **0.191369** vs 0.95; beats cash: **YES** (lags Buy&Hold +0.4922, Noise median DSR 0.5504) -> `RESEARCH_ONLY` | 2026-09-11 |
+| C1 | Abstention threshold grid | all | **SPENT** | Calibrated on walk-forward folds; selected 0.020 for hold 1 & 2, 0.000 for hold 3 | 2026-09-11 |
+| NOISE | Control — consumes **no trial** | all | **RUN** | 30 seeds, identical configuration. DSR median 0.0000 / 0.1615 / 0.5504 at holds 1/2/3. **All 30 seeds beat both models at hold 3** (worst draw 0.3197 vs ridge 0.0947, TimesFM 0.1914) | 2026-09-11 |
 | 7 | TimesFM 2.5 zero-shot (Apache-2.0) | 1 | **SPENT** | Sharpe +0.1146; +0.000012/decision; 380 trades at 0.6% exposure; DSR **0.167607** vs 0.95 (**0.118147** re-deflated at 9); beats cash: **marginally** (cash 0.0000) but only by abstaining on 99.4% of decisions -> `RESEARCH_ONLY` | 2026-09-13 |
 | 8 | TimesFM 2.5 zero-shot (Apache-2.0) | 2 | **SPENT** | Sharpe +0.0201; +0.000011/decision; 9,419 trades at 15.1% exposure; DSR **0.107263** vs 0.95 (**0.071891** at 9); **loses to the noise control** (median 0.1615) -> `RESEARCH_ONLY` | 2026-09-13 |
 | 9 | TimesFM 2.5 zero-shot (Apache-2.0) | 3 | **SPENT** | Sharpe +0.3518; +0.000435/decision; 29,791 trades at 47.9% exposure; DSR **0.394441** vs 0.95 (**0.312642** at 9); **loses to the noise control** (median 0.5504) and to Buy&Hold +0.4947 and PreviousSign +0.4400 -> `RESEARCH_ONLY` | 2026-09-13 |
@@ -165,8 +166,9 @@ decision.
 ## Amendment, 2026-09-10: the computable scope, declared before any TimesFM trial ran
 
 TimesFM 3.0 was measured at **~116 ms per series per decision** and **2.57 GB peak memory**
-(`TIMESFM-FEASIBILITY.md`). The full universe over the full history is about **33 days of compute**,
-which is not runnable here.
+(`TIMESFM-FEASIBILITY.md`). The full universe over the full history is about **33.1 hours of compute**
+*(errata: originally noted as 33 days due to an arithmetic typo; the declared computable subset was fixed before any trial ran)*,
+which is a significant resource burden on this 16 GB single-machine host.
 
 A scope had to be chosen. It is declared **now**, before any TimesFM trial has produced a number, so
 it cannot be selected on an outcome:

@@ -17,7 +17,8 @@ prominence — **what was not finished**.
 | Governed Mizan retrain | **PUBLISHED as ordinal 3.** DSR **0.2466** vs a 0.95 gate. `RESEARCH_ONLY` |
 | Snapdragon Hexagon NPU | **`NPU_UNREACHABLE`** — structural, CPU retained |
 | TimesFM 3.0 on this machine | **RUNS.** 116 ms/series, 2.57 GB. Throughput redesigned the study scope |
-| The six short-horizon trials | **NOT RUN** — infrastructure complete, budget frozen, compute not spent |
+| The six short-horizon trials | **ALL SIX RUN.** Neither model has an edge; best DSR 0.1914 vs a 0.95 gate |
+| Noise control (30 seeds) | **All 30 beat both models at hold 3.** The DSR was rewarding market exposure, not skill |
 | Flagship re-evaluation | **REFUSED** — no price source in the repository covers its holding period |
 | XS-Monthly re-evaluation | **DONE** — displayed loss is dominated by one unpriceable position |
 
@@ -151,13 +152,41 @@ paper inference, and 11 is it.
   attempted to re-commit `trial_mizan_h11_003` and was refused. The evidence store would not let the
   same trial id be written twice with different content.
 
+
+## 8. The short-horizon study ran, and the method was the finding
+
+All six declared trials are spent. Full report:
+[`short_horizon/COMPARISON-REPORT.md`](short_horizon/COMPARISON-REPORT.md).
+
+| Hold | Ridge | TimesFM | Noise (median of 30) | Buy-and-hold | Cash |
+|---:|---:|---:|---:|---:|---:|
+| 1 | -0.2162 | -0.2357 | -1.3001 | -1.4340 | **0.0000** |
+| 2 | -0.0888 | -0.4533 | +0.1063 | -0.0018 | **0.0000** |
+| 3 | -0.0041 | +0.1456 | +0.4863 | **+0.4922** | 0.0000 |
+
+**At every hold, either cash or buy-and-hold beats both models** -- verified on mean return per
+decision, not only on Sharpe. Best deflated Sharpe anywhere in the study is TimesFM's **0.1914** at
+hold 3 against a 0.95 gate.
+
+**The noise control is the real finding.** Thirty random-forecast seeds on the identical
+configuration: all thirty beat both models at hold 3, worst draw 0.3197, median **0.5504**. The
+mechanism was measured -- noise median Sharpe tracks buy-and-hold at every hold, because random
+long-only selection at ~50% exposure is a diluted buy-and-hold. The deflated Sharpe tests against
+**zero**, so in a rising market it rewards exposure and calls it skill.
+
+That makes both models look worse, not better: the ridge at hold 3 underperformed thirty of thirty
+coin flips by pulling itself out of a market that rose.
+
+The **252-session holdout was never read.** No candidate came close enough to the gate to justify
+spending it, so it remains available.
+
 ## What was NOT finished
 
 Stated plainly, because a program report that buries this is worse than useless.
 
 | Not done | Why, and what it needs |
 |---|---|
-| **The six short-horizon trials** | Infrastructure, budget and feasibility are complete; the trials themselves need an evaluation harness that is not written, plus ~4 hours of TimesFM compute. **No short-horizon result exists.** Nothing in this report claims one |
+| **Independent adjudication of the short-horizon study** | The six trials ran and are reported in `short_horizon/COMPARISON-REPORT.md`, but nothing here has been adjudicated by an agent that did not write it |
 | **53 of 54 demerger entitlement ratios** | Filing-reading work, not code. Their windows stay refused meanwhile |
 | **HEG corrected inside the XS-Monthly book** | The book is live under a Hermes claim and a scheduled task writes it. Correction published alongside with a notice filed, rather than mutating a running book |
 | **Forward-paper observation for any candidate** | Requires a candidate that clears a gate. None does |

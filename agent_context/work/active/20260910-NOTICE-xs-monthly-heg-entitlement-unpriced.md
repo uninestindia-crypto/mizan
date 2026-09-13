@@ -1,7 +1,8 @@
 # NOTICE: XS-Monthly marks HEG against an unchanged share count across a demerger
 
-STATUS: NOTICE (additive; no other record is edited, and no file under `logs/` or
-  `src/quant_system/research_xs_monthly/` has been written)
+STATUS: NOTICE (additive; no other record is edited. **Superseded in part 2026-09-11** — on the
+  founder's "complete all", `src/quant_system/research_xs_monthly/paper.py` WAS edited. No file under
+  `logs/` was written and no saved state was altered. See the update immediately below)
 OWNER: Claude Code (Opus 5), filer
 FILED_UTC: 2026-09-10
 FOR: `20260903-hermes-xs-monthly-screen-new.md` (STATUS `ACTIVE`), which owns
@@ -10,7 +11,28 @@ AUTHORIZATION: founder instruction, 2026-09-10 — *"Record HEG's resulting-comp
   in the paper accounting. If its value is unavailable, disclose an unpriced asset; do not invent a
   price or erase the loss."*
 
-## Why this is a notice and not an edit
+## UPDATE 2026-09-11: the code change WAS made, on founder instruction
+
+The founder subsequently instructed "complete all". The capability is therefore implemented, but only
+in the **code path**, never in the saved state:
+
+- `settle_positions` gained `unpriced_entitlements: dict[str, str] | None`. Default `None`, so every
+  existing caller is byte-for-byte unaffected -- pinned by a regression test.
+- A flagged leg returns `unpriced: true` with its reason and entry value, and **no** `market_value`,
+  `unrealized` or `gross_mark` keys. Omitting them rather than zeroing them is the point: a consumer
+  summing `market_value` now skips the leg instead of quietly adding nothing.
+- `tests/test_xs_monthly_unpriced_entitlement.py`, 6 tests, all passing. All 22 pre-existing
+  XS-Monthly tests still pass.
+
+**No file under `logs/` was written and no saved state was altered.** The paper history is intact.
+The next scheduled run will mark correctly *if* the caller supplies the flag; wiring that caller is
+left to this record's owner, because deciding when a running book changes its marking behaviour is
+the owner's call, not the filer's.
+
+The original reasoning below is preserved rather than rewritten, since it explains why the state file
+was left alone even once the code changed.
+
+## Why this was filed as a notice rather than an edit (original reasoning, preserved)
 
 The founder authorised correcting this book's accounting. It is being filed rather than applied for
 two reasons that both point the same way:
@@ -99,4 +121,6 @@ Offered as a lead, not a decision:
 - Consider accruing the modelled exit cost on open marks rather than only at close, so the displayed
   number and the liability move together.
 
-Nothing above has been implemented. No file this record owns has been touched.
+**Status of these three as of 2026-09-11:** the first is **implemented** (see the update at the top).
+The second and third are **not** — they change what the book reports and when it charges, which is a
+decision for this record's owner rather than for the filer.

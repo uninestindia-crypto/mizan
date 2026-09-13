@@ -1,0 +1,426 @@
+{
+  "arm": "timesfm",
+  "code_revision": "2e28d76e43e2d85015003798d810d1365d6b94b7-dirty",
+  "corporate_action_authority_sha256": "e68c8e1c2b7fec3a7840cdef06a189e602cd78771a747cf145a1fafe02ecff0a",
+  "declared_trials": 6,
+  "excluded_not_universe_bound": [],
+  "feature_store": "D:/quant_system/data/evidence/feature-store/mizan-adjusted-v1/mizan_feature_store.csv.gz",
+  "generated_at": "2026-09-11T08:33:43.601603+00:00",
+  "holdout_sessions": 252,
+  "is_control": false,
+  "noise_seed": null,
+  "ridge_penalty": null,
+  "subset": [
+    "RELIANCE",
+    "HDFCBANK",
+    "ICICIBANK",
+    "SBIN",
+    "INFY",
+    "AXISBANK",
+    "TCS",
+    "BAJFINANCE",
+    "TMPV",
+    "BHARTIARTL",
+    "MARUTI",
+    "TATASTEEL",
+    "KOTAKBANK",
+    "LT",
+    "ITC",
+    "HINDUNILVR",
+    "M&M",
+    "SUNPHARMA",
+    "HINDALCO",
+    "HCLTECH",
+    "TITAN",
+    "TECHM",
+    "ASIANPAINT",
+    "ADANIENT",
+    "ADANIPORTS",
+    "BAJAJFINSV",
+    "ULTRACEMCO",
+    "WIPRO",
+    "POWERGRID",
+    "DRREDDY",
+    "ONGC",
+    "SHRIRAMFIN",
+    "NTPC",
+    "INDIGO",
+    "JSWSTEEL",
+    "BAJAJ-AUTO",
+    "APOLLOHOSP",
+    "COALINDIA",
+    "CIPLA",
+    "EICHERMOT",
+    "BEL",
+    "GRASIM",
+    "TATACONSUM",
+    "NESTLEIND",
+    "TRENT"
+  ],
+  "subset_rule": "research-universe names with a universe-bound governed acquisition, turnover-ranked",
+  "trials": {
+    "hold1": {
+      "abstention_calibrated_on": "walk-forward validation folds (holdout untouched)",
+      "abstention_grid": [
+        {
+          "mean_per_decision": "-0.0006210238568342594674461182668",
+          "threshold": "0",
+          "trades": 26630
+        },
+        {
+          "mean_per_decision": "-0.0004261409590869334789451707192",
+          "threshold": "0.001",
+          "trades": 16025
+        },
+        {
+          "mean_per_decision": "-0.0002622277473827771175280249253",
+          "threshold": "0.002",
+          "trades": 9187
+        },
+        {
+          "mean_per_decision": "-0.0001774764583973918350303536440",
+          "threshold": "0.003",
+          "trades": 5409
+        },
+        {
+          "mean_per_decision": "-0.00007705147052670799473227764751",
+          "threshold": "0.005",
+          "trades": 2143
+        },
+        {
+          "mean_per_decision": "-0.00003420590852410625381428066682",
+          "threshold": "0.008",
+          "trades": 681
+        },
+        {
+          "mean_per_decision": "-0.00003056483258301480743905180998",
+          "threshold": "0.012",
+          "trades": 225
+        },
+        {
+          "mean_per_decision": "-0.000006703124718995920727202646709",
+          "threshold": "0.020",
+          "trades": 58
+        }
+      ],
+      "abstention_refused": [],
+      "abstention_threshold": "0.020",
+      "deflated_sharpe_ratio": 0.023189,
+      "embargoed_rows": 990,
+      "folds": 11,
+      "gate_max_drawdown": "0.15",
+      "gate_min_deflated_sharpe": "0.95",
+      "gate_passed": false,
+      "gate_policy_id": "short-horizon-research-v1",
+      "held_sessions": 1,
+      "horizon_sessions": 2,
+      "missing_prediction_fraction": 0.0,
+      "missing_predictions": 0,
+      "multiplicity_count": 6,
+      "purged_rows": 990,
+      "refused_constituents": [],
+      "strategies": [
+        {
+          "decisions": 62266,
+          "exposure": 0.000931,
+          "hit_rate": 0.465517,
+          "max_drawdown": 0.020286,
+          "mean_net_return_per_decision": "-0.000006703124718995920727202646709",
+          "sharpe": -0.235677,
+          "strategy_id": "CANDIDATE",
+          "total_net_return": "-0.009371960596974538",
+          "trades": 58
+        },
+        {
+          "decisions": 62266,
+          "exposure": 0.427681,
+          "hit_rate": 0.445625,
+          "max_drawdown": 0.59999,
+          "mean_net_return_per_decision": "-0.0006210238568342594674461182668",
+          "sharpe": -1.615751,
+          "strategy_id": "CANDIDATE_NO_ABSTENTION",
+          "total_net_return": "-0.5887095371935065",
+          "trades": 26630
+        },
+        {
+          "decisions": 62266,
+          "exposure": 0.0,
+          "hit_rate": 0.0,
+          "max_drawdown": 0.0,
+          "mean_net_return_per_decision": "0",
+          "sharpe": 0.0,
+          "strategy_id": "CASH",
+          "total_net_return": "0.0",
+          "trades": 0
+        },
+        {
+          "decisions": 62266,
+          "exposure": 1.0,
+          "hit_rate": 0.451723,
+          "max_drawdown": 0.814402,
+          "mean_net_return_per_decision": "-0.001109117414702630649150419169",
+          "sharpe": -1.434048,
+          "strategy_id": "BUY_AND_HOLD",
+          "total_net_return": "-0.8071501929087056",
+          "trades": 62266
+        },
+        {
+          "decisions": 62266,
+          "exposure": 0.517746,
+          "hit_rate": 0.441932,
+          "max_drawdown": 0.573403,
+          "mean_net_return_per_decision": "-0.0005402957134044743519737898693",
+          "sharpe": -1.286148,
+          "strategy_id": "PREVIOUS_SIGN",
+          "total_net_return": "-0.5422314528547376",
+          "trades": 32238
+        }
+      ],
+      "train_rows": 680788,
+      "validation_rows": 62266,
+      "verdict": "RESEARCH_ONLY"
+    },
+    "hold2": {
+      "abstention_calibrated_on": "walk-forward validation folds (holdout untouched)",
+      "abstention_grid": [
+        {
+          "mean_per_decision": "-0.0002511023227373923936785301298",
+          "threshold": "0",
+          "trades": 34186
+        },
+        {
+          "mean_per_decision": "-0.0002451128254672041629191828344",
+          "threshold": "0.001",
+          "trades": 26660
+        },
+        {
+          "mean_per_decision": "-0.0002675426098844597199023512784",
+          "threshold": "0.002",
+          "trades": 19807
+        },
+        {
+          "mean_per_decision": "-0.0002151106664371707567775921881",
+          "threshold": "0.003",
+          "trades": 14429
+        },
+        {
+          "mean_per_decision": "-0.00008328842339905884620326352306",
+          "threshold": "0.005",
+          "trades": 7449
+        },
+        {
+          "mean_per_decision": "-0.0001128807933440671977386611846",
+          "threshold": "0.008",
+          "trades": 3080
+        },
+        {
+          "mean_per_decision": "-0.00007750168793757227290247976359",
+          "threshold": "0.012",
+          "trades": 1208
+        },
+        {
+          "mean_per_decision": "-0.00004364177035937299241937556212",
+          "threshold": "0.020",
+          "trades": 289
+        }
+      ],
+      "abstention_refused": [],
+      "abstention_threshold": "0.020",
+      "deflated_sharpe_ratio": 0.00427,
+      "embargoed_rows": 1485,
+      "folds": 11,
+      "gate_max_drawdown": "0.15",
+      "gate_min_deflated_sharpe": "0.95",
+      "gate_passed": false,
+      "gate_policy_id": "short-horizon-research-v1",
+      "held_sessions": 2,
+      "horizon_sessions": 3,
+      "missing_prediction_fraction": 0.0,
+      "missing_predictions": 0,
+      "multiplicity_count": 6,
+      "purged_rows": 1485,
+      "refused_constituents": [],
+      "strategies": [
+        {
+          "decisions": 62264,
+          "exposure": 0.004642,
+          "hit_rate": 0.449827,
+          "max_drawdown": 0.074109,
+          "mean_net_return_per_decision": "-0.00004364177035937299241937556212",
+          "sharpe": -0.453251,
+          "strategy_id": "CANDIDATE",
+          "total_net_return": "-0.059380651893185754",
+          "trades": 289
+        },
+        {
+          "decisions": 62264,
+          "exposure": 0.549049,
+          "hit_rate": 0.480255,
+          "max_drawdown": 0.497357,
+          "mean_net_return_per_decision": "-0.0002511023227373923936785301298",
+          "sharpe": -0.296471,
+          "strategy_id": "CANDIDATE_NO_ABSTENTION",
+          "total_net_return": "-0.3396809979060371",
+          "trades": 34186
+        },
+        {
+          "decisions": 62264,
+          "exposure": 0.0,
+          "hit_rate": 0.0,
+          "max_drawdown": 0.0,
+          "mean_net_return_per_decision": "0",
+          "sharpe": 0.0,
+          "strategy_id": "CASH",
+          "total_net_return": "0.0",
+          "trades": 0
+        },
+        {
+          "decisions": 62264,
+          "exposure": 1.0,
+          "hit_rate": 0.485353,
+          "max_drawdown": 0.636206,
+          "mean_net_return_per_decision": "9.299954805344982654503404857E-8",
+          "sharpe": -0.001767,
+          "strategy_id": "BUY_AND_HOLD",
+          "total_net_return": "-0.18241163389055615",
+          "trades": 62264
+        },
+        {
+          "decisions": 62264,
+          "exposure": 0.517731,
+          "hit_rate": 0.474376,
+          "max_drawdown": 0.466892,
+          "mean_net_return_per_decision": "-0.00006909689796227354490556340743",
+          "sharpe": -0.091463,
+          "strategy_id": "PREVIOUS_SIGN",
+          "total_net_return": "-0.14055821256659795",
+          "trades": 32236
+        }
+      ],
+      "train_rows": 679762,
+      "validation_rows": 62264,
+      "verdict": "RESEARCH_ONLY"
+    },
+    "hold3": {
+      "abstention_calibrated_on": "walk-forward validation folds (holdout untouched)",
+      "abstention_grid": [
+        {
+          "mean_per_decision": "0.0001994832895795669911021168610",
+          "threshold": "0",
+          "trades": 35425
+        },
+        {
+          "mean_per_decision": "0.0001366324527111560823616330988",
+          "threshold": "0.001",
+          "trades": 29754
+        },
+        {
+          "mean_per_decision": "0.00007081876043675114837300440076",
+          "threshold": "0.002",
+          "trades": 24364
+        },
+        {
+          "mean_per_decision": "0.00001643152164883877806687867399",
+          "threshold": "0.003",
+          "trades": 19680
+        },
+        {
+          "mean_per_decision": "-0.00004969332318494426777167453664",
+          "threshold": "0.005",
+          "trades": 12628
+        },
+        {
+          "mean_per_decision": "-0.00006638078760601972310558607176",
+          "threshold": "0.008",
+          "trades": 6291
+        },
+        {
+          "mean_per_decision": "-0.0001196052484681989014165943914",
+          "threshold": "0.012",
+          "trades": 2746
+        },
+        {
+          "mean_per_decision": "-0.00006947587348401914490379364620",
+          "threshold": "0.020",
+          "trades": 768
+        }
+      ],
+      "abstention_refused": [],
+      "abstention_threshold": "0",
+      "deflated_sharpe_ratio": 0.191369,
+      "embargoed_rows": 1980,
+      "folds": 11,
+      "gate_max_drawdown": "0.15",
+      "gate_min_deflated_sharpe": "0.95",
+      "gate_passed": false,
+      "gate_policy_id": "short-horizon-research-v1",
+      "held_sessions": 3,
+      "horizon_sessions": 4,
+      "missing_prediction_fraction": 0.0,
+      "missing_predictions": 0,
+      "multiplicity_count": 6,
+      "purged_rows": 1980,
+      "refused_constituents": [],
+      "strategies": [
+        {
+          "decisions": 62262,
+          "exposure": 0.568967,
+          "hit_rate": 0.498518,
+          "max_drawdown": 0.56578,
+          "mean_net_return_per_decision": "0.0001994832895795669911021168610",
+          "sharpe": 0.145601,
+          "strategy_id": "CANDIDATE",
+          "total_net_return": "0.17930862473369857",
+          "trades": 35425
+        },
+        {
+          "decisions": 62262,
+          "exposure": 0.568967,
+          "hit_rate": 0.498518,
+          "max_drawdown": 0.56578,
+          "mean_net_return_per_decision": "0.0001994832895795669911021168610",
+          "sharpe": 0.145601,
+          "strategy_id": "CANDIDATE_NO_ABSTENTION",
+          "total_net_return": "0.17930862473369857",
+          "trades": 35425
+        },
+        {
+          "decisions": 62262,
+          "exposure": 0.0,
+          "hit_rate": 0.0,
+          "max_drawdown": 0.0,
+          "mean_net_return_per_decision": "0",
+          "sharpe": 0.0,
+          "strategy_id": "CASH",
+          "total_net_return": "0.0",
+          "trades": 0
+        },
+        {
+          "decisions": 62262,
+          "exposure": 1.0,
+          "hit_rate": 0.502891,
+          "max_drawdown": 0.762069,
+          "mean_net_return_per_decision": "0.001097073648871109183771803026",
+          "sharpe": 0.492231,
+          "strategy_id": "BUY_AND_HOLD",
+          "total_net_return": "2.3996792410341774",
+          "trades": 62262
+        },
+        {
+          "decisions": 62262,
+          "exposure": 0.517732,
+          "hit_rate": 0.494773,
+          "max_drawdown": 0.379644,
+          "mean_net_return_per_decision": "0.0005190770794844046127654106839",
+          "sharpe": 0.435863,
+          "strategy_id": "PREVIOUS_SIGN",
+          "total_net_return": "0.8839847515839485",
+          "trades": 32235
+        }
+      ],
+      "train_rows": 678736,
+      "validation_rows": 62262,
+      "verdict": "RESEARCH_ONLY"
+    }
+  }
+}

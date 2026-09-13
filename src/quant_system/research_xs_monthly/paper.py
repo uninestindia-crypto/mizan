@@ -94,9 +94,35 @@ def _book_closed(pos: dict[str, Any], exit_bar_open: Decimal) -> dict[str, Any]:
     }
 
 
-def _book_open(pos: dict[str, Any], latest_open: Decimal) -> dict[str, Any]:
+def _book_open(
+    pos: dict[str, Any], latest_open: Decimal, unpriced_reason: str | None = None
+) -> dict[str, Any]:
+    """Mark one open leg, or decline to mark it.
+
+    ``unpriced_reason`` is set when a corporate action of unknown size falls inside the holding
+    window. ``shares * latest_open`` is then **wrong**, and wrong in a specific direction: it
+    multiplies the pre-event share count by the post-event quote, which silently asserts that
+    whatever the holder received in exchange is worth nothing.
+
+    HEG is the worked example. Its 2026-09-07 demerger entitled one resulting-company share per HEG
+    share; the resulting company has no price anywhere in this repository. Marking 13 shares at the
+    post-demerger quote booked roughly INR 6,084 of "loss" that no evidence supports -- larger than
+    this book's entire displayed result at the time.
+
+    So the leg comes back with ``unpriced: true``, its entry value stated, and **no**
+    ``market_value`` or ``unrealized`` key at all. Omitting them rather than zeroing them is
+    deliberate: a consumer that sums ``market_value`` now skips the leg or raises, instead of quietly
+    treating an unvalued asset as worthless.
+    """
     shares = int(pos.get("shares", 0))
     entry_value = Decimal(str(pos.get("entry_value", "0")))
+    if unpriced_reason is not None:
+        return {
+            "shares": shares,
+            "entry_value": str(entry_value),
+            "unpriced": True,
+            "unpriced_reason": unpriced_reason,
+        }
     with localcontext() as ctx:
         ctx.prec = 28
         market_value = Decimal(shares) * latest_open
@@ -171,13 +197,20 @@ def settle_positions(
     positions: list[dict[str, Any]],
     bars_by_symbol: dict[str, list[Bar]],
     hold: int = HOLD_SESSIONS,
+    unpriced_entitlements: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Split positions into closed legs vs open marks at the latest bar.
 
     Closed leg: exit open exists hold sessions after entry → full COST_RATIO
     charged exactly once. Open leg: marked gross at the latest available open,
     cost pending, never deducted early.
+
+    ``unpriced_entitlements`` maps a symbol to the reason its holding cannot be valued -- a corporate
+    action of unknown size inside the window. Those legs come back marked ``unpriced`` instead of
+    valued at ``shares * latest_open``, which would assert the entitlement is worthless. Defaults to
+    empty, so existing callers are unaffected. See :func:`_book_open`.
     """
+    unpriced = unpriced_entitlements or {}
     calendar = build_calendar(bars_by_symbol)
     indexed = {symbol: _index_symbol(bars) for symbol, bars in bars_by_symbol.items()}
     pos_of = {d: i for i, d in enumerate(calendar)}
@@ -224,7 +257,14 @@ def settle_positions(
                 "gross_mark": str(gross),
                 "cost_pending": str(COST_RATIO),
             }
+            reason = unpriced.get(symbol)
+            if reason is not None:
+                # gross_mark is a price ratio carrying the same false assertion as market_value, so
+                # it is removed rather than left where a reader would take it for a return.
+                leg.pop("gross_mark", None)
+                leg["unpriced"] = True
+                leg["unpriced_reason"] = reason
             if "shares" in pos:
-                leg.update(_book_open(pos, latest_bar.open))
+                leg.update(_book_open(pos, latest_bar.open, reason))
             opened.append(leg)
     return {"closed": closed, "open": opened, "asof": calendar[-1].isoformat()}

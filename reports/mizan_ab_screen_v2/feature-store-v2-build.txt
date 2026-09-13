@@ -1,0 +1,16 @@
+universe        : 423 names
+macro           : VIX 2478d, NIFTY 2479d
+catalog index   : 3267 symbols (manifest headers only)
+  loaded 100/423 acquisitions
+  loaded 200/423 acquisitions
+  loaded 300/423 acquisitions
+  loaded 400/423 acquisitions
+in universe     : 423 of 423 symbols loaded
+skipped (short) : 0
+corp actions    : 5,028 factors on 392 symbols
+adjustment basis: total return (dividends removed)
+unresolved      : 99 actions on 78 symbols; up to 4,905 feature rows blacked out
+rows            : 1,010,987
+symbols         : 423
+dates           : 2,427
+written         : data\evidence\feature-store\mizan-adjusted-v2\mizan_feature_store.csv.gz

@@ -58,6 +58,10 @@ from quant_system.evidence import (  # noqa: E402
 )
 from quant_system.modeling import build_label_dataset  # noqa: E402
 from quant_system.modeling.errors import ModelingError  # noqa: E402
+from quant_system.modeling.evidence import (  # noqa: E402
+    draft_from_feature_dataset,
+    draft_from_label_dataset,
+)
 from quant_system.modeling.pooled import (  # noqa: E402
     build_mizan_feature_dataset,
     pool_feature_datasets,
@@ -206,6 +210,47 @@ def _largest_calendar_group(
     return chosen[0][3], chosen, excluded
 
 
+def _publish_datasets(store: EvidenceStore, features: Any, labels: Any) -> bool:
+    """Publish the pooled feature and label datasets as DATASET evidence resources.
+
+    Why this exists
+    ---------------
+    Every trial records a ``dataset_id``/``dataset_hash``, and until now **nothing published the
+    resource those identifiers name** -- no evidence store in this repository held a single DATASET
+    resource. An independent adjudication
+    (``.launch/reports/ADJUDICATION-TRAINING-PATH-20260911.md``) rated the claim that the governed
+    retrain ran on corporate-action-adjusted data as ``NOT TESTED`` for exactly that reason: the
+    binding was recorded but unresolvable, the MODEL manifest carries no adjustment field, and
+    ``feature_schema_version`` is identical either side of the adjustment boundary, so the schema
+    cannot be used to infer it either.
+
+    Publishing the dataset makes the binding resolve. The label dataset carries
+    ``source_dataset_id``, naming the acquisition the labels were measured on -- and an adjusted
+    acquisition is a *separate* artifact with its own manifest hash and an ``AdjustmentReference``.
+    A reader can then walk trial -> dataset -> acquisition -> adjustment method and authorities,
+    instead of taking an author's word for it.
+
+    This spends **no multiplicity ordinal**: publishing data is not a trial. Commits are idempotent,
+    so re-running is safe and a dataset shared by several trials is written once.
+    """
+    ok = True
+    for label, draft in (
+        ("features", draft_from_feature_dataset(features)),
+        ("labels", draft_from_label_dataset(labels)),
+    ):
+        try:
+            result = store.commit(draft, operation_id=f"mizan-dataset-{draft.resource_id}")
+        except Exception as error:  # noqa: BLE001 - reported per dataset, never aborts the run
+            print(f"dataset {label:9s}: REFUSED -- {type(error).__name__}: {error}", flush=True)
+            ok = False
+            continue
+        print(
+            f"dataset {label:9s}: published {draft.resource_id} -> {result.manifest.manifest_hash}",
+            flush=True,
+        )
+    return ok
+
+
 def run(args: argparse.Namespace) -> int:
     print("=== MIZAN: pooled cross-sectional governed training ===", flush=True)
     features_by_symbol = load_feature_store(args.feature_store)
@@ -320,6 +365,16 @@ def run(args: argparse.Namespace) -> int:
         flush=True,
     )
 
+    args.evidence_root.mkdir(parents=True, exist_ok=True)
+    published = _publish_datasets(
+        EvidenceStore(EvidenceStoreConfig(root=args.evidence_root)),
+        pooled_features,
+        pooled_labels,
+    )
+    if args.publish_datasets_only:
+        print("\npublish-datasets-only: no trial run, no multiplicity ordinal spent.", flush=True)
+        return 0 if published else 3
+
     embargo = max(args.embargo_sessions, args.horizon_sessions)
     fold = runner._fold_from_tail(
         pooled_labels,
@@ -382,6 +437,14 @@ def run(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--publish-datasets-only",
+        action="store_true",
+        help="Assemble and publish the pooled feature/label datasets as DATASET evidence "
+        "resources, then stop. Runs no trial and spends no multiplicity ordinal. Exists to close "
+        "the auditability gap the 2026-09-11 adjudication found: trials bind a dataset_id that no "
+        "store ever published, so a reader cannot confirm what a model was fitted on.",
+    )
     parser.add_argument(
         "--feature-store",
         type=Path,

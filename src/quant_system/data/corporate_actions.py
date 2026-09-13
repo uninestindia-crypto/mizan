@@ -245,10 +245,45 @@ _SPLIT_RE: Final = re.compile(
     re.I,
 )
 _BONUS_RE: Final = re.compile(r"bonus\s*(\d+)\s*:\s*(\d+)", re.I)
-_DIVIDEND_RE: Final = re.compile(r"(?:rs|re)\.?\s*(\d+(?:\.\d+)?)\s*per\s+share", re.I)
+_DIVIDEND_RE: Final = re.compile(
+    r"(?:rs|re)\.?\s*(\d+(?:\.\d+)?)\s*(?:/-)?\s*per\s+sh(?:are)?\b", re.I
+)
+"""The ``/-`` suffix and the ``Share``/``Sh`` spelling are both optional, because issuers write both.
+
+The ``per share`` anchor itself is **not** optional, and that is deliberate. Dropping it would let
+the amount be read from a face-value figure in the same subject line -- ``Dividend/Face Value Split
+From Rs 10/- To Rs 2/-`` would price a Rs 10 dividend that does not exist. Requiring the anchor keeps
+161 abbreviated-but-amountless records (``Interim Dividend`` with no figure) unpriced rather than
+mispriced.
+
+It was previously absent here while ``_SPLIT_RE`` two lines above already allowed it, so
+``Dividend - Rs 4/- Per Share`` parsed to nothing and the payout was silently left in the
+series. Measured on the committed authorities before the repair: 493 of 5,083 dividend
+records in the research universe (9.7%) were unpriced this way, and because no factor and no
+unresolved record were produced, nothing downstream could refuse them.
+"""
 _SPLIT_HINT: Final = re.compile(r"split|sub-?division|splt", re.I)
 _DIVIDEND_HINT: Final = re.compile(r"dividend", re.I)
 _RATIOLESS_HINT: Final = re.compile(r"demerger|scheme of arrangement", re.I)
+_BONUS_HINT: Final = re.compile(r"bonus", re.I)
+_RIGHTS_HINT: Final = re.compile(r"\brights\b", re.I)
+"""Structural actions this parser cannot size from the subject line alone.
+
+A rights issue moves the price (the theoretical ex-rights price depends on the subscription
+price and the ratio), but sizing it needs more than the text carries. Before these hints
+existed a rights record matched **no hint at all**: it produced no factor *and* no unresolved
+record, so ``spans_unresolved`` returned ``False`` and a return measured straight through the
+ex-rights gap was published as if it were real. 39 such actions exist in the research
+universe, plus 3 bonus records whose wording ``_BONUS_RE`` does not match.
+
+Buybacks are deliberately **not** hinted here. A tender-offer buyback has a record date but no
+ex-date price adjustment, so treating one as unresolved would refuse 140 windows for no
+reason.
+"""
+
+
+_STRUCTURAL_KINDS: Final = frozenset({"split", "consolidation", "bonus"})
+"""Kinds that represent a *sized* structural effect. A dividend is not one of them."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -284,15 +319,14 @@ def parse_subject_factor(
     dividend = Decimal(1)
     kinds: list[str] = []
 
-    if _SPLIT_HINT.search(subject):
-        match = _SPLIT_RE.search(subject)
-        if match:
-            old, new = Decimal(match.group(1)), Decimal(match.group(2))
-            if old > 0 and new > 0 and new != old:
-                # new/old covers both directions: a sub-division gives a factor < 1, a
-                # consolidation (Re 1 -> Rs 10) gives one > 1. One expression, no special case.
-                structural *= new / old
-                kinds.append("split" if new < old else "consolidation")
+    split_match = _SPLIT_RE.search(subject) if _SPLIT_HINT.search(subject) else None
+    if split_match:
+        old, new = Decimal(split_match.group(1)), Decimal(split_match.group(2))
+        if old > 0 and new > 0 and new != old:
+            # new/old covers both directions: a sub-division gives a factor < 1, a
+            # consolidation (Re 1 -> Rs 10) gives one > 1. One expression, no special case.
+            structural *= new / old
+            kinds.append("split" if new < old else "consolidation")
 
     for a_text, b_text in _BONUS_RE.findall(subject):
         a, b = Decimal(a_text), Decimal(b_text)
@@ -301,15 +335,34 @@ def parse_subject_factor(
             structural *= b / (a + b)
             kinds.append("bonus")
 
-    if total_return and _DIVIDEND_HINT.search(subject):
-        match = _DIVIDEND_RE.search(subject)
-        if match and cum_close is not None and cum_close > 0:
+    if total_return and _DIVIDEND_HINT.search(subject) and cum_close is not None and cum_close > 0:
+        # A face-value figure inside the split clause is not a dividend. Accepting the ``/-`` suffix
+        # made ``Dividend/Face Value Split From Rs 10/- Per Share To Rs 2/- Per Share`` price a Rs 10
+        # dividend that does not exist -- a misprice, which is worse than the missing price the
+        # suffix fix was closing. So any amount lying inside the split match is skipped.
+        split_span = split_match.span() if split_match else None
+        for match in _DIVIDEND_RE.finditer(subject):
+            if split_span and split_span[0] <= match.start() < split_span[1]:
+                continue
             amount = Decimal(match.group(1))
             if 0 < amount < cum_close:
                 dividend *= (cum_close - amount) / cum_close
                 kinds.append("dividend")
+            break
 
-    needs_inference = bool(_RATIOLESS_HINT.search(subject)) and not kinds
+    # Fail closed: a structural action that is *recognised* but not *sized* must be reported
+    # unresolved, never passed over in silence. The previous rule asked only whether the text looked
+    # ratio-less, so a rights issue -- which matches no hint -- fell through both paths at once. It
+    # also used `not kinds`, so a record carrying a dividend *and* a demerger sized the dividend and
+    # declared the demerger resolved.
+    structural_hinted = bool(
+        _SPLIT_HINT.search(subject)
+        or _BONUS_HINT.search(subject)
+        or _RIGHTS_HINT.search(subject)
+        or _RATIOLESS_HINT.search(subject)
+    )
+    structural_sized = any(kind in _STRUCTURAL_KINDS for kind in kinds)
+    needs_inference = structural_hinted and not structural_sized
     return SubjectComponents(structural, dividend, tuple(kinds), needs_inference)
 
 
@@ -469,9 +522,9 @@ def build_adjustment_factors(
                     UnresolvedRecord(
                         ex_date,
                         "RATIO_NOT_PUBLISHED",
-                        f"NSE publishes no ratio for this action and no independently validated "
-                        f"factor was supplied ({gap_text}); the gap alone is not proof of the "
-                        f"amount",
+                        f"no usable ratio could be parsed from this action and no independently "
+                        f"validated factor was supplied ({gap_text}); the gap alone is not proof "
+                        f"of the amount",
                         subject.strip(),
                     )
                 )

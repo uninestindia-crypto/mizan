@@ -10,6 +10,7 @@ Unsloth Studio / LM Studio-style zero-console application runner.
 from __future__ import annotations
 
 import logging
+import multiprocessing
 import os
 import socket
 import subprocess
@@ -238,4 +239,5 @@ def run_studio() -> None:
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     run_studio()

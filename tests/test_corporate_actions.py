@@ -114,13 +114,72 @@ def test_price_return_leaves_the_dividend_alone() -> None:
 
 @pytest.mark.parametrize(
     "subject",
-    ["Annual General Meeting", "Extra Ordinary General Meeting", "Interest Payment", "Rights"],
+    ["Annual General Meeting", "Extra Ordinary General Meeting", "Interest Payment"],
 )
 def test_actions_with_no_price_effect_produce_no_factor(subject: str) -> None:
     parsed = parse_subject_factor(subject)
     assert parsed.structural == Decimal(1)
     assert parsed.dividend == Decimal(1)
     assert parsed.kinds == ()
+    assert parsed.needs_inference is False
+
+
+@pytest.mark.parametrize(
+    "subject",
+    [
+        "Rights",
+        "Rights 1:26 @ Premium Rs 817/-",
+        "Rights 3:25 @ Premium Rs 1799/-",
+        "Rights Issue",
+    ],
+)
+def test_a_rights_issue_is_unresolved_rather_than_ignored(subject: str) -> None:
+    """A rights issue moves the price, and this parser cannot size it. It must fail closed.
+
+    **This test replaces one that asserted the opposite.** ``"Rights"`` used to sit in the
+    ``test_actions_with_no_price_effect_produce_no_factor`` list above, asserting
+    ``needs_inference is False`` -- so the suite actively certified the defect as correct behaviour,
+    and 90 passing tests, ruff and mypy could not see it.
+
+    The premise was simply false. A rights issue sold at a discount dilutes the existing holding: the
+    theoretical ex-rights price is below the cum price by an amount set by the subscription price and
+    the ratio. NSE publishes the ratio (``1:26``) but sizing the move also needs the subscription
+    price, which the subject line does not reliably carry -- so the action is *recognised and
+    refused*, never silently sized and never silently skipped.
+
+    Found by independent adjudication, 2026-09-11: 39 rights issues in the research universe were
+    invisible to both the factor path and the unresolved path, so returns measured straight through
+    an ex-rights gap were published as if real (reproduced on HCC 2025-12-05, gap -22.94%).
+    """
+    parsed = parse_subject_factor(subject)
+    assert parsed.structural == Decimal(1), "it must not be sized from the text"
+    assert parsed.dividend == Decimal(1)
+    assert parsed.needs_inference is True, (
+        "a recognised-but-unsizeable structural action must be reported unresolved, so that "
+        "spans_unresolved() refuses every window crossing it"
+    )
+
+
+def test_a_structural_action_alongside_a_dividend_is_still_unresolved() -> None:
+    """The old rule used ``not kinds``, so a sized dividend suppressed an unsized structural action.
+
+    A single NSE record routinely carries both. Pricing the dividend and declaring the demerger
+    resolved is the same class of silent pass-through as the rights defect.
+    """
+    parsed = parse_subject_factor(
+        "Dividend - Rs 10/- Per Share/Scheme Of Arrangement", cum_close=Decimal("1000")
+    )
+    assert "dividend" in parsed.kinds, "the dividend is still priced"
+    assert parsed.needs_inference is True, "the unsized structural action still refuses the window"
+
+
+def test_a_buyback_is_not_swept_into_unresolved() -> None:
+    """Fail-closed must stay targeted, or it refuses windows for no reason.
+
+    A tender-offer buyback has a record date but no ex-date price adjustment. 140 exist in the
+    research universe; treating them as unresolved would discard 140 windows to no purpose.
+    """
+    parsed = parse_subject_factor("Buy Back of Shares")
     assert parsed.needs_inference is False
 
 
@@ -421,3 +480,70 @@ def test_the_real_heg_demerger_is_left_unresolved_because_nothing_prices_the_ent
 
     adjusted = adjust_bars(bars, plan.factors)
     assert [b.close for b in adjusted] == [b.close for b in bars], "raw prices are preserved"
+
+
+@pytest.mark.parametrize(
+    ("subject", "expected"),
+    [
+        ("Dividend - Rs 4/- Per Share", Decimal("4")),
+        ("Dividend Rs 4 Per Share", Decimal("4")),
+        ("Dividend - Rs 4.50/- Per Share", Decimal("4.50")),
+        ("Annual General Meeting/Dividend - Rs 10/- Per Share", Decimal("10")),
+    ],
+)
+def test_a_dividend_is_priced_with_or_without_the_rupee_suffix(
+    subject: str, expected: Decimal
+) -> None:
+    """Issuers write ``Rs 4/-`` and ``Rs 4`` interchangeably, and both must price.
+
+    ``_DIVIDEND_RE`` omitted the optional ``/-`` while ``_SPLIT_RE`` two lines above already allowed
+    it, so ``Dividend - Rs 4/- Per Share`` matched nothing. The payout was then left in the series
+    with **no factor and no unresolved record**, so nothing downstream could refuse it.
+
+    Found by independent adjudication, 2026-09-11: 493 of 5,083 dividend records in the research
+    universe (9.7%) were silently unpriced this way.
+    """
+    cum_close = Decimal("1000")
+    parsed = parse_subject_factor(subject, cum_close=cum_close)
+    assert "dividend" in parsed.kinds
+    assert parsed.dividend == (cum_close - expected) / cum_close
+
+
+def test_a_face_value_figure_in_the_split_clause_is_not_read_as_a_dividend() -> None:
+    """A misprice is worse than a missing price, and this fix nearly introduced one.
+
+    Accepting the optional ``/-`` suffix (the repair for the 493 unpriced dividends) had a side
+    effect: ``Rs 10/- Per Share`` inside a *split* clause suddenly matched the dividend pattern, so
+    a record naming a dividend with no amount priced a Rs 10 dividend that does not exist. The old
+    regex avoided this only by accident, because it rejected the ``/-`` form entirely.
+
+    Amounts lying inside the split match are therefore skipped. Caught by re-measuring the repair on
+    the real corpus rather than by the suite.
+    """
+    no_amount = parse_subject_factor(
+        "Dividend/Face Value Split From Rs 10/- Per Share To Rs 2/- Per Share",
+        cum_close=Decimal("1000"),
+    )
+    assert no_amount.structural == Decimal("0.2"), "the split is still sized"
+    assert no_amount.dividend == Decimal(1), "the face value is not a payout"
+    assert "dividend" not in no_amount.kinds
+
+    real = parse_subject_factor(
+        "Annual General Meeting/Dividend - Rs 10 Per Share/"
+        "Face Value Split (Sub-Division) - From Rs 10/- Per Share To Rs 2/- Per Share",
+        cum_close=Decimal("1000"),
+    )
+    assert real.structural == Decimal("0.2")
+    assert real.dividend == Decimal("990") / Decimal("1000"), "a real dividend still prices"
+
+
+def test_a_dividend_with_no_stated_amount_is_left_unpriced() -> None:
+    """``Interim Dividend`` carries no figure, so there is nothing to remove.
+
+    52 such records remain in the research universe (1.0% of dividend-bearing records). They are left
+    alone deliberately: guessing an amount would fabricate a return, and a dividend is a
+    return-definition choice rather than a provider error to repair.
+    """
+    parsed = parse_subject_factor("Interim Dividend", cum_close=Decimal("1000"))
+    assert parsed.dividend == Decimal(1)
+    assert parsed.kinds == ()
