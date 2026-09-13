@@ -62,6 +62,9 @@ whatever it was; a disappointing result does not return the ordinal.
 | 5 | TimesFM 3.0 zero-shot | 2 | DECLARED | — | 2026-09-10 |
 | 6 | TimesFM 3.0 zero-shot | 3 | DECLARED | — | 2026-09-10 |
 | C1 | Abstention threshold grid | all | DECLARED | — | 2026-09-10 |
+| 7 | TimesFM 2.5 zero-shot (Apache-2.0) | 1 | **SPENT** | Sharpe +0.1146; +0.000012/decision; 380 trades at 0.6% exposure; DSR **0.167607** vs 0.95 (**0.118147** re-deflated at 9); beats cash: **marginally** (cash 0.0000) but only by abstaining on 99.4% of decisions -> `RESEARCH_ONLY` | 2026-09-13 |
+| 8 | TimesFM 2.5 zero-shot (Apache-2.0) | 2 | **SPENT** | Sharpe +0.0201; +0.000011/decision; 9,419 trades at 15.1% exposure; DSR **0.107263** vs 0.95 (**0.071891** at 9); **loses to the noise control** (median 0.1615) -> `RESEARCH_ONLY` | 2026-09-13 |
+| 9 | TimesFM 2.5 zero-shot (Apache-2.0) | 3 | **SPENT** | Sharpe +0.3518; +0.000435/decision; 29,791 trades at 47.9% exposure; DSR **0.394441** vs 0.95 (**0.312642** at 9); **loses to the noise control** (median 0.5504) and to Buy&Hold +0.4947 and PreviousSign +0.4400 -> `RESEARCH_ONLY` | 2026-09-13 |
 
 ## Amendment 3, 2026-09-10: a noise control, declared before the TimesFM result exists
 
@@ -248,3 +251,129 @@ This is not fatal to the comparison, but it changes what the comparison can clai
 
 That asymmetry is declared here, before any number exists, so it cannot be quietly dropped if the
 result comes out favourable.
+
+## Amendment 4, 2026-09-12: a licensing-clean foundation arm, declared before any 2.5 result exists
+
+**Trials 7, 8 and 9. Budget moves 6 -> 9 published trials.** Declared on founder instruction
+(*"use the 2.5 weights instead"*, then *"Run all three holds"*), before a single 2.5 forecast has
+been evaluated.
+
+### Why a fourth amendment, and why it is not a free replication
+
+`google/timesfm-3.0-pytorch` is licensed `timesfm-non-commercial-license-v1.0`, which prohibits
+production deployment and revenue generation. `google/timesfm-2.5-200m-pytorch` is **Apache-2.0** —
+upstream METADATA states the split directly: source code Apache-2.0, weights up to 2.5 Apache-2.0,
+3.0 weights non-commercial. So 2.5 is the only foundation checkpoint here that could ever sit in a
+commercial path.
+
+The motivation is **licensing, not performance**, and that changes nothing about the cost. A real
+model with predictive content spends an ordinal. Running 2.5 as a "control" or a "replication of
+trials 4-6" to avoid three ordinals was considered and **refused**: the noise control is free only
+because it has no predictive content by construction, and borrowing that exemption for a real model
+is precisely the manoeuvre this ledger exists to prevent.
+
+### What this costs the trials already spent
+
+`multiplicity_count` for this family becomes **9**. Every short-horizon DSR already published was
+scored against a smaller attempt count and will re-deflate **lower** against 9. Those published
+figures are not edited and remain correct as published, at the count that existed when they were
+scored — the same effect `CURRENT.md` records for GRASIM (0.696673 published, 0.397794 re-deflated
+against 51). Named here in advance rather than discovered later.
+
+### The prior, recorded before the result
+
+Wiring was smoke-tested in a scratchpad — no repository file touched, no evaluation, no ordinal. On a
+matched window (8 liquid names, 40 dates, 2026-06-29..2026-08-21, 320 forecasts each) the median
+cross-sectional stdev of predictions was **0.001912** for 2.5 against **0.001498** for 3.0, both
+against realised dispersion of 0.009777. 2.5 produces about 28% more spread and sits in the same
+heavy-shrinkage regime.
+
+That statistic says names can be ranked apart. It says **nothing** about whether the spread is
+informative — a genuinely better model and a differently-noisy one are indistinguishable on it, which
+is why the smoke deliberately computed no IC, Sharpe, hit rate or P&L.
+
+**Stated plainly so it cannot be claimed afterwards: the honest prior is that 2.5 reproduces the 3.0
+null.** 3.0, with a very similar dispersion profile, scored 0.023189 / 0.004270 / 0.191369 and lost
+to the noise control at every hold. The arm is being run because a licensing-clean candidate that has
+been properly tested is worth more than an untested one — not because a better number is expected.
+
+### Binding conditions on trials 7-9
+
+- The **same** frozen design applies: same universe, same purged and embargoed folds, same 252-session
+  holdout, same cost model, and the **C1 abstention grid already spent** — no new calibration.
+- The 3.0 evidence is **not** overwritten. 2.5 writes to `timesfm25-forecasts.json`. (The generator's
+  `--out` default resumes from the existing `.partial.jsonl`; a default-flag 2.5 run would have
+  silently produced a mixed 3.0/2.5 file.)
+- The pretraining-contamination asymmetry under **TimesFM specifics** applies unchanged to 2.5: a
+  negative result stays informative, a positive one is not evidence of skill on unseen data.
+- A tenth trial inherits ordinal 10 and a harsher deflation. Do not sweep checkpoints.
+
+Filed with `agent_context/work/active/20260912-NOTICE-claude-timesfm25-trials-7-9-declared.md`
+against the record that owns this file. Amendment is additive; no existing row was altered.
+
+## Result of trials 7-9, 2026-09-13: better than 3.0, and still no edge
+
+Recorded against Amendment 4's stated prior, which was **"expect 2.5 to reproduce the 3.0 null."**
+That prior was **half wrong and is not being quietly restated**.
+
+### 2.5 beat 3.0 at every hold
+
+| Hold | 3.0 DSR | **2.5 DSR** | 2.5 Sharpe | 3.0 Sharpe |
+|---:|---:|---:|---:|---:|
+| 1 | 0.023189 | **0.167607** | +0.1146 | -0.2357 |
+| 2 | 0.004270 | **0.107263** | +0.0201 | -0.4533 |
+| 3 | 0.191369 | **0.394441** | +0.3518 | +0.1456 |
+
+All six figures above are on the same multiplicity basis of 6, so the comparison is like for like.
+The Apache-2.0 checkpoint is a **better forecaster on this data than the non-commercial one** —
+positive Sharpe at all three holds where 3.0 was negative at two. This was not expected and is
+recorded because it was not.
+
+### And it still fails, on all three independent tests
+
+1. **The gate.** Best is 0.394441 against `min_deflated_sharpe = 0.95`. Not close at any hold.
+2. **The noise control.** At the same basis of 6, noise median DSR is 0.0000 / 0.1615 / 0.5504.
+   Noise **still beats 2.5 at holds 2 and 3** — the two holds where the candidate actually trades.
+   At hold 3, 2.5's 0.394441 sits above the worst of 30 noise draws (0.3197) and well below their
+   median.
+3. **The trivial baselines.** At hold 3, where the candidate takes 29,791 positions at 47.9%
+   exposure, `BUY_AND_HOLD` scores +0.4947 and `PREVIOUS_SIGN` +0.4400 against its +0.3518.
+
+### The one place a real model finally beat the control, and why it is not a result
+
+Hold 1 is the **only** trial in this program where a real model outscored noise: 0.167607 against a
+noise median of 0.0000. The mechanism disqualifies it as evidence of skill:
+
+- The candidate abstained on **99.4%** of decisions — 380 trades out of 108,623, exposure 0.006.
+- Its Sharpe of +0.1146 is against `CASH` at exactly 0.0000. It is a cash position with a tilt.
+- `BUY_AND_HOLD` at hold 1 is **-1.4320**. The noise arm sat at ~50% exposure in that decline and
+  earned a negative Sharpe, which floors DSR at 0.0000.
+
+So hold 1 says the abstention rule avoided a falling market while the control participated in it.
+That is the C1 grid working as designed, not the forecaster ranking names correctly.
+
+### Multiplicity: these numbers are quoted at 6 and the budget is now 9
+
+`scripts/run_short_horizon_experiment.py:63` hardcodes `DECLARED_TRIALS = 6`. It is a claimed path
+and was **not edited**; the figures above are reported exactly as the runner produced them, and
+re-deflated beside them using the repository's own `OverfittingDiagnostics.deflated_sharpe_ratio`:
+
+| Hold | DSR as scored (6) | DSR re-deflated (9) | Delta |
+|---:|---:|---:|---:|
+| 1 | 0.167607 | **0.118147** | -0.049460 |
+| 2 | 0.107263 | **0.071891** | -0.035372 |
+| 3 | 0.394441 | **0.312642** | -0.081799 |
+
+The re-deflated column is the honest figure under the budget that now exists. It is **not** compared
+against the noise control above, because those draws were themselves scored at 6; comparing 2.5 at 9
+against noise at 6 would understate the candidate.
+
+Every short-horizon DSR in rows 1-6 is likewise quoted at its own scoring-time count and would fall
+against 9. Those rows are left exactly as their owner wrote them.
+
+### Standing instruction
+
+**Do not run a tenth trial.** It inherits ordinal 10, deflates everything here further, and would be
+searching checkpoints for a number — the precise failure this ledger exists to prevent. The
+foundation-model direction has now been tested under both a non-commercial and a permissive
+checkpoint and has no edge under either.

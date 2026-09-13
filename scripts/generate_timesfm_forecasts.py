@@ -46,6 +46,7 @@ import argparse
 import json
 import sys
 import time
+from collections.abc import Callable
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
@@ -55,6 +56,27 @@ sys.path.insert(0, str(ROOT_DIR / "scripts"))
 sys.path.insert(0, str(ROOT_DIR / "src"))
 
 CHECKPOINT = "google/timesfm-3.0-pytorch"
+"""Default checkpoint, and deliberately still the default.
+
+Trials 4-6 were published against these weights. Swapping this constant to point at 2.5 would have
+made that published evidence unreproducible from this script, so the checkpoint is a flag instead
+and 3.0 remains what you get if you pass nothing.
+"""
+
+CHECKPOINT_2P5 = "google/timesfm-2.5-200m-pytorch"
+"""Apache-2.0, where the 3.0 weights are `timesfm-non-commercial-license-v1.0`.
+
+This is a different architecture, not a version bump. Pointing the 2.5 class at a 3.0 checkpoint
+fails on missing `state_dict` keys and vice versa, so `build_predictor` dispatches on the checkpoint
+name rather than letting a mismatched pair fail deep inside `from_pretrained`.
+"""
+
+BATCH = 8
+"""`per_core_batch_size` for the 2.5 path. 8 is the value the scratchpad smoke validated end to end
+(shape, determinism and affine equivariance); a 3-4 hour run is the wrong place to introduce an
+unvalidated one.
+"""
+
 CONTEXT = 512
 MAX_HORIZON = 3
 """Steps 1, 2 and 3 in one pass -- the three declared holds share a single forecast."""
@@ -96,13 +118,50 @@ def load_series(args: argparse.Namespace) -> dict[str, list[tuple[date, float]]]
     return out
 
 
+def build_predictor(timesfm: Any, numpy: Any, checkpoint: str) -> Callable[[list[Any]], Any]:
+    """Return ``predict(contexts) -> ndarray`` of shape ``(n_series, MAX_HORIZON)``.
+
+    The two families do not share an API. 3.0 exposes ``predict_batch`` and returns objects carrying
+    a ``.forecast`` attribute; 2.5 needs an explicit ``compile()`` first and returns a bare
+    ``(points, quantiles)`` tuple. Normalising both to one callable keeps a single forecast loop
+    below, so the record-building code cannot drift between arms -- the 3.0 arm has already shipped
+    one bug of exactly that shape, reading the 1-step forecast for all three holds.
+    """
+    if "timesfm-2.5" in checkpoint:
+        model = timesfm.TimesFM_2p5_200M_torch.from_pretrained(checkpoint)
+        model.compile(
+            timesfm.ForecastConfig(
+                max_context=CONTEXT,
+                max_horizon=MAX_HORIZON,
+                normalize_inputs=True,
+                per_core_batch_size=BATCH,
+            )
+        )
+
+        def predict_2p5(contexts: list[Any]) -> Any:
+            # `forecast` pads the batch internally and trims back to len(inputs), so the row count
+            # matches the caller's contexts. Asserted below rather than assumed.
+            points, _quantiles = model.forecast(horizon=MAX_HORIZON, inputs=list(contexts))
+            return numpy.asarray(points, dtype=float)
+
+        return predict_2p5
+
+    model = timesfm.TimesFM3Forecaster.from_pretrained(checkpoint)
+
+    def predict_3(contexts: list[Any]) -> Any:
+        outputs = model.predict_batch(contexts=contexts, horizon=MAX_HORIZON)
+        return numpy.asarray([output.forecast for output in outputs], dtype=float)
+
+    return predict_3
+
+
 def run(args: argparse.Namespace) -> int:
     import numpy
     import timesfm  # type: ignore[import-not-found]
 
     series_by_symbol = load_series(args)
-    print(f"loading      : {CHECKPOINT}", flush=True)
-    model = timesfm.TimesFM3Forecaster.from_pretrained(CHECKPOINT)
+    print(f"loading      : {args.checkpoint}", flush=True)
+    predict = build_predictor(timesfm, numpy, args.checkpoint)
 
     symbols = sorted(series_by_symbol)
     # Every decision date on which *every* subset name has enough context. Using the shared grid
@@ -158,10 +217,13 @@ def run(args: argparse.Namespace) -> int:
             keys.append((symbol, window[-1]))
         if not contexts:
             continue
-        for (symbol, last_close), output in zip(
-            keys, model.predict_batch(contexts=contexts, horizon=MAX_HORIZON), strict=True
-        ):
-            path = numpy.asarray(output.forecast, dtype=float)
+        paths = predict(contexts)
+        if len(paths) != len(keys):
+            raise RuntimeError(
+                f"forecaster returned {len(paths)} paths for {len(keys)} contexts on {on}; "
+                "the previous zip(..., strict=True) would have caught this and it must stay caught"
+            )
+        for (symbol, last_close), path in zip(keys, paths, strict=True):
             record = {
                 "on": on.isoformat(),
                 "symbol": symbol,
@@ -188,7 +250,7 @@ def run(args: argparse.Namespace) -> int:
     handle.close()
     payload = {
         "generated_at": datetime.now(UTC).isoformat(),
-        "checkpoint": CHECKPOINT,
+        "checkpoint": args.checkpoint,
         "fine_tuned": False,
         "context_length": CONTEXT,
         "max_horizon": MAX_HORIZON,
@@ -239,6 +301,16 @@ def main() -> int:
     )
     parser.add_argument("--subset-size", type=int, default=50)
     parser.add_argument(
+        "--checkpoint",
+        default=CHECKPOINT,
+        help=(
+            f"Forecasting checkpoint. Default {CHECKPOINT} (non-commercial licence, trials 4-6). "
+            f"Use {CHECKPOINT_2P5} for the Apache-2.0 arm (trials 7-9). Pair a non-default "
+            "checkpoint with a non-default --out: the default output path resumes from the 3.0 "
+            "partial file and would silently produce a mixed-checkpoint forecast set."
+        ),
+    )
+    parser.add_argument(
         "--stride",
         type=int,
         default=1,
@@ -254,7 +326,24 @@ def main() -> int:
     parser.add_argument(
         "--out", type=Path, default=ROOT_DIR / "reports/short_horizon/timesfm-forecasts.json"
     )
-    return run(parser.parse_args())
+    args = parser.parse_args()
+
+    # Fail closed on the one combination that destroys evidence silently.
+    #
+    # `run` resumes from `<out>.partial.jsonl` and skips every (symbol, date) already present. With
+    # a non-default checkpoint and the default output path, that resume reads the 3.0 partial file:
+    # the run would emit a forecast set that is part 3.0 and part 2.5, indistinguishable from either,
+    # and overwrite the evidence behind published trials 4-6 on the way. Nothing downstream could
+    # detect it -- the record schema carries no per-row checkpoint -- so it has to be refused here.
+    if args.checkpoint != CHECKPOINT and args.out == parser.get_default("out"):
+        parser.error(
+            f"--checkpoint {args.checkpoint} was given with the default --out ({args.out}). That "
+            "path holds the 3.0 forecasts behind published trials 4-6, and the run would resume "
+            "from their partial file and silently mix two checkpoints into one set. Pass an "
+            "explicit --out, e.g. reports/short_horizon/timesfm25-forecasts.json"
+        )
+
+    return run(args)
 
 
 if __name__ == "__main__":
