@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 from quant_system.data.market_data_evidence import canonical_sha256, decimal_text, utc_text
 from quant_system.modeling.errors import ModelingError, ModelingFailureCode
@@ -45,6 +45,31 @@ def _canonical_decimal_str(val: Decimal | float | int | str, name: str) -> str:
             f"Field '{name}' must be finite, got: {val!r}",
         )
     return decimal_text(d)
+
+
+#: Where the weights returned by :meth:`MizanModel.default_model` actually came from.
+#:
+#: This was stated only in that method's docstring, which meant nothing that ran could repeat it. A
+#: reader watching the paper book saw "Mizan Flagship Alpha (NSE 50) v1.0.0" -- a product name shared
+#: by every retrain -- while a *newer* flagship card described a different artifact entirely
+#: (`trial_mizan_h11_003`). Training a new artifact does not replace these running weights; only
+#: editing this file does. So the identity is published as data the session can print.
+#:
+#: The deflated Sharpe is the field that actually distinguishes one trial from the next, which is why
+#: it travels with the name rather than being left in a metrics blob.
+DEFAULT_MODEL_PROVENANCE: Final[dict[str, str]] = {
+    "source_trial_id": "trial_mizan_h11_002",
+    "source_evidence_model_id": "model_1f936eadcb8d44154f28af13",
+    "verdict": "RESEARCH_ONLY",
+    "deflated_sharpe_ratio": "0.175990",
+    "gate_min_deflated_sharpe": "0.95",
+    "ridge_sharpe": "-0.410755",
+    "note": (
+        "Frozen research weights. Not promotable and not expected to become so; the paper book "
+        "observes execution behaviour, not edge. Retraining publishes a new artifact and does not "
+        "change what this book runs."
+    ),
+}
 
 
 def validate_mizan_model_only(candidate_id: str, model_id: str | None = None) -> None:

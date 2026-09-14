@@ -506,9 +506,9 @@ HTML_DASHBOARD = """<!DOCTYPE html>
         <div class="kpi-sub text-muted">Min Buffer: 5% (₹50,000)</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Statutory NSE Fees Paid</div>
+        <div class="kpi-label">Statutory NSE Fees, Lifetime</div>
         <div class="kpi-val text-muted" id="kpi-fees">₹0.00</div>
-        <div class="kpi-sub text-muted">STT, Exchange, SEBI, GST, Stamp</div>
+        <div class="kpi-sub text-muted" id="kpi-fees-sub">STT, Exchange, SEBI, GST, Stamp</div>
       </div>
     </section>
 
@@ -665,6 +665,8 @@ HTML_DASHBOARD = """<!DOCTYPE html>
         <div class="kpi-sub text-muted">Friction: 0.224% Round-Trip</div>
       </div>
     </section>
+
+    <div id="xs-unpriced-note" hidden style="margin: 0 0 16px; padding: 10px 14px; border-left: 3px solid var(--accent-amber, #d98e04); background: rgba(217, 142, 4, 0.08); font-size: 12px; line-height: 1.5;"></div>
 
     <!-- XS Content Grid -->
     <div class="content-grid">
@@ -926,7 +928,20 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       document.getElementById("kpi-equity").textContent = formatINR(data.total_equity);
       document.getElementById("kpi-cash").textContent = formatINR(data.cash);
       document.getElementById("kpi-initial-cash").textContent = formatINR(data.initial_cash || 1000000);
-      document.getElementById("kpi-fees").textContent = formatINR(data.total_fees_paid || 0);
+      // Every other KPI in this row is lifetime. `total_fees_paid` is session-scoped, so pairing it
+      // with them showed "₹0.00" on a hold day against a lifetime loss that already contained
+      // ₹1,072.65 of fees. Prefer the lifetime figure, and say which one is on screen.
+      const lifetimeFees = data.lifetime_fees_paid;
+      const sessionFees = data.session_fees_paid ?? data.total_fees_paid ?? 0;
+      const feesSub = document.getElementById("kpi-fees-sub");
+      if (lifetimeFees === undefined) {
+        document.getElementById("kpi-fees").textContent = formatINR(sessionFees);
+        if (feesSub) feesSub.textContent = "This session only — lifetime not published";
+      } else {
+        document.getElementById("kpi-fees").textContent = formatINR(lifetimeFees);
+        if (feesSub) feesSub.textContent =
+          "Already inside Net P&L · " + formatINR(sessionFees) + " this session";
+      }
 
       // Net PnL formatting
       const netPnl = parseFloat(data.net_pnl || 0);
@@ -1022,8 +1037,17 @@ HTML_DASHBOARD = """<!DOCTYPE html>
         var modelVersion = data.model_version;
         var descriptor = (featureCount ? featureCount + "-Feature " : "") +
           "Cross-Sectional Ridge" + (modelVersion ? " (v" + modelVersion + ")" : "");
+        // The name and version are shared by every retrain of this product, so they do not identify
+        // what is running. The trial id does, and a newer flagship card describes a *different*
+        // trial: training one does not replace these frozen weights. Say which is loaded, and as of
+        // when the prices were marked, so neither is inferred.
+        var prov = data.model_provenance || {};
+        var trial = prov.source_trial_id ? " | Trial: " + prov.source_trial_id : "";
+        var verdict = prov.verdict ? " · " + prov.verdict : "";
+        var markedAt = data.timestamp_ist ? " | Marked: " + data.timestamp_ist : "";
         document.getElementById("header-sub").textContent =
-          "Model: " + modelName + " (" + universeName + ") | " + descriptor;
+          "Model: " + modelName + " (" + universeName + ") | " + descriptor +
+          trial + verdict + markedAt;
       }
       if (scored !== undefined && scored !== null) {
         document.getElementById("alpha-count").textContent =
@@ -1088,11 +1112,25 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       const openLegs = data.open || [];
       const runs = data.runs || [];
 
+      // `parseFloat(x) || 0` reads a holding nobody can value as worth zero. A leg flagged
+      // `unpriced` carries no market_value and no unrealized key at all, on purpose, so it is
+      // counted separately and its entry cost is disclosed rather than folded into either total.
       let totalMarketVal = 0;
       let totalUnrealized = 0;
+      const unpricedLegs = [];
+      let unpricedAtCost = 0;
       openLegs.forEach(leg => {
+        if (leg.unpriced || leg.market_value === undefined) {
+          unpricedLegs.push(leg);
+          unpricedAtCost += parseFloat(leg.entry_value) || 0;
+          return;
+        }
         totalMarketVal += parseFloat(leg.market_value) || 0;
         totalUnrealized += parseFloat(leg.unrealized) || 0;
+      });
+      (data.unresolved || []).forEach(leg => {
+        unpricedLegs.push(leg);
+        unpricedAtCost += parseFloat(leg.entry_value) || 0;
       });
 
       const totalEquity = cash + totalMarketVal;
@@ -1103,6 +1141,22 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       document.getElementById("xs-kpi-cash").textContent = formatINR(cash);
       document.getElementById("xs-kpi-market-val").textContent = formatINR(totalMarketVal);
       document.getElementById("xs-kpi-open-legs").textContent = openLegs.length + " active open legs";
+
+      const unpricedElem = document.getElementById("xs-unpriced-note");
+      if (unpricedElem) {
+        if (unpricedLegs.length === 0) {
+          unpricedElem.hidden = true;
+          unpricedElem.textContent = "";
+        } else {
+          unpricedElem.hidden = false;
+          const names = unpricedLegs.map(l => escapeHtml(l.symbol)).join(", ");
+          unpricedElem.innerHTML =
+            "<strong>Equity and P&amp;L above exclude " + unpricedLegs.length +
+            " unpriced holding(s):</strong> " + names + ". Entry cost " +
+            formatINR(unpricedAtCost) +
+            " is still committed; its current value is unknown — not zero, and not break-even.";
+        }
+      }
 
       const pnlElem = document.getElementById("xs-kpi-pnl");
       const pnlPctElem = document.getElementById("xs-kpi-pnl-pct");
@@ -1124,6 +1178,19 @@ HTML_DASHBOARD = """<!DOCTYPE html>
         posBody.innerHTML = '<tr><td colspan="7" class="empty-state">No active open legs in XS-Monthly watch.</td></tr>';
       } else {
         posBody.innerHTML = openLegs.map(leg => {
+          if (leg.unpriced || leg.market_value === undefined) {
+            // Every numeric cell is refused, not zeroed. A "0.00%" or "₹0" here would be read as a
+            // measurement, which is the assertion this whole path exists to avoid making.
+            return `
+            <tr>
+              <td><strong>${escapeHtml(leg.symbol)}</strong></td>
+              <td class="text-right">${leg.shares}</td>
+              <td class="text-right">₹${parseFloat(leg.entry_open).toLocaleString('en-IN', {minimumFractionDigits: 1})}</td>
+              <td class="text-right text-muted" colspan="3" title="${escapeHtml(leg.unpriced_reason || '')}">unpriced — value unknown</td>
+              <td>${escapeHtml(leg.entry_date)}</td>
+            </tr>
+          `;
+          }
           const uPnl = parseFloat(leg.unrealized) || 0;
           const uPnlClass = uPnl >= 0 ? "text-green" : "text-red";
           const uPnlSign = uPnl >= 0 ? "+" : "";

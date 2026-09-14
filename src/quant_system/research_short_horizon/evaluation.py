@@ -11,17 +11,33 @@ manufactured:
 3. **Fit per fold, on training rows only** -- including the standardisation. Scaling fitted on the
    whole sample leaks the validation distribution into training, and it leaks it *silently*.
 4. **Collect out-of-sample predictions** from every fold's validation segment.
-5. **Calibrate abstention once**, on those pooled out-of-sample predictions, never on the holdout.
-6. **Score against baselines** on identical decisions, with identical costs.
+5. **Calibrate abstention on strictly earlier folds**, and apply that threshold forward.
+6. **Score against baselines** on identical decisions, with identical costs, on a capital-constrained
+   portfolio ledger.
 
 The holdout is not touched by anything in this module. Evaluating it is a separate, explicit call the
 caller makes exactly once, after the candidate is frozen.
+
+Two things step 5 and step 6 used to get wrong
+----------------------------------------------
+Both produced numbers that looked out-of-sample and were not, and neither would have raised anything.
+
+**Step 5 pooled every fold.** One threshold was chosen on all folds' out-of-sample predictions and
+then scored on those same rows. Choosing on a sample and measuring on it are one operation there: the
+reported figure includes the selection. The pooled grid is still computed and published, because the
+search it represents is a real cost that a later reader must be able to price -- but the applied
+threshold for each fold now comes only from folds before it, and the first fold, having nothing
+before it, holds cash.
+
+**Step 6 compounded overlapping positions.** Decisions are daily and each is held ``held_sessions``
+sessions, so consecutive dates overlap; averaging each date's cohort and compounding those averages
+in sequence runs the book at ``held_sessions`` times its capital. See :func:`score_decisions`.
 
 Why a ridge, and why no hyperparameter search
 ---------------------------------------------
 The declared candidate is "a simple return-prediction model". A ridge with one fixed penalty is that:
 linear, closed-form, no seeds, no early stopping, nothing to tune. Searching the penalty would be
-more trials against the frozen budget, and the budget is six.
+more trials against the frozen budget in ``reports/short_horizon/TRIAL-LEDGER.md``.
 """
 
 from __future__ import annotations
@@ -34,7 +50,6 @@ from decimal import Decimal
 import numpy as np
 
 from quant_system.research_short_horizon.abstention import (
-    AbstentionPolicy,
     CalibrationOutcome,
     calibrate_threshold,
 )
@@ -80,6 +95,21 @@ class StrategyScore:
     sharpe: float
     max_drawdown: float
     hit_rate: float
+    portfolio_periods: int = 0
+    """Non-overlapping portfolio periods the compounded figures were computed over.
+
+    This is the sample length ``total_net_return``, ``sharpe`` and ``max_drawdown`` actually rest on,
+    and it is far smaller than the decision-date count: with ``held_sessions`` tranches the book
+    turns over once every ``held_sessions`` sessions. Published so a deflated Sharpe cannot be
+    computed against the wrong ``n``.
+    """
+
+    dropped_dates: int = 0
+    """Trailing decision dates outside the last complete period, excluded from compounding.
+
+    A partial block has fewer than ``held_sessions`` tranche settlements in it, so scoring it would
+    credit the book with a period it only partly participated in.
+    """
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -92,6 +122,8 @@ class StrategyScore:
             "sharpe": round(self.sharpe, 6),
             "max_drawdown": round(self.max_drawdown, 6),
             "hit_rate": round(self.hit_rate, 6),
+            "portfolio_periods": self.portfolio_periods,
+            "dropped_dates": self.dropped_dates,
         }
 
 
@@ -114,6 +146,15 @@ class EvaluationResult:
     abstention rule turns into cash. That is a silent degradation: the arm looks selective when it is
     really uninformed, so the count travels with the result rather than being absorbed into it.
     """
+    applied_policies: list[dict[str, str]] = field(default_factory=list)
+    """The threshold actually used on each fold, and what it was calibrated on.
+
+    ``calibration`` above is the pooled grid, kept for disclosure of the search. It is **not** what
+    scored the candidate: choosing a threshold on all folds' out-of-sample predictions and then
+    reporting that threshold's score on the same rows measures the selection, not the rule. Each
+    entry here was fitted on strictly earlier folds; fold 0 held cash.
+    """
+
     scores: list[StrategyScore] = field(default_factory=list)
 
     @property
@@ -154,13 +195,35 @@ def score_decisions(
     take: Sequence[bool],
     *,
     periods_per_year: float,
+    held_sessions: int = 1,
 ) -> StrategyScore:
     """Score one strategy over the decisions it was given.
 
     ``mean_net_return_per_decision`` divides by **every** decision faced, not by the trades taken.
     Dividing by trades rewards abstaining down to a handful of lucky calls; dividing by decisions
     prices the cash periods at the zero they actually earn.
+
+    Compounding is capital-constrained
+    ----------------------------------
+    Decisions are made every session but each one is held for ``held_sessions``, so consecutive
+    decision dates overlap. An earlier version averaged each date's cohort and compounded those
+    averages as if they were consecutive, non-overlapping periods. At hold 3 that silently ran the
+    book at three times its capital and produced an equity path no funded portfolio could have
+    followed -- which is what ``total_net_return`` and ``max_drawdown`` were computed from.
+
+    The fix is the standard staggered-tranche ledger. Capital is split into ``held_sessions`` equal
+    tranches; tranche ``i % held_sessions`` enters on date ``i`` and settles ``held_sessions``
+    sessions later, so exactly one tranche settles per session and total exposure never exceeds one.
+    A block of ``held_sessions`` consecutive dates is then one **non-overlapping** portfolio period in
+    which every tranche settles exactly once, and the block's return is the equal-weighted mean of its
+    dates' cohort returns. Those blocks may legitimately be compounded, and ``periods_per_year =
+    252 / held_sessions`` is then the matching annualisation rather than an assumption.
+
+    A trailing partial block is dropped rather than scored: fewer than ``held_sessions`` settlements
+    means the book only partly participated in it. The count is reported as ``dropped_dates``.
     """
+    if held_sessions < 1:
+        raise ValueError(f"{strategy_id}: held_sessions must be >= 1, got {held_sessions}")
     total = len(decisions)
     if total == 0:
         raise ValueError(f"{strategy_id}: cannot score zero decisions")
@@ -176,9 +239,18 @@ def score_decisions(
     by_date: dict[date, list[Decimal]] = {}
     for decision, value in zip(decisions, realised, strict=True):
         by_date.setdefault(decision.on, []).append(value)
-    periods = [
+    daily = [
         float(sum(values, start=Decimal(0)) / Decimal(len(values)))
         for _, values in sorted(by_date.items())
+    ]
+
+    # One block = held_sessions consecutive dates = one full turn of the staggered book. Every
+    # tranche settles exactly once inside it, so blocks do not overlap and may be compounded.
+    complete = (len(daily) // held_sessions) * held_sessions
+    dropped = len(daily) - complete
+    periods = [
+        sum(daily[start : start + held_sessions]) / held_sessions
+        for start in range(0, complete, held_sessions)
     ]
 
     series = np.asarray(periods, dtype=float)
@@ -200,6 +272,8 @@ def score_decisions(
         sharpe=sharpe,
         max_drawdown=drawdown,
         hit_rate=(wins / trades) if trades else 0.0,
+        portfolio_periods=int(series.size),
+        dropped_dates=dropped,
     )
 
 
@@ -237,6 +311,7 @@ def evaluate_walk_forward(
 
     out_of_sample: list[Decision] = []
     scores: list[float] = []
+    fold_spans: list[tuple[int, int]] = []
     train_rows = validation_rows = purged_rows = embargoed_rows = missing = 0
 
     for fold in folds:
@@ -264,20 +339,66 @@ def evaluate_walk_forward(
                 [predictions.get((row.on, row.symbol), 0.0) for row in validation], dtype=float
             )
 
+        fold_spans.append((len(out_of_sample), len(out_of_sample) + len(validation)))
         out_of_sample.extend(validation)
         scores.extend(float(value) for value in fold_scores)
 
     if not out_of_sample:
         raise ValueError("no out-of-sample decision survived the fold construction")
 
+    decimal_scores = [Decimal(str(value)) for value in scores]
+    realised = [row.net_return for row in out_of_sample]
+
+    # Disclosure only. Pooling every fold's out-of-sample prediction and choosing the best threshold
+    # on it, then reporting that threshold's score on the same rows, is selection and measurement on
+    # one sample: a development result, not an out-of-sample one. It is still computed and published
+    # because the grid it explored is part of what the search cost -- but it does not drive a single
+    # decision below.
     calibration = calibrate_threshold(
-        [Decimal(str(value)) for value in scores],
-        [row.net_return for row in out_of_sample],
-        partition_label="walk-forward validation folds (holdout untouched)",
+        decimal_scores,
+        realised,
+        partition_label=(
+            "walk-forward validation folds, POOLED - disclosure only, not applied "
+            "(holdout untouched)"
+        ),
         minimum_trades=minimum_trades,
         long_only=True,
     )
-    policy = calibration.policy
+
+    # What is actually applied: for each fold, a threshold calibrated on strictly earlier folds. The
+    # first fold has nothing before it, so it sits in cash rather than borrowing a threshold that
+    # could only have come from its own outcome.
+    applied_take: list[bool] = []
+    applied_policies: list[dict[str, str]] = []
+    for index, (start, end) in enumerate(fold_spans):
+        if start == 0:
+            applied_take.extend([False] * (end - start))
+            applied_policies.append(
+                {"fold": str(index), "threshold": "", "basis": "no earlier fold; held cash"}
+            )
+            continue
+        try:
+            past = calibrate_threshold(
+                decimal_scores[:start],
+                realised[:start],
+                partition_label=f"folds < {index} only",
+                minimum_trades=minimum_trades,
+                long_only=True,
+            )
+        except ValueError as exc:
+            applied_take.extend([False] * (end - start))
+            applied_policies.append(
+                {"fold": str(index), "threshold": "", "basis": f"uncalibratable: {exc}"}
+            )
+            continue
+        applied_policies.append(
+            {
+                "fold": str(index),
+                "threshold": str(past.policy.threshold),
+                "basis": past.policy.calibrated_on,
+            }
+        )
+        applied_take.extend(past.policy.acts_on(value) for value in decimal_scores[start:end])
 
     result = EvaluationResult(
         held_sessions=held_sessions,
@@ -289,17 +410,25 @@ def evaluate_walk_forward(
         embargoed_rows=embargoed_rows,
         calibration=calibration,
         missing_predictions=missing,
+        applied_policies=applied_policies,
     )
-    result.scores = _all_scores(out_of_sample, scores, policy, periods_per_year=periods_per_year)
+    result.scores = _all_scores(
+        out_of_sample,
+        scores,
+        applied_take,
+        periods_per_year=periods_per_year,
+        held_sessions=held_sessions,
+    )
     return result
 
 
 def _all_scores(
     decisions: Sequence[Decision],
     scores: Sequence[float],
-    policy: AbstentionPolicy,
+    candidate_take: Sequence[bool],
     *,
     periods_per_year: float,
+    held_sessions: int,
 ) -> list[StrategyScore]:
     """The candidate and every baseline, over the identical decision set.
 
@@ -310,25 +439,45 @@ def _all_scores(
         score_decisions(
             "CANDIDATE",
             decisions,
-            [policy.acts_on(Decimal(str(value))) for value in scores],
+            candidate_take,
             periods_per_year=periods_per_year,
+            held_sessions=held_sessions,
         ),
         score_decisions(
             "CANDIDATE_NO_ABSTENTION",
             decisions,
             [value > 0 for value in scores],
             periods_per_year=periods_per_year,
+            held_sessions=held_sessions,
         ),
         score_decisions(
-            "CASH", decisions, [False] * len(decisions), periods_per_year=periods_per_year
+            "CASH",
+            decisions,
+            [False] * len(decisions),
+            periods_per_year=periods_per_year,
+            held_sessions=held_sessions,
         ),
+        # Renamed from BUY_AND_HOLD, which it never was. It re-enters every name on every decision
+        # date and pays the round trip each time; a buy-once passive portfolio pays it twice in
+        # total. Calling this "buy and hold" made the candidate's cost discipline look like an
+        # achievement against a straw man, and made its sign flips across horizons look like
+        # statements about market regimes.
+        #
+        # A true buy-once baseline is not constructible from `Decision`: the contract carries one
+        # cost-charged holding-period return per row and no price level, so there is nothing to
+        # compound a held position from. That is a stated gap, not one to fill with an estimate.
         score_decisions(
-            "BUY_AND_HOLD", decisions, [True] * len(decisions), periods_per_year=periods_per_year
+            "ALWAYS_TRADE",
+            decisions,
+            [True] * len(decisions),
+            periods_per_year=periods_per_year,
+            held_sessions=held_sessions,
         ),
         score_decisions(
             "PREVIOUS_SIGN",
             decisions,
             [row.previous_return > 0 for row in decisions],
             periods_per_year=periods_per_year,
+            held_sessions=held_sessions,
         ),
     ]

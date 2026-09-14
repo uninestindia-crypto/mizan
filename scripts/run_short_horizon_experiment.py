@@ -60,11 +60,21 @@ from quant_system.research_short_horizon.evaluation import (  # noqa: E402
     evaluate_walk_forward,
 )
 
-DECLARED_TRIALS = 6
-"""Two model families x three holds. Used as the multiplicity count in every deflation below."""
+DECLARED_TRIALS = 9
+"""Every SPENT trial in ``reports/short_horizon/TRIAL-LEDGER.md``. The multiplicity count below.
+
+Three model families x three holds: QuantOS ridge (1-3), TimesFM 3.0 (4-6), TimesFM 2.5 (7-9). This
+read 6 while the ledger had grown to 9, so every DSR a fresh run published was deflated against a
+search two thirds its real size. The ledger's rows 7-9 already carried the corrected figures in
+their text, computed by hand; nothing that ran agreed with them.
+
+The drift is now a test failure rather than a discrepancy someone has to notice:
+``tests/test_short_horizon_trial_count.py`` reads the ledger and refuses to let the two diverge.
+The calibration grid (C1) and the NOISE control are deliberately not counted -- see the ledger.
+"""
 
 RIDGE_PENALTY = 1.0
-"""One fixed penalty, not searched. Searching it would be more trials against a budget of six."""
+"""One fixed penalty, not searched. Searching it would be more trials against the frozen budget."""
 
 NOISE_SEED = 20260910
 """Fixed seed for the noise control, so "what does this configuration award pure noise?" reproduces."""
@@ -198,13 +208,27 @@ def split_holdout(
 
 
 def summarise(result: EvaluationResult, *, sample_periods: int) -> dict[str, Any]:
-    """Everything one trial produced, in a shape the report and the ledger both read."""
+    """Everything one trial produced, in a shape the report and the ledger both read.
+
+    ``sample_periods`` is ignored for the deflation and kept only in the payload for comparison with
+    what earlier runs used. Two things were wrong with feeding it to the DSR:
+
+    - it counted every **decision date** in the development partition, while the compounded Sharpe
+      rests on non-overlapping portfolio periods -- at hold 3 that overstated the sample by about 3x,
+      and the sampling error the deflation subtracts shrinks as 1/sqrt(n), so a larger n makes a
+      candidate look *better*;
+    - ``deflated_sharpe_ratio`` de-annualises the Sharpe with ``periods_per_year``, which defaulted
+      to 252, while the Sharpe reaching it had been annualised with ``252 / held_sessions``. The two
+      conventions disagreed by sqrt(held_sessions) and nothing reconciled them.
+    """
     candidate = result.candidate
     gate = GatePolicyV1(policy_id="short-horizon-research-v1")
+    scored_periods = max(candidate.portfolio_periods, 3)
     dsr = OverfittingDiagnostics.deflated_sharpe_ratio(
         estimated_sharpe=candidate.sharpe,
         num_trials=DECLARED_TRIALS,
-        sample_length_bars=max(sample_periods, 3),
+        sample_length_bars=scored_periods,
+        periods_per_year=round(252 / result.held_sessions),
     )
     passes = (
         dsr >= float(gate.min_deflated_sharpe)
@@ -232,7 +256,12 @@ def summarise(result: EvaluationResult, *, sample_periods: int) -> dict[str, Any
             for t, m, n in result.calibration.scores
         ],
         "abstention_refused": [str(t) for t in result.calibration.refused],
+        "abstention_pooled_is_disclosure_only": True,
+        "abstention_applied_per_fold": result.applied_policies,
         "deflated_sharpe_ratio": round(dsr, 6),
+        "dsr_sample_periods": scored_periods,
+        "dsr_periods_per_year": round(252 / result.held_sessions),
+        "development_decision_dates": sample_periods,
         "multiplicity_count": DECLARED_TRIALS,
         "gate_policy_id": gate.policy_id,
         "gate_min_deflated_sharpe": gate.min_deflated_sharpe,

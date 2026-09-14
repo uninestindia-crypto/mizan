@@ -51,7 +51,16 @@ def print_pnl_report() -> None:
     print(
         f"  TOTAL NET P&L          : Rs {pnl_sign}{data.get('net_pnl', '0.00'):>12} ({pnl_sign}{data.get('net_pnl_pct', 0):.2f}%)"
     )
-    print(f"  Statutory NSE Fees Paid: Rs {data.get('total_fees_paid', '0.00'):>12}")
+    # Two figures, because the block above mixes two periods. Every P&L line here is lifetime, and
+    # `total_fees_paid` is this session's fills alone -- so on a hold day this printed "0.00" beside
+    # a lifetime loss that already had 1,072.65 of fees inside it.
+    session_fees = data.get("session_fees_paid", data.get("total_fees_paid", "0.00"))
+    lifetime_fees = data.get("lifetime_fees_paid")
+    print(f"  NSE Fees, this session : Rs {session_fees:>12}")
+    if lifetime_fees is None:
+        print("  NSE Fees, lifetime     :    (not published by this session's payload)")
+    else:
+        print(f"  NSE Fees, lifetime     : Rs {lifetime_fees:>12}  (already inside TOTAL NET P&L)")
     print("-" * 80)
 
     positions = data.get("positions_detail", [])

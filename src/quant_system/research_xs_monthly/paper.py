@@ -11,8 +11,10 @@ open/closed legs in a JSON state file the runner owns. Stdlib + bars/screen.
 
 from __future__ import annotations
 
+import json
 from datetime import date
 from decimal import Decimal, localcontext
+from pathlib import Path
 from typing import Any, Final
 
 from quant_system.research_xs_monthly.bars import Bar
@@ -39,6 +41,83 @@ FROZEN_RULE: Final = {
 #: Separate notional book for the XS-monthly watch. Display-only accounting:
 #: no orders, no shared ledger, no touch on paper_pilot/paper_portfolio.
 NOTIONAL_CAPITAL_INR: Final = Decimal("1000000")
+
+#: Issuer-filed entitlement ratios for ratio-less NSE corporate actions. Read-only input, never
+#: written here. See the file's own ``_comment`` for why a ratio may never be inferred from price.
+ENTITLEMENT_AUTHORITY: Final = Path("data/authorities/nse-demerger-entitlements.json")
+
+ENTITLEMENT_SCHEMA_ID: Final = "quantos.demerger_entitlements"
+
+
+def load_unpriced_entitlements(
+    positions: list[dict[str, Any]],
+    bars_by_symbol: dict[str, list[Bar]],
+    authority_path: Path = ENTITLEMENT_AUTHORITY,
+) -> dict[str, str]:
+    """Return ``{symbol: reason}`` for every held leg whose window spans a corporate action.
+
+    A leg qualifies when the issuer filed an entitlement whose ex-date falls **after** that leg's
+    entry — i.e. the book held the parent across the event and received something in exchange that
+    ``shares * latest_open`` cannot express.
+
+    Two distinct reasons come back, and the distinction matters:
+
+    - the resulting company has no price in this repository, so the entitlement genuinely cannot be
+      valued from available data;
+    - the resulting company *is* priced, but this book represents a leg as one symbol and one share
+      count, so it still cannot carry the second instrument.
+
+    Both refuse to value the leg. The second is a stated limitation of this book rather than a gap in
+    the data, and saying which one applies is the difference between "we cannot know" and "we have
+    not built it".
+
+    Fails closed. A missing or malformed authority raises rather than returning an empty map: an
+    empty map is indistinguishable from "no corporate actions occurred", and quietly returning one is
+    the exact shape of the defect this function exists to prevent (a fetch failure that wrote ``[]``
+    and was then trusted forever — see ``CURRENT.md``, corporate-action authority repair ``ee1b0cb3``).
+    """
+    if not authority_path.is_file():
+        raise ScreenError(f"MISSING_AUTHORITY: no entitlement authority at {authority_path}")
+    try:
+        payload = json.loads(authority_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ScreenError(f"BAD_AUTHORITY: {authority_path} is not valid JSON: {exc}") from exc
+    if payload.get("schema_id") != ENTITLEMENT_SCHEMA_ID:
+        raise ScreenError(
+            f"BAD_AUTHORITY: {authority_path} schema_id "
+            f"{payload.get('schema_id')!r} != {ENTITLEMENT_SCHEMA_ID!r}"
+        )
+
+    earliest_entry: dict[str, date] = {}
+    for pos in positions:
+        symbol = str(pos["symbol"])
+        entry_date = date.fromisoformat(str(pos["entry_date"]))
+        if symbol not in earliest_entry or entry_date < earliest_entry[symbol]:
+            earliest_entry[symbol] = entry_date
+
+    flagged: dict[str, str] = {}
+    for entry in payload.get("entitlements", []):
+        symbol = str(entry["symbol"])
+        if symbol not in earliest_entry:
+            continue
+        ex_date = date.fromisoformat(str(entry["ex_date"]))
+        if ex_date <= earliest_entry[symbol]:
+            continue  # the event predates entry; the entry price already reflects it
+        resulting = str(entry.get("resulting_symbol", ""))
+        ratio = str(entry.get("ratio", "?"))
+        resulting_bars = bars_by_symbol.get(resulting, [])
+        if any(bar.exchange_date >= ex_date for bar in resulting_bars):
+            flagged[symbol] = (
+                f"ENTITLEMENT_NOT_REPRESENTABLE: held across {symbol} ex-date {ex_date.isoformat()}, "
+                f"entitled to {ratio} x {resulting}. That company is priced here, but a leg in this "
+                f"book carries one symbol and one share count and cannot hold the second instrument."
+            )
+        else:
+            flagged[symbol] = (
+                f"ENTITLEMENT_UNPRICED: held across {symbol} ex-date {ex_date.isoformat()}, entitled "
+                f"to {ratio} x {resulting}, which has no price in this repository."
+            )
+    return flagged
 
 
 def size_positions(
@@ -209,6 +288,16 @@ def settle_positions(
     action of unknown size inside the window. Those legs come back marked ``unpriced`` instead of
     valued at ``shares * latest_open``, which would assert the entitlement is worthless. Defaults to
     empty, so existing callers are unaffected. See :func:`_book_open`.
+
+    A flagged leg is refused at **both** ends of its life. While it is held it is marked ``unpriced``;
+    when its hold matures it goes to ``unresolved`` rather than ``closed``, because closing it would
+    run the same false quote through ``forward_net`` and convert an unevidenced mark into realized
+    cash. An unresolved leg pays no proceeds -- the capital stays committed and unvaluable, which is
+    what actually happened.
+
+    It must leave ``open`` all the same. The runner opens new positions only when the book is flat,
+    so a leg that stayed open forever would silently stop the book rebalancing: a worse failure than
+    the mispricing this function exists to prevent.
     """
     unpriced = unpriced_entitlements or {}
     calendar = build_calendar(bars_by_symbol)
@@ -216,6 +305,7 @@ def settle_positions(
     pos_of = {d: i for i, d in enumerate(calendar)}
     closed: list[dict[str, Any]] = []
     opened: list[dict[str, Any]] = []
+    unresolved: list[dict[str, Any]] = []
     for pos in positions:
         symbol = pos["symbol"]
         entry_open = Decimal(str(pos["entry_open"]))
@@ -224,6 +314,21 @@ def settle_positions(
         if entry_date not in pos_of:
             continue
         exit_pos = pos_of[entry_date] + hold
+        reason = unpriced.get(symbol)
+        if reason is not None and exit_pos < len(calendar):
+            unresolved.append(
+                {
+                    "symbol": symbol,
+                    "entry_date": pos["entry_date"],
+                    "entry_open": str(entry_open),
+                    "matured_on": calendar[exit_pos].isoformat(),
+                    "shares": int(pos.get("shares", 0)),
+                    "entry_value": str(pos.get("entry_value", "0")),
+                    "unpriced": True,
+                    "unpriced_reason": reason,
+                }
+            )
+            continue
         if exit_pos < len(calendar):
             net, locked = forward_net(idx, calendar, pos_of[entry_date], exit_pos)
             if net is None:
@@ -257,7 +362,6 @@ def settle_positions(
                 "gross_mark": str(gross),
                 "cost_pending": str(COST_RATIO),
             }
-            reason = unpriced.get(symbol)
             if reason is not None:
                 # gross_mark is a price ratio carrying the same false assertion as market_value, so
                 # it is removed rather than left where a reader would take it for a return.
@@ -267,4 +371,55 @@ def settle_positions(
             if "shares" in pos:
                 leg.update(_book_open(pos, latest_bar.open, reason))
             opened.append(leg)
-    return {"closed": closed, "open": opened, "asof": calendar[-1].isoformat()}
+    return {
+        "closed": closed,
+        "open": opened,
+        "unresolved": unresolved,
+        "asof": calendar[-1].isoformat(),
+    }
+
+
+def book_value(
+    open_legs: list[dict[str, Any]],
+    unresolved_legs: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Split a book's holdings into what can be valued and what cannot.
+
+    Returns ``priced_market_value`` (the sum over legs that carry a ``market_value``),
+    ``unpriced_at_cost`` (the entry consideration still committed to holdings nobody can value) and
+    ``unpriced`` (those holdings, named, with their reasons).
+
+    The two are deliberately never added together. Folding an unvaluable holding in at cost asserts
+    it broke even; leaving it out of a single headline number asserts it is worthless. Both are
+    claims no evidence supports, so the caller is handed the parts and required to say which it is
+    showing.
+
+    This is also why the sum here reads ``leg["market_value"]`` rather than
+    ``leg.get("market_value", 0)``. A missing value is not zero, and the defaulting idiom is what
+    turned an unpriced HEG entitlement into a INR 6,124.30 loss in the first place.
+    """
+    priced = Decimal(0)
+    unpriced: list[dict[str, Any]] = []
+    for leg in open_legs:
+        if leg.get("unpriced") or "market_value" not in leg:
+            unpriced.append(leg)
+            continue
+        priced += Decimal(str(leg["market_value"]))
+    unpriced.extend(unresolved_legs or [])
+    at_cost = sum(
+        (Decimal(str(leg.get("entry_value", "0"))) for leg in unpriced),
+        Decimal(0),
+    )
+    return {
+        "priced_market_value": priced,
+        "unpriced_at_cost": at_cost,
+        "unpriced": [
+            {
+                "symbol": leg["symbol"],
+                "shares": leg.get("shares"),
+                "entry_value": str(leg.get("entry_value", "0")),
+                "reason": leg.get("unpriced_reason", "UNPRICED: no market_value on this leg"),
+            }
+            for leg in unpriced
+        ],
+    }

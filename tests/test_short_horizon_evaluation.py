@@ -200,7 +200,7 @@ def test_baselines_are_scored_on_the_identical_decision_set() -> None:
     result = _run(_decisions(400))
     counts = {score.strategy_id: score.decisions for score in result.scores}
     assert len(set(counts.values())) == 1, f"decision counts differ across strategies: {counts}"
-    assert {"CANDIDATE", "CANDIDATE_NO_ABSTENTION", "CASH", "BUY_AND_HOLD", "PREVIOUS_SIGN"} <= set(
+    assert {"CANDIDATE", "CANDIDATE_NO_ABSTENTION", "CASH", "ALWAYS_TRADE", "PREVIOUS_SIGN"} <= set(
         counts
     )
 
@@ -214,11 +214,20 @@ def test_cash_is_exactly_flat() -> None:
     assert cash.max_drawdown == 0.0
 
 
-def test_buy_and_hold_takes_every_decision() -> None:
+def test_always_trade_takes_every_decision() -> None:
+    """Renamed from BUY_AND_HOLD, which it never was.
+
+    It re-enters every name on every decision date and pays the round trip each time; a buy-once
+    passive portfolio pays it twice in total. The old name made this a straw man to beat and made
+    the candidate's sign flips across horizons read as statements about market regimes.
+    """
     result = _run(_decisions(400))
-    hold = next(s for s in result.scores if s.strategy_id == "BUY_AND_HOLD")
+    hold = next(s for s in result.scores if s.strategy_id == "ALWAYS_TRADE")
     assert hold.trades == hold.decisions
     assert hold.exposure == pytest.approx(1.0)
+    assert not any(s.strategy_id == "BUY_AND_HOLD" for s in result.scores), (
+        "the misleading label must be gone, not aliased"
+    )
 
 
 def test_the_abstention_policy_is_long_only() -> None:
@@ -239,8 +248,8 @@ def test_supplied_predictions_replace_the_ridge_without_changing_the_decision_se
     assert supplied.candidate.sharpe > fitted.candidate.sharpe, (
         "an oracle must beat a ridge on noise, or the predictions are not being used"
     )
-    supplied_hold = next(s for s in supplied.scores if s.strategy_id == "BUY_AND_HOLD")
-    fitted_hold = next(s for s in fitted.scores if s.strategy_id == "BUY_AND_HOLD")
+    supplied_hold = next(s for s in supplied.scores if s.strategy_id == "ALWAYS_TRADE")
+    fitted_hold = next(s for s in fitted.scores if s.strategy_id == "ALWAYS_TRADE")
     assert supplied_hold.to_dict() == fitted_hold.to_dict(), (
         "baselines must be identical across arms -- they do not depend on the forecaster"
     )

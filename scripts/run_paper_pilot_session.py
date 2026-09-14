@@ -184,6 +184,33 @@ def _paisa_str(val: Decimal | float | int) -> str:
     return f"{Decimal(str(val)).quantize(_PAISA)}"
 
 
+def model_provenance(model: Any) -> dict[str, str]:
+    """Name the exact artifact this session is running, not just the product it belongs to.
+
+    `model_name` and `version` are stable across retrains -- every Mizan flagship is "Mizan Flagship
+    Alpha (NSE 50) v1.0.0" -- so a reader could not tell which weights were loaded, and a newer
+    flagship model card describing a *different* trial made that worse rather than better. The card
+    hash pins the artifact cryptographically; the trial id, where it is known, names it in a form a
+    human can look up in the evidence store.
+    """
+    card = getattr(model, "model_card", None)
+    payload: dict[str, str] = {
+        "model_id": model.config.model_id,
+        "candidate_id": model.config.candidate_id,
+        "version": model.config.version,
+        "feature_schema": (
+            f"{model.config.feature_schema_id} (v{model.config.feature_schema_version})"
+        ),
+        "score_threshold": str(model.config.score_threshold),
+    }
+    if card is not None:
+        payload["verdict"] = card.verdict
+        payload["model_card_hash"] = card.model_card_hash
+    if model.config.model_id == "mizan-v1":
+        payload.update(DEFAULT_MODEL_PROVENANCE)
+    return payload
+
+
 def marks_for_open_positions(
     quoted: dict[str, Decimal],
     positions: Mapping[str, Any],
@@ -714,6 +741,7 @@ from quant_system.execution.paper_portfolio import (  # noqa: E402
     state_from_ledger,
     state_hash_on_disk,
 )
+from quant_system.modeling.mizan_model import DEFAULT_MODEL_PROVENANCE  # noqa: E402
 
 ALLOWED_SYMBOLS = NIFTY500_SYMBOLS
 
@@ -1727,7 +1755,22 @@ def run_paper_session(
                 "unrealized_pnl": _paisa_str(snap.unrealized_pnl),
                 "net_pnl": _paisa_str(net_pnl),
                 "net_pnl_pct": round(net_pnl_pct, 3),
+                # `total_fees` is this session's fills only. `net_pnl` above is lifetime (equity
+                # minus the book's starting capital), so on a hold day the block showed a lifetime
+                # loss of -13,729.82 beside "Statutory NSE Fees Paid: 0.00" -- while 1,072.65 of fees
+                # had in fact been paid and were already inside that loss. Both are published, each
+                # saying which period it covers, so neither can be read as the other.
                 "total_fees_paid": _paisa_str(total_fees),
+                "session_fees_paid": _paisa_str(total_fees),
+                # Carried + today. `portfolio` here is still the state resumed at session start; it
+                # is not rebuilt from the ledger until after this loop ends (`state_from_ledger`),
+                # so its `total_fees` does not yet include anything filled today.
+                "lifetime_fees_paid": _paisa_str(portfolio.total_fees + total_fees),
+                "fees_basis": (
+                    "session_fees_paid covers this session's fills; lifetime_fees_paid is the "
+                    "book's cumulative cost and is already deducted inside net_pnl"
+                ),
+                "model_provenance": model_provenance(model),
                 "open_positions": {
                     s: p.quantity for s, p in engine.positions.items() if p.quantity != 0
                 },
@@ -1994,6 +2037,8 @@ def run_paper_session(
             "architecture": model.config.model_type,
             "feature_schema": f"{model.config.feature_schema_id} (v{model.config.feature_schema_version})",
             "feature_count": len(model.config.feature_names),
+            # Which artifact, not just which product. See `model_provenance`.
+            "provenance": model_provenance(model),
         },
         "universe": universe,
         "capital": {
