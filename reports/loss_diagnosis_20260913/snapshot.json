@@ -1,0 +1,50 @@
+{
+    "sources":  [
+                    {
+                        "path":  "logs/paper_runs/live_paper_status.json",
+                        "sha256":  "927ACDD31E3A612B7169D4EB6DEAF4D09CAAD6725794BB4A749A175D70563E6D"
+                    },
+                    {
+                        "path":  "logs/paper_runs/portfolio_state.json",
+                        "sha256":  "E289C45F86299A73A56CCADFE2130CAAE33C6F7702AE2FAC2639D4AFE4FDAC6A"
+                    },
+                    {
+                        "path":  "logs/xs_monthly_new/paper_watch/state.json",
+                        "sha256":  "98046BB736FC3A202CB0899A4BDB2F64AC929A1B0DD155734BA62CF88EB6B1E3"
+                    }
+                ],
+    "method":  "Independent decimal reconciliation of saved snapshots; no prices fetched and no book mutated.",
+    "flagship":  {
+                     "mark_timestamp":  "2026-09-11 15:29:41 IST",
+                     "positions":  97,
+                     "initial":  "1000000.00",
+                     "entry":  "853407.04",
+                     "cash":  "145520.31",
+                     "paid_lifetime_fees":  "1072.65",
+                     "market_value":  "840749.87",
+                     "equity":  "986270.18",
+                     "marked_price_pnl":  "-12657.17",
+                     "net_pnl_after_paid_fees":  "-13729.82",
+                     "return_percent":  "-1.37298200"
+                 },
+    "xs_monthly":  {
+                       "mark_dates":  [
+                                          "2026-09-10"
+                                      ],
+                       "funded_positions":  91,
+                       "closed_positions":  0,
+                       "initial":  "1000000",
+                       "cash":  "137184.02",
+                       "entry":  "862815.98",
+                       "raw_parent_only_market_value":  "856875.60",
+                       "raw_gross_pnl":  "-5940.38",
+                       "heg_entry":  "9425",
+                       "heg_parent_value":  "3300.7",
+                       "heg_apparent_pnl":  "-6124.3",
+                       "other_positions_gross_pnl":  "183.92",
+                       "round_trip_cost_ratio":  "0.00224",
+                       "modeled_round_trip_reserve_all_entry":  "1932.7077952",
+                       "other_positions_cost_reserved_pnl":  "-1727.6757952",
+                       "full_economic_nav":  "UNKNOWN: resulting-company entitlement has no verified valuation in this snapshot"
+                   }
+}
