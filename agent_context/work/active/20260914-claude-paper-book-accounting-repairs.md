@@ -5,7 +5,13 @@ OWNER: Claude Code (Opus 5)
 TOOL: Claude Code  
 STARTED_UTC: 2026-09-14T10:30:00Z  
 STARTING_REVISION: f43f4f62f88440ce624dd7489780585c2e2f05dd  
-WORKTREE_OR_BRANCH: `D:\quant_system`, branch `main` (shared checkout)
+WORKTREE_OR_BRANCH: `D:\quant_system`, branches `main` and `claude/paper-book-accounting-repairs`
+  (shared checkout). The branch was cut at `f43f4f62` on founder instruction to commit, because this
+  work crosses three ACTIVE claims (PROTOCOL §1) and `daily_auto_sync.ps1` commits to `main` on a
+  schedule. It carries exactly one commit, `056fb1c6`, which was then fast-forwarded into `main` on
+  founder instruction to merge. **It is fully merged and holds nothing `main` does not.** Claimed
+  here because `audit-agent-claims.ps1` correctly failed on it as an unclaimed workspace; it is mine
+  and safe to delete, but deletion is not done without being asked.
 
 ## Authorization
 
