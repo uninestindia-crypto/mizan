@@ -8,8 +8,9 @@ STARTING_REVISION: `a4cfa22e429aa648463297884a6ed0bfe4010a22`
 WORKTREE_OR_BRANCH: `D:\quant_system`, branch `claude/short-horizon-multiplicity-rescore`
   (shared checkout; exact owned paths below). Cut from `main` at `4e3449d8` on founder
   instruction to commit, because this work crosses two ACTIVE claims and the checkout is shared
-  with a concurrent session. Carries one commit, `7ad347ed`, 21 files. **Not merged into
-  `main`**, so `main` still quotes the pre-rescoring DSRs until it is.
+  with a concurrent session. Carries `7ad347ed` (21 files) and `a8d3cdaa` (this record).
+  **Fast-forwarded into `main` on founder instruction**, so the branch holds nothing `main` does not
+  and the checkout is back on `main`. Not pushed.
 
 ## Authorization
 
@@ -340,17 +341,19 @@ All eight plan steps complete, and the work is committed.
 deletions. Staged as an explicit path list, never `git add -A` (PROTOCOL §4). Working tree clean.
 **No trial run, no ordinal spent, no holdout touched, no evidence store or paper book written.**
 
-**`main` is unchanged and still carries the pre-rescoring figures.** Fast-forwarding this branch into
-`main` is the step that makes the correction take effect for anyone reading the repository, and it is
-a founder decision rather than one taken here.
+`main` was fast-forwarded to `a8d3cdaa` on founder instruction, so the corrected figures are now what
+a reader of this repository sees. `main` is **2 commits ahead of `origin/main` and not pushed**;
+pushing was not asked for and was not done.
 
 Two notes for whoever is next in this shared checkout:
 
-- The checkout's HEAD is currently on this branch, not `main`. `scripts/daily_auto_sync.ps1` commits
-  its allowlist (`data/evidence`, `data/authorities`) to whatever branch is checked out, so if it
-  runs before the branch is resolved those commits land here rather than on `main`.
+- The checkout is back on `main`, so `scripts/daily_auto_sync.ps1` will commit its allowlist
+  (`data/evidence`, `data/authorities`) to `main` as it normally does. The feature branch is left in
+  place holding nothing `main` does not; it is mine and safe to delete, but deletion is not done
+  without being asked (PROTOCOL §8.3).
 - The concurrent session `quant-system-c2` committed its own disjoint work to `main` at `e0f0c316`
-  and `4e3449d8` before this branch was cut, so nothing of its work is stranded by it.
+  and `4e3449d8` before this branch was cut, so nothing of its work is stranded, and the fast-forward
+  preserved it underneath.
 
 Every gate is green, including the reverse-file-order run that was still executing when the rest of
 this record was written: **1,578 passed in 532.05s, exit 0**. The forward run passed at 1,577 and a
