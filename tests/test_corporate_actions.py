@@ -23,13 +23,23 @@ unresolved so consumers refuse the window instead of publishing a fabricated ret
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
 
 import pytest
 
+from quant_system.data.adjustment_provenance import (
+    ADJUSTMENT_METHOD_V1,
+    ADJUSTMENT_METHOD_VERSION_V1,
+    AdjustmentBasis,
+    AdjustmentReference,
+    AdjustmentStatus,
+    UnresolvedAction,
+    spans_unresolved,
+)
 from quant_system.data.corporate_actions import (
+    AdjustmentPlan,
     BarPoint,
     CorporateActionError,
     ValidatedFactor,
@@ -158,6 +168,211 @@ def test_a_rights_issue_is_unresolved_rather_than_ignored(subject: str) -> None:
         "a recognised-but-unsizeable structural action must be reported unresolved, so that "
         "spans_unresolved() refuses every window crossing it"
     )
+
+
+# --- rights issues: the four real reproductions from the 2026-09-11 adjudication ---------------
+#
+# DEFECT-1 (P1) of `.launch/reports/ADJUDICATION-CORPORATE-ACTIONS-20260911.md`. A rights issue
+# matched no hint, so it produced no factor *and* no unresolved record: `spans_unresolved` returned
+# `False` and the ex-rights gap was published as a real return. The adjudicator reproduced it on
+# four symbols against the committed authorities and the all-market cache.
+#
+# The subject lines below are verbatim from
+# `data/evidence/market-cache/all-market-20160822-20260821/corporate-actions/`, and each gap was
+# re-measured from that cache by this session before the test was written. The bars are synthetic
+# but sized to reproduce the real gap, so the test pins the behaviour without requiring a 4.6M-bar
+# cache to be present.
+
+RIGHTS_REPRODUCTIONS = [
+    # (symbol, verbatim subject, prev close, ex-date open, gap the adjudication measured)
+    ("BHARTIARTL", " Rights 19:67 @ Premium Rs 215 Per Share", "342.95", "319.00", "-6.98%"),
+    ("HCC", "Rights 277:630 @ Premium Rs 11.50/-", "25.94", "19.99", "-22.94%"),
+    ("CCAVENUE", "Rights 67:267 @ Premium Rs 9/-", "100.00", "90.99", "-9.01%"),
+    ("INTELLECT", " Rights 5:22 @ Premium Rs 81/-", "100.00", "91.04", "-8.96%"),
+]
+
+
+def _rights_bars(prev_close: str, ex_open: str) -> list[BarPoint]:
+    return [
+        _bar(1, float(prev_close)),
+        _bar(2, float(prev_close)),
+        _bar(3, float(ex_open), open_=float(ex_open)),
+        _bar(4, float(ex_open)),
+    ]
+
+
+def _reference_with(plan: AdjustmentPlan) -> AdjustmentReference:
+    """A minimal provenance reference carrying one plan's unresolved actions.
+
+    Built through the same mapping `adjusted_acquisition` uses, so this exercises the real consumer
+    contract rather than a parallel one.
+    """
+    return AdjustmentReference(
+        method=ADJUSTMENT_METHOD_V1,
+        method_version=ADJUSTMENT_METHOD_VERSION_V1,
+        status=AdjustmentStatus.ADJUSTED,
+        basis=AdjustmentBasis.TOTAL_RETURN,
+        authority_id="nse-corporate-actions-TEST",
+        authority_content_hash="1" * 64,
+        authority_source_url="https://www.nseindia.com/api/corporates-corporateActions",
+        authority_publication_date=date(2026, 9, 14),
+        code_revision="a4cfa22e",
+        derived_at=datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC),
+        source_dataset_id="dset_test",
+        source_manifest_hash="f" * 64,
+        factors=(),
+        unresolved=tuple(
+            UnresolvedAction(ex_date=item.ex_date, reason=item.reason, subject=item.subject)
+            for item in plan.unresolved
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("symbol", "subject", "prev_close", "ex_open", "gap"),
+    RIGHTS_REPRODUCTIONS,
+    ids=[case[0] for case in RIGHTS_REPRODUCTIONS],
+)
+def test_the_adjudicated_rights_issues_are_refused_not_published(
+    symbol: str, subject: str, prev_close: str, ex_open: str, gap: str
+) -> None:
+    """Each of the four adjudicated cases must produce an unresolved record and no factor.
+
+    HCC is the one that matters most: **-22.94% in a single session**, published as a real return.
+    That is the same class of error as the HEG demerger that started the whole corporate-action
+    correction, one third the size, and it was still in the data months after HEG was fixed.
+
+    Note what is *not* asserted: nothing here sizes the rights issue. The theoretical ex-rights price
+    needs the subscription price, which the subject line does not carry even when it prints the
+    ratio. Refusal is the correct outcome, not a placeholder for a better one.
+    """
+    bars = _rights_bars(prev_close, ex_open)
+    plan = build_adjustment_factors([(date(2026, 1, 3), subject)], bars)
+
+    observed = Decimal(ex_open) / Decimal(prev_close) - 1
+    assert f"{float(observed):+.2%}" == gap, "the fixture must reproduce the measured gap"
+
+    assert plan.factors == (), f"{symbol}: a rights issue is never sized from its own gap"
+    assert len(plan.unresolved) == 1, f"{symbol}: the action must be recorded, not dropped"
+    assert plan.unresolved[0].ex_date == date(2026, 1, 3)
+    assert plan.unresolved[0].subject == subject.strip()
+    adjusted = adjust_bars(bars, plan.factors)
+    assert [b.close for b in adjusted] == [b.close for b in bars], "prices are left exactly alone"
+
+
+@pytest.mark.parametrize(
+    ("symbol", "subject", "prev_close", "ex_open", "gap"),
+    RIGHTS_REPRODUCTIONS,
+    ids=[case[0] for case in RIGHTS_REPRODUCTIONS],
+)
+def test_a_window_spanning_an_adjudicated_rights_issue_is_refused(
+    symbol: str, subject: str, prev_close: str, ex_open: str, gap: str
+) -> None:
+    """The guarantee the adjudication actually disproved, asserted end to end.
+
+    C4 of the brief: *"windows spanning an unresolved action are dropped, not published with a
+    fabricated return."* It held for demergers and failed for rights issues, because the refusal is
+    driven by the unresolved record and no rights issue ever produced one. This test walks the whole
+    consumer contract -- plan -> `UnresolvedAction` -> `spans_unresolved` -- rather than stopping at
+    the parser, so it fails if any link is broken, not only the first.
+    """
+    plan = build_adjustment_factors(
+        [(date(2026, 1, 3), subject)], _rights_bars(prev_close, ex_open)
+    )
+    reference = _reference_with(plan)
+
+    assert spans_unresolved(reference, after=date(2026, 1, 2), through=date(2026, 1, 4)) is True, (
+        f"{symbol}: a window holding across the ex-rights date must be refused"
+    )
+    assert spans_unresolved(reference, after=date(2026, 1, 3), through=date(2026, 1, 4)) is False, (
+        "the window is half-open: an ex-date at `after` is already reflected in that price"
+    )
+    assert spans_unresolved(reference, after=date(2026, 1, 1), through=date(2026, 1, 2)) is False, (
+        "a window entirely before the action is untouched -- fail-closed must stay targeted"
+    )
+
+
+def test_a_rights_issue_bundled_with_a_sized_bonus_still_refuses_the_window() -> None:
+    """The rights defect one level deeper, found by this session rather than by the adjudication.
+
+    The repair that closed DEFECT-1 asked ``structural_hinted and not structural_sized`` -- a single
+    question about the whole subject line. So *any* sized component vouched for every other one, and
+    a record carrying a bonus **and** a rights issue sized the bonus, reported nothing unresolved,
+    and published the ex-rights gap exactly as before.
+
+    Measured over the whole all-market cache (3,359 symbol files, 19,941 records) at the time of
+    writing: **0 of 255 rights records bundle with a sized structural action**, so no published
+    number was ever affected by this. It is fixed because the corpus is not the specification -- the
+    guarantee has to hold for whatever NSE publishes next, and a fail-closed rule that depends on
+    issuers never combining two effects in one subject line is not fail-closed.
+    """
+    bars = [_bar(1, 100.0), _bar(2, 100.0), _bar(3, 46.0, open_=46.0), _bar(4, 46.0)]
+    plan = build_adjustment_factors(
+        [(date(2026, 1, 3), "Bonus 1:1/Rights 1:5 @ Premium Rs 100")], bars
+    )
+
+    assert [item.ex_date for item in plan.unresolved] == [date(2026, 1, 3)], (
+        "the rights issue must be refused even though the bonus in the same record was sized"
+    )
+    assert spans_unresolved(
+        _reference_with(plan), after=date(2026, 1, 2), through=date(2026, 1, 4)
+    ), "and the refusal must reach the consumer contract, not stop at the parser"
+
+
+def test_the_refusal_says_something_true_about_a_rights_issue() -> None:
+    """A correct refusal for a false stated reason is still a defective audit trail.
+
+    Every one of the four adjudicated cases was refused as ``RATIO_NOT_PUBLISHED`` -- *"no usable
+    ratio could be parsed from this action"* -- against a subject line that prints ``Rights 19:67``.
+    The ratio is published. What NSE does not publish is the subscription price that turns it into a
+    theoretical ex-rights price. The next step in this workflow is a human opening the filing to look
+    for the missing piece, and that reader was being sent after the wrong one.
+    """
+    bars = _rights_bars("342.95", "319.00")
+    rights = build_adjustment_factors(
+        [(date(2026, 1, 3), " Rights 19:67 @ Premium Rs 215 Per Share")], bars
+    )
+    assert rights.unresolved[0].reason == "RIGHTS_NOT_SIZEABLE"
+    assert "subscription price" in rights.unresolved[0].detail
+    assert "no usable ratio" not in rights.unresolved[0].detail, (
+        "the ratio 19:67 is printed in the subject line"
+    )
+    assert "not proof of the amount" in rights.unresolved[0].detail, (
+        "the refusal still says why the gap cannot stand in for the size"
+    )
+
+    demerger = build_adjustment_factors([(date(2026, 1, 3), "Demerger")], bars)
+    assert demerger.unresolved[0].reason == "RATIO_NOT_PUBLISHED", (
+        "the demerger code is unchanged: a demerger really does publish no ratio"
+    )
+
+
+def test_a_record_with_two_unsized_actions_reports_both() -> None:
+    """A real record from the corpus, carrying two different unsized effects at once.
+
+    TVSMOTOR 2025-08-25 is ``Scheme Of Arrangement - Bonus Ncrps 4:1``. Both halves are recognised
+    and neither is sizeable: ``_BONUS_RE`` wants ``Bonus a:b`` and cannot read ``Bonus Ncrps 4:1``,
+    and a scheme of arrangement publishes no ratio at all. The two refusals have different reasons,
+    so collapsing them to whichever was checked first would drop a real finding from the audit trail.
+
+    This is the one record in the 423-name research universe that exercises the path, and it is the
+    reason the code enumerates every unsized component rather than reporting only the first.
+    """
+    bars = [_bar(1, 100.0), _bar(2, 100.0), _bar(3, 100.0), _bar(4, 100.0)]
+    plan = build_adjustment_factors(
+        [(date(2026, 1, 3), "Scheme Of Arrangement - Bonus Ncrps 4:1")], bars
+    )
+
+    assert plan.factors == ()
+    unresolved = plan.unresolved[0]
+    assert unresolved.reason == "MULTIPLE_UNSIZED_ACTIONS", (
+        "two components refused for different reasons must not be reported as one of them"
+    )
+    assert "no a:b ratio could be read" in unresolved.detail, "the bonus half is named"
+    assert "no usable ratio could be parsed" in unresolved.detail, "the scheme half is named"
+    assert spans_unresolved(
+        _reference_with(plan), after=date(2026, 1, 2), through=date(2026, 1, 4)
+    ), "and the window is refused"
 
 
 def test_a_structural_action_alongside_a_dividend_is_still_unresolved() -> None:

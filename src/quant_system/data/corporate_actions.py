@@ -282,8 +282,66 @@ reason.
 """
 
 
-_STRUCTURAL_KINDS: Final = frozenset({"split", "consolidation", "bonus"})
-"""Kinds that represent a *sized* structural effect. A dividend is not one of them."""
+_SIZED_BY: Final[dict[str, frozenset[str]]] = {
+    "split": frozenset({"split", "consolidation"}),
+    "bonus": frozenset({"bonus"}),
+}
+"""Which parsed kinds count as having *sized* each recognised structural component.
+
+A dividend appears in no value here: pricing a payout says nothing about whether the split named in
+the same record was sized, and treating it as though it did is how a record carrying both came to
+declare the structural half resolved. Rights issues and demergers appear as no key at all, because
+nothing in a subject line can size them -- they are always unsized, never conditionally so.
+"""
+
+
+_UNSIZED_REASONS: Final[dict[str, tuple[str, str]]] = {
+    "rights": (
+        "RIGHTS_NOT_SIZEABLE",
+        "a rights issue dilutes the existing holding at a subscription price the subject line does "
+        "not carry, so the theoretical ex-rights adjustment cannot be computed from it",
+    ),
+    "demerger": (
+        "RATIO_NOT_PUBLISHED",
+        "no usable ratio could be parsed from this action",
+    ),
+    "split": (
+        "RATIO_NOT_PARSED",
+        "a split or consolidation is named but no from/to face value could be read from it",
+    ),
+    "bonus": (
+        "RATIO_NOT_PARSED",
+        "a bonus is named but no a:b ratio could be read from it",
+    ),
+}
+"""Why each recognised-but-unsized component was refused.
+
+The distinction is not cosmetic. ``Rights 19:67 @ Premium Rs 215 Per Share`` was previously refused
+as ``RATIO_NOT_PUBLISHED`` -- "no usable ratio could be parsed" -- against a line that prints the
+ratio. The refusal was right and its stated reason was false, which is the kind of audit trail that
+sends a human to look for a ratio that was never the missing piece. What a rights issue lacks is the
+subscription price.
+"""
+
+
+def _unresolved_reason(unsized: Sequence[str], gap_text: str) -> tuple[str, str]:
+    """The reason code and human detail for one recognised-but-unsized action.
+
+    Several components can be unsized at once, so the code collapses to
+    ``MULTIPLE_UNSIZED_ACTIONS`` when they disagree rather than silently reporting only the first.
+    The detail always enumerates every one of them.
+    """
+    entries = [_UNSIZED_REASONS[name] for name in unsized if name in _UNSIZED_REASONS]
+    if not entries:  # pragma: no cover - unsized is non-empty wherever this is called
+        return "UNSIZED_ACTION", f"a structural action could not be sized ({gap_text})"
+    codes = {code for code, _ in entries}
+    code = entries[0][0] if len(codes) == 1 else "MULTIPLE_UNSIZED_ACTIONS"
+    explanation = "; ".join(text for _, text in entries)
+    return (
+        code,
+        f"{explanation}, and no independently validated factor was supplied ({gap_text}); "
+        f"the gap alone is not proof of the amount",
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -301,6 +359,15 @@ class SubjectComponents:
     dividend: Decimal
     kinds: tuple[str, ...]
     needs_inference: bool
+    unsized: tuple[str, ...] = ()
+    """Which *recognised* structural components this subject line could not size.
+
+    ``needs_inference`` is exactly ``bool(unsized)``; this names the components so the refusal can
+    say something true about the evidence. ``('rights',)`` and ``('demerger',)`` are refused for
+    different reasons -- NSE publishes a rights ratio but not the subscription price that sizes it,
+    and publishes neither for a demerger -- and an audit trail that conflates them tells its reader
+    the ratio was missing when it is printed in the subject line.
+    """
 
     @property
     def combined(self) -> Decimal:
@@ -351,19 +418,35 @@ def parse_subject_factor(
             break
 
     # Fail closed: a structural action that is *recognised* but not *sized* must be reported
-    # unresolved, never passed over in silence. The previous rule asked only whether the text looked
-    # ratio-less, so a rights issue -- which matches no hint -- fell through both paths at once. It
-    # also used `not kinds`, so a record carrying a dividend *and* a demerger sized the dividend and
-    # declared the demerger resolved.
-    structural_hinted = bool(
-        _SPLIT_HINT.search(subject)
-        or _BONUS_HINT.search(subject)
-        or _RIGHTS_HINT.search(subject)
-        or _RATIOLESS_HINT.search(subject)
-    )
-    structural_sized = any(kind in _STRUCTURAL_KINDS for kind in kinds)
-    needs_inference = structural_hinted and not structural_sized
-    return SubjectComponents(structural, dividend, tuple(kinds), needs_inference)
+    # unresolved, never passed over in silence.
+    #
+    # The test is made **per component**, and that is the whole point of it. Two earlier rules were
+    # both too coarse, each in a way that published a fabricated return:
+    #
+    #   * ``not kinds`` -- a record carrying a dividend *and* a demerger sized the dividend and
+    #     declared the demerger resolved.
+    #   * ``structural_hinted and not structural_sized`` -- aggregating over the line, so *any* one
+    #     sized component vouched for every other. ``Bonus 1:1/Rights 1:5`` sized the bonus and
+    #     silently dropped the rights issue, which is the rights defect again one level deeper.
+    #
+    # A single NSE record routinely carries several effects, so each recognised component must
+    # answer for itself. Measured over the whole all-market cache at the time of writing, no record
+    # bundles a rights issue with a sized structural action -- 0 of 255 -- so this closes a hole in
+    # the rule rather than correcting any published number. It is written this way because the
+    # corpus is not a specification: the guarantee has to hold for the record NSE publishes next.
+    unsized: list[str] = []
+    parsed_kinds = set(kinds)
+    if _SPLIT_HINT.search(subject) and not _SIZED_BY["split"] & parsed_kinds:
+        unsized.append("split")
+    if _BONUS_HINT.search(subject) and not _SIZED_BY["bonus"] & parsed_kinds:
+        unsized.append("bonus")
+    if _RIGHTS_HINT.search(subject):
+        # Never sizeable from the subject line, whatever else the record carries. The ratio is
+        # published; the subscription price that turns it into a theoretical ex-rights price is not.
+        unsized.append("rights")
+    if _RATIOLESS_HINT.search(subject):
+        unsized.append("demerger")
+    return SubjectComponents(structural, dividend, tuple(kinds), bool(unsized), tuple(unsized))
 
 
 # --- factor construction ---------------------------------------------------------------------
@@ -496,7 +579,7 @@ def build_adjustment_factors(
                 AdjustmentFactor(ex_date, parsed.dividend, ("dividend",), "PARSED", subject.strip())
             )
 
-        # --- ratio-less structural action, i.e. a demerger ---
+        # --- recognised but unsized structural action: a demerger, or a rights issue ---
         #
         # Never sized from the gap. Either a caller supplies an independently validated factor, or
         # the action is unresolved and every return spanning it is refused.
@@ -507,7 +590,7 @@ def build_adjustment_factors(
                     AdjustmentFactor(
                         ex_date,
                         validated.factor,
-                        ("demerger",),
+                        parsed.unsized,
                         "VALIDATED",
                         f"{subject.strip()} :: {validated.evidence}",
                     )
@@ -518,16 +601,8 @@ def build_adjustment_factors(
                     if observed is not None
                     else "no ex-date bar"
                 )
-                unresolved.append(
-                    UnresolvedRecord(
-                        ex_date,
-                        "RATIO_NOT_PUBLISHED",
-                        f"no usable ratio could be parsed from this action and no independently "
-                        f"validated factor was supplied ({gap_text}); the gap alone is not proof "
-                        f"of the amount",
-                        subject.strip(),
-                    )
-                )
+                reason, detail = _unresolved_reason(parsed.unsized, gap_text)
+                unresolved.append(UnresolvedRecord(ex_date, reason, detail, subject.strip()))
 
     for leftover_date, leftover in sorted(supplied.items()):
         notes.append(
