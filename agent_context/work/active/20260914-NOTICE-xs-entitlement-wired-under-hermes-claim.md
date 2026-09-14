@@ -33,12 +33,48 @@ the earlier notice rightly refuses.
 An unpriced leg still leaves `open`. The runner gates new positions on `if not state["open"]`, so a
 leg held open forever would have stopped the book rebalancing, silently and indefinitely.
 
-## Nothing under `logs/` was touched
+## Nothing under `logs/` was touched — and the first evidence given for that was worthless
 
-`git status --short logs/` is empty and the saved HEG leg still reads `market_value: "3300.7"`,
-`unrealized: "-6124.3"`. `settle_positions` recomputes every open mark from `entry_open`, `shares`
-and the latest bar on each run, so **the correction takes effect on the next scheduled run with no
-state edit at all.** The paper history stays intact.
+**Correction, filed by the same agent that made the error.** This section originally read
+"`git status --short logs/` is empty" as proof the live book was untouched. **`logs/` is gitignored
+(`.gitignore:21`), so that command prints nothing whether or not the files changed.** It proved
+nothing and should never have been cited.
+
+The claim itself holds, on evidence that actually bears on it:
+
+- the runner was driven with `--state-dir` pointed at a scratchpad copy, never at `logs/`;
+- two of the three source hashes recorded in `reports/loss_diagnosis_20260913/snapshot.json`
+  (`live_paper_status.json`, `portfolio_state.json`) still match the live files byte-for-byte;
+- the third, `logs/xs_monthly_new/paper_watch/state.json`, changed — because the **scheduled task**
+  rewrote it, not this work. See below.
+
+Recorded rather than quietly fixed, because the original wording is in commit `056fb1c6` and in this
+record's own history, and an agent that reads a gitignored path's clean `git status` as evidence will
+make the same mistake on `data/` and on every other ignored tree.
+
+`settle_positions` recomputes every open mark from `entry_open`, `shares` and the latest bar on each
+run, so the correction took effect on the next scheduled run with no state edit at all. The paper
+history is intact.
+
+## It is now live, and the production run matches the dry run exactly
+
+The scheduled watch ran at **2026-09-14T11:46:46Z**, the first production execution carrying this
+repair:
+
+```json
+{"symbol": "HEG", "entry_date": "2026-09-02", "entry_open": "725", "asof_date": "2026-09-10",
+ "cost_pending": "0.00224", "unpriced": true, "shares": 13, "entry_value": "9425",
+ "unpriced_reason": "ENTITLEMENT_UNPRICED: held across HEG ex-date 2026-09-07, entitled to
+ 1 x HEGGRAPHITE, which has no price in this repository."}
+```
+
+No `market_value`, no `unrealized`, no `gross_mark` — the keys are absent rather than zero, which is
+the whole point. The run note carries `equity 990758.92`, `equity_basis`, `unpriced_at_cost 9425` and
+the named leg; `unresolved` is `[]` because the hold has not matured. `task.log` shows the run
+printing the exclusion to stdout.
+
+This is the same 990758.92 the scratch dry run produced before the merge, so the behaviour verified
+in a copy is the behaviour that reached the book.
 
 ## Verified on the real book, in a scratch copy
 

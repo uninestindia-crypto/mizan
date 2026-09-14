@@ -126,7 +126,8 @@ editing the saved state file. The first three fabricate evidence, the fourth rew
 | `uv run pytest` (XS suites, first attempt) | 2 FAILED | My maturity fixture used flat bars, and `screen._is_locked` treats `high == low` as a circuit lock, so `forward_net` refused to close. That is also why the pre-existing tests never reached the maturity path — every fixture in this area is flat-barred |
 | `uv run pytest` (XS suites, after spread) | PASS | 44 passed across 5 XS files |
 | Dry run of the real book into a scratch `--state-dir` | PASS | `equity 990758.92`, `UNPRICED 1 holding(s), entry cost 9425`; reason names the ex-date, the ratio and the resulting symbol |
-| `git status --short logs/` | empty | Live state untouched; saved HEG leg still reads `market_value "3300.7"` |
+| `git status --short logs/` | empty | **This proves nothing and was wrongly cited as evidence.** `logs/` is gitignored (`.gitignore:21`), so the command is empty either way. Corrected in `20260914-NOTICE-xs-entitlement-wired-under-hermes-claim.md` |
+| SHA-256 of the three state files vs `reports/loss_diagnosis_20260913/snapshot.json` | 2 MATCH, 1 DIFFERS | The real evidence. `live_paper_status.json` and `portfolio_state.json` unchanged byte-for-byte; `xs_monthly_new/.../state.json` differs because the **scheduled task** rewrote it at 2026-09-14T11:46:46Z, the first production run of the repair |
 | `uv run ruff check` / `ruff format --check .` | PASS | 671 files formatted, 0 failures |
 | `uv run mypy src launcher.py scripts` | PASS | 208 files, no issues |
 | `uv run pytest tests/ -q` | **1,519 passed** | 1,490 pre-existing + 12 (item 1) + 17 (item 3). No pre-existing test broke except the 4 asserting the `BUY_AND_HOLD` name, updated deliberately. `CURRENT.md`'s 1,473 is stale — other agents added tests since |
