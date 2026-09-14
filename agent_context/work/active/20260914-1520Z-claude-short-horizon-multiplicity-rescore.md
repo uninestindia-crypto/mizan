@@ -5,7 +5,11 @@ OWNER: Claude Code (Opus 5)
 TOOL: Claude Code
 STARTED_UTC: 2026-09-14T15:20:00Z
 STARTING_REVISION: `a4cfa22e429aa648463297884a6ed0bfe4010a22`
-WORKTREE_OR_BRANCH: `D:\quant_system` on `main` (shared checkout; exact owned paths below)
+WORKTREE_OR_BRANCH: `D:\quant_system`, branch `claude/short-horizon-multiplicity-rescore`
+  (shared checkout; exact owned paths below). Cut from `main` at `4e3449d8` on founder
+  instruction to commit, because this work crosses two ACTIVE claims and the checkout is shared
+  with a concurrent session. Carries one commit, `7ad347ed`, 21 files. **Not merged into
+  `main`**, so `main` still quotes the pre-rescoring DSRs until it is.
 
 ## Authorization
 
@@ -330,9 +334,23 @@ produces 0 differences across all 19,941 authority records in the all-market cac
 
 ## Stop point
 
-All eight plan steps complete. Working tree dirty with exactly the files listed above plus the two
-notices and this record. **Nothing staged, nothing committed. No trial run, no ordinal spent, no
-holdout touched, no evidence store or paper book written.**
+All eight plan steps complete, and the work is committed.
+
+`7ad347ed` on `claude/short-horizon-multiplicity-rescore`, 21 files, 2,533 insertions / 243
+deletions. Staged as an explicit path list, never `git add -A` (PROTOCOL §4). Working tree clean.
+**No trial run, no ordinal spent, no holdout touched, no evidence store or paper book written.**
+
+**`main` is unchanged and still carries the pre-rescoring figures.** Fast-forwarding this branch into
+`main` is the step that makes the correction take effect for anyone reading the repository, and it is
+a founder decision rather than one taken here.
+
+Two notes for whoever is next in this shared checkout:
+
+- The checkout's HEAD is currently on this branch, not `main`. `scripts/daily_auto_sync.ps1` commits
+  its allowlist (`data/evidence`, `data/authorities`) to whatever branch is checked out, so if it
+  runs before the branch is resolved those commits land here rather than on `main`.
+- The concurrent session `quant-system-c2` committed its own disjoint work to `main` at `e0f0c316`
+  and `4e3449d8` before this branch was cut, so nothing of its work is stranded by it.
 
 Every gate is green, including the reverse-file-order run that was still executing when the rest of
 this record was written: **1,578 passed in 532.05s, exit 0**. The forward run passed at 1,577 and a
