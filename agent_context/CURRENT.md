@@ -1,24 +1,37 @@
 # Current QuantOS snapshot
 
-UPDATED_UTC: 2026-09-11T07:10:00Z  
-SNAPSHOT_OWNER: reconciled by Claude Code on founder instruction ("update CURRENT.md with all of
-today's findings"); `CURRENT.md` is claimed by `20260820-codex-slice4-ridge-training.md` (ACTIVE) and
-that record's own content elsewhere in this file is unaltered  
+UPDATED_UTC: 2026-09-14T11:31:00Z  
+SNAPSHOT_OWNER: the gate table below was re-measured by Claude Code on founder instruction ("update
+CURRENT.md with the test count"). **Only that table and this header changed.** `CURRENT.md` is
+claimed by `20260820-codex-slice4-ridge-training.md` (ACTIVE) and `20260821-claude-ci-workflow.md`;
+nothing either record wrote elsewhere in this file is altered, and no narrative section below was
+re-verified by this pass. The 2026-09-11 reconciliation note it replaces said the same of its own
+scope  
 BRANCH: `main`  
-HEAD_AT_SNAPSHOT: `2e28d76e`
+HEAD_AT_SNAPSHOT: `cd57e5b0`
 
 ## Formal release state
 
-Measured at `2e28d76e`, not restated from another document.
+Measured at `cd57e5b0`, not restated from another document.
 
 | | State |
 |---|---|
 | Tier / phase | T2, P5 per `.launch/STATE.md` |
 | Slices | All 12 CODE_COMPLETE |
-| Tests | **1,473 passing**, forwards and in reverse file order |
-| Static gate | Ruff lint and format clean; strict Mypy clean across **205 source files** |
-| CI | **GREEN**, run `34570564419`, every step. See Major #1 |
+| Tests | **1,519 passing**, forwards and in reverse file order |
+| Static gate | Ruff lint and format clean across **671 files**; strict Mypy clean across **208 source files** |
+| CI | **GREEN**, run `34836160971`, every step, 28m29s. See Major #1 |
 | Live-money routing | Explicitly out of scope. Nothing has ever placed an order |
+
+**Where the +46 tests came from.** The previous snapshot recorded 1,473 at `2e28d76e`. 29 were added
+by `20260914-claude-paper-book-accounting-repairs.md` (12 entitlement-wiring, 13 portfolio-ledger,
+4 trial-count). The remaining 17 predate that work and were added by other agents between `2e28d76e`
+and `f43f4f62`; this pass did not attribute them further. The mypy surface grew 205 -> 208 with the
+`research_short_horizon` and `research_xs_monthly` additions.
+
+**This is a gate measurement, not a change of release state.** The phase contradiction recorded in
+the next section is untouched and still unresolved, and no model became promotable. Read P5 exactly
+as that section says to read it.
 
 ### The phase label and the adjudication record contradict each other
 
