@@ -10,7 +10,17 @@
 | Forecasts | `reports/short_horizon/timesfm-forecasts.json` (~20 MB, checkpointed JSONL, resumable) |
 | Feasibility | `reports/short_horizon/TIMESFM-FEASIBILITY.md` |
 | Licence | `timesfm-non-commercial-license-v1.0` |
+| Multiplicity | **9 declared trials**, `multiplicity_count = 9` — re-scored 2026-09-14; published at 6 |
 | Verdict | **`RESEARCH_ONLY`** at every hold |
+
+> **Re-scored 2026-09-14 against the frozen nine-trial budget.** Every deflated Sharpe on this card
+> was originally computed with `num_trials=6`, while `TRIAL-LEDGER.md` now records **9** SPENT
+> trials. The DSR figures below are the corrected ones; the value as published is given beside each.
+> **No raw metric changed** -- Sharpe, trades, exposure, hit rate and drawdown are exactly as
+> published -- and re-deflation is rank-preserving, so no comparison on this card moved. A **second**
+> correction remains outstanding and is *not* applied here: the evaluator was repaired at `056fb1c6`
+> and the raw metrics on this card predate that repair. See `TRIAL-LEDGER.md`, "Re-scoring,
+> 2026-09-14".
 
 ## Licence boundary — binding, not advisory
 
@@ -52,15 +62,17 @@ Future covariates are not used. Only information available at prediction time en
 
 ## Results — fails at every hold
 
-| Hold | DSR | Gate | Sharpe | Trades | Exposure | Hit rate | Max DD |
-|---:|---:|---|---:|---:|---:|---:|---:|
-| 1 | 0.023189 | **FAIL** | -0.2357 | 58 | 0.0009 | 0.4655 | 0.0203 |
-| 2 | 0.004270 | **FAIL** | -0.4533 | 289 | 0.0046 | 0.4498 | 0.0741 |
-| 3 | 0.191369 | **FAIL** | +0.1456 | 35,425 | 0.5690 | 0.4985 | 0.5658 |
+| Hold | DSR (at 9) | As published (6) | Gate | Sharpe | Trades | Exposure | Hit rate | Max DD |
+|---:|---:|---:|---|---:|---:|---:|---:|---:|
+| 1 | **0.013464** | 0.023189 | **FAIL** | -0.2357 | 58 | 0.0009 | 0.4655 | 0.0203 |
+| 2 | **0.002182** | 0.004270 | **FAIL** | -0.4533 | 289 | 0.0046 | 0.4498 | 0.0741 |
+| 3 | **0.137089** | 0.191369 | **FAIL** | +0.1456 | 35,425 | 0.5690 | 0.4985 | 0.5658 |
 
-Hold 3 is the **best number any real model produced in this program** — and it is still less than
-half of what the [noise control](noise-control.md) scored (`0.4197`) on the same folds. Without that
-control, `0.1914` could have been misread as a faint signal. It is not.
+Hold 3 was the best number any real model had produced when this card was written. It has since been
+beaten by [TimesFM 2.5](short-horizon-timesfm25.md) at `0.312642`, and it remains well under half of
+what the [noise control](noise-control.md) scored (`0.3360`) on the same folds and the same
+nine-trial basis. Without that control, `0.1371` could have been misread as a faint signal. It is
+not.
 
 Hit rate is below 50% at every hold. At hold 2 the model is worse than the ridge on every column.
 

@@ -9,7 +9,7 @@
 | Results | `reports/short_horizon/results-timesfm25.json` |
 | Forecasts | `reports/short_horizon/timesfm25-forecasts.json` (88,385 rows, 45 names, 1,967 dates) |
 | Ledger | `reports/short_horizon/TRIAL-LEDGER.md` — trials **7, 8, 9**, declared 2026-09-12 **before any 2.5 result existed** |
-| Multiplicity | Budget now **9**. Runner scored at 6; both bases reported below |
+| Multiplicity | **9 declared trials**, `multiplicity_count = 9`. Re-scored 2026-09-14; the runner had scored at 6 and both bases are shown below |
 | Licence | **Apache-2.0** |
 | Verdict | **`RESEARCH_ONLY`** at every hold |
 
@@ -38,19 +38,23 @@ mixed-checkpoint forecast set over the top of published evidence.
 
 ## Results — better than 3.0 at every hold, and still failing
 
-| Hold | DSR (as scored, 6) | DSR (re-deflated, 9) | Gate | Sharpe | Trades | Exposure | Hit rate | Max DD |
+| Hold | **DSR (at 9)** | As published (6) | Gate | Sharpe | Trades | Exposure | Hit rate | Max DD |
 |---:|---:|---:|---|---:|---:|---:|---:|---:|
-| 1 | 0.167607 | **0.118147** | **FAIL** | +0.1146 | 380 | 0.006 | — | 0.040 |
-| 2 | 0.107263 | **0.071891** | **FAIL** | +0.0201 | 9,419 | 0.151 | — | 0.309 |
-| 3 | 0.394441 | **0.312642** | **FAIL** | +0.3518 | 29,791 | 0.479 | 0.4972 | 0.534 |
+| 1 | **0.118147** | 0.167607 | **FAIL** | +0.1146 | 380 | 0.006 | — | 0.040 |
+| 2 | **0.071891** | 0.107263 | **FAIL** | +0.0201 | 9,419 | 0.151 | — | 0.309 |
+| 3 | **0.312642** | 0.394441 | **FAIL** | +0.3518 | 29,791 | 0.479 | 0.4972 | 0.534 |
 
-Against the 3.0 arm on the identical basis of 6:
+The re-deflated column was hand-computed when this card was written and has since been reproduced to
+the digit by `scripts/rescore_short_horizon_multiplicity.py`; it is now simply the published figure,
+and every other arm has been brought onto the same basis. **No raw metric moved.**
+
+Against the 3.0 arm, now on the identical basis of **9**:
 
 | Hold | 3.0 DSR | **2.5 DSR** | 3.0 Sharpe | **2.5 Sharpe** |
 |---:|---:|---:|---:|---:|
-| 1 | 0.023189 | **0.167607** | -0.2357 | **+0.1146** |
-| 2 | 0.004270 | **0.107263** | -0.4533 | **+0.0201** |
-| 3 | 0.191369 | **0.394441** | +0.1456 | **+0.3518** |
+| 1 | 0.013464 | **0.118147** | -0.2357 | **+0.1146** |
+| 2 | 0.002182 | **0.071891** | -0.4533 | **+0.0201** |
+| 3 | 0.137089 | **0.312642** | +0.1456 | **+0.3518** |
 
 **The Apache-2.0 checkpoint is the better forecaster on this data.** Positive Sharpe at all three
 holds where 3.0 was negative at two. This contradicted the prior written into Amendment 4 before the
@@ -58,20 +62,22 @@ run, and is recorded as a correction rather than restated as an expectation.
 
 ## Why it is still not a result
 
-**1. The gate.** Best is 0.394441 against `min_deflated_sharpe = 0.95`. Not close at any hold.
+**1. The gate.** Best is 0.312642 against `min_deflated_sharpe = 0.95`. Not close at any hold.
 
-**2. The [noise control](noise-control.md) still wins where it counts.** Same basis of 6:
+**2. The [noise control](noise-control.md) still wins where it counts.** Now on the same basis of 9,
+so this comparison no longer needs a caveat about mismatched denominators:
 
 | Hold | **Noise median** | 2.5 | Winner |
 |---:|---:|---:|---|
-| 1 | 0.000000 | **0.167607** | 2.5 |
-| 2 | **0.148551** *(median of 30: 0.1615)* | 0.107263 | **noise** |
-| 3 | **0.419649** *(median of 30: 0.5504)* | 0.394441 | **noise** |
+| 1 | 0.000000 | **0.118147** | 2.5 |
+| 2 | **0.103240** *(median of 30: 0.1134)* | 0.071891 | **noise** |
+| 3 | **0.336002** *(median of 30: 0.4626)* | 0.312642 | **noise** |
 
 Noise beats 2.5 at **both holds where the candidate actually trades**. At hold 3 the candidate sits
-above the worst of 30 random draws (0.3197) and below their median.
+above the worst of 30 random draws (0.2454) and below their median. The winner column is unchanged
+from the published basis of 6 — re-deflation is rank-preserving.
 
-**3. The trivial baselines.** At hold 3: `BUY_AND_HOLD` +0.4947 and `PREVIOUS_SIGN` +0.4400 against
+**3. The trivial baselines.** At hold 3: `ALWAYS_TRADE` +0.4947 and `PREVIOUS_SIGN` +0.4400 against
 the candidate's +0.3518. Beaten by holding everything, and by repeating yesterday's sign.
 
 ## Hold 1 — the only trial in this program where a real model beat noise
@@ -101,12 +107,17 @@ Generation took 183.5 min for 88,385 forecasts on the reference machine.
 
 ## Known failures and limitations
 
-- **Fails the gate at every hold**, by 2.4x at best. No threshold was weakened to obtain a pass.
+- **Fails the gate at every hold**, by 3.0x at best. No threshold was weakened to obtain a pass.
 - **Beaten by its own noise control at holds 2 and 3.** The deflated Sharpe tests against zero, so at
   ~50% long-only exposure it rewards market participation rather than skill.
-- **The DSRs above were scored against 6 trials while the budget is 9.**
-  `run_short_horizon_experiment.py:63` hardcodes `DECLARED_TRIALS = 6`; it is a claimed path and was
-  not edited. The re-deflated column is the honest figure under the current budget.
+- ~~**The DSRs above were scored against 6 trials while the budget is 9.**~~ **Closed 2026-09-14.**
+  `DECLARED_TRIALS` is now `9` and is verified against the ledger at run time, so a run cannot
+  publish against a stale denominator. Every arm has been re-scored onto that basis.
+- **The raw metrics above predate the evaluator repair at `056fb1c6`** and are a separate outstanding
+  correction that the re-scoring did not touch. Compounding of overlapping positions, past-only
+  abstention calibration, DSR sample length and DSR annualisation all moved in that repair. Undoing
+  it requires re-running these trials, which has not been done. See
+  `agent_context/work/active/20260914-NOTICE-short-horizon-evaluator-repaired-invalidates-ledger-numbers.md`.
 - **Pretraining contamination is unquantified and cuts one way.** The model card establishes no
   exhaustive pretraining cutoff, and the evaluation window is 2018-2026. If the corpus overlaps it,
   part of this "forecast" is recall — a bias that flatters the candidate. Per the ledger's

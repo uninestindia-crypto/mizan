@@ -59,6 +59,7 @@ from quant_system.research_short_horizon.evaluation import (  # noqa: E402
     EvaluationResult,
     evaluate_walk_forward,
 )
+from quant_system.research_short_horizon.ledger import require_declared_trials  # noqa: E402
 
 DECLARED_TRIALS = 9
 """Every SPENT trial in ``reports/short_horizon/TRIAL-LEDGER.md``. The multiplicity count below.
@@ -68,8 +69,13 @@ read 6 while the ledger had grown to 9, so every DSR a fresh run published was d
 search two thirds its real size. The ledger's rows 7-9 already carried the corrected figures in
 their text, computed by hand; nothing that ran agreed with them.
 
-The drift is now a test failure rather than a discrepancy someone has to notice:
-``tests/test_short_horizon_trial_count.py`` reads the ledger and refuses to let the two diverge.
+The drift can no longer survive to publication. ``run()`` calls
+:func:`quant_system.research_short_horizon.ledger.require_declared_trials` before it computes
+anything, so a constant that disagrees with the ledger refuses the run instead of writing a wrong
+denominator into an artifact; ``tests/test_short_horizon_trial_count.py`` catches the same
+divergence in CI. The constant stays an explicit literal on purpose -- an unpinned parse with no
+declared expectation would let a careless ledger edit silently re-score published work.
+
 The calibration grid (C1) and the NOISE control are deliberately not counted -- see the ledger.
 """
 
@@ -285,6 +291,12 @@ def _predictions_for(
 
 def run(args: argparse.Namespace) -> int:
     print("=== SHORT-HORIZON EXPERIMENT: holds 1, 2, 3 ===", flush=True)
+    # Before anything is computed. Every DSR below divides by a benchmark built from this count, so
+    # a stale constant does not produce a slightly wrong number -- it produces a number deflated
+    # against the wrong search, in the direction that flatters the candidate. Fail here, where it is
+    # still free, rather than in an artifact someone later quotes.
+    require_declared_trials(DECLARED_TRIALS)
+    print(f"multiplicity     : {DECLARED_TRIALS} declared trials (ledger-verified)", flush=True)
     # `governed_acquisitions` selects the longest acquisition **among those carrying a universe
     # authority**, which is not the same as the longest acquisition. Several symbols have two
     # datasets where the longer one is unbound, and picking by length alone silently dropped

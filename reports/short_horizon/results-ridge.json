@@ -2,11 +2,24 @@
   "arm": "ridge",
   "code_revision": "eae79270894cbe4fc8403142ee90168201a8f555-dirty",
   "corporate_action_authority_sha256": "e68c8e1c2b7fec3a7840cdef06a189e602cd78771a747cf145a1fafe02ecff0a",
-  "declared_trials": 6,
+  "declared_trials": 9,
+  "declared_trials_as_published": 6,
   "excluded_not_universe_bound": [],
   "feature_store": "D:/quant_system/data/evidence/feature-store/mizan-adjusted-v1/mizan_feature_store.csv.gz",
   "generated_at": "2026-09-10T18:10:25.445946+00:00",
   "holdout_sessions": 252,
+  "rescoring": {
+    "applied": "multiplicity_count_only",
+    "note": "Deflated Sharpe re-computed against the frozen ledger's true SPENT-trial count. Every raw metric is as originally published and PREDATES the evaluator repair at 056fb1c6; this file corrects the deflation of those metrics, not the metrics.",
+    "ordinals_spent": 0,
+    "sample_length_bars_by_hold": {
+      "hold1": 2173,
+      "hold2": 2172,
+      "hold3": 2171
+    },
+    "tool": "scripts/rescore_short_horizon_multiplicity.py",
+    "trials_run": 0
+  },
   "ridge_penalty": 1.0,
   "subset": [
     "RELIANCE",
@@ -106,7 +119,8 @@
         "0.020"
       ],
       "abstention_threshold": "0.005",
-      "deflated_sharpe_ratio": 0.026515,
+      "deflated_sharpe_ratio": 0.015569,
+      "deflated_sharpe_ratio_as_published": 0.026515,
       "embargoed_rows": 990,
       "folds": 11,
       "gate_max_drawdown": "0.15",
@@ -115,9 +129,21 @@
       "gate_policy_id": "short-horizon-research-v1",
       "held_sessions": 1,
       "horizon_sessions": 2,
-      "multiplicity_count": 6,
+      "multiplicity_count": 9,
+      "multiplicity_count_as_published": 6,
       "purged_rows": 990,
       "refused_constituents": [],
+      "rescoring": {
+        "applied": "multiplicity_count_only",
+        "dsr_delta": -0.010946,
+        "periods_per_year": 252,
+        "raw_metrics_predate_evaluator_repair": "056fb1c6",
+        "raw_metrics_recomputed": false,
+        "reproduced_published_dsr": 0.026515,
+        "reproduction_exact": true,
+        "sample_length_bars": 2173,
+        "sample_length_recovered_by": "inversion, cross-arm consensus, 90/90 unrounded noise draws"
+      },
       "strategies": [
         {
           "decisions": 62266,
@@ -225,7 +251,8 @@
       ],
       "abstention_refused": [],
       "abstention_threshold": "0.008",
-      "deflated_sharpe_ratio": 0.059283,
+      "deflated_sharpe_ratio": 0.037419,
+      "deflated_sharpe_ratio_as_published": 0.059283,
       "embargoed_rows": 1485,
       "folds": 11,
       "gate_max_drawdown": "0.15",
@@ -234,9 +261,21 @@
       "gate_policy_id": "short-horizon-research-v1",
       "held_sessions": 2,
       "horizon_sessions": 3,
-      "multiplicity_count": 6,
+      "multiplicity_count": 9,
+      "multiplicity_count_as_published": 6,
       "purged_rows": 1485,
       "refused_constituents": [],
+      "rescoring": {
+        "applied": "multiplicity_count_only",
+        "dsr_delta": -0.021864,
+        "periods_per_year": 252,
+        "raw_metrics_predate_evaluator_repair": "056fb1c6",
+        "raw_metrics_recomputed": false,
+        "reproduced_published_dsr": 0.059284,
+        "reproduction_exact": false,
+        "sample_length_bars": 2172,
+        "sample_length_recovered_by": "inversion, cross-arm consensus, 90/90 unrounded noise draws"
+      },
       "strategies": [
         {
           "decisions": 62264,
@@ -344,7 +383,8 @@
       ],
       "abstention_refused": [],
       "abstention_threshold": "0",
-      "deflated_sharpe_ratio": 0.094711,
+      "deflated_sharpe_ratio": 0.062647,
+      "deflated_sharpe_ratio_as_published": 0.094711,
       "embargoed_rows": 1980,
       "folds": 11,
       "gate_max_drawdown": "0.15",
@@ -353,9 +393,21 @@
       "gate_policy_id": "short-horizon-research-v1",
       "held_sessions": 3,
       "horizon_sessions": 4,
-      "multiplicity_count": 6,
+      "multiplicity_count": 9,
+      "multiplicity_count_as_published": 6,
       "purged_rows": 1980,
       "refused_constituents": [],
+      "rescoring": {
+        "applied": "multiplicity_count_only",
+        "dsr_delta": -0.032064,
+        "periods_per_year": 252,
+        "raw_metrics_predate_evaluator_repair": "056fb1c6",
+        "raw_metrics_recomputed": false,
+        "reproduced_published_dsr": 0.094711,
+        "reproduction_exact": true,
+        "sample_length_bars": 2171,
+        "sample_length_recovered_by": "inversion, cross-arm consensus, 90/90 unrounded noise draws"
+      },
       "strategies": [
         {
           "decisions": 62262,

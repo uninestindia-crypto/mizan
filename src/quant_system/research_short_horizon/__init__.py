@@ -24,6 +24,12 @@ from quant_system.research_short_horizon.horizon import (
     hold_specs,
     horizon_for_hold,
 )
+from quant_system.research_short_horizon.ledger import (
+    SpentTrial,
+    declared_spent_trials,
+    read_spent_trials,
+    require_declared_trials,
+)
 from quant_system.research_short_horizon.walkforward import Fold, walk_forward_folds
 
 __all__ = [
@@ -33,8 +39,12 @@ __all__ = [
     "CalibrationOutcome",
     "Fold",
     "HoldSpec",
+    "SpentTrial",
     "calibrate_threshold",
+    "declared_spent_trials",
     "hold_specs",
     "horizon_for_hold",
+    "read_spent_trials",
+    "require_declared_trials",
     "walk_forward_folds",
 ]

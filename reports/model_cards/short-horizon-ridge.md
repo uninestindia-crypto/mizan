@@ -8,8 +8,17 @@
 | Results | `reports/short_horizon/results-ridge.json` |
 | Ledger | `reports/short_horizon/TRIAL-LEDGER.md` — **frozen before any result was seen** |
 | Gate policy | `short-horizon-research-v1`, `min_deflated_sharpe = 0.95`, `max_drawdown = 0.15` |
-| Multiplicity | 6 declared trials, `multiplicity_count = 6` — ledger honoured |
+| Multiplicity | **9 declared trials**, `multiplicity_count = 9` — re-scored 2026-09-14; published at 6 |
 | Verdict | **`RESEARCH_ONLY`** at every hold |
+
+> **Re-scored 2026-09-14 against the frozen nine-trial budget.** Every deflated Sharpe on this card
+> was originally computed with `num_trials=6`, while `TRIAL-LEDGER.md` now records **9** SPENT
+> trials. The DSR figures below are the corrected ones; the value as published is given beside each.
+> **No raw metric changed** -- Sharpe, trades, exposure, hit rate and drawdown are exactly as
+> published -- and re-deflation is rank-preserving, so no comparison on this card moved. A **second**
+> correction remains outstanding and is *not* applied here: the evaluator was repaired at `056fb1c6`
+> and the raw metrics on this card predate that repair. See `TRIAL-LEDGER.md`, "Re-scoring,
+> 2026-09-14".
 
 ## What it is
 
@@ -36,13 +45,13 @@ declared threshold grid; the holdout is never touched during calibration.
 
 ## Results — fails at every hold
 
-| Hold | DSR | Gate | Sharpe | Trades | Exposure | Hit rate | Max DD |
-|---:|---:|---|---:|---:|---:|---:|---:|
-| 1 | 0.026515 | **FAIL** | -0.2162 | 379 | 0.0061 | 0.4749 | 0.1576 |
-| 2 | 0.059283 | **FAIL** | -0.0888 | 755 | 0.0121 | 0.4728 | 0.3202 |
-| 3 | 0.094711 | **FAIL** | -0.0041 | 35,150 | 0.5645 | 0.4927 | 0.7472 |
+| Hold | DSR (at 9) | As published (6) | Gate | Sharpe | Trades | Exposure | Hit rate | Max DD |
+|---:|---:|---:|---|---:|---:|---:|---:|---:|
+| 1 | **0.015569** | 0.026515 | **FAIL** | -0.2162 | 379 | 0.0061 | 0.4749 | 0.1576 |
+| 2 | **0.037419** | 0.059283 | **FAIL** | -0.0888 | 755 | 0.0121 | 0.4728 | 0.3202 |
+| 3 | **0.062647** | 0.094711 | **FAIL** | -0.0041 | 35,150 | 0.5645 | 0.4927 | 0.7472 |
 
-Baselines on the same folds at hold 3: `CASH` 0.0000, `BUY_AND_HOLD` **+0.4922**,
+Baselines on the same folds at hold 3: `CASH` 0.0000, `ALWAYS_TRADE` **+0.4922**,
 `PREVIOUS_SIGN` **+0.4359**. The candidate's -0.0041 loses to all three.
 
 **Hit rate is below 50% at every hold.** At holds 1 and 2 the abstention rule suppresses almost all
@@ -52,8 +61,10 @@ at all, which is why exposure jumps to 56%.
 ## The decisive comparison
 
 The [noise control](noise-control.md) — random predictions through the identical pipeline — scored
-**0.4197** at hold 3 against this model's **0.0947**. Randomness beat the model by 4.4x on the
-headline metric, on the same folds and the same data.
+**0.3360** at hold 3 against this model's **0.0626**, both on the same nine-trial basis. Randomness
+beat the model by 5.4x on the headline metric, on the same folds and the same data. (At the published
+basis of 6 the same comparison read 0.4197 against 0.0947 — the ratio shifts slightly with the
+deflation, the verdict does not.)
 
 ## Reproduce
 
@@ -69,7 +80,7 @@ headline metric, on the same folds and the same data.
   against zero, so at ~50% long-only exposure it rewards market participation rather than skill.
 - The 45-name subset is turnover-ranked, so it is liquid-biased by construction — a bias that favours
   the strategy's cost model, and it failed anyway.
-- 6 of the ledger's trials are spent. A seventh inherits ordinal 7 and a harsher deflation.
+- **9** of the ledger's trials are spent. A tenth inherits ordinal 10 and a harsher deflation. The three declared after this card was written are exactly why its numbers were re-scored.
 
 ## Must not be used for
 

@@ -1,7 +1,12 @@
 # Short-horizon comparison: a simple ridge against TimesFM 3.0, at holds of 1, 2 and 3 sessions
 
-**Verdict: neither model has an edge. All six declared trials are `RESEARCH_ONLY`. At every single
+**Verdict: neither model has an edge. All nine declared trials are `RESEARCH_ONLY`. At every single
 hold, a trivial rule — hold everything, or hold nothing — beats both models.**
+
+*Re-scored 2026-09-14. Every deflated Sharpe below is now deflated against the frozen ledger's **nine**
+SPENT trials; they were previously quoted at six. Raw metrics are unchanged and re-deflation is
+rank-preserving, so no comparison in this report moved — only levels. Full before/after table and the
+two corrections still outstanding: [`TRIAL-LEDGER.md`](TRIAL-LEDGER.md), "Re-scoring, 2026-09-14".*
 
 The most important finding is not about either model. It is that **the deflated Sharpe ratio, as this
 study computes it, does not measure skill for a long-only strategy in a trending market.** Thirty
@@ -26,8 +31,16 @@ powershell -ExecutionPolicy Bypass -File scripts/supervise_timesfm_forecasts.ps1
 .venv/Scripts/python.exe scripts/run_short_horizon_experiment.py --arm noise --noise-seeds 30 --out reports/short_horizon/results-noise-control.json
 ```
 
+Re-scoring the stored results against the ledger's current trial count, which runs **no trial and
+spends no ordinal**:
+
+```bash
+.venv/Scripts/python.exe scripts/rescore_short_horizon_multiplicity.py --check
+```
+
 Budget and every amendment: [`TRIAL-LEDGER.md`](TRIAL-LEDGER.md). Raw results:
-`results-ridge.json`, `results-timesfm.json`, `results-noise-control.json`.
+`results-ridge.json`, `results-timesfm.json`, `results-timesfm25.json`, `results-noise-control.json`.
+Each stores its originals under `*_as_published` keys.
 
 ## The comparison
 
@@ -46,12 +59,14 @@ missing forecasts** in the TimesFM arm, so both models were scored on exactly th
 
 | Hold | Ridge | TimesFM | Noise median | Gate | Best verdict |
 |---:|---:|---:|---:|---:|---|
-| 1 | 0.0265 | 0.0232 | 0.0000 | 0.95 | `RESEARCH_ONLY` |
-| 2 | 0.0593 | 0.0043 | 0.1615 | 0.95 | `RESEARCH_ONLY` |
-| 3 | 0.0947 | **0.1914** | 0.5504 | 0.95 | `RESEARCH_ONLY` |
+| 1 | 0.0156 | 0.0135 | 0.0000 | 0.95 | `RESEARCH_ONLY` |
+| 2 | 0.0374 | 0.0022 | 0.1134 | 0.95 | `RESEARCH_ONLY` |
+| 3 | 0.0626 | **0.1371** | 0.4626 | 0.95 | `RESEARCH_ONLY` |
 
-The best number in the whole study is TimesFM's **0.1914** at hold 3, against a requirement of 0.95.
-It is not a near miss, and it is a third of what the median coin flip scored on the same data.
+The best number in this two-arm comparison is TimesFM 3.0's **0.1371** at hold 3, against a
+requirement of 0.95. It is not a near miss, and it is under a third of what the median coin flip
+scored on the same data. (A third arm, TimesFM 2.5, was declared and run afterwards as trials 7-9 and
+scored higher than both — `0.312642` at hold 3, still below the noise median. See the ledger.)
 
 ### The one-line summary
 
@@ -72,13 +87,17 @@ Neither model does either. They lose money in the falling market and lag the ris
 
 | Hold | Ridge DSR | TimesFM DSR | Noise min | Noise **median** | Noise max |
 |---:|---:|---:|---:|---:|---:|
-| 1 | 0.0265 | 0.0232 | 0.0000 | 0.0000 | 0.0000 |
-| 2 | 0.0593 | 0.0043 | 0.0577 | **0.1615** | 0.2410 |
-| 3 | 0.0947 | 0.1914 | 0.3197 | **0.5504** | 0.7063 |
+| 1 | 0.0156 | 0.0135 | 0.0000 | 0.0000 | 0.0000 |
+| 2 | 0.0374 | 0.0022 | 0.0363 | **0.1134** | 0.1778 |
+| 3 | 0.0626 | 0.1371 | 0.2454 | **0.4626** | 0.6263 |
 
-**At hold 3, all thirty random draws beat both models.** The worst coin flip scored 0.3197; the ridge
-scored 0.0947 and TimesFM 0.1914. The median coin flip scored **0.5504** — higher than this
-repository's best-ever recorded result of `0.397794`.
+**At hold 3, all thirty random draws beat both models.** The worst coin flip scored 0.2454; the ridge
+scored 0.0626 and TimesFM 0.1371. The median coin flip scored **0.4626** — higher than this
+repository's best-ever recorded result of `0.397794`, which was itself scored against a different
+search and is not directly comparable.
+
+*The count of noise seeds beating each model is identical before and after re-scoring: the
+transformation is rank-preserving. What changed is the level of every row, not the ordering.*
 
 ### The mechanism, measured
 
@@ -104,7 +123,8 @@ calls it skill.
   underperformed thirty of thirty coin flips. Its abstention rule pulled it *out* of a market that
   rose, which is worse than having no opinion.
 - **It raises a checkable question about prior work, stated as a question.** The repository's
-  historical best of `0.397794` sits below the noise median measured here. That does **not**
+  historical best of `0.397794` sits below the noise median measured here (and that comparison is
+  looser than it looks, since the two figures are deflated against different searches). That does **not**
   establish the earlier figure was drift rather than skill — it came from per-instrument campaigns
   with different exposure characteristics, and re-deriving it is outside this study's scope. It is a
   specific hypothesis someone should test rather than leave implied.
@@ -184,7 +204,7 @@ rescues the headline number, by declining to act on 99.9% of them.
 | Holds | 1, 2, 3 sessions — mapping to `horizon_sessions` 2, 3, 4 **proven** against the real label builder, not asserted |
 | Validation | 11 chronological folds, purged and embargoed by the horizon. ~1,000–2,000 rows purged and the same embargoed per trial |
 | Preprocessing | Standardisation fitted on **training rows only**, per fold |
-| Abstention | One grid, declared once for all six trials, calibrated on validation folds only, long-only |
+| Abstention | One grid (C1), declared once and applied identically to every published trial, calibrated on validation folds only, long-only. It was declared for the original six and was reused unchanged by trials 7-9 rather than re-calibrated |
 | Holdout | 252 sessions, sliced off before any fold, never read |
 | Gate | Existing `GatePolicyV1`, unchanged |
 

@@ -16,7 +16,9 @@ that follows.
 | QuantOS short-horizon model — holds {1, 2, 3} | 3 | One model class, one feature contract, three horizons |
 | TimesFM 3.0 zero-shot — holds {1, 2, 3} | 3 | Frozen checkpoint, no fine-tuning |
 | Abstention threshold grid | 1 grid | Declared **once**, applied identically to all six trials. Calibrated on training/validation partitions only |
-| **Total** | **6 published trials + 1 calibration grid** | |
+| **Total as originally frozen** | **6 published trials + 1 calibration grid** | |
+| TimesFM 2.5 zero-shot — holds {1, 2, 3} | 3 | **Added by Amendment 4, 2026-09-12**, before any 2.5 result existed |
+| **Total in force** | **9 published trials + 1 calibration grid** | Every DSR in this file is deflated against 9. See "Re-scoring, 2026-09-14" |
 | Scope amendment (2026-09-10) | 0 | Declaring a computable universe is not a trial; it fixes the data both arms see, before any result |
 | Governed Mizan retrain | 1 ordinal | Separate study, separate ledger entry — see the work record |
 
@@ -55,17 +57,17 @@ whatever it was; a disappointing result does not return the ordinal.
 
 | # | Family | Hold | Status | Result | Recorded |
 |---|---|---:|---|---|---|
-| 1 | QuantOS short-horizon (ridge) | 1 | **SPENT** | Sharpe -0.2162; -0.000049/decision; 379 trades at 0.6% exposure; DSR **0.026515** vs 0.95; beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-10 |
-| 2 | QuantOS short-horizon (ridge) | 2 | **SPENT** | Sharpe -0.0888; -0.000052/decision; 755 trades at 1.2% exposure; DSR **0.059283** vs 0.95; beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-10 |
-| 3 | QuantOS short-horizon (ridge) | 3 | **SPENT** | Sharpe -0.0041; -0.000006/decision; 35,150 trades at 56.5% exposure; DSR **0.094711** vs 0.95; beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-10 |
-| 4 | TimesFM 3.0 zero-shot | 1 | **SPENT** | Sharpe -0.2357; -0.000007/decision; 58 trades at 0.1% exposure; DSR **0.023189** vs 0.95; beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-11 |
-| 5 | TimesFM 3.0 zero-shot | 2 | **SPENT** | Sharpe -0.4533; -0.000044/decision; 289 trades at 0.5% exposure; DSR **0.004270** vs 0.95; beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-11 |
-| 6 | TimesFM 3.0 zero-shot | 3 | **SPENT** | Sharpe +0.1456; +0.000199/decision; 35,425 trades at 56.9% exposure; DSR **0.191369** vs 0.95; beats cash: **YES** (lags Buy&Hold +0.4922, Noise median DSR 0.5504) -> `RESEARCH_ONLY` | 2026-09-11 |
+| 1 | QuantOS short-horizon (ridge) | 1 | **SPENT** | Sharpe -0.2162; -0.000049/decision; 379 trades at 0.6% exposure; DSR **0.015569** vs 0.95 (as published at 6: 0.026515); beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-10 |
+| 2 | QuantOS short-horizon (ridge) | 2 | **SPENT** | Sharpe -0.0888; -0.000052/decision; 755 trades at 1.2% exposure; DSR **0.037419** vs 0.95 (as published at 6: 0.059283); beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-10 |
+| 3 | QuantOS short-horizon (ridge) | 3 | **SPENT** | Sharpe -0.0041; -0.000006/decision; 35,150 trades at 56.5% exposure; DSR **0.062647** vs 0.95 (as published at 6: 0.094711); beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-10 |
+| 4 | TimesFM 3.0 zero-shot | 1 | **SPENT** | Sharpe -0.2357; -0.000007/decision; 58 trades at 0.1% exposure; DSR **0.013464** vs 0.95 (as published at 6: 0.023189); beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-11 |
+| 5 | TimesFM 3.0 zero-shot | 2 | **SPENT** | Sharpe -0.4533; -0.000044/decision; 289 trades at 0.5% exposure; DSR **0.002182** vs 0.95 (as published at 6: 0.004270); beats cash: **NO** -> `RESEARCH_ONLY` | 2026-09-11 |
+| 6 | TimesFM 3.0 zero-shot | 3 | **SPENT** | Sharpe +0.1456; +0.000199/decision; 35,425 trades at 56.9% exposure; DSR **0.137089** vs 0.95 (as published at 6: 0.191369); beats cash: **YES** (lags ALWAYS_TRADE +0.4922, Noise median DSR 0.4626) -> `RESEARCH_ONLY` | 2026-09-11 |
 | C1 | Abstention threshold grid | all | **SPENT** | Calibrated on walk-forward folds; selected 0.020 for hold 1 & 2, 0.000 for hold 3 | 2026-09-11 |
-| NOISE | Control — consumes **no trial** | all | **RUN** | 30 seeds, identical configuration. DSR median 0.0000 / 0.1615 / 0.5504 at holds 1/2/3. **All 30 seeds beat both models at hold 3** (worst draw 0.3197 vs ridge 0.0947, TimesFM 0.1914) | 2026-09-11 |
-| 7 | TimesFM 2.5 zero-shot (Apache-2.0) | 1 | **SPENT** | Sharpe +0.1146; +0.000012/decision; 380 trades at 0.6% exposure; DSR **0.167607** vs 0.95 (**0.118147** re-deflated at 9); beats cash: **marginally** (cash 0.0000) but only by abstaining on 99.4% of decisions -> `RESEARCH_ONLY` | 2026-09-13 |
-| 8 | TimesFM 2.5 zero-shot (Apache-2.0) | 2 | **SPENT** | Sharpe +0.0201; +0.000011/decision; 9,419 trades at 15.1% exposure; DSR **0.107263** vs 0.95 (**0.071891** at 9); **loses to the noise control** (median 0.1615) -> `RESEARCH_ONLY` | 2026-09-13 |
-| 9 | TimesFM 2.5 zero-shot (Apache-2.0) | 3 | **SPENT** | Sharpe +0.3518; +0.000435/decision; 29,791 trades at 47.9% exposure; DSR **0.394441** vs 0.95 (**0.312642** at 9); **loses to the noise control** (median 0.5504) and to Buy&Hold +0.4947 and PreviousSign +0.4400 -> `RESEARCH_ONLY` | 2026-09-13 |
+| NOISE | Control — consumes **no trial** | all | **RUN** | 30 seeds, identical configuration. DSR median 0.0000 / 0.1134 / 0.4626 at holds 1/2/3. **All 30 seeds beat the ridge and TimesFM 3.0 at hold 3** (worst draw 0.2454 vs ridge 0.0626, TimesFM 3.0 0.1371); 29 of 30 beat TimesFM 2.5 (0.3126) | 2026-09-11 |
+| 7 | TimesFM 2.5 zero-shot (Apache-2.0) | 1 | **SPENT** | Sharpe +0.1146; +0.000012/decision; 380 trades at 0.6% exposure; DSR **0.118147** vs 0.95 (as published at 6: 0.167607); beats cash: **marginally** (cash 0.0000) but only by abstaining on 99.4% of decisions -> `RESEARCH_ONLY` | 2026-09-13 |
+| 8 | TimesFM 2.5 zero-shot (Apache-2.0) | 2 | **SPENT** | Sharpe +0.0201; +0.000011/decision; 9,419 trades at 15.1% exposure; DSR **0.071891** vs 0.95 (as published at 6: 0.107263); **loses to the noise control** (median 0.1134) -> `RESEARCH_ONLY` | 2026-09-13 |
+| 9 | TimesFM 2.5 zero-shot (Apache-2.0) | 3 | **SPENT** | Sharpe +0.3518; +0.000435/decision; 29,791 trades at 47.9% exposure; DSR **0.312642** vs 0.95 (as published at 6: 0.394441); **loses to the noise control** (median 0.4626) and to ALWAYS_TRADE +0.4947 and PreviousSign +0.4400 -> `RESEARCH_ONLY` | 2026-09-13 |
 
 ## Amendment 3, 2026-09-10: a noise control, declared before the TimesFM result exists
 
@@ -101,15 +103,19 @@ out similar numbers to a forecaster that knows nothing.
 30 seeds, identical subset, folds, costs and abstention grid. This is the most consequential
 measurement in the study and it is about the **method**, not the models.
 
-| Hold | Ridge DSR | Noise DSR min | Noise DSR median | Noise DSR max | Ridge Sharpe | Noise median Sharpe | Buy-and-hold Sharpe |
+| Hold | Ridge DSR | Noise DSR min | Noise DSR median | Noise DSR max | Ridge Sharpe | Noise median Sharpe | ALWAYS_TRADE Sharpe |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| 1 | 0.0265 | 0.0000 | **0.0000** | 0.0000 | -0.2162 | -1.3001 | -1.4340 |
-| 2 | 0.0593 | 0.0577 | **0.1615** | 0.2410 | -0.0888 | +0.1063 | -0.0018 |
-| 3 | 0.0947 | 0.3197 | **0.5504** | 0.7063 | -0.0041 | +0.4863 | +0.4922 |
+| 1 | 0.0156 | 0.0000 | **0.0000** | 0.0000 | -0.2162 | -1.3001 | -1.4340 |
+| 2 | 0.0374 | 0.0363 | **0.1134** | 0.1778 | -0.0888 | +0.1063 | -0.0018 |
+| 3 | 0.0626 | 0.2454 | **0.4626** | 0.6263 | -0.0041 | +0.4863 | +0.4922 |
 
-**At hold 3 all thirty noise seeds beat the ridge.** The worst random draw scored DSR 0.3197 against
-the ridge's 0.0947, and the median random draw scored **0.5504** -- higher than this repository's
-best-ever recorded result of `0.397794`.
+*Every DSR in this table is re-scored against the nine-trial budget (see "Re-scoring, 2026-09-14").
+The Sharpe columns are raw metrics and are unchanged. As published at six trials the ridge column
+read 0.0265 / 0.0593 / 0.0947 and the noise median 0.0000 / 0.1615 / 0.5504.*
+
+**At hold 3 all thirty noise seeds beat the ridge.** The worst random draw scored DSR 0.2454 against
+the ridge's 0.0626, and the median random draw scored **0.4626** -- higher than this repository's
+best-ever recorded result of `0.397794`, which was itself scored against a different search.
 
 ### Why, measured rather than speculated
 
@@ -128,10 +134,10 @@ including one that knows nothing.
 
 ### What follows
 
-1. **A DSR below the noise median is worse than it looks.** The ridge at hold 3 (0.0947) did not
+1. **A DSR below the noise median is worse than it looks.** The ridge at hold 3 (0.0626) did not
    merely fail the gate; it underperformed thirty out of thirty coin flips. Its abstention rule took
    it *out* of a market that rose, which is a worse outcome than having no opinion.
-2. **Buy-and-hold is the comparator that matters here**, not zero. Every result in this study is
+2. **`ALWAYS_TRADE` is the comparator that matters here**, not zero. Every result in this study is
    reported against it.
 3. **This does not weaken the gate and is not an excuse.** `GatePolicyV1.min_deflated_sharpe = 0.95`
    is unchanged. Nothing passed it, nothing is promotable, and no threshold was adjusted.
@@ -322,56 +328,51 @@ That prior was **half wrong and is not being quietly restated**.
 
 | Hold | 3.0 DSR | **2.5 DSR** | 2.5 Sharpe | 3.0 Sharpe |
 |---:|---:|---:|---:|---:|
-| 1 | 0.023189 | **0.167607** | +0.1146 | -0.2357 |
-| 2 | 0.004270 | **0.107263** | +0.0201 | -0.4533 |
-| 3 | 0.191369 | **0.394441** | +0.3518 | +0.1456 |
+| 1 | 0.013464 | **0.118147** | +0.1146 | -0.2357 |
+| 2 | 0.002182 | **0.071891** | +0.0201 | -0.4533 |
+| 3 | 0.137089 | **0.312642** | +0.3518 | +0.1456 |
 
-All six figures above are on the same multiplicity basis of 6, so the comparison is like for like.
+All six figures above are now on the same multiplicity basis of **9**, so the comparison is like for
+like. As published at six they read 0.023189 / 0.004270 / 0.191369 for 3.0 and 0.167607 / 0.107263 /
+0.394441 for 2.5. Re-deflation is rank-preserving, so every comparison in this section is unchanged.
 The Apache-2.0 checkpoint is a **better forecaster on this data than the non-commercial one** —
 positive Sharpe at all three holds where 3.0 was negative at two. This was not expected and is
 recorded because it was not.
 
 ### And it still fails, on all three independent tests
 
-1. **The gate.** Best is 0.394441 against `min_deflated_sharpe = 0.95`. Not close at any hold.
-2. **The noise control.** At the same basis of 6, noise median DSR is 0.0000 / 0.1615 / 0.5504.
+1. **The gate.** Best is 0.312642 against `min_deflated_sharpe = 0.95`. Not close at any hold.
+2. **The noise control.** At the same basis of 9, noise median DSR is 0.0000 / 0.1134 / 0.4626.
    Noise **still beats 2.5 at holds 2 and 3** — the two holds where the candidate actually trades.
-   At hold 3, 2.5's 0.394441 sits above the worst of 30 noise draws (0.3197) and well below their
+   At hold 3, 2.5's 0.312642 sits above the worst of 30 noise draws (0.2454) and well below their
    median.
 3. **The trivial baselines.** At hold 3, where the candidate takes 29,791 positions at 47.9%
-   exposure, `BUY_AND_HOLD` scores +0.4947 and `PREVIOUS_SIGN` +0.4400 against its +0.3518.
+   exposure, `ALWAYS_TRADE` scores +0.4947 and `PREVIOUS_SIGN` +0.4400 against its +0.3518.
 
 ### The one place a real model finally beat the control, and why it is not a result
 
-Hold 1 is the **only** trial in this program where a real model outscored noise: 0.167607 against a
+Hold 1 is the **only** trial in this program where a real model outscored noise: 0.118147 against a
 noise median of 0.0000. The mechanism disqualifies it as evidence of skill:
 
 - The candidate abstained on **99.4%** of decisions — 380 trades out of 108,623, exposure 0.006.
 - Its Sharpe of +0.1146 is against `CASH` at exactly 0.0000. It is a cash position with a tilt.
-- `BUY_AND_HOLD` at hold 1 is **-1.4320**. The noise arm sat at ~50% exposure in that decline and
+- `ALWAYS_TRADE` at hold 1 is **-1.4320**. The noise arm sat at ~50% exposure in that decline and
   earned a negative Sharpe, which floors DSR at 0.0000.
 
 So hold 1 says the abstention rule avoided a falling market while the control participated in it.
 That is the C1 grid working as designed, not the forecaster ranking names correctly.
 
-### Multiplicity: these numbers are quoted at 6 and the budget is now 9
+### Multiplicity: resolved 2026-09-14
 
-`scripts/run_short_horizon_experiment.py:63` hardcodes `DECLARED_TRIALS = 6`. It is a claimed path
-and was **not edited**; the figures above are reported exactly as the runner produced them, and
-re-deflated beside them using the repository's own `OverfittingDiagnostics.deflated_sharpe_ratio`:
+This section previously read "these numbers are quoted at 6 and the budget is now 9", noted that
+`DECLARED_TRIALS = 6` was a claimed path left unedited, and gave a hand-computed re-deflation beside
+each published figure. **Both halves are now closed.** The constant is `9` and is verified against
+this ledger at run time, and every row above — 1-9 and the NOISE control — is quoted at 9. The
+hand-computed values in this section (`0.118147 / 0.071891 / 0.312642`) were reproduced exactly by
+the re-scoring tool and are now simply the published figures for trials 7-9.
 
-| Hold | DSR as scored (6) | DSR re-deflated (9) | Delta |
-|---:|---:|---:|---:|
-| 1 | 0.167607 | **0.118147** | -0.049460 |
-| 2 | 0.107263 | **0.071891** | -0.035372 |
-| 3 | 0.394441 | **0.312642** | -0.081799 |
-
-The re-deflated column is the honest figure under the budget that now exists. It is **not** compared
-against the noise control above, because those draws were themselves scored at 6; comparing 2.5 at 9
-against noise at 6 would understate the candidate.
-
-Every short-horizon DSR in rows 1-6 is likewise quoted at its own scoring-time count and would fall
-against 9. Those rows are left exactly as their owner wrote them.
+The comparison against the noise control is now like for like, because the control was re-scored on
+the identical basis rather than left at 6.
 
 ### Standing instruction
 
@@ -379,3 +380,84 @@ against 9. Those rows are left exactly as their owner wrote them.
 searching checkpoints for a number — the precise failure this ledger exists to prevent. The
 foundation-model direction has now been tested under both a non-commercial and a permissive
 checkpoint and has no edge under either.
+
+## Re-scoring, 2026-09-14: every row is now deflated against nine trials
+
+Founder instruction, 2026-09-14: *"Re-score every short-horizon ridge, TimesFM 3.0, TimesFM 2.5, and
+noise result against the frozen nine-trial multiplicity budget ... preserve the original raw metrics
+... and do not run any additional trial or consume a new ordinal."*
+
+**No trial was run. No ordinal was spent. No holdout was touched. No evaluator was invoked.** The
+re-scoring reads the stored results, recomputes one closed-form statistic per row, and writes them
+back: `scripts/rescore_short_horizon_multiplicity.py`.
+
+### What moved, and what did not
+
+| | |
+|---|---|
+| Changed | `deflated_sharpe_ratio`, `multiplicity_count`, `declared_trials`, `gate_passed`, `verdict`, and the noise distribution's order statistics |
+| Preserved byte-identical | Sharpe, hit rate, trades, exposure, max drawdown, total and mean net return, fold counts, row counts, abstention grid and thresholds, every per-seed noise Sharpe |
+| Preserved as published | The original DSR of every row, under `*_as_published` keys in each results file |
+
+### Every row, before and after
+
+| # | Arm | Hold | As published (6) | **Re-scored (9)** | Delta |
+|---|---|---:|---:|---:|---:|
+| 1 | ridge | 1 | 0.026515 | **0.015569** | -0.010946 |
+| 2 | ridge | 2 | 0.059283 | **0.037419** | -0.021864 |
+| 3 | ridge | 3 | 0.094711 | **0.062647** | -0.032064 |
+| 4 | TimesFM 3.0 | 1 | 0.023189 | **0.013464** | -0.009725 |
+| 5 | TimesFM 3.0 | 2 | 0.004270 | **0.002182** | -0.002088 |
+| 6 | TimesFM 3.0 | 3 | 0.191369 | **0.137089** | -0.054280 |
+| 7 | TimesFM 2.5 | 1 | 0.167607 | **0.118147** | -0.049460 |
+| 8 | TimesFM 2.5 | 2 | 0.107263 | **0.071891** | -0.035372 |
+| 9 | TimesFM 2.5 | 3 | 0.394441 | **0.312642** | -0.081799 |
+| NOISE | control | 1 | 0.000000 | 0.000000 | +0.000000 |
+| NOISE | control | 2 | 0.148551 | 0.103240 | -0.045311 |
+| NOISE | control | 3 | 0.419649 | 0.336002 | -0.083647 |
+
+Noise distribution over 30 seeds, median DSR: `0.0000 / 0.1615 / 0.5504` becomes
+**`0.0000 / 0.1134 / 0.4626`**; worst draw at hold 3 `0.3197` becomes **`0.2454`**.
+
+### No conclusion changes, and that is the point
+
+The re-deflation applies the same monotone transformation to every row at a given hold, so it is
+**rank-preserving**. Verified rather than assumed: the number of noise seeds beating each model is
+identical before and after — 0/30 at hold 1, and at hold 3 all 30 beat the ridge and TimesFM 3.0
+while 29 of 30 beat TimesFM 2.5. Nothing became promotable; nothing stopped being beaten by the
+control. **The levels fall and the ordering is untouched.**
+
+The best figure in the whole program is now **`0.312642`** (TimesFM 2.5, hold 3) against a `0.95`
+gate, and it remains below the noise median of `0.4626` at the same hold.
+
+### How the sample length was recovered, since it was never serialised
+
+The pre-repair scorer passed `sample_length_bars` without recording it. It was recovered by
+inversion and the tool refuses to write unless three independent checks agree:
+
+1. a unique integer per arm and hold reproduces the published DSR at the published count;
+2. all four arms agree on one value per hold — **2173 / 2172 / 2171** at holds 1 / 2 / 3;
+3. all **90** noise draws, which store *unrounded* Sharpe, reproduce their published DSR **exactly**.
+
+Independent corroboration: the hand-computed values in Amendment 4's result section
+(`0.118147 / 0.071891 / 0.312642`) were produced by a different agent on 2026-09-13 and reproduce to
+the digit.
+
+**Two of the twelve candidate rows reproduce one unit-in-the-last-place off** — ridge hold 2
+(`0.059284` against `0.059283`) and TimesFM 2.5 hold 3 (`0.394440` against `0.394441`). The stored
+Sharpe is itself rounded to six decimals, and a value inside its own rounding envelope lands either
+side of that boundary. Disclosed rather than smoothed over.
+
+### The correction this does NOT apply
+
+The evaluator was repaired at `056fb1c6` — overlapping positions were compounded, the abstention
+threshold was selected and measured on the same rows, and the DSR's sample length and annualisation
+disagreed. **Those repairs move the raw metrics, and the raw metrics above are pre-repair.** Undoing
+that requires re-running the nine trials, which this instruction explicitly forbade.
+
+So the correct reading of every figure in this ledger is: *the deflation is now honest at the metrics
+that were actually published, and those metrics are still the output of an evaluator known to have
+been wrong in four specific ways.* See
+`agent_context/work/active/20260914-NOTICE-short-horizon-evaluator-repaired-invalidates-ledger-numbers.md`.
+
+Records: `20260914-1520Z-claude-short-horizon-multiplicity-rescore.md`.
