@@ -171,6 +171,18 @@ Notices filed (additive; no other record edited):
 - `20260914-NOTICE-xs-entitlement-wired-under-hermes-claim.md`
 - `20260914-NOTICE-flagship-fee-display-and-model-identity-under-antigravity-claim.md`
 - `20260914-NOTICE-short-horizon-evaluator-repaired-invalidates-ledger-numbers.md`
+- `20260914-NOTICE-ci-split-into-parallel-jobs-under-ci-workflow-claim.md`
+
+Follow-on, on separate founder instruction after the merge and push:
+
+- `.github/workflows/ci.yml`: split one seven-gate serial job into `static` / `tests` (matrix
+  forward+reverse) / `craft` / `gates` aggregator. Run `34839894115` was cancelled at the 30-minute
+  timeout mid-suite, skipping the craft checkers and both audits. **Not caused by this record's 29
+  new tests** — the run that added them passed in 28m33s, and the next run, changing one Markdown
+  file, died; the margin had been 34 seconds since before this session. Owned by
+  `20260821-claude-ci-workflow.md`; notice filed.
+- `agent_context/CURRENT.md`: gate table re-measured at `cd57e5b0` (1,473 -> 1,519 tests, 205 -> 208
+  mypy files). Header and that table only; claimed elsewhere, edited on founder instruction.
 
 ## Blockers and conflicts
 
