@@ -5,7 +5,11 @@ OWNER: Claude Code (Opus 5)
 TOOL: Claude Code  
 STARTED_UTC: 2026-09-15T09:00:00Z  
 STARTING_REVISION: 692fb5c7627510f028dfeb5af06cbfb9d8318b80  
-WORKTREE_OR_BRANCH: `D:\quant_system`, branch `main` (shared checkout)
+WORKTREE_OR_BRANCH: `D:\quant_system`, branches `main` and `claude/paper-report-baselines`
+  (shared checkout). The branch was cut at `692fb5c7` on founder instruction to commit, and carries
+  exactly one commit, `a85c4b8f`, which was then fast-forwarded into `main` on founder instruction
+  to merge. **It is fully merged and holds nothing `main` does not.** It is mine and safe to delete;
+  deletion is not done without being asked (PROTOCOL §8.3).
 
 ## Authorization
 
