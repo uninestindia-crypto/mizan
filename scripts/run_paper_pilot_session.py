@@ -518,6 +518,171 @@ def weight_drift_report(
     return sorted(drifted, key=lambda pair: pair[1], reverse=True)
 
 
+def _pct(value: Decimal) -> str:
+    return f"{value.quantize(Decimal('0.0001')):+}"
+
+
+def session_baselines(
+    *,
+    initial_capital: Decimal,
+    final_equity: Decimal,
+    positions: Mapping[str, Any],
+    marks: Mapping[str, Decimal],
+    nifty_by_date: Mapping[str, float],
+    window_start: date | None,
+    window_end: date,
+) -> list[dict[str, str]]:
+    """What the book returned, against the alternatives, over its own holding window.
+
+    A book reporting only its own P&L can lose to doing nothing for weeks and read as fine. The
+    number Gate 1B turns on is not "did it make money", it is "did it beat holding the index and
+    beat not trading" -- and between governed trials nothing printed that. Measured on
+    ``trial_mizan_h11_003`` the flagship's Sharpe was +0.167 against BUY_AND_HOLD +1.404 and
+    PREVIOUS_SIGN +1.631, while its own deflated Sharpe rose across three trials. That divergence
+    is what this makes visible daily.
+
+    Three baselines, each answering a different question, all over ``window_start..window_end``:
+
+    - **Equal-weight, same names** -- did the *sizing* help? Same picks, equal rupees at entry.
+      The gap to the book is weight drift, which ``weight_drift_report`` reports and this runner
+      does not correct.
+    - **NIFTY 50 buy-and-hold** -- did any of this beat the market? The difference is printed as
+      the selection line.
+    - **Cash** -- did trading beat not trading? Zero by definition, and the honest floor: a book
+      below it paid costs to lose money.
+
+    PREVIOUS_SIGN and EQUITY_DUAL_MOMENTUM are **deliberately absent**. Both are per-instrument
+    signal rules needing a decision history this runner does not keep, and inventing a portfolio
+    construction for them here would print a number that does not correspond to the one
+    ``modeling/validation.py`` publishes under the same name. A baseline that disagrees with the
+    governed one is worse than no baseline.
+
+    A baseline whose inputs are missing reports ``unavailable`` and says why. It is never defaulted
+    to zero and never dropped silently -- the same rule the unpriced-entitlement work applied to
+    the XS book, for the same reason: a fabricated comparison is worse than an absent one.
+    """
+    rows: list[dict[str, str]] = []
+
+    if initial_capital <= 0:
+        return [
+            {
+                "baseline": "This book",
+                "answers": "actual",
+                "return_pct": "unavailable",
+                "note": "initial capital is not positive; every return is undefined against it",
+            }
+        ]
+
+    book_pct = (final_equity / initial_capital - 1) * 100
+    rows.append(
+        {
+            "baseline": "This book",
+            "answers": "actual, net of statutory fees",
+            "return_pct": _pct(book_pct),
+            "note": f"equity Rs {final_equity} on Rs {initial_capital}",
+        }
+    )
+
+    # Equal-weight the same names: same picks, equal rupees at entry, cash left as cash.
+    invested_at_cost = Decimal("0.00")
+    per_name: list[Decimal] = []
+    unmarked: list[str] = []
+    for symbol, position in positions.items():
+        cost = Decimal(position.quantity) * position.average_price
+        invested_at_cost += cost
+        mark = marks.get(symbol)
+        if mark is None or position.average_price <= 0:
+            unmarked.append(symbol)
+            continue
+        per_name.append(mark / position.average_price - 1)
+
+    if not per_name:
+        rows.append(
+            {
+                "baseline": "Equal-weight, same names",
+                "answers": "did the sizing help?",
+                "return_pct": "unavailable",
+                "note": "no held name has both an entry price and a closing mark",
+            }
+        )
+    else:
+        mean_leg = sum(per_name, Decimal("0")) / Decimal(len(per_name))
+        cash_share = initial_capital - invested_at_cost
+        ew_equity = cash_share + invested_at_cost * (1 + mean_leg)
+        note = f"{len(per_name)} leg(s), equal rupees at entry, cash held as cash"
+        if unmarked:
+            note += f"; {len(unmarked)} unmarked and excluded: {', '.join(sorted(unmarked)[:5])}"
+        rows.append(
+            {
+                "baseline": "Equal-weight, same names",
+                "answers": "did the sizing help?",
+                "return_pct": _pct((ew_equity / initial_capital - 1) * 100),
+                "note": note,
+            }
+        )
+
+    # NIFTY 50 buy-and-hold over the same window.
+    nifty_pct: Decimal | None = None
+    if window_start is None:
+        nifty_note = "no open position, so the book has no holding window to compare against"
+    else:
+        start_close = _closest_on_or_before(nifty_by_date, window_start)
+        end_close = _closest_on_or_before(nifty_by_date, window_end)
+        if start_close is None or end_close is None or start_close <= 0:
+            nifty_note = (
+                f"no cached NIFTY 50 close on or before "
+                f"{window_start.isoformat() if start_close is None else window_end.isoformat()}"
+            )
+        else:
+            nifty_pct = (Decimal(str(end_close)) / Decimal(str(start_close)) - 1) * 100
+            nifty_note = f"{window_start.isoformat()} to {window_end.isoformat()}"
+    rows.append(
+        {
+            "baseline": "NIFTY 50 buy-and-hold",
+            "answers": "did any of this beat the market?",
+            "return_pct": "unavailable" if nifty_pct is None else _pct(nifty_pct),
+            "note": nifty_note,
+        }
+    )
+
+    rows.append(
+        {
+            "baseline": "Cash",
+            "answers": "did trading beat not trading?",
+            "return_pct": _pct(Decimal("0")),
+            "note": "zero by definition; a book below this paid costs to lose money",
+        }
+    )
+
+    # The line Gate 1B turns on, stated rather than left to the reader to subtract.
+    rows.append(
+        {
+            "baseline": "Selection vs NIFTY 50",
+            "answers": "the Gate 1B number",
+            "return_pct": "unavailable" if nifty_pct is None else _pct(book_pct - nifty_pct),
+            "note": (
+                "book minus index, in percentage points; negative means the picking cost money"
+                if nifty_pct is not None
+                else "undefined while the index leg is unavailable"
+            ),
+        }
+    )
+    return rows
+
+
+def _closest_on_or_before(series: Mapping[str, float], when: date) -> float | None:
+    """The series value on ``when``, or the latest before it.
+
+    Sessions fall on holidays and the cached macro series ends at its last completed close, so an
+    exact-date lookup returned nothing on exactly the days a comparison is wanted.
+    """
+    wanted = when.isoformat()
+    candidates = [key for key in series if key <= wanted]
+    if not candidates:
+        return None
+    return series[max(candidates)]
+
+
 def now_ist() -> datetime:
     return datetime.now(_IST)
 
@@ -2105,6 +2270,31 @@ def run_paper_session(
         "audit_events_count": len(engine.audit_log),
     }
 
+    # What the book returned against the alternatives, over its own holding window.
+    #
+    # `portfolio` is the state as loaded at session start and is never rebound, so its holdings
+    # carry the `opened_on` of the window actually held into today -- which is the window a
+    # comparison has to run over. On a rebalance session the names bought today are deliberately
+    # outside it: they have been held for no time at all.
+    nifty_series: dict[str, float] = {}
+    for macro_dir in reversed(_MACRO_DIRS):
+        nifty_series.update(load_macro_series(macro_dir, "NIFTY50"))
+    window_start = (
+        min(holding.opened_on for holding in portfolio.holdings.values())
+        if portfolio.holdings
+        else None
+    )
+    baselines = session_baselines(
+        initial_capital=reconciliation.initial_cash,
+        final_equity=reconciliation.total_equity,
+        positions=engine.positions,
+        marks=final_prices,
+        nifty_by_date=nifty_series,
+        window_start=window_start,
+        window_end=session_date,
+    )
+    feedback_payload["baselines"] = baselines
+
     # Save final JSON feedback
     json_path = output_dir / f"paper_session_{session_date}_{session_id}.json"
     with open(json_path, "w", encoding="utf-8") as f:
@@ -2156,7 +2346,28 @@ def run_paper_session(
             f"| Total Slippage Cost | Rs {_paisa_str(reconciliation.total_slippage_cost)} |\n\n"
         )
 
-        f.write("## 2. Order Execution & Fills (IST)\n\n")
+        f.write("## 2. Against the Alternatives\n\n")
+        f.write(
+            "Over the window this book has actually held"
+            + (
+                f" (`{window_start.isoformat()}` to `{session_date}`).\n\n"
+                if window_start
+                else ", which is empty because nothing is held.\n\n"
+            )
+        )
+        f.write("| Baseline | Answers | Return % | Basis |\n|---|---|---:|---|\n")
+        for row in baselines:
+            f.write(
+                f"| {row['baseline']} | {row['answers']} | {row['return_pct']} | {row['note']} |\n"
+            )
+        f.write(
+            "\n*A negative selection line means the picking cost money against simply holding the "
+            "index. PREVIOUS_SIGN and EQUITY_DUAL_MOMENTUM are not shown here: they need a "
+            "decision history this runner does not keep, and an approximation would disagree with "
+            "the figures `modeling/validation.py` publishes under those names.*\n\n"
+        )
+
+        f.write("## 3. Order Execution & Fills (IST)\n\n")
         f.write(f"- **Orders Submitted**: `{reconciliation.orders_submitted}`\n")
         f.write(f"- **Orders Filled**: `{reconciliation.orders_filled}`\n")
         f.write(f"- **Total Fills**: `{reconciliation.total_fills_count}`\n\n")
@@ -2169,7 +2380,7 @@ def run_paper_session(
                 f"| `{f_item.fill_id}` | `{f_item.symbol}` | **{f_item.side.value}** | {f_item.quantity} | Rs {_paisa_str(f_item.price)} | Rs {_paisa_str(f_item.fee)} | `{fill_ts_ist}` |\n"
             )
 
-        f.write("\n## 3. Ending Open Positions at Market Close\n\n")
+        f.write("\n## 4. Ending Open Positions at Market Close\n\n")
         if reconciliation.open_positions:
             f.write(
                 "| Symbol | Quantity | Close Price (Rs) | Market Value (Rs) |\n|---|---:|---:|---:|\n"
