@@ -46,5 +46,21 @@
     "series": "EQ",
     "subject": "Interim Dividend - Re 1 Per Share",
     "symbol": "CHALET"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Chalet Hotels Limited",
+    "exDate": "11-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE427F01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "11-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "CHALET"
   }
 ]

@@ -1,21 +1,5 @@
 [
   {
-    "bcEndDate": "30-Sep-2021",
-    "bcStartDate": "17-Sep-2021",
-    "caBroadcastDate": null,
-    "comp": "Anupam Rasayan India Limited",
-    "exDate": "15-Sep-2021",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE930P01018",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": " Annual General Meeting",
-    "symbol": "ANURAS"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -29,6 +13,22 @@
     "recDate": "16-Sep-2021",
     "series": "EQ",
     "subject": " Dividend - Rs 0.50 Per Share",
+    "symbol": "ANURAS"
+  },
+  {
+    "bcEndDate": "30-Sep-2021",
+    "bcStartDate": "17-Sep-2021",
+    "caBroadcastDate": null,
+    "comp": "Anupam Rasayan India Limited",
+    "exDate": "15-Sep-2021",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE930P01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
     "symbol": "ANURAS"
   },
   {
@@ -64,22 +64,6 @@
     "symbol": "ANURAS"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "Anupam Rasayan India Limited",
-    "exDate": "02-Sep-2022",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE930P01018",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "05-Sep-2022",
-    "series": "EQ",
-    "subject": "Dividend - Re 1 Per Share",
-    "symbol": "ANURAS"
-  },
-  {
     "bcEndDate": "15-Sep-2022",
     "bcStartDate": "06-Sep-2022",
     "caBroadcastDate": null,
@@ -93,6 +77,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": "Annual General Meeting",
+    "symbol": "ANURAS"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Anupam Rasayan India Limited",
+    "exDate": "02-Sep-2022",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE930P01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "05-Sep-2022",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
     "symbol": "ANURAS"
   },
   {

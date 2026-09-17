@@ -190,5 +190,21 @@
     "series": "EQ",
     "subject": "Dividend - Rs 9 Per Share",
     "symbol": "TECHNOE"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Techno Electric & Engineering Company Limited",
+    "exDate": "11-Sep-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE285K01026",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "11-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 7 Per Share",
+    "symbol": "TECHNOE"
   }
 ]

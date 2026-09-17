@@ -160,22 +160,6 @@
     "symbol": "NHPC"
   },
   {
-    "bcEndDate": "29-Sep-2020",
-    "bcStartDate": "19-Sep-2020",
-    "caBroadcastDate": null,
-    "comp": "NHPC Limited",
-    "exDate": "17-Sep-2020",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE848E01016",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": " Annual General Meeting",
-    "symbol": "NHPC"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -189,6 +173,22 @@
     "recDate": "18-Sep-2020",
     "series": "EQ",
     "subject": " Dividend - Rs 0.32 Per Share",
+    "symbol": "NHPC"
+  },
+  {
+    "bcEndDate": "29-Sep-2020",
+    "bcStartDate": "19-Sep-2020",
+    "caBroadcastDate": null,
+    "comp": "NHPC Limited",
+    "exDate": "17-Sep-2020",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE848E01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
     "symbol": "NHPC"
   },
   {
@@ -352,22 +352,6 @@
     "symbol": "NHPC"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "NHPC Limited",
-    "exDate": "12-Aug-2024",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE848E01016",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "12-Aug-2024",
-    "series": "EQ",
-    "subject": "Dividend - Re 0.50 Per Share",
-    "symbol": "NHPC"
-  },
-  {
     "bcEndDate": "28-Aug-2024",
     "bcStartDate": "13-Aug-2024",
     "caBroadcastDate": null,
@@ -381,6 +365,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": "Annual General Meeting",
+    "symbol": "NHPC"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "NHPC Limited",
+    "exDate": "12-Aug-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE848E01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "12-Aug-2024",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.50 Per Share",
     "symbol": "NHPC"
   },
   {

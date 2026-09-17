@@ -16,22 +16,6 @@
     "symbol": "IRCTC"
   },
   {
-    "bcEndDate": "27-Oct-2020",
-    "bcStartDate": "21-Oct-2020",
-    "caBroadcastDate": null,
-    "comp": "Indian Railway Catering And Tourism Corporation Limited",
-    "exDate": "19-Oct-2020",
-    "faceVal": "2",
-    "ind": "-",
-    "isin": "INE335Y01012",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": " Annual General Meeting",
-    "symbol": "IRCTC"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -48,11 +32,11 @@
     "symbol": "IRCTC"
   },
   {
-    "bcEndDate": "29-Sep-2021",
-    "bcStartDate": "23-Sep-2021",
+    "bcEndDate": "27-Oct-2020",
+    "bcStartDate": "21-Oct-2020",
     "caBroadcastDate": null,
     "comp": "Indian Railway Catering And Tourism Corporation Limited",
-    "exDate": "21-Sep-2021",
+    "exDate": "19-Oct-2020",
     "faceVal": "2",
     "ind": "-",
     "isin": "INE335Y01012",
@@ -77,6 +61,22 @@
     "recDate": "22-Sep-2021",
     "series": "EQ",
     "subject": " Dividend - Rs 5 Per Share",
+    "symbol": "IRCTC"
+  },
+  {
+    "bcEndDate": "29-Sep-2021",
+    "bcStartDate": "23-Sep-2021",
+    "caBroadcastDate": null,
+    "comp": "Indian Railway Catering And Tourism Corporation Limited",
+    "exDate": "21-Sep-2021",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE335Y01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
     "symbol": "IRCTC"
   },
   {

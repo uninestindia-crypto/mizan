@@ -158,5 +158,21 @@
     "series": "EQ",
     "subject": "Dividend - Rs 2.50 Per Share",
     "symbol": "RHIM"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "RHI MAGNESITA INDIA LIMITED",
+    "exDate": "11-Sep-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE743M01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "14-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2.50 Per Share",
+    "symbol": "RHIM"
   }
 ]

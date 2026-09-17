@@ -112,22 +112,6 @@
     "symbol": "OLECTRA"
   },
   {
-    "bcEndDate": "28-Sep-2023",
-    "bcStartDate": "22-Sep-2023",
-    "caBroadcastDate": null,
-    "comp": "Olectra Greentech Limited",
-    "exDate": "21-Sep-2023",
-    "faceVal": "4",
-    "ind": "-",
-    "isin": "INE260D01016",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": "Annual General Meeting",
-    "symbol": "OLECTRA"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -141,6 +125,22 @@
     "recDate": "21-Sep-2023",
     "series": "EQ",
     "subject": "Dividend - Re 0.40 Per Share",
+    "symbol": "OLECTRA"
+  },
+  {
+    "bcEndDate": "28-Sep-2023",
+    "bcStartDate": "22-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Olectra Greentech Limited",
+    "exDate": "21-Sep-2023",
+    "faceVal": "4",
+    "ind": "-",
+    "isin": "INE260D01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
     "symbol": "OLECTRA"
   },
   {

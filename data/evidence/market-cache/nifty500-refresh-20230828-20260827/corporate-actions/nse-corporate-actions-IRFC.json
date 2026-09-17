@@ -96,22 +96,6 @@
     "symbol": "IRFC"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "Indian Railway Finance Corporation Limited",
-    "exDate": "15-Sep-2023",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE053F07520",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "15-Sep-2023",
-    "series": "EQ",
-    "subject": "Dividend - Re 0.70 Per Share",
-    "symbol": "IRFC"
-  },
-  {
     "bcEndDate": "21-Sep-2023",
     "bcStartDate": "18-Sep-2023",
     "caBroadcastDate": null,
@@ -125,6 +109,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": "Annual General Meeting",
+    "symbol": "IRFC"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Indian Railway Finance Corporation Limited",
+    "exDate": "15-Sep-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE053F07520",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "15-Sep-2023",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.70 Per Share",
     "symbol": "IRFC"
   },
   {

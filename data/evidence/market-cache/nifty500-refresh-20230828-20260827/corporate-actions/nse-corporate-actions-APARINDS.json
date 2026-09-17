@@ -174,5 +174,21 @@
     "series": "EQ",
     "subject": "Dividend - Rs 51 Per Share",
     "symbol": "APARINDS"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Apar Industries Limited",
+    "exDate": "11-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE372A01015",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "14-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 60 Per Share",
+    "symbol": "APARINDS"
   }
 ]

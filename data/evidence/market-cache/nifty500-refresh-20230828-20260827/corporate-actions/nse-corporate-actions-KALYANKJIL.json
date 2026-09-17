@@ -46,5 +46,21 @@
     "series": "EQ",
     "subject": "Dividend - Rs 1.50 Per Share",
     "symbol": "KALYANKJIL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Kalyan Jewellers India Limited",
+    "exDate": "11-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE303R01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "12-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2.50 Per Share",
+    "symbol": "KALYANKJIL"
   }
 ]

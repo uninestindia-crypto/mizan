@@ -158,5 +158,21 @@
     "series": "EQ",
     "subject": "Dividend - Rs 2 Per Share",
     "symbol": "ASAHIINDIA"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Asahi India Glass Limited",
+    "exDate": "11-Sep-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE439A01020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "11-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2 Per Share",
+    "symbol": "ASAHIINDIA"
   }
 ]

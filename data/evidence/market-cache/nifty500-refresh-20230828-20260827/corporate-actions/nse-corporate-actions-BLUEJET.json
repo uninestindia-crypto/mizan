@@ -46,5 +46,21 @@
     "series": "EQ",
     "subject": "Dividend - Rs 1.20 Per Share",
     "symbol": "BLUEJET"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Blue Jet Healthcare Limited",
+    "exDate": "11-Sep-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE0KBH01020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "14-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.20 Per Share",
+    "symbol": "BLUEJET"
   }
 ]

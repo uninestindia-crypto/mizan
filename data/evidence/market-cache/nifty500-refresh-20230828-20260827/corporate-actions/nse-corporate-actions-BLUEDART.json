@@ -142,5 +142,21 @@
     "series": "EQ",
     "subject": "Dividend - Rs 25 Per Sh",
     "symbol": "BLUEDART"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Blue Dart Express Limited",
+    "exDate": "15-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE233B01017",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "15-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 25 Per Share",
+    "symbol": "BLUEDART"
   }
 ]

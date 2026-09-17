@@ -14,5 +14,21 @@
     "series": "EQ",
     "subject": "Interim Dividend - Re 0.60 Per Share",
     "symbol": "IREDA"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Indian Renewable Energy Development Agency Limited",
+    "exDate": "11-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE202E07104",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "11-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.75 Per Share",
+    "symbol": "IREDA"
   }
 ]

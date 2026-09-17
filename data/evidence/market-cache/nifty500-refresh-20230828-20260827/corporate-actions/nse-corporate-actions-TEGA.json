@@ -46,5 +46,21 @@
     "series": "EQ",
     "subject": "Dividend - Rs 2 Per Share",
     "symbol": "TEGA"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Tega Industries Limited",
+    "exDate": "11-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE011K01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "14-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2 Per Share",
+    "symbol": "TEGA"
   }
 ]
