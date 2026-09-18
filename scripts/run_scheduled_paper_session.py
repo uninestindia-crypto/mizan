@@ -28,8 +28,14 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    import argparse
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -70,6 +76,81 @@ HOLIDAY_AUTHORITY = PROJECT_ROOT / "data/authorities/nse-trading-holidays.json"
 
 def log(message: str) -> None:
     print(f"{datetime.now(IST):%Y-%m-%d %H:%M:%S IST} | {message}", flush=True)
+
+
+#: Flags for `SetThreadExecutionState`. `ES_CONTINUOUS` makes the request last until it is cleared
+#: rather than resetting one idle timer; `ES_SYSTEM_REQUIRED` keeps the *system* awake, which is what
+#: a headless compute job needs. `ES_AWAYMODE_REQUIRED` is deliberately not used: it exists for media
+#: playback that must continue with the display off, and it changes how the machine reports itself.
+ES_CONTINUOUS = 0x80000000
+ES_SYSTEM_REQUIRED = 0x00000001
+
+
+def _system_execution_state_setter() -> Callable[[int], int] | None:
+    """`SetThreadExecutionState`, or None where it cannot be reached."""
+    if sys.platform != "win32":
+        return None
+    import ctypes
+
+    windll = getattr(ctypes, "windll", None)
+    if windll is None:  # pragma: no cover - not reachable on the Windows build target
+        return None
+    try:
+        function = windll.kernel32.SetThreadExecutionState
+    except (AttributeError, OSError):  # pragma: no cover - defensive
+        return None
+    function.argtypes = [ctypes.c_uint]
+    function.restype = ctypes.c_uint
+    return cast("Callable[[int], int]", function)
+
+
+@contextmanager
+def keep_system_awake(
+    *,
+    _set_state: Callable[[int], int] | None = None,
+) -> Iterator[None]:
+    """Ask Windows not to idle-sleep the machine for as long as this run lasts.
+
+    The 09:00 scheduled task carries `WakeToRun`, so it wakes the machine to start this script --
+    and then nothing held the machine awake. On 2026-09-16 and 2026-09-17 the run was suspended
+    after **exactly 7m13s on both days**:
+
+        Kernel-Power 42  "The system is entering sleep.  Sleep Reason: System Idle"
+
+    It resumed only when somebody opened the lid, hours after the 15:30 IST close, so the session
+    reached its trading window with no window left and submitted zero orders. Coverage then sat far
+    below the rebalance minimum, `rebalance_executed` correctly refused, the hold clock never reset,
+    and the next day repeated it. The flagship book went 18 days without rebalancing that way, with
+    nothing wrong anywhere in the book.
+
+    Deliberately fail-soft: a run that refused to trade because Windows declined a scheduling hint
+    would be a worse defect than the one this closes. Every failure path logs and continues.
+
+    `_set_state` is a test seam, not an option.
+    """
+    set_state = _set_state if _set_state is not None else _system_execution_state_setter()
+    held = False
+    if set_state is None:
+        log("no power-request API on this platform; the session runs without one")
+    else:
+        try:
+            held = set_state(ES_CONTINUOUS | ES_SYSTEM_REQUIRED) != 0
+        except OSError as error:
+            log(f"could not request stay-awake ({error}); the session runs anyway")
+        else:
+            if held:
+                log("holding a system power request so the machine cannot idle-sleep mid-session")
+            else:
+                log("the stay-awake request was refused; the session runs anyway")
+    try:
+        yield
+    finally:
+        if held and set_state is not None:
+            try:
+                set_state(ES_CONTINUOUS)
+                log("released the system power request")
+            except OSError as error:  # pragma: no cover - defensive
+                log(f"could not release the stay-awake request ({error})")
 
 
 class NotATradingDay(Exception):
@@ -259,6 +340,14 @@ def main() -> int:
     parser.add_argument("--interval-seconds", default="30")
     args = parser.parse_args()
 
+    # The whole run sits inside the request, not just the session: the two suspensions that
+    # motivated this both landed during the pre-open freshness check, minutes before the session
+    # subprocess was even reached.
+    with keep_system_awake():
+        return _run(args)
+
+
+def _run(args: argparse.Namespace) -> int:
     today = datetime.now(IST).date()
     log(f"scheduled paper session for {today:%Y-%m-%d %A}")
     try:
