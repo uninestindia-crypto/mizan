@@ -172,15 +172,19 @@ one agent on one machine, which is the thing CI exists to stop anyone relying on
 Repair applied, the escape demonstrated closed through the public API, every gate green, and the
 NOTICE filed.
 
-**The working tree is not clean and nothing is committed.** It carries the three files under "Files
-changed" plus this record, on top of `data/evidence` churn that is not mine.
+The `data/evidence` churn in the tree is not mine and was left alone.
 `scripts/daily_auto_sync.ps1` stages an allowlist of `data/evidence` and `data/authorities` only
 (`:39-42`, `git add -- $OwnedPaths` at `:110`), so the 23:00 sweep will not pick them up.
 
-The branch `claude/evidence-reject-reparse-points` was cut but **holds no commit**; the work is in
-the working tree. The NOTICE carries the `WORKTREE_OR_BRANCH` claim so
-`scripts/audit-agent-claims.ps1` can see the branch once this record moves to `work/completed/` —
-the trap that made that audit exit 1 during the S1 repair earlier today.
+**Committed on founder instruction as `263ee286` on branch `claude/evidence-reject-reparse-points`,
+cut from `main` at `b6b1c93d`.** Exactly four paths were staged by name — PROTOCOL §4 forbids
+`git add -A` in a shared checkout — and the `data/evidence` churn in the tree was left untouched
+(0 of it staged, checked). The commit is 4 files, 496 insertions, 0 deletions.
+
+**Not pushed, and not merged into `main`.** Neither was instructed; `main` is unchanged at
+`b6b1c93d`. The NOTICE carries the `WORKTREE_OR_BRANCH` claim so `scripts/audit-agent-claims.ps1`
+can see the branch with this record in `work/completed/` — the trap that made that audit exit 1
+during the S1 repair earlier today.
 
 ## Next safe action
 
