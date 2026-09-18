@@ -4,6 +4,11 @@ STATUS: NOTICE (additive; no other record is edited, and no other function in th
 FILED_BY: Claude Code (Opus 5), `work/completed/20260917-1257Z-claude-integrity-scanner-non-directory-entry.md`  
 FILED_UTC: 2026-09-17T13:30:00Z  
 REVISION_EDITED: committed as `16d9e3cc` on branch `claude/evidence-scanner-catalog-entry`, cut from `main` at `9b12dd8c`. Not pushed, not merged.  
+WORKTREE_OR_BRANCH: `D:\quant_system`, branch `claude/evidence-scanner-catalog-entry` (shared
+checkout). This notice carries the claim because the work record it was filed from is COMPLETED and
+has moved to `work/completed/`, where `scripts/audit-agent-claims.ps1` cannot see it — which left the
+branch reading as UNCLAIMED and failed the audit at exit 1. The branch is mine and safe to delete
+once merged or abandoned; per PROTOCOL §8.3 nobody else should remove it.  
 AUTHORITY: explicit founder instruction, 2026-09-17 ("fix S1"), after a line-by-line audit of
 `src/quant_system/evidence/store.py` in that session.
 
