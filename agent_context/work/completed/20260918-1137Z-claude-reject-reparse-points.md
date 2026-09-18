@@ -181,14 +181,19 @@ cut from `main` at `b6b1c93d`.** Exactly four paths were staged by name — PROT
 `git add -A` in a shared checkout — and the `data/evidence` churn in the tree was left untouched
 (0 of it staged, checked). The commit is 4 files, 496 insertions, 0 deletions.
 
-**Not pushed, and not merged into `main`.** Neither was instructed; `main` is unchanged at
-`b6b1c93d`. The NOTICE carries the `WORKTREE_OR_BRANCH` claim so `scripts/audit-agent-claims.ps1`
+A follow-up commit `d787a733` recorded the branch and hash in this record and the NOTICE.
+
+**Fast-forwarded into `main` and pushed on founder instruction, 2026-09-18: `b6b1c93d..d787a733`.**
+No merge commit; `main` was in sync with `origin/main` at `b6b1c93d` and the branch was 2 ahead /
+0 behind. Re-verified on `main` before pushing: 69 passed across the new regression,
+`test_evidence_store.py`, `test_evidence_process_recovery.py` and the catalog-entry suite; ruff
+clean; strict mypy clean over 210 files. The NOTICE carries the `WORKTREE_OR_BRANCH` claim so `scripts/audit-agent-claims.ps1`
 can see the branch with this record in `work/completed/` — the trap that made that audit exit 1
 during the S1 repair earlier today.
 
 ## Next safe action
 
-A claim owner or the founder decides whether to commit and merge. Nothing else is required.
+Nothing is required. Open items, none of them blocking:
 
 Open, none of it blocking:
 

@@ -3,7 +3,9 @@
 STATUS: NOTICE (additive; no other record is edited, and no other function is touched)  
 FILED_BY: Claude Code (Opus 5), `work/completed/20260918-1137Z-claude-reject-reparse-points.md`  
 FILED_UTC: 2026-09-18T12:05:00Z  
-BRANCH: committed as `263ee286` on `claude/evidence-reject-reparse-points`, cut from `main` at `b6b1c93d`. Not pushed, not merged.  
+BRANCH: `263ee286` on `claude/evidence-reject-reparse-points`, cut from `main` at `b6b1c93d`.
+**Fast-forwarded into `main` and pushed on founder instruction, 2026-09-18: `b6b1c93d..d787a733`.**
+The change is live on `origin/main`; the branch holds nothing `main` does not.  
 WORKTREE_OR_BRANCH: `D:\quant_system`, branch `claude/evidence-reject-reparse-points` (shared
 checkout). This notice carries the claim, because the work record it was filed from is COMPLETED and
 lives in `work/completed/`, which `scripts/audit-agent-claims.ps1` does not read — the same trap that
