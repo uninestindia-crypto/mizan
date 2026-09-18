@@ -283,6 +283,13 @@ class EvidenceStore:
         resource_root = self.root / resource_type.value
         for resource_directory in sorted(resource_root.iterdir(), key=lambda path: path.name):
             if not resource_directory.is_dir():
+                # `list_manifests` and `list_verified` both treat a non-directory catalog entry as a
+                # fatal integrity error. Skipping it here made this scan more permissive than the
+                # read path it exists to certify: one stray file -- a partial copy, an interrupted
+                # sync, an editor swapfile -- produced a clean report on a store that could not be
+                # listed. Recorded rather than raised, for the same reason a corrupt resource is:
+                # one bad entry must not hide the state of every other one.
+                invalid.append(resource_directory.name)
                 continue
             try:
                 verified = self.open_verified(resource_type, resource_directory.name)
