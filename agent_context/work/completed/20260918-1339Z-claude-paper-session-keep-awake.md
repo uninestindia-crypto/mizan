@@ -161,6 +161,16 @@ contract; only a real 09:00 run with the lid shut on battery proves the outcome.
 
 Repair applied, the power request verified held on the real unmocked path, every gate green.
 
+**Committed as `9c832269` on branch `claude/paper-session-keep-awake`, cut from `main` at
+`6457102f`.** Three owned paths plus the branch-claim file were staged by name — PROTOCOL §4 forbids
+`git add -A` in a shared checkout — with 0 of the `data/evidence` churn staged alongside. 4 files,
+442 insertions, 0 deletions. **Not pushed and not merged**; `main` is unchanged at `6457102f`.
+
+The branch claim lives in `work/active/20260918-CLAIM-paper-session-keep-awake-branch.md`, because
+`scripts/audit-agent-claims.ps1` reads `work/active/` only and moving this record to
+`work/completed/` left the branch reading UNCLAIMED at exit 1. Unlike the S1 and S2 repairs there was
+no NOTICE to carry the claim, since the file this touched is owned by no record.
+
 **This fix is not verified in production and cannot be before Monday 2026-09-21.** Today is Friday;
 NSE does not trade at weekends and `require_trading_day` refuses non-trading days. The unit tests
 prove the contract — the request is taken with both flags, released on the normal and the exception
