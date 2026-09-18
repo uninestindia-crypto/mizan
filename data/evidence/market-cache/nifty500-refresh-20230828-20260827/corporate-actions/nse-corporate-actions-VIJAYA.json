@@ -62,5 +62,21 @@
     "series": "EQ",
     "subject": "Dividend - Rs 2 Per Share",
     "symbol": "VIJAYA"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Vijaya Diagnostic Centre Limited",
+    "exDate": "16-Sep-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE043W01024",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "16-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2 Per Share",
+    "symbol": "VIJAYA"
   }
 ]

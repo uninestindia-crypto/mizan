@@ -318,5 +318,21 @@
     "series": "EQ",
     "subject": "Interim Dividend - Rs 2 Per Share",
     "symbol": "BLS"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "BLS International Services Limited",
+    "exDate": "16-Sep-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE153T01019",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "16-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.50 Per Share",
+    "symbol": "BLS"
   }
 ]

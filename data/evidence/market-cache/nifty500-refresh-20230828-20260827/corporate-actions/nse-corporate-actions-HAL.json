@@ -160,22 +160,6 @@
     "symbol": "HAL"
   },
   {
-    "bcEndDate": "29-Aug-2022",
-    "bcStartDate": "23-Aug-2022",
-    "caBroadcastDate": null,
-    "comp": "Hindustan Aeronautics Limited",
-    "exDate": "19-Aug-2022",
-    "faceVal": "5",
-    "ind": "-",
-    "isin": "INE066F01012",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": "Annual General Meeting",
-    "symbol": "HAL"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -189,6 +173,22 @@
     "recDate": "22-Aug-2022",
     "series": "EQ",
     "subject": "Dividend - Rs 10 Per Share",
+    "symbol": "HAL"
+  },
+  {
+    "bcEndDate": "29-Aug-2022",
+    "bcStartDate": "23-Aug-2022",
+    "caBroadcastDate": null,
+    "comp": "Hindustan Aeronautics Limited",
+    "exDate": "19-Aug-2022",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE066F01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
     "symbol": "HAL"
   },
   {

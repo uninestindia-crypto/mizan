@@ -1,9 +1,9 @@
 {
   "count": 10,
   "effective_from": "2016-08-22",
-  "effective_to": "2026-09-14",
-  "fetched_at": "2026-09-15T06:37:54.427529+00:00",
+  "effective_to": "2026-09-16",
+  "fetched_at": "2026-09-17T09:12:13.082393+00:00",
   "source_url": "https://www.nseindia.com/companies-listing/corporate-filings-actions/SYNGENE",
-  "status": "STALE",
+  "status": "FETCHED",
   "symbol": "SYNGENE"
 }

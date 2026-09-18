@@ -2,12 +2,21 @@
   "symbol": "NIFTY50",
   "instrument_key": "NSE_INDEX|Nifty 50",
   "name": "NIFTY 50 Index (Market Benchmark)",
-  "bars_count": 742,
+  "bars_count": 743,
   "received_start": "2023-09-18T00:00:00+05:30",
-  "received_end": "2026-09-15T00:00:00+05:30",
-  "latest_close": 23118.6,
-  "ingested_at": "2026-09-16T12:07:36.879715+00:00",
+  "received_end": "2026-09-16T00:00:00+05:30",
+  "latest_close": 23217.6,
+  "ingested_at": "2026-09-17T09:12:39.648469+00:00",
   "candles": [
+    [
+      "2026-09-16T00:00:00+05:30",
+      23201.6,
+      23284.75,
+      23116.1,
+      23217.6,
+      0,
+      0
+    ],
     [
       "2026-09-15T00:00:00+05:30",
       23576.15,

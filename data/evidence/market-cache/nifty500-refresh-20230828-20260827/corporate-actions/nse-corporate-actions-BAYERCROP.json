@@ -16,22 +16,6 @@
     "symbol": "BAYERCROP"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "Bayer Cropscience Limited",
-    "exDate": "07-Aug-2017",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE462A01022",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "08-Aug-2017",
-    "series": "EQ",
-    "subject": " Buy Back",
-    "symbol": "BAYERCROP"
-  },
-  {
     "bcEndDate": "23-Aug-2017",
     "bcStartDate": "09-Aug-2017",
     "caBroadcastDate": null,
@@ -45,6 +29,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": " Annual General Meeting/Dividend - Rs 17 Per Share",
+    "symbol": "BAYERCROP"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Bayer Cropscience Limited",
+    "exDate": "07-Aug-2017",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE462A01022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "08-Aug-2017",
+    "series": "EQ",
+    "subject": " Buy Back",
     "symbol": "BAYERCROP"
   },
   {

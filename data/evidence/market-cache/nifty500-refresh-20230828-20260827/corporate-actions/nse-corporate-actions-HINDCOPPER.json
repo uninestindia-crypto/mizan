@@ -174,5 +174,21 @@
     "series": "EQ",
     "subject": "Interim Dividend - Re 1 Per Share",
     "symbol": "HINDCOPPER"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Hindustan Copper Limited",
+    "exDate": "16-Sep-2026",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE531E01026",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "16-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.86 Per Share",
+    "symbol": "HINDCOPPER"
   }
 ]

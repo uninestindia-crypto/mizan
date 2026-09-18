@@ -192,22 +192,6 @@
     "symbol": "NAVA"
   },
   {
-    "bcEndDate": "08-Aug-2024",
-    "bcStartDate": "02-Aug-2024",
-    "caBroadcastDate": null,
-    "comp": "NAVA LIMITED",
-    "exDate": "01-Aug-2024",
-    "faceVal": "1",
-    "ind": "-",
-    "isin": "INE725A01022",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": "Annual General Meeting",
-    "symbol": "NAVA"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -221,6 +205,22 @@
     "recDate": "01-Aug-2024",
     "series": "EQ",
     "subject": "Dividend - Rs 4 Per Share",
+    "symbol": "NAVA"
+  },
+  {
+    "bcEndDate": "08-Aug-2024",
+    "bcStartDate": "02-Aug-2024",
+    "caBroadcastDate": null,
+    "comp": "NAVA LIMITED",
+    "exDate": "01-Aug-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE725A01022",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
     "symbol": "NAVA"
   },
   {
