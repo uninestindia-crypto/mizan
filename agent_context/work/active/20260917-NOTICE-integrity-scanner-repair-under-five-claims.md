@@ -3,7 +3,10 @@
 STATUS: NOTICE (additive; no other record is edited, and no other function in the file is touched)  
 FILED_BY: Claude Code (Opus 5), `work/completed/20260917-1257Z-claude-integrity-scanner-non-directory-entry.md`  
 FILED_UTC: 2026-09-17T13:30:00Z  
-REVISION_EDITED: committed as `16d9e3cc` on branch `claude/evidence-scanner-catalog-entry`, cut from `main` at `9b12dd8c`. Not pushed, not merged.  
+REVISION_EDITED: `16d9e3cc` on branch `claude/evidence-scanner-catalog-entry`, cut from `main` at
+`9b12dd8c`. **Fast-forwarded into `main` and pushed on founder instruction, 2026-09-18:
+`9b12dd8c..278b68d1`.** The change is live on `origin/main`; the branch holds nothing `main` does
+not.  
 WORKTREE_OR_BRANCH: `D:\quant_system`, branch `claude/evidence-scanner-catalog-entry` (shared
 checkout). This notice carries the claim because the work record it was filed from is COMPLETED and
 has moved to `work/completed/`, where `scripts/audit-agent-claims.ps1` cannot see it — which left the

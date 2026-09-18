@@ -170,17 +170,25 @@ session start and is not mine.
 
 The full forward suite returned **1,601 passed, exit 0**. Every gate in the table above is green.
 
-**Committed on founder instruction as `16d9e3cc` on branch `claude/evidence-scanner-catalog-entry`,
+**Committed as `16d9e3cc` on branch `claude/evidence-scanner-catalog-entry`,
 cut from `main` at `9b12dd8c`.** Exactly four paths were staged by name — PROTOCOL §4 forbids
 `git add -A` in a shared checkout — and the `data/evidence` churn in the tree was left untouched.
 The commit is 4 files, 445 insertions, 0 deletions.
 
-**Not pushed, and not merged into `main`.** Neither was instructed. `main` is unchanged by this
-work; the branch holds exactly one commit and nothing `main` does not, other than that commit.
+Two follow-up commits landed on the same branch: `4a3d8845` recording the branch and correcting the
+cut revision, and `278b68d1` claiming the branch in the NOTICE after
+`scripts/audit-agent-claims.ps1` exited 1 with `UNCLAIMED branch` — moving this record to
+`work/completed/` had left the live branch with no claim the audit could see.
+
+**Fast-forwarded into `main` and pushed on founder instruction, 2026-09-18: `9b12dd8c..278b68d1`.**
+No merge commit; `main` was in sync with `origin/main` at `9b12dd8c` and the branch was 3 ahead /
+0 behind. The change is live on `origin/main`. Re-verified on `main` before pushing: 59 passed
+across the new regression plus `test_evidence_store.py`, ruff clean, strict mypy clean over 210
+files.
 
 ## Next safe action
 
-A claim owner or the founder decides whether to commit. If committed, note for whoever does:
+Nothing is required. Open items, none of them blocking:
 
 **This change makes the CI forward-test job marginally worse, and that job is already red.** Run
 `35178804781` at `6ca45e10` failed with "The job has exceeded the maximum execution time of 30m0s"
