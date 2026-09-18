@@ -5,6 +5,7 @@ from __future__ import annotations
 import gzip
 import io
 import os
+import stat
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -113,8 +114,35 @@ def read_bounded(path: Path, expected_or_limit: int, *, description: str) -> byt
 
 
 def reject_symlink(path: Path) -> None:
+    """Refuse any redirection in an evidence path, symlink or otherwise.
+
+    `Path.is_symlink()` alone is not enough on Windows, which is this project's build target: it
+    reports False for a junction (`mklink /J`), and a junction is the redirection an unprivileged
+    user can actually create there -- `os.symlink` needs `SeCreateSymbolicLinkPrivilege` while
+    `mklink /J` needs nothing. That gap was not cosmetic. `EvidenceStore.recover()` builds its
+    staging and quarantine paths directly rather than through `_contained_path`, so this guard is
+    its only containment check, and a junctioned `quarantine/staging` let it report a successful
+    quarantine while writing staged evidence outside the configured root.
+
+    The attribute bit is tested rather than `st_reparse_tag`, because the set of dangerous tags is
+    open-ended -- junctions, mount points, cloud placeholders, dedup, WSL -- while
+    `FILE_ATTRIBUTE_REPARSE_POINT` is exactly the property wanted: this entry is a redirection.
+    Evidence paths have no legitimate use for one.
+
+    A missing path is not an error, matching `is_symlink()`, which returns False rather than
+    raising. `read_bounded` depends on that: it calls this before opening and lets the open itself
+    report absence.
+    """
     if path.is_symlink():
         raise EvidenceIntegrityError(f"symbolic links are forbidden in evidence paths: {path.name}")
+    try:
+        # `st_file_attributes` exists only on Windows `stat_result`; on POSIX this is inert and
+        # `is_symlink()` above has already done the whole job.
+        attributes = getattr(os.lstat(path), "st_file_attributes", 0)
+    except OSError:
+        return
+    if attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+        raise EvidenceIntegrityError(f"reparse points are forbidden in evidence paths: {path.name}")
 
 
 def aware_utc(value: datetime) -> datetime:
