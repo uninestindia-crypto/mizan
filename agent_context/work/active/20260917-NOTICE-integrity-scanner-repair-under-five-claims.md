@@ -3,7 +3,7 @@
 STATUS: NOTICE (additive; no other record is edited, and no other function in the file is touched)  
 FILED_BY: Claude Code (Opus 5), `work/completed/20260917-1257Z-claude-integrity-scanner-non-directory-entry.md`  
 FILED_UTC: 2026-09-17T13:30:00Z  
-REVISION_EDITED: `6ca45e1062cadb6e210cff240a9a01691e2e69b7` (working tree; not committed)  
+REVISION_EDITED: committed as `16d9e3cc` on branch `claude/evidence-scanner-catalog-entry`, cut from `main` at `9b12dd8c`. Not pushed, not merged.  
 AUTHORITY: explicit founder instruction, 2026-09-17 ("fix S1"), after a line-by-line audit of
 `src/quant_system/evidence/store.py` in that session.
 

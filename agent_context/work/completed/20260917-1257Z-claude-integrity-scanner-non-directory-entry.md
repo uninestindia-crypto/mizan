@@ -170,11 +170,13 @@ session start and is not mine.
 
 The full forward suite returned **1,601 passed, exit 0**. Every gate in the table above is green.
 
-**The working tree is not clean and nothing is committed.** It carries the three files under "Files
-changed" plus this record, on top of the pre-existing `data/evidence` churn that was present at
-session start and is not mine. `scripts/daily_auto_sync.ps1` stages an allowlist of
-`data/evidence` and `data/authorities` only (line 39-42, `git add -- $OwnedPaths` at :110), so the
-23:00 sweep will **not** pick these files up. They persist until someone commits them deliberately.
+**Committed on founder instruction as `16d9e3cc` on branch `claude/evidence-scanner-catalog-entry`,
+cut from `main` at `9b12dd8c`.** Exactly four paths were staged by name — PROTOCOL §4 forbids
+`git add -A` in a shared checkout — and the `data/evidence` churn in the tree was left untouched.
+The commit is 4 files, 445 insertions, 0 deletions.
+
+**Not pushed, and not merged into `main`.** Neither was instructed. `main` is unchanged by this
+work; the branch holds exactly one commit and nothing `main` does not, other than that commit.
 
 ## Next safe action
 
