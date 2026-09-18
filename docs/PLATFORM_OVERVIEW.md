@@ -4,7 +4,24 @@
 
 **QuantOS** is an institutional-grade, modular **Quantitative Trading, Research, and Risk Management System**. It is designed to bridge the gap between academic quantitative finance, systematic alpha generation, and production-grade execution with strict risk governance.
 
-Built for both **Equities** and **Derivatives (Options/Futures)** across global and regional exchanges (with specialized out-of-the-box support for **NSE India** and **US Equities**), QuantOS provides an end-to-end framework: from raw market data ingestion and multi-modal feature engineering to zero-lookahead backtesting, portfolio optimization, and desktop analytics.
+Built for **NSE India** cash equities and NIFTY **derivatives (options/futures)**, QuantOS provides an end-to-end framework: from raw market data ingestion and feature engineering to zero-lookahead backtesting, portfolio optimization, and desktop analytics.
+
+> ### ⚠️ What this document is
+>
+> **This is a design document. Parts of the architecture below are intended rather than built.**
+> Sections that describe unbuilt capability are marked **NOT IMPLEMENTED** inline, and the diagrams
+> show the designed shape rather than the shipped one.
+>
+> `README.md` is the authority on what actually exists, and it says plainly:
+>
+> * **No live-money order routing**, by design — `broker_orders_submitted` is enforced as zero on the shadow surface.
+> * **No US equities.** The instrument contract accepts NSE cash equities only.
+> * **No fundamental scoring.** There is no balance-sheet, earnings, or valuation factor model.
+> * **No profitable model.** 101 governed trials and seven pre-declared screens found no edge that survives real costs; best deflated Sharpe 0.398 against a 0.95 gate.
+>
+> This banner exists because this file previously advertised US equities and a fundamental factor
+> engine, directly contradicting `README.md` in the same repository. That was program Major #4, which
+> was corrected in `README.md` and `docs/ARCHITECTURE.md` at `5a0447b` and missed here.
 
 ---
 
@@ -32,8 +49,8 @@ QuantOS is engineered around four uncompromising institutional principles:
 3. **Deterministic Zero-Lookahead Backtesting**:
    Signals generated at bar $t$ (using data up to bar $t$ close) are strictly filled on bar $t+1$ open. Same-bar fills and retroactive data snooping are physically impossible within the execution state machine.
 
-4. **Multi-Source Alpha (Technical + Fundamental + Sentiment)**:
-   Alpha generation is not confined to price indicators. The platform natively accommodates statistical technical indicators, fundamental balance sheet factors, macroeconomic sentiment feeds, and AI/LLM multi-agent advisory consensus.
+4. **Multi-Source Alpha (Technical + Fundamental + Sentiment)** — *partly implemented*:
+   Alpha generation is designed not to be confined to price indicators. **Built today:** statistical technical indicators, Black-Scholes Greeks and IV surfaces, macro regime feeds (NIFTY, India VIX), and AI/LLM multi-agent advisory consensus. **NOT IMPLEMENTED:** fundamental balance-sheet factors — no such module exists.
 
 ---
 
@@ -72,14 +89,20 @@ graph TD
 * Moving average crossovers, Exponential Smoothers, Relative Strength Index (RSI), Average True Range (ATR), and Bollinger Bands.
 * **Options & Derivatives**: High-precision Black-Scholes pricing engine, full Greeks calculations ($\Delta, \Gamma, \Theta, \text{Vega}, \text{Rho}$), and Implied Volatility (IV) surface solvers.
 
-### 2. Fundamental Factor Alpha ("Quantamental")
+### 2. Fundamental Factor Alpha ("Quantamental") — **NOT IMPLEMENTED**
+
+> None of the factors below exist in the codebase. Verified by search: there is no Piotroski F-Score,
+> no PEAD, no analyst revisions, no P/E and no price-to-book anywhere under `src/`, and no
+> `quant_system.alpha.fundamental` module. `README.md` states the same boundary. This section
+> describes intended design only; see `docs/DATA_AND_ALPHA_ROADMAP.md`, which is explicitly a roadmap.
+
 * Systematic factor screening across large asset universes:
   * **Value**: Price-to-Earnings ($P/E$), Price-to-Book ($P/B$), Enterprise Value to EBITDA ($EV/EBITDA$).
   * **Quality & Solvency**: Return on Equity ($ROE$), Piotroski $F$-Score, Debt-to-Equity ($D/E$), Operating Margins.
   * **Earnings Quality & Momentum**: Post-Earnings Announcement Drift (PEAD), analyst revisions, and revenue surprise scoring.
 
 ### 3. Sentiment, News & AI Multi-Agent Advisory
-* **NLP News & Sentiment Analysis**: Quantifying text polarity, breaking news alerts, and social sentiment metrics into continuous numerical signals.
+* **NLP News & Sentiment Analysis** — **NOT IMPLEMENTED**: no news, polarity or social-sentiment module exists under `src/quant_system/`. Intended design only.
 * **LLM Multi-Agent Advisory Consensus**: Interfacing with AI advisors (e.g. Claude, Codex, Antigravity agents) that evaluate macro conditions, earnings call transcripts, and market regimes to adjust strategy weights or veto high-risk setups.
 * **Academic RAG Engine**: Retrieval-Augmented Generation connecting to research papers (via arXiv) to validate theoretical alpha models against historical literature.
 
