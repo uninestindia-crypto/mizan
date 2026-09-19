@@ -2,12 +2,21 @@
   "symbol": "NIFTYBANK",
   "instrument_key": "NSE_INDEX|Nifty Bank",
   "name": "NIFTY Bank Index (Financials Benchmark)",
-  "bars_count": 743,
+  "bars_count": 744,
   "received_start": "2023-09-18T00:00:00+05:30",
-  "received_end": "2026-09-16T00:00:00+05:30",
-  "latest_close": 56292.45,
-  "ingested_at": "2026-09-17T09:12:40.002774+00:00",
+  "received_end": "2026-09-17T00:00:00+05:30",
+  "latest_close": 56055.75,
+  "ingested_at": "2026-09-18T11:11:41.968295+00:00",
   "candles": [
+    [
+      "2026-09-17T00:00:00+05:30",
+      56126.6,
+      56570.45,
+      56038.5,
+      56055.75,
+      0,
+      0
+    ],
     [
       "2026-09-16T00:00:00+05:30",
       56007.65,

@@ -302,5 +302,21 @@
     "series": "EQ",
     "subject": "Interim Dividend - Rs 1.20 Per Share",
     "symbol": "IRCON"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Ircon International Limited",
+    "exDate": "17-Sep-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE962Y01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "17-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.70 Per Share",
+    "symbol": "IRCON"
   }
 ]

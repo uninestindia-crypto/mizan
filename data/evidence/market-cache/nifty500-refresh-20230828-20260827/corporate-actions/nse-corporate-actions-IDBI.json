@@ -112,22 +112,6 @@
     "symbol": "IDBI"
   },
   {
-    "bcEndDate": "23-Jul-2024",
-    "bcStartDate": "17-Jul-2024",
-    "caBroadcastDate": null,
-    "comp": "IDBI Bank Limited",
-    "exDate": "16-Jul-2024",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE008A01015",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": "Annual General Meeting",
-    "symbol": "IDBI"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -141,6 +125,22 @@
     "recDate": "16-Jul-2024",
     "series": "EQ",
     "subject": "Dividend - Rs 1.50 Per Share",
+    "symbol": "IDBI"
+  },
+  {
+    "bcEndDate": "23-Jul-2024",
+    "bcStartDate": "17-Jul-2024",
+    "caBroadcastDate": null,
+    "comp": "IDBI Bank Limited",
+    "exDate": "16-Jul-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE008A01015",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
     "symbol": "IDBI"
   },
   {

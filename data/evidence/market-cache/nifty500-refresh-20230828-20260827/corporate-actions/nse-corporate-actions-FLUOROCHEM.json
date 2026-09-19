@@ -94,5 +94,21 @@
     "series": "EQ",
     "subject": "Dividend - Rs 3 Per Share",
     "symbol": "FLUOROCHEM"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Gujarat Fluorochemicals Limited",
+    "exDate": "17-Sep-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE09N301011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "17-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 3 Per Share",
+    "symbol": "FLUOROCHEM"
   }
 ]

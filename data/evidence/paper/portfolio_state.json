@@ -686,16 +686,16 @@
         "symbol": "ZENTEC"
       }
     ],
-    "last_completed_on": "2026-09-16",
+    "last_completed_on": "2026-09-18",
     "last_rebalance_on": "2026-08-31",
     "peak_equity": "1000000.00",
     "realized_pnl": "0.00",
     "risk_halted": false,
     "schema_id": "quantos.paper_portfolio",
     "schema_version": 5,
-    "sessions_completed": 11,
-    "sessions_held": 11,
+    "sessions_completed": 12,
+    "sessions_held": 12,
     "total_fees": "1072.65"
   },
-  "state_hash": "9d06db2953942dc4418736b5690d2a71aadfc8e1d2a8ce495df06be11a2a740a"
+  "state_hash": "47b00de6c2166d68865bb67bc149568294e7de8259aef57a783cbabd38cede3d"
 }

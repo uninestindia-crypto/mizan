@@ -240,22 +240,6 @@
     "symbol": "SAIL"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "Steel Authority of India Limited",
-    "exDate": "19-Sep-2024",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE114A01011",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "19-Sep-2024",
-    "series": "EQ",
-    "subject": "Dividend - Re 1 Per Share",
-    "symbol": "SAIL"
-  },
-  {
     "bcEndDate": "26-Sep-2024",
     "bcStartDate": "20-Sep-2024",
     "caBroadcastDate": null,
@@ -269,6 +253,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": "Annual General Meeting",
+    "symbol": "SAIL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Steel Authority of India Limited",
+    "exDate": "19-Sep-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE114A01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "19-Sep-2024",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
     "symbol": "SAIL"
   },
   {

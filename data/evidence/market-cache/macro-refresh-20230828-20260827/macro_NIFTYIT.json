@@ -2,12 +2,21 @@
   "symbol": "NIFTYIT",
   "instrument_key": "NSE_INDEX|Nifty IT",
   "name": "NIFTY IT Index (Tech Benchmark)",
-  "bars_count": 743,
+  "bars_count": 744,
   "received_start": "2023-09-18T00:00:00+05:30",
-  "received_end": "2026-09-16T00:00:00+05:30",
-  "latest_close": 29087.65,
-  "ingested_at": "2026-09-17T09:12:40.187648+00:00",
+  "received_end": "2026-09-17T00:00:00+05:30",
+  "latest_close": 29155.6,
+  "ingested_at": "2026-09-18T11:11:42.135221+00:00",
   "candles": [
+    [
+      "2026-09-17T00:00:00+05:30",
+      28918.75,
+      29406.65,
+      28805.4,
+      29155.6,
+      0,
+      0
+    ],
     [
       "2026-09-16T00:00:00+05:30",
       29696.45,

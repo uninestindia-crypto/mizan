@@ -76,7 +76,7 @@
     "ndStartDate": "-",
     "recDate": "-",
     "series": "EQ",
-    "subject": " Dividend- Re 0.50 Per Share",
+    "subject": " Annual General Meeting/Dividend - Re 0.50 Per Share",
     "symbol": "POLYMED"
   },
   {
@@ -92,7 +92,7 @@
     "ndStartDate": "-",
     "recDate": "-",
     "series": "EQ",
-    "subject": " Annual General Meeting/Dividend - Re 0.50 Per Share",
+    "subject": " Dividend- Re 0.50 Per Share",
     "symbol": "POLYMED"
   },
   {
@@ -160,22 +160,6 @@
     "symbol": "POLYMED"
   },
   {
-    "bcEndDate": "24-Sep-2021",
-    "bcStartDate": "18-Sep-2021",
-    "caBroadcastDate": null,
-    "comp": "Poly Medicure Limited",
-    "exDate": "16-Sep-2021",
-    "faceVal": "5",
-    "ind": "-",
-    "isin": "INE205C01013",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": " Annual General Meeting",
-    "symbol": "POLYMED"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -189,6 +173,22 @@
     "recDate": "17-Sep-2021",
     "series": "EQ",
     "subject": " Dividend - Rs 2.50 Per Share",
+    "symbol": "POLYMED"
+  },
+  {
+    "bcEndDate": "24-Sep-2021",
+    "bcStartDate": "18-Sep-2021",
+    "caBroadcastDate": null,
+    "comp": "Poly Medicure Limited",
+    "exDate": "16-Sep-2021",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE205C01013",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": " Annual General Meeting",
     "symbol": "POLYMED"
   },
   {
