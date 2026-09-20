@@ -6,7 +6,7 @@ TOOL: Claude Code
 FILED_UTC: 2026-09-18T15:55:00Z  
 WORKTREE_OR_BRANCH: `D:\quant_system`, branch `claude/paper-session-keep-awake` (shared checkout)  
 WORK_RECORD: `work/completed/20260918-1339Z-claude-paper-session-keep-awake.md`  
-COMMIT: `9c832269` (not pushed, not merged)
+COMMIT: `9c832269`, merged into `main` and pushed 2026-09-20 (`6457102f..138a398a`). Branch fully merged; safe to delete, not deleted without being asked.
 
 ## Why this file exists
 

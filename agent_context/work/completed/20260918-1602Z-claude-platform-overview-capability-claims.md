@@ -93,6 +93,18 @@ No test run and no static gate beyond formatting: nothing executable changed.
 
 None. The file is unclaimed and no code is touched.
 
+## Commit and merge
+
+Committed as `636109be`, then **rebased onto `main` and so rewritten as `8a3088ae`** when the
+keep-awake branch landed first. Fast-forwarded into `main` and pushed on founder instruction,
+2026-09-20: `6457102f..138a398a`.
+
+Recorded because the rebase also swept up something that was not mine: the nightly
+`daily_auto_sync.ps1` ran at 2026-09-19T16:27:13Z **while this feature branch was checked out**, so
+its evidence checkpoint `138a398a` was committed to this branch instead of to `main`. Merging put it
+where it belongs. Worth someone's attention: the sync commits to whatever branch happens to be
+checked out, so a long-lived feature branch silently collects evidence checkpoints.
+
 ## Next safe action
 
 **`.launch/STATE.md` records Major #4 as CLOSED and that is now only partly true** — it was closed

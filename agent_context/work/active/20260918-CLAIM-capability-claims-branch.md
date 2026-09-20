@@ -5,7 +5,8 @@ OWNER: Claude Code (Opus 5)
 TOOL: Claude Code  
 FILED_UTC: 2026-09-18T16:10:00Z  
 WORKTREE_OR_BRANCH: `D:\quant_system`, branch `claude/capability-claims-platform-overview` (shared checkout)  
-WORK_RECORD: `work/completed/20260918-1602Z-claude-platform-overview-capability-claims.md`
+WORK_RECORD: `work/completed/20260918-1602Z-claude-platform-overview-capability-claims.md`  
+COMMIT: `8a3088ae` (was `636109be` before the rebase), merged into `main` and pushed 2026-09-20 (`6457102f..138a398a`). Branch fully merged; safe to delete, not deleted without being asked.
 
 ## Why this file exists
 
