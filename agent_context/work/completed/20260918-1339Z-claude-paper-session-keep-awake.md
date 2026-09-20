@@ -164,7 +164,8 @@ Repair applied, the power request verified held on the real unmocked path, every
 **Committed as `9c832269` on branch `claude/paper-session-keep-awake`, cut from `main` at
 `6457102f`.** Three owned paths plus the branch-claim file were staged by name — PROTOCOL §4 forbids
 `git add -A` in a shared checkout — with 0 of the `data/evidence` churn staged alongside. 4 files,
-442 insertions, 0 deletions. **Not pushed and not merged**; `main` is unchanged at `6457102f`.
+442 insertions, 0 deletions. **Fast-forwarded into `main` and pushed on founder instruction,
+2026-09-20: `6457102f..138a398a`.**
 
 The branch claim lives in `work/active/20260918-CLAIM-paper-session-keep-awake-branch.md`, because
 `scripts/audit-agent-claims.ps1` reads `work/active/` only and moving this record to
