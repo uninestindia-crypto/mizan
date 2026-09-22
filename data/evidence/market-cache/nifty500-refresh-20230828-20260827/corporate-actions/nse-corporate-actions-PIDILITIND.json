@@ -128,22 +128,6 @@
     "symbol": "PIDILITIND"
   },
   {
-    "bcEndDate": "10-Aug-2022",
-    "bcStartDate": "28-Jul-2022",
-    "caBroadcastDate": null,
-    "comp": "Pidilite Industries Limited",
-    "exDate": "26-Jul-2022",
-    "faceVal": "1",
-    "ind": "-",
-    "isin": "INE318A01026",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": "Annual General Meeting",
-    "symbol": "PIDILITIND"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -160,11 +144,11 @@
     "symbol": "PIDILITIND"
   },
   {
-    "bcEndDate": "10-Aug-2023",
-    "bcStartDate": "28-Jul-2023",
+    "bcEndDate": "10-Aug-2022",
+    "bcStartDate": "28-Jul-2022",
     "caBroadcastDate": null,
     "comp": "Pidilite Industries Limited",
-    "exDate": "27-Jul-2023",
+    "exDate": "26-Jul-2022",
     "faceVal": "1",
     "ind": "-",
     "isin": "INE318A01026",
@@ -192,19 +176,19 @@
     "symbol": "PIDILITIND"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
+    "bcEndDate": "10-Aug-2023",
+    "bcStartDate": "28-Jul-2023",
     "caBroadcastDate": null,
     "comp": "Pidilite Industries Limited",
-    "exDate": "24-Jul-2024",
+    "exDate": "27-Jul-2023",
     "faceVal": "1",
     "ind": "-",
     "isin": "INE318A01026",
     "ndEndDate": "-",
     "ndStartDate": "-",
-    "recDate": "24-Jul-2024",
+    "recDate": "-",
     "series": "EQ",
-    "subject": "Dividend - Rs 16 Per Share",
+    "subject": "Annual General Meeting",
     "symbol": "PIDILITIND"
   },
   {
@@ -221,6 +205,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": "Annual General Meeting",
+    "symbol": "PIDILITIND"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Pidilite Industries Limited",
+    "exDate": "24-Jul-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE318A01026",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "24-Jul-2024",
+    "series": "EQ",
+    "subject": "Dividend - Rs 16 Per Share",
     "symbol": "PIDILITIND"
   },
   {

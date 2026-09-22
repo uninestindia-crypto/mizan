@@ -1,24 +1,38 @@
 {
   "payload": {
-    "cash": "145520.31",
-    "daily_anchor_equity": "974747.72",
-    "daily_anchor_on": "2026-09-15",
+    "cash": "116717.84",
+    "daily_anchor_equity": "990707.75",
+    "daily_anchor_on": "2026-09-21",
     "halt_reason": "",
     "halted_on": null,
     "holdings": [
       {
-        "average_cost": "467.05",
-        "entry_fee": "11.13",
-        "opened_on": "2026-08-31",
-        "quantity": 20,
-        "symbol": "AADHARHFC"
+        "average_cost": "402.85",
+        "entry_fee": "11.05",
+        "opened_on": "2026-09-21",
+        "quantity": 23,
+        "symbol": "ABCAPITAL"
       },
       {
-        "average_cost": "1271.59",
-        "entry_fee": "10.62",
-        "opened_on": "2026-08-31",
-        "quantity": 7,
-        "symbol": "AAVAS"
+        "average_cost": "50.17",
+        "entry_fee": "11.18",
+        "opened_on": "2026-09-21",
+        "quantity": 187,
+        "symbol": "ABFRL"
+      },
+      {
+        "average_cost": "81.03",
+        "entry_fee": "11.20",
+        "opened_on": "2026-09-21",
+        "quantity": 116,
+        "symbol": "ABLBL"
+      },
+      {
+        "average_cost": "1406.90",
+        "entry_fee": "10.06",
+        "opened_on": "2026-09-21",
+        "quantity": 6,
+        "symbol": "ADANIENSOL"
       },
       {
         "average_cost": "3095.55",
@@ -35,6 +49,13 @@
         "symbol": "ADANIGREEN"
       },
       {
+        "average_cost": "1789.34",
+        "entry_fee": "10.67",
+        "opened_on": "2026-09-21",
+        "quantity": 5,
+        "symbol": "ADANIPORTS"
+      },
+      {
         "average_cost": "211.14",
         "entry_fee": "11.33",
         "opened_on": "2026-08-31",
@@ -42,25 +63,11 @@
         "symbol": "ADANIPOWER"
       },
       {
-        "average_cost": "1264.98",
-        "entry_fee": "10.56",
-        "opened_on": "2026-08-31",
-        "quantity": 7,
-        "symbol": "AEGISLOG"
-      },
-      {
-        "average_cost": "4255.58",
-        "entry_fee": "10.14",
-        "opened_on": "2026-08-31",
-        "quantity": 2,
-        "symbol": "AIAENG"
-      },
-      {
-        "average_cost": "3526.91",
-        "entry_fee": "8.40",
-        "opened_on": "2026-08-31",
-        "quantity": 2,
-        "symbol": "AJANTPHARM"
+        "average_cost": "7136.07",
+        "entry_fee": "8.52",
+        "opened_on": "2026-09-21",
+        "quantity": 1,
+        "symbol": "AMBER"
       },
       {
         "average_cost": "287.42",
@@ -70,39 +77,25 @@
         "symbol": "ANGELONE"
       },
       {
-        "average_cost": "1257.03",
-        "entry_fee": "10.49",
-        "opened_on": "2026-08-31",
-        "quantity": 7,
-        "symbol": "ANURAS"
+        "average_cost": "8926.46",
+        "entry_fee": "10.65",
+        "opened_on": "2026-09-21",
+        "quantity": 1,
+        "symbol": "APOLLOHOSP"
       },
       {
-        "average_cost": "629.59",
-        "entry_fee": "11.26",
-        "opened_on": "2026-08-31",
-        "quantity": 15,
-        "symbol": "ATGL"
+        "average_cost": "1589.89",
+        "entry_fee": "9.47",
+        "opened_on": "2026-09-21",
+        "quantity": 5,
+        "symbol": "ATHERENERG"
       },
       {
-        "average_cost": "165.06",
-        "entry_fee": "11.21",
-        "opened_on": "2026-08-31",
-        "quantity": 57,
-        "symbol": "BANDHANBNK"
-      },
-      {
-        "average_cost": "237.94",
-        "entry_fee": "11.06",
-        "opened_on": "2026-08-31",
-        "quantity": 39,
-        "symbol": "BANKBARODA"
-      },
-      {
-        "average_cost": "684.42",
-        "entry_fee": "10.61",
-        "opened_on": "2026-08-31",
-        "quantity": 13,
-        "symbol": "BATAINDIA"
+        "average_cost": "3741.32",
+        "entry_fee": "8.92",
+        "opened_on": "2026-09-21",
+        "quantity": 2,
+        "symbol": "BAYERCROP"
       },
       {
         "average_cost": "410.59",
@@ -112,158 +105,109 @@
         "symbol": "BEL"
       },
       {
-        "average_cost": "229.65",
-        "entry_fee": "11.22",
-        "opened_on": "2026-08-31",
-        "quantity": 41,
-        "symbol": "BELRISE"
-      },
-      {
-        "average_cost": "1967.38",
-        "entry_fee": "9.38",
-        "opened_on": "2026-08-31",
-        "quantity": 4,
-        "symbol": "BEML"
-      },
-      {
-        "average_cost": "1890.79",
-        "entry_fee": "11.27",
-        "opened_on": "2026-08-31",
-        "quantity": 5,
-        "symbol": "BHARTIARTL"
-      },
-      {
-        "average_cost": "126.48",
-        "entry_fee": "11.31",
-        "opened_on": "2026-08-31",
-        "quantity": 75,
-        "symbol": "CANBK"
-      },
-      {
-        "average_cost": "803.25",
-        "entry_fee": "10.54",
-        "opened_on": "2026-08-31",
-        "quantity": 11,
-        "symbol": "CANFINHOME"
-      },
-      {
-        "average_cost": "1116.76",
-        "entry_fee": "10.65",
-        "opened_on": "2026-08-31",
-        "quantity": 8,
-        "symbol": "CARBORUNIV"
-      },
-      {
-        "average_cost": "3444.37",
-        "entry_fee": "8.21",
-        "opened_on": "2026-08-31",
+        "average_cost": "3142.72",
+        "entry_fee": "7.50",
+        "opened_on": "2026-09-21",
         "quantity": 2,
-        "symbol": "CEATLTD"
+        "symbol": "BSE"
       },
       {
-        "average_cost": "30.32",
-        "entry_fee": "11.31",
-        "opened_on": "2026-08-31",
-        "quantity": 313,
-        "symbol": "CENTRALBK"
+        "average_cost": "1061.48",
+        "entry_fee": "10.11",
+        "opened_on": "2026-09-21",
+        "quantity": 8,
+        "symbol": "CCL"
       },
       {
-        "average_cost": "147.07",
-        "entry_fee": "11.21",
-        "opened_on": "2026-08-31",
-        "quantity": 64,
-        "symbol": "CESC"
-      },
-      {
-        "average_cost": "890.02",
-        "entry_fee": "10.62",
-        "opened_on": "2026-08-31",
-        "quantity": 10,
-        "symbol": "CGPOWER"
-      },
-      {
-        "average_cost": "782.79",
-        "entry_fee": "11.19",
-        "opened_on": "2026-08-31",
-        "quantity": 12,
-        "symbol": "CHOICEIN"
-      },
-      {
-        "average_cost": "1457.83",
-        "entry_fee": "10.43",
-        "opened_on": "2026-08-31",
+        "average_cost": "1364.98",
+        "entry_fee": "9.76",
+        "opened_on": "2026-09-21",
         "quantity": 6,
-        "symbol": "CHOLAHLDNG"
+        "symbol": "CDSL"
       },
       {
-        "average_cost": "393.30",
-        "entry_fee": "11.26",
-        "opened_on": "2026-08-31",
-        "quantity": 24,
-        "symbol": "CIEINDIA"
+        "average_cost": "269.15",
+        "entry_fee": "10.91",
+        "opened_on": "2026-09-21",
+        "quantity": 34,
+        "symbol": "CGCL"
       },
       {
-        "average_cost": "451.75",
-        "entry_fee": "29.49",
-        "opened_on": "2026-08-31",
-        "quantity": 21,
-        "symbol": "COHANCE"
-      },
-      {
-        "average_cost": "3763.48",
-        "entry_fee": "8.98",
-        "opened_on": "2026-08-31",
-        "quantity": 2,
-        "symbol": "DMART"
-      },
-      {
-        "average_cost": "1176.44",
-        "entry_fee": "11.21",
-        "opened_on": "2026-08-31",
-        "quantity": 8,
-        "symbol": "DRREDDY"
-      },
-      {
-        "average_cost": "422.21",
-        "entry_fee": "11.07",
-        "opened_on": "2026-08-31",
+        "average_cost": "413.61",
+        "entry_fee": "10.84",
+        "opened_on": "2026-09-21",
         "quantity": 22,
-        "symbol": "ELECON"
+        "symbol": "COALINDIA"
       },
       {
-        "average_cost": "630.21",
-        "entry_fee": "11.27",
-        "opened_on": "2026-08-31",
-        "quantity": 15,
-        "symbol": "ELGIEQUIP"
+        "average_cost": "1389.34",
+        "entry_fee": "9.94",
+        "opened_on": "2026-09-21",
+        "quantity": 6,
+        "symbol": "COCHINSHIP"
       },
       {
-        "average_cost": "2909.80",
-        "entry_fee": "29.02",
-        "opened_on": "2026-08-31",
-        "quantity": 3,
-        "symbol": "ENDURANCE"
+        "average_cost": "1890.95",
+        "entry_fee": "9.01",
+        "opened_on": "2026-09-21",
+        "quantity": 4,
+        "symbol": "COLPAL"
       },
       {
-        "average_cost": "3295.65",
-        "entry_fee": "7.86",
-        "opened_on": "2026-08-31",
-        "quantity": 2,
-        "symbol": "ENRIN"
+        "average_cost": "226.15",
+        "entry_fee": "11.05",
+        "opened_on": "2026-09-21",
+        "quantity": 41,
+        "symbol": "CROMPTON"
       },
       {
-        "average_cost": "1263.23",
-        "entry_fee": "10.55",
-        "opened_on": "2026-08-31",
-        "quantity": 7,
-        "symbol": "FINCABLES"
+        "average_cost": "5084.29",
+        "entry_fee": "6.06",
+        "opened_on": "2026-09-21",
+        "quantity": 1,
+        "symbol": "CUMMINSIND"
       },
       {
-        "average_cost": "573.27",
-        "entry_fee": "10.94",
-        "opened_on": "2026-08-31",
+        "average_cost": "433.67",
+        "entry_fee": "10.86",
+        "opened_on": "2026-09-21",
+        "quantity": 21,
+        "symbol": "DELHIVERY"
+      },
+      {
+        "average_cost": "2097.55",
+        "entry_fee": "10.00",
+        "opened_on": "2026-09-21",
+        "quantity": 4,
+        "symbol": "DOMS"
+      },
+      {
+        "average_cost": "345.77",
+        "entry_fee": "11.13",
+        "opened_on": "2026-09-21",
+        "quantity": 27,
+        "symbol": "EMMVEE"
+      },
+      {
+        "average_cost": "797.02",
+        "entry_fee": "10.46",
+        "opened_on": "2026-09-21",
+        "quantity": 11,
+        "symbol": "FACT"
+      },
+      {
+        "average_cost": "7069.78",
+        "entry_fee": "8.42",
+        "opened_on": "2026-09-21",
+        "quantity": 1,
+        "symbol": "GILLETTE"
+      },
+      {
+        "average_cost": "558.76",
+        "entry_fee": "10.66",
+        "opened_on": "2026-09-21",
         "quantity": 16,
-        "symbol": "GALLANTT"
+        "symbol": "GMDCLTD"
       },
       {
         "average_cost": "96.51",
@@ -287,60 +231,32 @@
         "symbol": "GRASIM"
       },
       {
-        "average_cost": "1816.66",
-        "entry_fee": "10.82",
-        "opened_on": "2026-08-31",
-        "quantity": 5,
-        "symbol": "GRAVITA"
+        "average_cost": "4393.65",
+        "entry_fee": "10.48",
+        "opened_on": "2026-09-21",
+        "quantity": 2,
+        "symbol": "GVT&D"
       },
       {
-        "average_cost": "194.01",
-        "entry_fee": "11.34",
-        "opened_on": "2026-08-31",
-        "quantity": 49,
-        "symbol": "GROWW"
+        "average_cost": "247.60",
+        "entry_fee": "11.21",
+        "opened_on": "2026-09-21",
+        "quantity": 38,
+        "symbol": "HEG"
       },
       {
-        "average_cost": "4822.46",
-        "entry_fee": "5.74",
-        "opened_on": "2026-08-31",
-        "quantity": 1,
-        "symbol": "HAL"
+        "average_cost": "590.90",
+        "entry_fee": "10.57",
+        "opened_on": "2026-09-21",
+        "quantity": 15,
+        "symbol": "HINDZINC"
       },
       {
-        "average_cost": "682.86",
-        "entry_fee": "10.59",
-        "opened_on": "2026-08-31",
-        "quantity": 13,
-        "symbol": "HDBFS"
-      },
-      {
-        "average_cost": "721.04",
-        "entry_fee": "11.17",
-        "opened_on": "2026-08-31",
-        "quantity": 13,
-        "symbol": "HDFCBANK"
-      },
-      {
-        "average_cost": "253.79",
-        "entry_fee": "11.19",
-        "opened_on": "2026-08-31",
-        "quantity": 37,
-        "symbol": "HFCL"
-      },
-      {
-        "average_cost": "179.57",
-        "entry_fee": "11.13",
-        "opened_on": "2026-08-31",
-        "quantity": 52,
-        "symbol": "HUDCO"
-      },
-      {
-        "average_cost": "3082.34",
-        "entry_fee": "11.03",
-        "opened_on": "2026-08-31",
-        "quantity": 3,
-        "symbol": "ICICIAMC"
+        "average_cost": "1344.72",
+        "entry_fee": "11.21",
+        "opened_on": "2026-09-21",
+        "quantity": 7,
+        "symbol": "ICICIBANK"
       },
       {
         "average_cost": "1545.87",
@@ -350,6 +266,20 @@
         "symbol": "ICICIGI"
       },
       {
+        "average_cost": "114.06",
+        "entry_fee": "11.14",
+        "opened_on": "2026-09-21",
+        "quantity": 82,
+        "symbol": "IEX"
+      },
+      {
+        "average_cost": "960.98",
+        "entry_fee": "10.32",
+        "opened_on": "2026-09-21",
+        "quantity": 9,
+        "symbol": "INDUSINDBK"
+      },
+      {
         "average_cost": "70.18",
         "entry_fee": "11.29",
         "opened_on": "2026-08-31",
@@ -357,95 +287,144 @@
         "symbol": "INOXWIND"
       },
       {
-        "average_cost": "162.48",
+        "average_cost": "665.91",
+        "entry_fee": "11.11",
+        "opened_on": "2026-09-21",
+        "quantity": 14,
+        "symbol": "INTELLECT"
+      },
+      {
+        "average_cost": "32.16",
         "entry_fee": "11.23",
-        "opened_on": "2026-08-31",
-        "quantity": 58,
-        "symbol": "ITCHOTELS"
+        "opened_on": "2026-09-21",
+        "quantity": 293,
+        "symbol": "IOB"
       },
       {
-        "average_cost": "273.02",
-        "entry_fee": "11.06",
-        "opened_on": "2026-08-31",
+        "average_cost": "18.19",
+        "entry_fee": "11.23",
+        "opened_on": "2026-09-21",
+        "quantity": 518,
+        "symbol": "IRB"
+      },
+      {
+        "average_cost": "111.72",
+        "entry_fee": "11.18",
+        "opened_on": "2026-09-21",
+        "quantity": 84,
+        "symbol": "IREDA"
+      },
+      {
+        "average_cost": "80.66",
+        "entry_fee": "11.15",
+        "opened_on": "2026-09-21",
+        "quantity": 116,
+        "symbol": "IRFC"
+      },
+      {
+        "average_cost": "266.91",
+        "entry_fee": "11.13",
+        "opened_on": "2026-09-21",
+        "quantity": 35,
+        "symbol": "ITC"
+      },
+      {
+        "average_cost": "273.74",
+        "entry_fee": "11.10",
+        "opened_on": "2026-09-21",
         "quantity": 34,
-        "symbol": "ITI"
+        "symbol": "JAINREC"
       },
       {
-        "average_cost": "149.47",
-        "entry_fee": "11.22",
-        "opened_on": "2026-08-31",
-        "quantity": 63,
-        "symbol": "J&KBANK"
+        "average_cost": "594.02",
+        "entry_fee": "10.63",
+        "opened_on": "2026-09-21",
+        "quantity": 15,
+        "symbol": "JBMA"
       },
       {
-        "average_cost": "237.80",
-        "entry_fee": "11.34",
-        "opened_on": "2026-08-31",
-        "quantity": 40,
-        "symbol": "JIOFIN"
+        "average_cost": "293.20",
+        "entry_fee": "11.18",
+        "opened_on": "2026-09-21",
+        "quantity": 32,
+        "symbol": "JINDALSAW"
       },
       {
-        "average_cost": "5499.80",
-        "entry_fee": "6.56",
-        "opened_on": "2026-08-31",
-        "quantity": 1,
-        "symbol": "KEI"
+        "average_cost": "742.97",
+        "entry_fee": "10.64",
+        "opened_on": "2026-09-21",
+        "quantity": 12,
+        "symbol": "JSL"
       },
       {
-        "average_cost": "1173.84",
-        "entry_fee": "11.19",
-        "opened_on": "2026-08-31",
+        "average_cost": "118.12",
+        "entry_fee": "11.12",
+        "opened_on": "2026-09-21",
+        "quantity": 79,
+        "symbol": "JSWCEMENT"
+      },
+      {
+        "average_cost": "1205.10",
+        "entry_fee": "10.06",
+        "opened_on": "2026-09-21",
+        "quantity": 7,
+        "symbol": "KAJARIACER"
+      },
+      {
+        "average_cost": "583.09",
+        "entry_fee": "11.12",
+        "opened_on": "2026-09-21",
+        "quantity": 16,
+        "symbol": "KALYANKJIL"
+      },
+      {
+        "average_cost": "404.68",
+        "entry_fee": "11.10",
+        "opened_on": "2026-09-21",
+        "quantity": 23,
+        "symbol": "KEC"
+      },
+      {
+        "average_cost": "2150.07",
+        "entry_fee": "10.26",
+        "opened_on": "2026-09-21",
+        "quantity": 4,
+        "symbol": "KIRLOSENG"
+      },
+      {
+        "average_cost": "536.35",
+        "entry_fee": "10.87",
+        "opened_on": "2026-09-21",
+        "quantity": 17,
+        "symbol": "KPITTECH"
+      },
+      {
+        "average_cost": "253.58",
+        "entry_fee": "11.18",
+        "opened_on": "2026-09-21",
+        "quantity": 37,
+        "symbol": "LATENTVIEW"
+      },
+      {
+        "average_cost": "566.16",
+        "entry_fee": "10.80",
+        "opened_on": "2026-09-21",
+        "quantity": 16,
+        "symbol": "LICHSGFIN"
+      },
+      {
+        "average_cost": "1142.57",
+        "entry_fee": "10.90",
+        "opened_on": "2026-09-21",
         "quantity": 8,
-        "symbol": "KPRMILL"
+        "symbol": "LODHA"
       },
       {
-        "average_cost": "6483.49",
-        "entry_fee": "7.72",
-        "opened_on": "2026-08-31",
-        "quantity": 1,
-        "symbol": "LINDEINDIA"
-      },
-      {
-        "average_cost": "4002.15",
-        "entry_fee": "9.54",
-        "opened_on": "2026-08-31",
-        "quantity": 2,
-        "symbol": "LT"
-      },
-      {
-        "average_cost": "3338.47",
-        "entry_fee": "7.96",
-        "opened_on": "2026-08-31",
-        "quantity": 2,
-        "symbol": "M&M"
-      },
-      {
-        "average_cost": "2498.70",
-        "entry_fee": "8.94",
-        "opened_on": "2026-08-31",
-        "quantity": 3,
-        "symbol": "MAZDOCK"
-      },
-      {
-        "average_cost": "208.98",
-        "entry_fee": "11.20",
-        "opened_on": "2026-08-31",
-        "quantity": 45,
-        "symbol": "MEESHO"
-      },
-      {
-        "average_cost": "1569.43",
-        "entry_fee": "11.22",
-        "opened_on": "2026-08-31",
-        "quantity": 6,
-        "symbol": "MFSL"
-      },
-      {
-        "average_cost": "1080.09",
-        "entry_fee": "10.31",
-        "opened_on": "2026-08-31",
-        "quantity": 8,
-        "symbol": "MGL"
+        "average_cost": "901.90",
+        "entry_fee": "10.75",
+        "opened_on": "2026-09-21",
+        "quantity": 10,
+        "symbol": "MAPMYINDIA"
       },
       {
         "average_cost": "62.57",
@@ -455,25 +434,11 @@
         "symbol": "MMTC"
       },
       {
-        "average_cost": "166.48",
-        "entry_fee": "11.31",
-        "opened_on": "2026-08-31",
-        "quantity": 57,
-        "symbol": "MOTHERSON"
-      },
-      {
         "average_cost": "1032.87",
         "entry_fee": "11.08",
         "opened_on": "2026-08-31",
         "quantity": 9,
         "symbol": "MOTILALOFS"
-      },
-      {
-        "average_cost": "566.80",
-        "entry_fee": "10.81",
-        "opened_on": "2026-08-31",
-        "quantity": 16,
-        "symbol": "NAVA"
       },
       {
         "average_cost": "86.42",
@@ -483,18 +448,18 @@
         "symbol": "NBCC"
       },
       {
-        "average_cost": "5171.03",
-        "entry_fee": "6.17",
-        "opened_on": "2026-08-31",
-        "quantity": 1,
-        "symbol": "NETWEB"
+        "average_cost": "1903.25",
+        "entry_fee": "9.07",
+        "opened_on": "2026-09-21",
+        "quantity": 4,
+        "symbol": "NH"
       },
       {
-        "average_cost": "194.02",
-        "entry_fee": "11.34",
-        "opened_on": "2026-08-31",
-        "quantity": 49,
-        "symbol": "NIACL"
+        "average_cost": "75.96",
+        "entry_fee": "11.13",
+        "opened_on": "2026-09-21",
+        "quantity": 123,
+        "symbol": "NHPC"
       },
       {
         "average_cost": "269.61",
@@ -504,6 +469,13 @@
         "symbol": "NLCINDIA"
       },
       {
+        "average_cost": "80.20",
+        "entry_fee": "11.18",
+        "opened_on": "2026-09-21",
+        "quantity": 117,
+        "symbol": "NMDC"
+      },
+      {
         "average_cost": "46.92",
         "entry_fee": "11.30",
         "opened_on": "2026-08-31",
@@ -511,11 +483,39 @@
         "symbol": "NSLNISP"
       },
       {
-        "average_cost": "89.50",
-        "entry_fee": "11.31",
-        "opened_on": "2026-08-31",
-        "quantity": 106,
-        "symbol": "NTPCGREEN"
+        "average_cost": "327.84",
+        "entry_fee": "10.95",
+        "opened_on": "2026-09-21",
+        "quantity": 28,
+        "symbol": "NTPC"
+      },
+      {
+        "average_cost": "1686.04",
+        "entry_fee": "10.04",
+        "opened_on": "2026-09-21",
+        "quantity": 5,
+        "symbol": "NUVAMA"
+      },
+      {
+        "average_cost": "328.34",
+        "entry_fee": "10.96",
+        "opened_on": "2026-09-21",
+        "quantity": 28,
+        "symbol": "NYKAA"
+      },
+      {
+        "average_cost": "36.90",
+        "entry_fee": "11.21",
+        "opened_on": "2026-09-21",
+        "quantity": 255,
+        "symbol": "OLAELEC"
+      },
+      {
+        "average_cost": "235.20",
+        "entry_fee": "11.21",
+        "opened_on": "2026-09-21",
+        "quantity": 40,
+        "symbol": "ONGC"
       },
       {
         "average_cost": "345.32",
@@ -525,25 +525,39 @@
         "symbol": "PATANJALI"
       },
       {
-        "average_cost": "4713.21",
-        "entry_fee": "11.24",
-        "opened_on": "2026-08-31",
-        "quantity": 2,
-        "symbol": "PFIZER"
+        "average_cost": "347.15",
+        "entry_fee": "11.17",
+        "opened_on": "2026-09-21",
+        "quantity": 27,
+        "symbol": "PFC"
       },
       {
-        "average_cost": "889.29",
-        "entry_fee": "10.60",
-        "opened_on": "2026-08-31",
+        "average_cost": "2338.37",
+        "entry_fee": "11.14",
+        "opened_on": "2026-09-21",
+        "quantity": 4,
+        "symbol": "PIIND"
+      },
+      {
+        "average_cost": "268.65",
+        "entry_fee": "11.20",
+        "opened_on": "2026-09-21",
+        "quantity": 35,
+        "symbol": "POWERGRID"
+      },
+      {
+        "average_cost": "902.30",
+        "entry_fee": "10.75",
+        "opened_on": "2026-09-21",
         "quantity": 10,
-        "symbol": "RAMCOCEM"
+        "symbol": "PREMIERENE"
       },
       {
-        "average_cost": "380.74",
-        "entry_fee": "10.90",
-        "opened_on": "2026-08-31",
-        "quantity": 24,
-        "symbol": "RBLBANK"
+        "average_cost": "134.73",
+        "entry_fee": "11.08",
+        "opened_on": "2026-09-21",
+        "quantity": 69,
+        "symbol": "PWL"
       },
       {
         "average_cost": "1284.59",
@@ -553,25 +567,39 @@
         "symbol": "RELIANCE"
       },
       {
-        "average_cost": "211.85",
-        "entry_fee": "11.11",
-        "opened_on": "2026-08-31",
-        "quantity": 44,
-        "symbol": "RVNL"
+        "average_cost": "369.70",
+        "entry_fee": "11.02",
+        "opened_on": "2026-09-21",
+        "quantity": 25,
+        "symbol": "RHIM"
       },
       {
-        "average_cost": "1042.17",
+        "average_cost": "21.23",
+        "entry_fee": "11.20",
+        "opened_on": "2026-09-21",
+        "quantity": 443,
+        "symbol": "RPOWER"
+      },
+      {
+        "average_cost": "144.37",
         "entry_fee": "11.18",
-        "opened_on": "2026-08-31",
-        "quantity": 9,
-        "symbol": "SBIN"
+        "opened_on": "2026-09-21",
+        "quantity": 65,
+        "symbol": "SAMMAANCAP"
       },
       {
-        "average_cost": "1187.54",
-        "entry_fee": "11.33",
-        "opened_on": "2026-08-31",
-        "quantity": 8,
-        "symbol": "SCHNEIDER"
+        "average_cost": "637.97",
+        "entry_fee": "10.65",
+        "opened_on": "2026-09-21",
+        "quantity": 14,
+        "symbol": "SBICARD"
+      },
+      {
+        "average_cost": "63.75",
+        "entry_fee": "11.17",
+        "opened_on": "2026-09-21",
+        "quantity": 147,
+        "symbol": "SJVN"
       },
       {
         "average_cost": "1248.62",
@@ -581,11 +609,18 @@
         "symbol": "SOBHA"
       },
       {
-        "average_cost": "46.16",
-        "entry_fee": "11.34",
-        "opened_on": "2026-08-31",
-        "quantity": 206,
-        "symbol": "SUZLON"
+        "average_cost": "543.99",
+        "entry_fee": "11.03",
+        "opened_on": "2026-09-21",
+        "quantity": 17,
+        "symbol": "STARHEALTH"
+      },
+      {
+        "average_cost": "278.19",
+        "entry_fee": "10.95",
+        "opened_on": "2026-09-21",
+        "quantity": 33,
+        "symbol": "TARIL"
       },
       {
         "average_cost": "3607.80",
@@ -595,74 +630,53 @@
         "symbol": "TATAELXSI"
       },
       {
-        "average_cost": "997.00",
-        "entry_fee": "10.70",
-        "opened_on": "2026-08-31",
-        "quantity": 9,
-        "symbol": "TECHNOE"
+        "average_cost": "2131.87",
+        "entry_fee": "10.16",
+        "opened_on": "2026-09-21",
+        "quantity": 4,
+        "symbol": "TCS"
       },
       {
-        "average_cost": "1618.01",
-        "entry_fee": "9.64",
-        "opened_on": "2026-08-31",
-        "quantity": 5,
-        "symbol": "TEGA"
+        "average_cost": "518.51",
+        "entry_fee": "11.12",
+        "opened_on": "2026-09-21",
+        "quantity": 18,
+        "symbol": "TEJASNET"
       },
       {
-        "average_cost": "532.97",
-        "entry_fee": "10.80",
-        "opened_on": "2026-08-31",
-        "quantity": 17,
-        "symbol": "TENNIND"
+        "average_cost": "562.73",
+        "entry_fee": "10.73",
+        "opened_on": "2026-09-21",
+        "quantity": 16,
+        "symbol": "UPL"
       },
       {
-        "average_cost": "3899.05",
-        "entry_fee": "9.30",
-        "opened_on": "2026-08-31",
-        "quantity": 2,
-        "symbol": "THERMAX"
+        "average_cost": "902.37",
+        "entry_fee": "10.75",
+        "opened_on": "2026-09-21",
+        "quantity": 10,
+        "symbol": "UTIAMC"
       },
       {
-        "average_cost": "2789.44",
-        "entry_fee": "9.98",
-        "opened_on": "2026-08-31",
-        "quantity": 3,
-        "symbol": "TIINDIA"
+        "average_cost": "260.41",
+        "entry_fee": "11.17",
+        "opened_on": "2026-09-21",
+        "quantity": 36,
+        "symbol": "VEDL"
       },
       {
-        "average_cost": "3171.59",
-        "entry_fee": "7.56",
-        "opened_on": "2026-08-31",
-        "quantity": 2,
-        "symbol": "TIMKEN"
+        "average_cost": "101.81",
+        "entry_fee": "11.16",
+        "opened_on": "2026-09-21",
+        "quantity": 92,
+        "symbol": "VMM"
       },
       {
-        "average_cost": "2897.80",
-        "entry_fee": "10.36",
-        "opened_on": "2026-08-31",
-        "quantity": 3,
-        "symbol": "TRENT"
-      },
-      {
-        "average_cost": "24.19",
-        "entry_fee": "11.34",
-        "opened_on": "2026-08-31",
-        "quantity": 393,
-        "symbol": "TRIDENT"
-      },
-      {
-        "average_cost": "411.29",
-        "entry_fee": "11.28",
-        "opened_on": "2026-08-31",
-        "quantity": 23,
-        "symbol": "VBL"
-      },
-      {
-        "average_cost": "1478.94",
-        "entry_fee": "10.58",
-        "opened_on": "2026-08-31",
-        "quantity": 6,
-        "symbol": "VIJAYA"
+        "average_cost": "1145.17",
+        "entry_fee": "10.92",
+        "opened_on": "2026-09-21",
+        "quantity": 8,
+        "symbol": "VOLTAS"
       },
       {
         "average_cost": "2592.25",
@@ -672,30 +686,23 @@
         "symbol": "WAAREEENER"
       },
       {
-        "average_cost": "22.11",
-        "entry_fee": "11.34",
-        "opened_on": "2026-08-31",
-        "quantity": 430,
-        "symbol": "YESBANK"
-      },
-      {
-        "average_cost": "1794.95",
-        "entry_fee": "10.70",
-        "opened_on": "2026-08-31",
-        "quantity": 5,
-        "symbol": "ZENTEC"
+        "average_cost": "2198.55",
+        "entry_fee": "10.48",
+        "opened_on": "2026-09-21",
+        "quantity": 4,
+        "symbol": "WOCKPHARMA"
       }
     ],
-    "last_completed_on": "2026-09-18",
-    "last_rebalance_on": "2026-08-31",
+    "last_completed_on": "2026-09-21",
+    "last_rebalance_on": "2026-09-21",
     "peak_equity": "1000000.00",
-    "realized_pnl": "0.00",
+    "realized_pnl": "-8165.20",
     "risk_halted": false,
     "schema_id": "quantos.paper_portfolio",
     "schema_version": 5,
-    "sessions_completed": 12,
-    "sessions_held": 12,
-    "total_fees": "1072.65"
+    "sessions_completed": 13,
+    "sessions_held": 1,
+    "total_fees": "2651.15"
   },
-  "state_hash": "47b00de6c2166d68865bb67bc149568294e7de8259aef57a783cbabd38cede3d"
+  "state_hash": "862085e7a5ac9933064018b2bfaf7618b5df4346fc897fb2586a8fc6892fd4bd"
 }

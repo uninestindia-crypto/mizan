@@ -254,5 +254,21 @@
     "series": "EQ",
     "subject": "Interim Dividend - Rs 7.15 Per Share",
     "symbol": "GRSE"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Garden Reach Shipbuilders & Engineers Limited",
+    "exDate": "18-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE382Z01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "18-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 6.70 Per Share",
+    "symbol": "GRSE"
   }
 ]

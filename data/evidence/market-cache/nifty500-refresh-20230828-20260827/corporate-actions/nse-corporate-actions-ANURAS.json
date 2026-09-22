@@ -64,22 +64,6 @@
     "symbol": "ANURAS"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "Anupam Rasayan India Limited",
-    "exDate": "02-Sep-2022",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE930P01018",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "05-Sep-2022",
-    "series": "EQ",
-    "subject": "Dividend - Re 1 Per Share",
-    "symbol": "ANURAS"
-  },
-  {
     "bcEndDate": "15-Sep-2022",
     "bcStartDate": "06-Sep-2022",
     "caBroadcastDate": null,
@@ -93,6 +77,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": "Annual General Meeting",
+    "symbol": "ANURAS"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Anupam Rasayan India Limited",
+    "exDate": "02-Sep-2022",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE930P01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "05-Sep-2022",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
     "symbol": "ANURAS"
   },
   {
@@ -189,6 +189,22 @@
     "recDate": "21-Jul-2025",
     "series": "EQ",
     "subject": "Interim Dividend - Rs 0.75 Per Sh",
+    "symbol": "ANURAS"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Anupam Rasayan India Limited",
+    "exDate": "18-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE930P01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "18-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.50 Per Share",
     "symbol": "ANURAS"
   }
 ]

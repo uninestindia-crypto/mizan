@@ -174,5 +174,21 @@
     "series": "EQ",
     "subject": "Dividend - Rs 0.25 Per Share",
     "symbol": "PGEL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "PG Electroplast Limited",
+    "exDate": "18-Sep-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE457L01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "18-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.25 Per Share",
+    "symbol": "PGEL"
   }
 ]

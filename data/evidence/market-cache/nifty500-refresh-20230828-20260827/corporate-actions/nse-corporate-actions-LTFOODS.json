@@ -382,5 +382,21 @@
     "series": "EQ",
     "subject": "Interim Dividend - Re 1 Per Share",
     "symbol": "LTFOODS"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "LT Foods Limited",
+    "exDate": "18-Sep-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE818H01020",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "18-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 1 Per Share",
+    "symbol": "LTFOODS"
   }
 ]

@@ -302,5 +302,21 @@
     "series": "EQ",
     "subject": "Interim Dividend - Rs 4 Per Share",
     "symbol": "CAPLIPOINT"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Caplin Point Laboratories Limited",
+    "exDate": "18-Sep-2026",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE475E01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "18-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 4 Per Share",
+    "symbol": "CAPLIPOINT"
   }
 ]

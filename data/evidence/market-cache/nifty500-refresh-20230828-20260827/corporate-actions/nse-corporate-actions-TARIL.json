@@ -190,5 +190,21 @@
     "series": "EQ",
     "subject": "Dividend - Re 0.20  Per Share",
     "symbol": "TARIL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Transformers And Rectifiers (India) Limited",
+    "exDate": "18-Sep-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE763I01026",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "18-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.25 Per Share",
+    "symbol": "TARIL"
   }
 ]
