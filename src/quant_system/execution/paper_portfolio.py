@@ -61,8 +61,10 @@ PORTFOLIO_SCHEMA_ID = "quantos.paper_portfolio"
 #: boundary. Version 4 adds the daily drawdown anchor, so restarting the process during a session
 #: does not re-baseline it. Version 5 adds ``last_completed_on`` (R7-05), so multiple runs or
 #: restarts on the same trading calendar date do not increment ``sessions_held`` or
-#: ``sessions_completed`` repeatedly.
-PORTFOLIO_SCHEMA_VERSION = 5
+#: ``sessions_completed`` repeatedly. Version 6 adds the book's equity history -- ``inception_on``
+#: and one closing :class:`EquityMark` per completed session -- so a report can compare the book
+#: with the market over exactly the dates both were marked.
+PORTFOLIO_SCHEMA_VERSION = 6
 
 
 class _Unchecked:
@@ -113,6 +115,39 @@ class PortfolioHolding:
     @property
     def cost_basis(self) -> Decimal:
         return (self.average_cost * self.quantity).quantize(Decimal("0.01"))
+
+
+@dataclass(frozen=True, slots=True)
+class EquityMark:
+    """The book at one session's close: its total equity, and how much of that was in positions.
+
+    Recorded because a report had nothing else to compare with the market. The index series is
+    refreshed before the open, so on the day of a report its newest close is the previous
+    session's; the book's only figure was today's. On 2026-09-21 the report set the book's 21 Sep
+    mark against NIFTY 50's 18 Sep close and printed the difference as stock selection. With one
+    mark per session, the book can be read on the same date as the index.
+
+    ``invested`` is carried so the market leg can be scaled to the book's actual exposure: a book
+    holding 15% cash cannot fall as far as a fully invested index, and that gap is not skill.
+    """
+
+    on: date
+    equity: Decimal
+    invested: Decimal
+
+    def __post_init__(self) -> None:
+        if self.equity <= 0:
+            raise PaperPortfolioError(f"equity mark on {self.on}: equity must be positive")
+        if not Decimal("0") <= self.invested <= self.equity:
+            raise PaperPortfolioError(
+                f"equity mark on {self.on}: invested {self.invested} must lie between zero and the "
+                f"equity {self.equity}; this portfolio is long-only and holds no negative cash"
+            )
+
+    @property
+    def exposure(self) -> Decimal:
+        """The share of equity held in positions at this close."""
+        return self.invested / self.equity
 
 
 @dataclass
@@ -172,6 +207,28 @@ class PaperPortfolioState:
     #: re-running on the same calendar date does not increment sessions_held or sessions_completed
     #: repeatedly (R7-05).
     last_completed_on: date | None = None
+
+    #: The first session this book ran, when it is known.
+    #:
+    #: Set by the first session of a pristine book and never moved afterwards. A book migrated from
+    #: an older schema keeps ``None``: it began before anything recorded its start, and stamping the
+    #: first post-migration session instead would measure its return from a date on which it had
+    #: already lost money.
+    inception_on: date | None = None
+
+    #: One closing mark per completed session, keyed by session date. See :class:`EquityMark`.
+    equity_marks: dict[date, EquityMark] = field(default_factory=dict)
+
+    @property
+    def is_pristine(self) -> bool:
+        """Whether nothing has happened to this book yet: no session, position, fee or P&L."""
+        return (
+            self.sessions_completed == 0
+            and not self.holdings
+            and self.realized_pnl == 0
+            and self.total_fees == 0
+            and not self.equity_marks
+        )
 
     @property
     def holdings_value_at_cost(self) -> Decimal:
@@ -283,6 +340,11 @@ class PaperPortfolioState:
             "last_completed_on": (
                 self.last_completed_on.isoformat() if self.last_completed_on else None
             ),
+            "inception_on": self.inception_on.isoformat() if self.inception_on else None,
+            "equity_marks": [
+                {"on": m.on.isoformat(), "equity": str(m.equity), "invested": str(m.invested)}
+                for m in sorted(self.equity_marks.values(), key=lambda m: m.on)
+            ],
         }
 
 
@@ -306,25 +368,29 @@ def _migrated(payload: dict[str, Any], path: Path) -> dict[str, Any]:
         )
     if version == PORTFOLIO_SCHEMA_VERSION:
         return payload
-    if version == 4:
-        upgraded = dict(payload)
-        upgraded["last_completed_on"] = None
-        upgraded["schema_version"] = PORTFOLIO_SCHEMA_VERSION
-        return upgraded
+    if version not in (3, 4, 5):
+        raise PaperPortfolioError(
+            f"portfolio state at {path} declares "
+            f"{payload.get('schema_id')} v{version}, expected "
+            f"{PORTFOLIO_SCHEMA_ID} v{PORTFOLIO_SCHEMA_VERSION}, and no migration exists from "
+            f"v{version}"
+        )
+    # Each step brings the payload up one version, so an old file passes through every default in
+    # order rather than through a shortcut that can forget one.
+    upgraded = dict(payload)
     if version == 3:
         # v4 added the daily drawdown anchor. A v3 file has none, and no anchor is the correct
         # starting state: the session takes a fresh one from its first live mark.
-        upgraded = dict(payload)
         upgraded["daily_anchor_on"] = None
         upgraded["daily_anchor_equity"] = "0.00"
+    if version in (3, 4):
         upgraded["last_completed_on"] = None
-        upgraded["schema_version"] = PORTFOLIO_SCHEMA_VERSION
-        return upgraded
-    raise PaperPortfolioError(
-        f"portfolio state at {path} declares "
-        f"{payload.get('schema_id')} v{version}, expected "
-        f"{PORTFOLIO_SCHEMA_ID} v{PORTFOLIO_SCHEMA_VERSION}, and no migration exists from v{version}"
-    )
+    # v6 added the equity history. An older book has none, and none is the truth: its earlier
+    # closes were never recorded, and its start is unknown rather than "the next session".
+    upgraded["inception_on"] = None
+    upgraded["equity_marks"] = []
+    upgraded["schema_version"] = PORTFOLIO_SCHEMA_VERSION
+    return upgraded
 
 
 def state_hash_on_disk(path: Path) -> str | None:
@@ -417,6 +483,19 @@ def load_portfolio(path: Path) -> PaperPortfolioState | None:
     }
     last = payload.get("last_rebalance_on")
     last_completed = payload.get("last_completed_on")
+    inception = payload["inception_on"]
+    equity_marks: dict[date, EquityMark] = {}
+    for entry in payload["equity_marks"]:
+        mark = EquityMark(
+            on=date.fromisoformat(entry["on"]),
+            equity=Decimal(entry["equity"]),
+            invested=Decimal(entry["invested"]),
+        )
+        if mark.on in equity_marks:
+            raise PaperPortfolioError(
+                f"portfolio state at {path} records two equity marks for {mark.on}"
+            )
+        equity_marks[mark.on] = mark
     return PaperPortfolioState(
         cash=Decimal(payload["cash"]),
         holdings=holdings,
@@ -436,6 +515,8 @@ def load_portfolio(path: Path) -> PaperPortfolioState | None:
         halted_on=(date.fromisoformat(payload["halted_on"]) if payload.get("halted_on") else None),
         halt_reason=str(payload.get("halt_reason", "")),
         last_completed_on=(date.fromisoformat(last_completed) if last_completed else None),
+        inception_on=date.fromisoformat(inception) if inception else None,
+        equity_marks=equity_marks,
     )
 
 
@@ -455,6 +536,7 @@ def state_from_ledger(
     halt_reason: str = "",
     daily_anchor_on: date | None = None,
     daily_anchor_equity: Decimal | None = None,
+    closing_mark: EquityMark | None = None,
 ) -> PaperPortfolioState:
     """The state to persist after a session, from the ledger's closing view.
 
@@ -472,7 +554,19 @@ def state_from_ledger(
     ``open_entry_fees`` maps symbol to the statutory entry cost still attributable to its open lots
     (``DecimalLedger.lots``). Omitting it carries zero, which understates the cost of any position
     that survives into the next session.
+
+    ``closing_mark`` is the book at this session's close. It is recorded only for a completed
+    session -- an aborted one stopped before the close, so its figure is not a close -- and a
+    re-run on the same date replaces that date's mark rather than adding a second one. The first
+    session of a pristine book also stamps ``inception_on``; nothing moves it afterwards.
     """
+    if closing_mark is not None and closing_mark.on != session_date:
+        raise PaperPortfolioError(
+            f"closing mark dated {closing_mark.on} passed for the session of {session_date}"
+        )
+    equity_marks = dict(previous.equity_marks)
+    if session_completed and closing_mark is not None:
+        equity_marks[session_date] = closing_mark
     fees_by_symbol = open_entry_fees or {}
     holdings = {
         symbol: PortfolioHolding(
@@ -524,4 +618,8 @@ def state_from_ledger(
             if (session_completed or already_counted_today)
             else previous.last_completed_on
         ),
+        # Stamped by the first session of a pristine book, completed or not: a first session that
+        # traded and then aborted still began the book.
+        inception_on=previous.inception_on or (session_date if previous.is_pristine else None),
+        equity_marks=equity_marks,
     )

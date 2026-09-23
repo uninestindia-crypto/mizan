@@ -21,6 +21,7 @@ from quant_system.core.domain import Fill, Side
 from quant_system.core.ledger import DecimalLedger
 from quant_system.execution.paper_portfolio import (
     PORTFOLIO_SCHEMA_VERSION,
+    EquityMark,
     PaperPortfolioError,
     PaperPortfolioState,
     PortfolioHolding,
@@ -649,8 +650,10 @@ def _write_at_version(path, state, version: int, drop=()) -> None:
     path.write_text(json.dumps(document), encoding="utf-8")
 
 
-V3_ABSENT = ("daily_anchor_on", "daily_anchor_equity", "last_completed_on")
-V4_ABSENT = ("last_completed_on",)
+V6_ADDED = ("inception_on", "equity_marks")
+V3_ABSENT = ("daily_anchor_on", "daily_anchor_equity", "last_completed_on", *V6_ADDED)
+V4_ABSENT = ("last_completed_on", *V6_ADDED)
+V5_ABSENT = V6_ADDED
 
 
 def test_a_v4_file_written_before_last_completed_on_still_loads(tmp_path) -> None:
@@ -887,3 +890,154 @@ def test_multiple_runs_on_the_same_date_do_not_advance_the_hold_clock() -> None:
     assert run3.sessions_completed == 4
     assert run3.sessions_held == 4
     assert run3.last_completed_on == next_day
+
+
+# --------------------------------------------------------------------------------------------
+# The equity history (v6): one closing mark per completed session, and the book's first session.
+#
+# A report had nothing to read the book on except today, while the index it was set against is
+# refreshed before the open and so always ends a session earlier. On 2026-09-21 that printed the
+# gap between the book's 21 Sep mark and NIFTY 50's 18 Sep close as stock selection.
+# --------------------------------------------------------------------------------------------
+
+
+def _pristine() -> PaperPortfolioState:
+    return PaperPortfolioState(cash=Decimal("1000000.00"))
+
+
+def _close(state, on: date, equity: str, invested: str, **overrides) -> PaperPortfolioState:
+    """One session's close, recorded through the same call the runner makes."""
+    return state_from_ledger(
+        state,
+        cash=Decimal(equity) - Decimal(invested),
+        positions={"INFY": (10, Decimal("1500.00"))},
+        session_date=on,
+        session_realized_pnl=Decimal("0.00"),
+        fees_paid=Decimal("0.00"),
+        rebalanced=False,
+        closing_mark=EquityMark(on=on, equity=Decimal(equity), invested=Decimal(invested)),
+        **overrides,
+    )
+
+
+def test_the_first_session_of_a_pristine_book_stamps_its_inception() -> None:
+    first = date(2026, 10, 7)
+    after = _close(_pristine(), first, "998000.00", "850000.00")
+
+    assert after.inception_on == first
+    assert after.equity_marks[first].equity == Decimal("998000.00")
+    assert after.equity_marks[first].invested == Decimal("850000.00")
+
+
+def test_the_inception_never_moves_after_the_first_session() -> None:
+    first, second = date(2026, 10, 7), date(2026, 10, 8)
+    after = _close(_close(_pristine(), first, "998000.00", "850000.00"), second, "1001000", "0")
+
+    assert after.inception_on == first
+    assert sorted(after.equity_marks) == [first, second]
+
+
+def test_an_aborted_first_session_still_began_the_book_but_records_no_close() -> None:
+    """It may have traded before aborting, so the book began; but it never reached a close."""
+    first = date(2026, 10, 7)
+    after = _close(_pristine(), first, "999000.00", "400000.00", session_completed=False)
+
+    assert after.inception_on == first
+    assert after.equity_marks == {}
+
+
+def test_a_book_with_history_but_no_recorded_start_never_acquires_one() -> None:
+    """A migrated book began before anything recorded its start.
+
+    Stamping the first post-migration session would measure its return from a date on which it had
+    already lost money -- the flagship was 1.18% down on 2026-09-21 -- and report the loss as gone.
+    """
+    day = date(2026, 9, 22)
+    after = _close(_state(), day, "990000.00", "870000.00")
+
+    assert after.inception_on is None
+    assert after.equity_marks[day].equity == Decimal("990000.00")
+
+
+def test_a_rerun_on_the_same_date_replaces_that_dates_mark() -> None:
+    day = date(2026, 10, 7)
+    rerun = _close(_close(_pristine(), day, "998000.00", "850000.00"), day, "997500", "849000")
+
+    assert list(rerun.equity_marks) == [day]
+    assert rerun.equity_marks[day].equity == Decimal("997500")
+
+
+def test_a_mark_dated_for_another_session_is_refused() -> None:
+    with pytest.raises(PaperPortfolioError, match="closing mark dated 2026-10-07"):
+        state_from_ledger(
+            _pristine(),
+            cash=Decimal("1000000.00"),
+            positions={},
+            session_date=date(2026, 10, 8),
+            session_realized_pnl=Decimal("0.00"),
+            fees_paid=Decimal("0.00"),
+            rebalanced=False,
+            closing_mark=EquityMark(
+                on=date(2026, 10, 7), equity=Decimal("1000000.00"), invested=Decimal("0.00")
+            ),
+        )
+
+
+def test_a_mark_cannot_hold_more_in_positions_than_the_book_is_worth() -> None:
+    day = date(2026, 10, 7)
+    with pytest.raises(PaperPortfolioError, match="between zero and the equity"):
+        EquityMark(on=day, equity=Decimal("100.00"), invested=Decimal("100.01"))
+    with pytest.raises(PaperPortfolioError, match="between zero and the equity"):
+        EquityMark(on=day, equity=Decimal("100.00"), invested=Decimal("-0.01"))
+    with pytest.raises(PaperPortfolioError, match="equity must be positive"):
+        EquityMark(on=day, equity=Decimal("0.00"), invested=Decimal("0.00"))
+
+
+def test_exposure_is_the_share_of_equity_held_in_positions() -> None:
+    mark = EquityMark(
+        on=date(2026, 10, 7), equity=Decimal("1000000.00"), invested=Decimal("850000")
+    )
+    assert mark.exposure == Decimal("0.85")
+
+
+def test_the_equity_history_round_trips_through_the_state_file(tmp_path) -> None:
+    path = tmp_path / "portfolio.json"
+    first, second = date(2026, 10, 7), date(2026, 10, 8)
+    state = _close(
+        _close(_pristine(), first, "998000.00", "850000.00"), second, "1001000", "860000"
+    )
+    save_portfolio(path, state)
+
+    loaded = load_portfolio(path)
+
+    assert loaded is not None
+    assert loaded.inception_on == first
+    assert loaded.equity_marks == state.equity_marks
+
+
+def test_a_v5_file_written_before_the_equity_history_still_loads(tmp_path) -> None:
+    """With no recorded start and no marks: unknown, which is the truth about such a book."""
+    path = tmp_path / "portfolio.json"
+    _write_at_version(path, _state(), 5, drop=V5_ABSENT)
+
+    loaded = load_portfolio(path)
+
+    assert loaded is not None
+    assert loaded.inception_on is None
+    assert loaded.equity_marks == {}
+    assert loaded.cash == Decimal("93570.50")
+    assert loaded.holdings["INFY"].quantity == 98
+
+
+def test_two_marks_for_one_date_are_refused(tmp_path) -> None:
+    from quant_system.data.market_data_evidence import canonical_sha256
+
+    path = tmp_path / "portfolio.json"
+    save_portfolio(path, _close(_pristine(), date(2026, 10, 7), "998000.00", "850000.00"))
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["payload"]["equity_marks"].append(dict(document["payload"]["equity_marks"][0]))
+    document["state_hash"] = canonical_sha256(document["payload"])
+    path.write_text(json.dumps(document), encoding="utf-8")
+
+    with pytest.raises(PaperPortfolioError, match="two equity marks for 2026-10-07"):
+        load_portfolio(path)

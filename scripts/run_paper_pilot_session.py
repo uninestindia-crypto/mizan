@@ -526,13 +526,15 @@ def session_baselines(
     *,
     initial_capital: Decimal,
     final_equity: Decimal,
+    session_date: date,
     positions: Mapping[str, Any],
     marks: Mapping[str, Decimal],
-    nifty_by_date: Mapping[str, float],
-    window_start: date | None,
-    window_end: date,
+    index_name: str,
+    index_by_date: Mapping[str, float],
+    inception_on: date | None,
+    equity_marks: Mapping[date, EquityMark],
 ) -> list[dict[str, str]]:
-    """What the book returned, against the alternatives, over its own holding window.
+    """What the book returned against the market, against not trading, and against its own sizing.
 
     A book reporting only its own P&L can lose to doing nothing for weeks and read as fine. The
     number Gate 1B turns on is not "did it make money", it is "did it beat holding the index and
@@ -541,15 +543,28 @@ def session_baselines(
     PREVIOUS_SIGN +1.631, while its own deflated Sharpe rose across three trials. That divergence
     is what this makes visible daily.
 
-    Three baselines, each answering a different question, all over ``window_start..window_end``:
+    **The book and the index are read on the same dates.** The index series is refreshed before the
+    open, so on the day of a report its newest close is the previous session's. The first version of
+    this table set the book marked today against the index marked yesterday or earlier: on
+    2026-09-21 it compared the book's 21 Sep equity with NIFTY 50's 18 Sep close and printed the
+    difference, +1.87 pp, as selection. The market rows now run from the book's start to the latest
+    date that has both a book mark (:class:`EquityMark`) and an index close.
 
-    - **Equal-weight, same names** -- did the *sizing* help? Same picks, equal rupees at entry.
-      The gap to the book is weight drift, which ``weight_drift_report`` reports and this runner
-      does not correct.
-    - **NIFTY 50 buy-and-hold** -- did any of this beat the market? The difference is printed as
-      the selection line.
-    - **Cash** -- did trading beat not trading? Zero by definition, and the honest floor: a book
-      below it paid costs to lose money.
+    **The market is scaled to the book's exposure.** The flagship held about 15% cash, which on a
+    -3.05% market is worth +0.46 pp against a fully invested index for no reason but the cash. The
+    market leg is therefore the index return times the book's average invested share.
+
+    **The benchmark is the book's own universe when it can be.** ``index_name`` says which series
+    ``index_by_date`` holds: the NIFTY 500 when it is cached, NIFTY 50 otherwise. NIFTY 50 is fifty
+    large companies, and from 2026-08-31 to 09-18 it fell 3.05% while the average NIFTY 500 stock
+    fell 1.62% -- a size gap the first version printed as selection. Against NIFTY 50 the picking
+    line carries a note saying so. Both indices weight by company size while the book weights its
+    names equally, and every picking line says that too: the tilt is real and is not picking.
+
+    **The sizing rows compare like with like.** They take the names held now, each from its own
+    entry to today's mark, as sized and equal-weighted. They used to set an equal-weight figure for
+    the current holdings against the book's lifetime return, which carries every realized loss on
+    names already sold: on 2026-09-21 that read as sizing costing 0.9 pp when it measured nothing.
 
     PREVIOUS_SIGN and EQUITY_DUAL_MOMENTUM are **deliberately absent**. Both are per-instrument
     signal rules needing a decision history this runner does not keep, and inventing a portfolio
@@ -561,8 +576,6 @@ def session_baselines(
     to zero and never dropped silently -- the same rule the unpriced-entitlement work applied to
     the XS book, for the same reason: a fabricated comparison is worse than an absent one.
     """
-    rows: list[dict[str, str]] = []
-
     if initial_capital <= 0:
         return [
             {
@@ -573,101 +586,204 @@ def session_baselines(
             }
         ]
 
-    book_pct = (final_equity / initial_capital - 1) * 100
-    rows.append(
+    book_note = f"equity Rs {final_equity} on Rs {initial_capital}"
+    if inception_on is not None:
+        book_note += f", {inception_on.isoformat()} to {session_date.isoformat()}"
+    rows = [
         {
             "baseline": "This book",
             "answers": "actual, net of statutory fees",
-            "return_pct": _pct(book_pct),
-            "note": f"equity Rs {final_equity} on Rs {initial_capital}",
-        }
-    )
-
-    # Equal-weight the same names: same picks, equal rupees at entry, cash left as cash.
-    invested_at_cost = Decimal("0.00")
-    per_name: list[Decimal] = []
-    unmarked: list[str] = []
-    for symbol, position in positions.items():
-        cost = Decimal(position.quantity) * position.average_price
-        invested_at_cost += cost
-        mark = marks.get(symbol)
-        if mark is None or position.average_price <= 0:
-            unmarked.append(symbol)
-            continue
-        per_name.append(mark / position.average_price - 1)
-
-    if not per_name:
-        rows.append(
-            {
-                "baseline": "Equal-weight, same names",
-                "answers": "did the sizing help?",
-                "return_pct": "unavailable",
-                "note": "no held name has both an entry price and a closing mark",
-            }
-        )
-    else:
-        mean_leg = sum(per_name, Decimal("0")) / Decimal(len(per_name))
-        cash_share = initial_capital - invested_at_cost
-        ew_equity = cash_share + invested_at_cost * (1 + mean_leg)
-        note = f"{len(per_name)} leg(s), equal rupees at entry, cash held as cash"
-        if unmarked:
-            note += f"; {len(unmarked)} unmarked and excluded: {', '.join(sorted(unmarked)[:5])}"
-        rows.append(
-            {
-                "baseline": "Equal-weight, same names",
-                "answers": "did the sizing help?",
-                "return_pct": _pct((ew_equity / initial_capital - 1) * 100),
-                "note": note,
-            }
-        )
-
-    # NIFTY 50 buy-and-hold over the same window.
-    nifty_pct: Decimal | None = None
-    if window_start is None:
-        nifty_note = "no open position, so the book has no holding window to compare against"
-    else:
-        start_close = _closest_on_or_before(nifty_by_date, window_start)
-        end_close = _closest_on_or_before(nifty_by_date, window_end)
-        if start_close is None or end_close is None or start_close <= 0:
-            nifty_note = (
-                f"no cached NIFTY 50 close on or before "
-                f"{window_start.isoformat() if start_close is None else window_end.isoformat()}"
-            )
-        else:
-            nifty_pct = (Decimal(str(end_close)) / Decimal(str(start_close)) - 1) * 100
-            nifty_note = f"{window_start.isoformat()} to {window_end.isoformat()}"
-    rows.append(
-        {
-            "baseline": "NIFTY 50 buy-and-hold",
-            "answers": "did any of this beat the market?",
-            "return_pct": "unavailable" if nifty_pct is None else _pct(nifty_pct),
-            "note": nifty_note,
-        }
-    )
-
-    rows.append(
+            "return_pct": _pct((final_equity / initial_capital - 1) * 100),
+            "note": book_note,
+        },
         {
             "baseline": "Cash",
             "answers": "did trading beat not trading?",
             "return_pct": _pct(Decimal("0")),
             "note": "zero by definition; a book below this paid costs to lose money",
-        }
+        },
+    ]
+    rows.extend(
+        _market_rows(
+            initial_capital=initial_capital,
+            session_date=session_date,
+            index_name=index_name,
+            index_by_date=index_by_date,
+            inception_on=inception_on,
+            equity_marks=equity_marks,
+        )
+    )
+    rows.extend(_held_name_rows(positions, marks))
+    return rows
+
+
+#: The index the books pick from. Any other benchmark gets `_UNIVERSE_CAVEAT` on its picking line.
+UNIVERSE_INDEX = "NIFTY 500"
+
+#: Stated beside every picking line. Both supported indices weight companies by size and the book
+#: weights its names equally; on 2026-08-31..09-18 the NIFTY 500 index fell 2.92% while the average
+#: NIFTY 500 stock fell 1.62%, so this tilt alone can be worth more than a point. An equal-weight
+#: NIFTY 500 series would remove it; no provider key for one has been verified.
+_WEIGHTING_CAVEAT = (
+    "The index weights companies by size and this book weights its names equally, so part of any "
+    "gap is that tilt, not picking"
+)
+
+#: Stated beside the picking line when the benchmark is not the book's universe, because the gap
+#: between the two universes is then part of what that line measures.
+_UNIVERSE_CAVEAT = (
+    "This index is not the NIFTY 500 this book picks from, so part of any gap is the difference "
+    "between the two, not picking"
+)
+
+
+def _market_row_names(index_name: str) -> tuple[tuple[str, str], ...]:
+    return (
+        (f"{index_name} buy-and-hold", "what did the market do?"),
+        ("This book, same dates", "the book over the index's window"),
+        ("Market at this book's exposure", "the index, holding the cash the book held"),
+        ("Picking and costs", "did choosing these stocks, after costs, beat the market?"),
     )
 
-    # The line Gate 1B turns on, stated rather than left to the reader to subtract.
-    rows.append(
-        {
-            "baseline": "Selection vs NIFTY 50",
-            "answers": "the Gate 1B number",
-            "return_pct": "unavailable" if nifty_pct is None else _pct(book_pct - nifty_pct),
-            "note": (
-                "book minus index, in percentage points; negative means the picking cost money"
-                if nifty_pct is not None
-                else "undefined while the index leg is unavailable"
-            ),
-        }
+
+def _market_rows(
+    *,
+    initial_capital: Decimal,
+    session_date: date,
+    index_name: str,
+    index_by_date: Mapping[str, float],
+    inception_on: date | None,
+    equity_marks: Mapping[date, EquityMark],
+) -> list[dict[str, str]]:
+    """The book against an index over one window both were marked on. See `session_baselines`."""
+    names = _market_row_names(index_name)
+
+    def unavailable(reason: str) -> list[dict[str, str]]:
+        return [
+            {"baseline": name, "answers": answers, "return_pct": "unavailable", "note": reason}
+            for name, answers in names
+        ]
+
+    if not index_by_date:
+        return unavailable(f"no cached {index_name} closes")
+    common = sorted(
+        on for on in equity_marks if on <= session_date and on.isoformat() in index_by_date
     )
-    return rows
+    if inception_on is not None:
+        # The book starts from its capital, before its first trade, so the index starts from its
+        # last close before that session.
+        base_index = _closest_on_or_before(index_by_date, inception_on - timedelta(days=1))
+        if base_index is None or base_index <= 0:
+            return unavailable(
+                f"no cached {index_name} close before the book's first session, "
+                f"{inception_on.isoformat()}"
+            )
+        start_on = inception_on
+        start_label = f"the close before {inception_on.isoformat()}"
+        base_equity = initial_capital
+        window = [on for on in common if on >= inception_on]
+        if not window:
+            return unavailable(
+                f"the index has no close yet on or after the book's first session, "
+                f"{inception_on.isoformat()}; its latest is {max(index_by_date)}"
+            )
+    else:
+        # A book older than its equity history has no recorded start. It is compared from its
+        # first close the index also has -- never from its capital, which it had long since left.
+        if len(common) < 2:
+            return unavailable(
+                "this book predates its equity history and has fewer than two recorded closes "
+                "the index also has"
+            )
+        start_on = common[0]
+        start_label = f"{start_on.isoformat()} close"
+        base_index = index_by_date[start_on.isoformat()]
+        base_equity = equity_marks[start_on].equity
+        window = common[1:]
+
+    end = window[-1]
+    index_pct = (Decimal(str(index_by_date[end.isoformat()])) / Decimal(str(base_index)) - 1) * 100
+    book_pct = (equity_marks[end].equity / base_equity - 1) * 100
+    in_window = [mark for on, mark in equity_marks.items() if start_on <= on <= end]
+    exposure = sum((mark.exposure for mark in in_window), Decimal("0")) / Decimal(len(in_window))
+    market_pct = exposure * index_pct
+    span = f"{start_label} to {end.isoformat()} close"
+    if end < session_date:
+        span += f", the index's latest (the book is also marked {session_date.isoformat()})"
+    picking_note = (
+        "book minus the market at its exposure, in percentage points; negative means picking and "
+        f"costs lost money. {_WEIGHTING_CAVEAT}"
+    )
+    if index_name != UNIVERSE_INDEX:
+        picking_note += f". {_UNIVERSE_CAVEAT}"
+    values = (
+        (_pct(index_pct), span),
+        (_pct(book_pct), f"equity Rs {base_equity} to Rs {equity_marks[end].equity}, {span}"),
+        (
+            _pct(market_pct),
+            f"the index x {exposure * 100:.1f}% average invested, over "
+            f"{len(in_window)} recorded close(s)",
+        ),
+        (_pct(book_pct - market_pct), picking_note),
+    )
+    return [
+        {"baseline": name, "answers": answers, "return_pct": value, "note": note}
+        for (name, answers), (value, note) in zip(names, values, strict=True)
+    ]
+
+
+def _held_name_rows(
+    positions: Mapping[str, Any], marks: Mapping[str, Decimal]
+) -> list[dict[str, str]]:
+    """The names held now, each from its own entry to today's mark: as sized, and equal-weighted.
+
+    Both rows cover exactly the same names over exactly the same span, so the gap between them is
+    the sizing and nothing else. A name with no mark is named and excluded from both, never valued
+    at zero or at cost.
+    """
+    sized = ("Held names, as sized", "the names held now, as the book sized them")
+    equal = ("Held names, equal-weight", "did the sizing help?")
+    cost = Decimal("0.00")
+    value = Decimal("0.00")
+    per_name: list[Decimal] = []
+    unmarked: list[str] = []
+    for symbol, position in positions.items():
+        if position.quantity <= 0:
+            continue
+        mark = marks.get(symbol)
+        if mark is None or position.average_price <= 0:
+            unmarked.append(symbol)
+            continue
+        cost += Decimal(position.quantity) * position.average_price
+        value += Decimal(position.quantity) * mark
+        per_name.append(mark / position.average_price - 1)
+
+    if not per_name:
+        reason = "no held name has both an entry price and a closing mark"
+        return [
+            {"baseline": name, "answers": answers, "return_pct": "unavailable", "note": reason}
+            for name, answers in (sized, equal)
+        ]
+    note = (
+        f"{len(per_name)} name(s), each from its own entry to today's mark, "
+        f"Rs {cost.quantize(_PAISA)} at cost"
+    )
+    if unmarked:
+        note += f"; {len(unmarked)} unmarked and excluded: {', '.join(sorted(unmarked)[:5])}"
+    return [
+        {
+            "baseline": sized[0],
+            "answers": sized[1],
+            "return_pct": _pct((value / cost - 1) * 100),
+            "note": note,
+        },
+        {
+            "baseline": equal[0],
+            "answers": equal[1],
+            "return_pct": _pct(sum(per_name, Decimal("0")) / Decimal(len(per_name)) * 100),
+            "note": f"{note}; equal rupees in each",
+        },
+    ]
 
 
 def _closest_on_or_before(series: Mapping[str, float], when: date) -> float | None:
@@ -899,6 +1015,7 @@ from quant_system.execution.mizan_live_features import (  # noqa: E402
     select_top_fraction,
 )
 from quant_system.execution.paper_portfolio import (  # noqa: E402
+    EquityMark,
     PaperPortfolioError,
     PaperPortfolioState,
     load_portfolio,
@@ -2127,6 +2244,12 @@ def run_paper_session(
         halt_reason=(
             governor.kill_events[-1].reason if governor.is_killed and governor.kill_events else ""
         ),
+        # The book at this close, so a later report can read it on the same date as the index.
+        closing_mark=EquityMark(
+            on=session_date,
+            equity=reconciliation.total_equity,
+            invested=reconciliation.total_equity - reconciliation.final_cash,
+        ),
     )
     try:
         save_portfolio(PORTFOLIO_STATE_PATH, portfolio, portfolio_hash_at_load)
@@ -2270,28 +2393,32 @@ def run_paper_session(
         "audit_events_count": len(engine.audit_log),
     }
 
-    # What the book returned against the alternatives, over its own holding window.
+    # What the book returned against the market, over dates both were marked on.
     #
-    # `portfolio` is the state as loaded at session start and is never rebound, so its holdings
-    # carry the `opened_on` of the window actually held into today -- which is the window a
-    # comparison has to run over. On a rebalance session the names bought today are deliberately
-    # outside it: they have been held for no time at all.
-    nifty_series: dict[str, float] = {}
+    # `portfolio` here is the state *after* this session: `state_from_ledger` rebound it above. The
+    # comment that stood here said it was never rebound, and the holding window it computed from
+    # `opened_on` was therefore today's holdings, not the window the book's return covered. The
+    # equity marks carry today's close when the session completed.
+    # The NIFTY 500 is the universe this book picks from, so it is the benchmark whenever its series
+    # is cached; NIFTY 50 stands in, with a caveat on the picking line, when it is not.
+    benchmark_name = UNIVERSE_INDEX
+    benchmark_series: dict[str, float] = {}
     for macro_dir in reversed(_MACRO_DIRS):
-        nifty_series.update(load_macro_series(macro_dir, "NIFTY50"))
-    window_start = (
-        min(holding.opened_on for holding in portfolio.holdings.values())
-        if portfolio.holdings
-        else None
-    )
+        benchmark_series.update(load_macro_series(macro_dir, "NIFTY500"))
+    if not benchmark_series:
+        benchmark_name = "NIFTY 50"
+        for macro_dir in reversed(_MACRO_DIRS):
+            benchmark_series.update(load_macro_series(macro_dir, "NIFTY50"))
     baselines = session_baselines(
         initial_capital=reconciliation.initial_cash,
         final_equity=reconciliation.total_equity,
+        session_date=session_date,
         positions=engine.positions,
         marks=final_prices,
-        nifty_by_date=nifty_series,
-        window_start=window_start,
-        window_end=session_date,
+        index_name=benchmark_name,
+        index_by_date=benchmark_series,
+        inception_on=portfolio.inception_on,
+        equity_marks=portfolio.equity_marks,
     )
     feedback_payload["baselines"] = baselines
 
@@ -2346,14 +2473,12 @@ def run_paper_session(
             f"| Total Slippage Cost | Rs {_paisa_str(reconciliation.total_slippage_cost)} |\n\n"
         )
 
-        f.write("## 2. Against the Alternatives\n\n")
+        f.write("## 2. Against the Market\n\n")
         f.write(
-            "Over the window this book has actually held"
-            + (
-                f" (`{window_start.isoformat()}` to `{session_date}`).\n\n"
-                if window_start
-                else ", which is empty because nothing is held.\n\n"
-            )
+            "The market rows run over the same dates as the book, up to the latest close the index "
+            "series holds, and scale the index to how much of the book was actually in stocks. A "
+            "fall in the market is therefore not read as the model failing; the picking line is "
+            "what is left after the market and the cash are accounted for.\n\n"
         )
         f.write("| Baseline | Answers | Return % | Basis |\n|---|---|---:|---|\n")
         for row in baselines:
@@ -2361,10 +2486,11 @@ def run_paper_session(
                 f"| {row['baseline']} | {row['answers']} | {row['return_pct']} | {row['note']} |\n"
             )
         f.write(
-            "\n*A negative selection line means the picking cost money against simply holding the "
-            "index. PREVIOUS_SIGN and EQUITY_DUAL_MOMENTUM are not shown here: they need a "
-            "decision history this runner does not keep, and an approximation would disagree with "
-            "the figures `modeling/validation.py` publishes under those names.*\n\n"
+            "\n*Picking and costs is in percentage points: the book minus the index at the book's "
+            "exposure, over the same dates. PREVIOUS_SIGN and EQUITY_DUAL_MOMENTUM are not shown "
+            "here: they need a decision history this runner does not keep, and an approximation "
+            "would disagree with the figures `modeling/validation.py` publishes under those "
+            "names.*\n\n"
         )
 
         f.write("## 3. Order Execution & Fills (IST)\n\n")

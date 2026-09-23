@@ -1,4 +1,4 @@
-"""Ingests 10-year macro benchmark regimes: NIFTY 50, India VIX, NIFTY Bank, NIFTY IT."""
+"""Ingests macro benchmark regimes: NIFTY 50, India VIX, NIFTY Bank, NIFTY IT, NIFTY 500."""
 
 from __future__ import annotations
 
@@ -27,6 +27,16 @@ MACRO_INDICES = [
         "name": "NIFTY Bank Index (Financials Benchmark)",
     },
     {"symbol": "NIFTYIT", "key": "NSE_INDEX|Nifty IT", "name": "NIFTY IT Index (Tech Benchmark)"},
+    # The paper books pick from the NIFTY 500, so this is the index their daily report is measured
+    # against. NIFTY 50 is fifty large companies: from 2026-08-31 to 09-18 it fell 3.05% while the
+    # average NIFTY 500 stock fell 1.62%, and that size gap was printed as stock selection. Not a
+    # model input and not checked by `macro_covers`, so a failed fetch leaves the report on NIFTY 50
+    # rather than stopping a session.
+    {
+        "symbol": "NIFTY500",
+        "key": "NSE_INDEX|Nifty 500",
+        "name": "NIFTY 500 Index (Paper Book Universe Benchmark)",
+    },
 ]
 
 

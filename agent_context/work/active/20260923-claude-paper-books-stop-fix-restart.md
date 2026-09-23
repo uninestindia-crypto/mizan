@@ -33,6 +33,21 @@ Records:
 Code paths are added here, each before its first edit. Every one is claimed by an older active
 record, so each edit is made on founder instruction and announced in the NOTICE.
 
+F1 (report compares like with like):
+
+- `src/quant_system/execution/paper_portfolio.py`: schema v6 records `inception_on` and one closing
+  equity mark per completed session; v3-v5 files migrate. Money path; named in NOTICEs under
+  `20260821-1048Z-claude-slice4-redteam-repair.md` (HANDOFF_REQUIRED; its pending conditions
+  concern modeling and evidence files, not this one) and listed do-not-touch by Hermes.
+- `tests/test_paper_portfolio.py`: v6 round-trip and migration tests, added alongside.
+- `scripts/run_paper_pilot_session.py`: `session_baselines` and its call site, the report section,
+  and passing the closing equity to `state_from_ledger`.
+- `tests/test_paper_report_baselines.py`: rewritten to the corrected semantics, keeping each old
+  test's intent.
+- `scripts/ingest_macro_regimes.py` (unclaimed): adds the NIFTY 500 index, the book's own
+  universe, as a benchmark series. `NSE_INDEX|Nifty 500` verified against the provider on
+  2026-09-23: HTTP 200, 15 daily closes 2026-09-01..2026-09-22.
+
 ## Non-goals
 
 - No new model, retrain, or change to model weights or the XS rule.
@@ -56,7 +71,17 @@ record, so each edit is made on founder instruction and announced in the NOTICE.
 
 ## Current step
 
-2. Archiving.
+4. F1 and F3 done and verified; F4 (scheduling) next, then F2 and F5.
+
+## Fix status
+
+| Fix | Status | Evidence |
+|---|---|---|
+| F1 report compares like with like | DONE | Portfolio schema v6 records `inception_on` and one `EquityMark` (equity, invested) per completed session. The report reads the book and the index on the same dates, scales the index to the book's average invested share, benchmarks against the NIFTY 500 index (NIFTY 50 fallback, with a caveat), and states the size-weighting tilt. The sizing rows compare the held names only. Recomputed on the stopped flagship's archived marks, 21 Sep: old report "Selection vs NIFTY 50 +1.87 pp"; new report "Picking and costs +1.2456 pp" against the NIFTY 500 index at 85.5% invested, over the same dates. The weighting caveat explains the rest; equal-weight picks were +0.61 pp |
+| F3 XS exit replay | DONE | `reports/paper_books_20260923/xs_exit_replay.py`, output `xs_exit_replay_output.txt`: both cases ALL CHECKS PASSED through the real runner in scratch state |
+| F4 scheduling | IN PROGRESS | Mechanism for the lost 22 Sep run found: the 21 Sep session slept from ~15:01 to the 22 Sep 09:00 wake, finished 10 s after the trigger, and `MultipleInstances=IgnoreNew` dropped the new run. 23 Sep: no trigger fired and no late start; Task Scheduler history is disabled, so the cause is unconfirmed |
+| F2 re-weight at rebalance | TODO | |
+| F5 demerger entitlements | TODO | |
 
 ## Decision rationale
 
@@ -72,6 +97,13 @@ for any paper book.
 |---|---|---|
 | `Get-CimInstance Win32_Process` filtered on the paper runners | none running | Checked before disabling |
 | `Disable-ScheduledTask` for `QuantOS Mizan Paper Session`, `QuantOS Trigger Verification`, `QuantOS-XSMonthly-PaperWatch` | PASS | All three `Disabled`; the three supervisors were already `Disabled`; only `QuantOS-DailyAutoSync` (git, 23:00) remains `Ready` |
+| Archive copy of both books | PASS | 86 files, 3,192,592 bytes, each copy SHA-256 verified; `reports/paper_books_20260923/archive-manifest.json`; committed `7c63df15` |
+| `pytest tests/test_paper_report_baselines.py tests/test_paper_portfolio.py` | PASS | 78 passed |
+| `pytest tests/test_paper_pilot_carried_session.py` (end-to-end runner) | PASS | 64 passed in 654 s |
+| `pytest` on `test_research_paper_exemption`, `test_risk_governor_session_peaks`, `test_xs_monthly_paper_watch`, `test_macro_cache_guard`, `test_scheduled_paper_session`, `test_live_universe_robustness`, `test_corporate_actions`, `test_ingest_corporate_action_authority` | PASS | 107 + 107 passed |
+| `ruff check .`; `ruff format --check .`; `mypy src launcher.py scripts` | PASS | 707 files formatted; mypy strict clean on 210 source files |
+| Provider check, `NSE_INDEX\|Nifty 500` | PASS | HTTP 200, 15 daily closes 2026-09-01..09-22. Four guesses at an equal-weight NIFTY 500 key returned HTTP 400; not pursued further |
+| `reports/paper_books_20260923/xs_exit_replay.py` | PASS | Case A (exit on the last cached day): 98/98 closed at the 09-18 open, cost 0.224% once, HEG unresolved, cash reconciles, no reopen. Case B: same, plus a 99-leg cohort reopened at the 09-18 open |
 
 ## Files changed
 
