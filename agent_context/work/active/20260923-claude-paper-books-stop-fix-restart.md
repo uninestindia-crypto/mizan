@@ -48,6 +48,14 @@ F1 (report compares like with like):
   universe, as a benchmark series. `NSE_INDEX|Nifty 500` verified against the provider on
   2026-09-23: HTTP 200, 15 daily closes 2026-09-01..2026-09-22.
 
+F4 (scheduling):
+
+- `scripts/configure_paper_book_tasks.ps1` (new): applies the corrected settings to
+  `QuantOS Mizan Paper Session` and `QuantOS-XSMonthly-PaperWatch`, and enables them only with
+  `-Enable`. It changes settings only; the actions, triggers and principals stay as their owners
+  registered them. The XS task is Hermes Agent's; the settings change is on founder instruction
+  and announced in the NOTICE.
+
 ## Non-goals
 
 - No new model, retrain, or change to model weights or the XS rule.
@@ -79,7 +87,7 @@ F1 (report compares like with like):
 |---|---|---|
 | F1 report compares like with like | DONE | Portfolio schema v6 records `inception_on` and one `EquityMark` (equity, invested) per completed session. The report reads the book and the index on the same dates, scales the index to the book's average invested share, benchmarks against the NIFTY 500 index (NIFTY 50 fallback, with a caveat), and states the size-weighting tilt. The sizing rows compare the held names only. Recomputed on the stopped flagship's archived marks, 21 Sep: old report "Selection vs NIFTY 50 +1.87 pp"; new report "Picking and costs +1.2456 pp" against the NIFTY 500 index at 85.5% invested, over the same dates. The weighting caveat explains the rest; equal-weight picks were +0.61 pp |
 | F3 XS exit replay | DONE | `reports/paper_books_20260923/xs_exit_replay.py`, output `xs_exit_replay_output.txt`: both cases ALL CHECKS PASSED through the real runner in scratch state |
-| F4 scheduling | IN PROGRESS | Mechanism for the lost 22 Sep run found: the 21 Sep session slept from ~15:01 to the 22 Sep 09:00 wake, finished 10 s after the trigger, and `MultipleInstances=IgnoreNew` dropped the new run. 23 Sep: no trigger fired and no late start; Task Scheduler history is disabled, so the cause is unconfirmed |
+| F4 scheduling | DONE (settings); two founder items | The 22 Sep loss: the 21 Sep session slept from ~15:01 to the 22 Sep 09:00 wake, finished 10 s after the trigger, and `MultipleInstances=IgnoreNew` dropped the new run. `scripts/configure_paper_book_tasks.ps1` applied and verified `Queue` on the session task. On the XS task it set battery start allowed, no stop on unplug, start-when-available, wake-to-run and `Queue`. All three tasks remain `Disabled`. Unresolved: 23 Sep had no trigger and no late start although start-when-available is set. Task Scheduler history (`Microsoft-Windows-TaskScheduler/Operational`) is disabled, so the cause is unconfirmed; enabling it is a system setting, the founder's call. The lid-close sleep that stops a session mid-afternoon is also a Windows power setting for the founder. Noted, not changed: the XS task runs through Hermes' `uv run`, which re-installs the editable package into the shared `.venv` on every run (observed in its `task.log`) |
 | F2 re-weight at rebalance | TODO | |
 | F5 demerger entitlements | TODO | |
 
