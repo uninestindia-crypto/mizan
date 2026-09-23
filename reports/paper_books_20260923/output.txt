@@ -1,0 +1,122 @@
+INPUTS (sha256; the NIFTY 500 store is identified by its ingestion summary)
+  de12a502b338b9aaedbc0b0432ebc44b6dae72b9f921cd08301b42ef927212e0  logs\paper_runs\paper_session_2026-08-31_paper_ses_20260831_115554_IST.json
+  203bc3918aa3d868d6f74307f7c46be0caecae10e2f8848328a22d29c8dd3004  logs\paper_runs\paper_session_2026-08-31_paper_ses_20260831_121739_IST.json
+  9a8ab2aead759e8de7182e886f9b0dd1c50f8ffbba2b5601caae8946d576ad9f  logs\paper_runs\paper_session_2026-09-01_paper_ses_20260901_101431_IST.json
+  d721b466b90e9b0c1c0330b6cb5066295763a7836b4fa0ed5866c3080a1a4f51  logs\paper_runs\paper_session_2026-09-02_paper_ses_20260902_115615_IST.json
+  520e81a879e643db44cae72af3ce73ecc97fe052e868dad9bd5003393b5ecb2d  logs\paper_runs\paper_session_2026-09-03_paper_ses_20260903_103545_IST.json
+  f171ff266e35483dab5772ced3a563ac6daa65e96f0333c873f9bb4ed73d5f9a  logs\paper_runs\paper_session_2026-09-04_paper_ses_20260904_123148_IST.json
+  655fce5e6f36541ba873a5c12c1c008f3e4ea9e5af061efb01861da3798bd653  logs\paper_runs\paper_session_2026-09-07_paper_ses_20260907_112455_IST.json
+  48419054d4fc9805aa3af0d49d48a63608f797242b8441adee5e92ea1c86e96f  logs\paper_runs\paper_session_2026-09-08_paper_ses_20260908_121231_IST.json
+  3adadc30d5b5f7622a0a4a1adfb68292948f261b74c51ce79f2ddf217b30d3d9  logs\paper_runs\paper_session_2026-09-09_paper_ses_20260909_111619_IST.json
+  2f5878b3d60a85bcb08de2125a88823f7d95884ffdd83df72aa80b3d30268643  logs\paper_runs\paper_session_2026-09-10_paper_ses_20260910_091443_IST.json
+  978c534c8294bd37b8342c66b143fff0344c709c208f9e09d7b5aa4738ed7851  logs\paper_runs\paper_session_2026-09-11_paper_ses_20260911_121042_IST.json
+  c356136e11716280b099a7e79b0eb6c91fbc0da4ee81f18dcc7fd931141942aa  logs\paper_runs\paper_session_2026-09-15_paper_ses_20260915_121625_IST.json
+  a32f6411549a32e9fbd3eeb34fa131d4d36d1c46f578c0e6ab963b2a3fc6a9a4  logs\paper_runs\paper_session_2026-09-16_paper_ses_20260916_174643_IST.json
+  a5b15638b4a16d13e593ae8f52c3076775d978189477a0a748e0a23dc4279e1e  logs\paper_runs\paper_session_2026-09-18_paper_ses_20260918_165607_IST.json
+  bfbaaf8c77aefa607d45e21d5732347143ff72cef6630daf1c0b5c58d501cd28  logs\paper_runs\paper_session_2026-09-21_paper_ses_20260921_131253_IST.json
+  f93da8a4a0dc3451bef7d4a8e26743aaa390f859d98b524da1c24cf912af4389  logs\paper_runs\live_paper_status.json
+  66a1937cfdb2362d70fe6b498a1a041b94626dc46303136dbac5aa3055907856  logs\paper_runs\portfolio_state.json
+  c9998083366b8f2d65a62559546272aecf8d4910a42fc5af5ad475589863224d  logs\xs_monthly_new\paper_watch\state.json
+  33dd104a50108f98c08c21be29a0b211d4caad397ed477ba54a34afca3c8e7d8  data\evidence\market-cache\macro-refresh-20230828-20260827\macro_NIFTY50.json
+  1f34ccb0396ee96b11343720a83236d84cb226a3d9eca8c0ebb55bb9466b9005  data\evidence\market-cache\nifty500-refresh-20230828-20260827\ingestion-summary.json
+  637b99dc20a36a994b8dd43ae8449781258a9c94fab20ca3b87741fb39bd67db  data\authorities\nse-nifty500-constituents.csv
+
+====================================================================================================
+A. FLAGSHIP (Mizan) -- every session since 2026-08-31, fills and fees
+====================================================================================================
+2026-08-31 es_20260831_115554_IST fills=  0 fees=     0.00 slip=    0.00 equity= 1000000.00 ret%=     0.0
+2026-08-31 es_20260831_121739_IST fills= 97 fees=  1072.65 slip=  424.51 equity=  996180.02 ret%=  -0.382
+2026-09-01 es_20260901_101431_IST fills=  0 fees=     0.00 slip=    0.00 equity=  989373.84 ret%= -1.0626
+2026-09-02 es_20260902_115615_IST fills=  0 fees=     0.00 slip=    0.00 equity=  983838.44 ret%= -1.6162
+2026-09-03 es_20260903_103545_IST fills=  0 fees=     0.00 slip=    0.00 equity=  992923.90 ret%= -0.7076
+2026-09-04 es_20260904_123148_IST fills=  0 fees=     0.00 slip=    0.00 equity=  996751.26 ret%= -0.3249
+2026-09-07 es_20260907_112455_IST fills=  0 fees=     0.00 slip=    0.00 equity=  992924.06 ret%= -0.7076
+2026-09-08 es_20260908_121231_IST fills=  0 fees=     0.00 slip=    0.00 equity=  992586.26 ret%= -0.7414
+2026-09-09 es_20260909_111619_IST fills=  0 fees=     0.00 slip=    0.00 equity=  989852.96 ret%= -1.0147
+2026-09-10 es_20260910_091443_IST fills=  0 fees=     0.00 slip=    0.00 equity=  987230.40 ret%=  -1.277
+2026-09-11 es_20260911_121042_IST fills=  0 fees=     0.00 slip=    0.00 equity=  986270.18 ret%=  -1.373
+2026-09-15 es_20260915_121625_IST fills=  0 fees=     0.00 slip=    0.00 equity=  965699.49 ret%= -3.4301
+2026-09-16 es_20260916_174643_IST fills=  0 fees=     0.00 slip=    0.00 equity=  967947.82 ret%= -3.2052
+2026-09-18 es_20260918_165607_IST fills=  0 fees=     0.00 slip=    0.00 equity=  987865.73 ret%= -1.2134
+2026-09-21 es_20260921_131253_IST fills=155 fees=  1578.50 slip=  683.22 equity=  988174.15 ret%= -1.1826
+
+Cohort A (bought 2026-08-31): 97 names; 77 sold since, 20 still held
+Cohort B (bought later): 78 names
+  price P&L, A sold at fill                 -6,574.39
+  price P&L, A still held at mark           -2,170.25
+  price P&L, B fill -> mark                   -430.06
+  statutory fees, all sessions              -2,651.15
+  = reconstructed equity                   988,174.15
+  cash + marked value                      988,174.15   status: 988174.15
+  slippage inside the fill prices           -1,107.73
+  cohort A invested at cost                853,407.04  (85.3%)
+  cohort A price return on cost        -1.025%
+  cohort A winners                     34 / 97
+  worst 8 legs: HFCL -1,416, PFIZER -1,366, GRAVITA -1,145, KEI -897, NSLNISP -883, MAZDOCK -766, THERMAX -727, AIAENG -663
+  best 5 legs:  FINCABLES +938, INOXWIND +1,010, PATANJALI +1,402, AEGISLOG +1,428, TEGA +2,442
+
+====================================================================================================
+B. XS-MONTHLY -- paper-watch state
+====================================================================================================
+asof ['2026-09-16']; entry ['2026-09-02']; last run 2026-09-17T12:58:06Z
+priced legs 98: entry     853,390.98  mv     825,061.52  unrealized     -28,329.46 (-3.320% on cost)
+UNPRICED HEG shares=13 entry_value=9425
+displayed equity     962,245.54  -> shown loss     -37,754.46
+  of which unpriced legs left out at cost                 -9,425.00
+  loss on the priced legs, gross of pending cost         -28,329.46
+  priced winners 14 / 98
+  worst 8 legs: RRKABEL -1,412, IFCI -1,184, OBEROIRLTY -1,045, COFORGE -975, SAIL -958, AARTIIND -940, TARIL -934, THELEELA -901
+  best 5 legs:  MEESHO +355, ACMESOLAR +611, FINCABLES +895, PAYTM +1,211, PINELABS +2,263
+  round-trip cost still to be charged at exit ~      -1,911.60
+
+====================================================================================================
+C. MARKET over the same windows
+====================================================================================================
+NIFTY 50 cache ends 2026-09-18; closes: 08-28=24176, 08-31=24080, 09-01=24056, 09-02=23914, 09-03=23873, 09-04=23898, 09-07=23779, 09-08=23635, 09-09=23432, 09-10=23478, 09-11=23398, 09-15=23119, 09-16=23218, 09-17=23271, 09-18=23346
+NIFTY 500 store: 499 symbols; newest bar 2026-09-18
+
+-- Flagship cohort A window: 2026-08-31 close -> 2026-09-18 close
+   NIFTY 50                         -3.048%
+   NIFTY 500 equal-weight (n=498)  mean -1.620%  median -2.102%  dropped [('HEG', -0.675)]
+   the book's picks (n=97)         mean -1.006%  median -1.534%  missing []
+   picks minus universe             +0.614%
+   daily, from the same start (picks / universe / NIFTY 50):
+     2026-09-01: -0.614% / -0.428% / -0.102%
+     2026-09-02: -1.081% / -0.922% / -0.689%
+     2026-09-03: -0.353% / -0.361% / -0.859%
+     2026-09-04: +0.007% / -0.250% / -0.759%
+     2026-09-07: -0.442% / -0.620% / -1.251%
+     2026-09-08: -0.453% / -0.621% / -1.849%
+     2026-09-09: -0.750% / -1.031% / -2.695%
+     2026-09-10: -1.063% / -1.215% / -2.502%
+     2026-09-11: -1.266% / -1.689% / -2.833%
+     2026-09-15: -3.617% / -3.718% / -3.994%
+     2026-09-16: -3.350% / -3.739% / -3.583%
+     2026-09-17: -2.504% / -2.908% / -3.363%
+     2026-09-18: -1.006% / -1.620% / -3.048%
+
+-- XS window: 2026-09-02 open -> 2026-09-16 open
+   NIFTY 50                         -2.751%
+   NIFTY 500 equal-weight (n=498) mean -2.788%  median -3.178%  dropped [('HEG', -0.705)]
+   XS picks (n=98)                 mean -3.314%  median -3.593%  missing ['HEG']
+   picks minus universe             -0.526%
+
+-- Was momentum itself punished? NIFTY 500 by 21-session formation return (XS buys Q5)
+   Q1 n= 99 formation -10.38%  then -2.034%
+   Q2 n= 99 formation -5.74%  then -2.749%
+   Q3 n= 99 formation -2.53%  then -2.424%
+   Q4 n= 99 formation +1.55%  then -3.694%
+   Q5 n=102 formation +11.28%  then -3.031%
+   formation 2026-08-03 -> 2026-09-01; Q5 holds 86
+   of the 99 XS names
+
+-- XS priced legs re-marked at the newest cached bars (its own convention is the open)
+   2026-09-16 open : unrealized     -28,329.46 (-3.320%)  missing []
+   2026-09-17 open : unrealized     -31,288.76 (-3.666%)  missing []
+   2026-09-18 open : unrealized     -21,552.63 (-2.526%)  missing []
+   2026-09-18 close: unrealized      -9,151.47 (-1.072%)  missing []
+   HEG parent 2026-09-02: open 725 close 706.4
+   HEG parent 2026-09-04: open 709 close 728.25
+   HEG parent 2026-09-07: open 260 close 272.2
+   HEG parent 2026-09-16: open 214.1 close 215.05
+   HEG parent 2026-09-18: open 226.3 close 237.05

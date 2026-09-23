@@ -2,7 +2,10 @@
 
 DATE_UTC: 2026-09-01
 RAISED_BY: Claude Code, `20260901-1030Z-claude-seven-item-sweep.md`
-STATUS: OPEN — both need the founder, and neither is a defect to be fixed quietly
+STATUS: Decision 2 ANSWERED 2026-09-23 by the founder. Both books were stopped that day. The
+  pilot gains re-weighting at rebalance and restarts from session 1 as a test of the system, not
+  evidence about the strategy (`20260923-paper-books-system-test-end-date.md`). Decision 1 is still
+  OPEN. Neither is a defect to be fixed quietly
 DEADLINE: **session 11, the first rebalance, approximately 2026-09-14.** Decision 2 fires there.
   Decision 1 can fire any morning.
 
