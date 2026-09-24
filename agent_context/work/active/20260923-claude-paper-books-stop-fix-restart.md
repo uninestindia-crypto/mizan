@@ -48,6 +48,18 @@ F1 (report compares like with like):
   universe, as a benchmark series. `NSE_INDEX|Nifty 500` verified against the provider on
   2026-09-23: HTTP 200, 15 daily closes 2026-09-01..2026-09-22.
 
+F2 (re-weight at rebalance):
+
+- `scripts/run_paper_pilot_session.py`: `reweight_orders`, the rebalance step that calls it, and the
+  drift report's wording.
+- `tests/test_paper_rebalance_reweight.py` (new).
+
+F5 (corporate actions on held names):
+
+- `src/quant_system/execution/corporate_action_guard.py` (new) and
+  `tests/test_corporate_action_guard.py` (new).
+- `scripts/run_paper_pilot_session.py`: the start-of-session check that refuses to trade across one.
+
 F4 (scheduling):
 
 - `scripts/configure_paper_book_tasks.ps1` (new): applies the corrected settings to
@@ -66,20 +78,21 @@ F4 (scheduling):
 ## Plan
 
 1. Stop both books: disable the three Windows tasks. DONE, see below.
-2. Archive copies of both books' records with a SHA-256 manifest.
+2. Archive copies of both books' records with a SHA-256 manifest. DONE.
 3. Rewrite the decision and NOTICE for the amended plan; point the 1 Sep decision at it; commit
-   the records (founder asked for the commit).
-4. Fixes, in order:
+   the records (founder asked for the commit). DONE, `7c63df15`.
+4. Fixes, in order (status in the table below):
    - F1: session report baselines compare like with like.
    - F2: rebalance resets held names to target weight (the measured strategy).
    - F3: XS exit path checked by replaying past data through the runner on a scratch copy.
    - F4: scheduling: XS refused on battery; a session running past midnight blocks the next day.
    - F5: demerger entitlements with no price (HEG Graphite).
-5. Restart checklist for the founder.
+5. Restart checklist for the founder. PENDING the founder's answers.
 
 ## Current step
 
-4. F1 and F3 done and verified; F4 (scheduling) next, then F2 and F5.
+5. F1-F5 committed. Waiting on the founder: the open F5 items, two Windows settings, and the
+restart go-ahead.
 
 ## Fix status
 
@@ -88,8 +101,8 @@ F4 (scheduling):
 | F1 report compares like with like | DONE | Portfolio schema v6 records `inception_on` and one `EquityMark` (equity, invested) per completed session. The report reads the book and the index on the same dates, scales the index to the book's average invested share, benchmarks against the NIFTY 500 index (NIFTY 50 fallback, with a caveat), and states the size-weighting tilt. The sizing rows compare the held names only. Recomputed on the stopped flagship's archived marks, 21 Sep: old report "Selection vs NIFTY 50 +1.87 pp"; new report "Picking and costs +1.2456 pp" against the NIFTY 500 index at 85.5% invested, over the same dates. The weighting caveat explains the rest; equal-weight picks were +0.61 pp |
 | F3 XS exit replay | DONE | `reports/paper_books_20260923/xs_exit_replay.py`, output `xs_exit_replay_output.txt`: both cases ALL CHECKS PASSED through the real runner in scratch state |
 | F4 scheduling | DONE (settings); two founder items | The 22 Sep loss: the 21 Sep session slept from ~15:01 to the 22 Sep 09:00 wake, finished 10 s after the trigger, and `MultipleInstances=IgnoreNew` dropped the new run. `scripts/configure_paper_book_tasks.ps1` applied and verified `Queue` on the session task. On the XS task it set battery start allowed, no stop on unplug, start-when-available, wake-to-run and `Queue`. All three tasks remain `Disabled`. Unresolved: 23 Sep had no trigger and no late start although start-when-available is set. Task Scheduler history (`Microsoft-Windows-TaskScheduler/Operational`) is disabled, so the cause is unconfirmed; enabling it is a system setting, the founder's call. The lid-close sleep that stops a session mid-afternoon is also a Windows power setting for the founder. Noted, not changed: the XS task runs through Hermes' `uv run`, which re-installs the editable package into the shared `.venv` on every run (observed in its `task.log`) |
-| F2 re-weight at rebalance | TODO | |
-| F5 demerger entitlements | TODO | |
+| F2 re-weight at rebalance | DONE | `reweight_orders` is the pure rule: trim or top up held, still-selected names to equal weight, with a 10% band, no second order while one is open, no sale of a selected name to zero, and top-ups sharing 95% of cash in rank order. `reweight_plan(engine, ...)` reads open orders, fills and cash from the engine; a partly filled buy reserves only its remainder. The session loop submits the plan after the entry loop and after the daily drawdown anchor. A first version submitted from a helper defined above the anchor, and `test_risk_governor_session_peaks` caught it. 18 tests: 13 on the rule, 5 against a real `PaperPilotEngine` (a trim fills to target; no second order while one is open; nothing further once at target; cash promised to an open buy is not spent twice; a partial fill reserves only its remainder). The drift report's "permanent" wording is corrected. Not exercised end to end: a full rebalance loop has no harness in the suite, so the first restart rebalance is its live test; its log lines are `[REWEIGHT PROPOSAL SUBMITTED]`. Observed, not changed: an order submitted before its own symbol has any quote is risk-checked only at first fill, without held-position prices, so it is always refused once the book holds anything (`PORTFOLIO_VALUATION_UNAVAILABLE`). The runner never submits for an unquoted name, so it does not bite here |
+| F5 corporate actions on held names | DONE as detection and refusal; the rest is the founder's call | Found while investigating HEG: the flagship runner had no corporate-action handling at all. Live quotes are never back-adjusted, so a split, bonus or demerger on a held name is marked as a false loss (or gain) against a pre-action share count. `execution/corporate_action_guard.py` finds structural actions on held names from the NSE records the refresh already stores. Sized: split, consolidation, bonus. Unsized: demerger, rights. The flagship now checks right after loading the book, before the slow cross-section load, and exits 11 without trading or writing state. A missing record file is a warning, not a refusal. 19 tests on real NSE subject lines; HEG's `07-Sep-2026 Demerger` is found; the runner-level test shows exit 11 with the state file byte-identical. Known limit: records are fetched up to the day before a run, so an action on the session day itself is seen the next session. Open, needs the founder: (a) a tool or automatic path to adjust a sized split or bonus, since the stored bars keep the first-seen value per date and cannot corroborate the ratio; (b) XS splits and bonuses, since XS marks against its stored unadjusted entry price and its demerger check reads a one-entry hand-kept list; (c) pricing HEG Graphite once it lists, as it is in no cache yet |
 
 ## Decision rationale
 
@@ -112,6 +125,9 @@ for any paper book.
 | `ruff check .`; `ruff format --check .`; `mypy src launcher.py scripts` | PASS | 707 files formatted; mypy strict clean on 210 source files |
 | Provider check, `NSE_INDEX\|Nifty 500` | PASS | HTTP 200, 15 daily closes 2026-09-01..09-22. Four guesses at an equal-weight NIFTY 500 key returned HTTP 400; not pursued further |
 | `reports/paper_books_20260923/xs_exit_replay.py` | PASS | Case A (exit on the last cached day): 98/98 closed at the 09-18 open, cost 0.224% once, HEG unresolved, cash reconciles, no reopen. Case B: same, plus a 99-leg cohort reopened at the 09-18 open |
+| `pytest tests/` (full suite, after F1/F3/F4) | PASS | 1632 passed in 755 s |
+| `pytest tests/` (full suite, after F2/F5) | PASS | 1670 passed in 752 s; `ruff check .`, `ruff format --check .` (710 files) and `mypy src launcher.py scripts` (211 files) clean |
+| `scripts/audit-agent-claims.ps1`; `scripts/audit-disk-layout.ps1 -Fast` | PASS | both exit 0 |
 
 ## Files changed
 
@@ -126,8 +142,13 @@ for any paper book.
 
 ## Stop point
 
-Books stopped. Nothing else changed yet in this task.
+Books stopped and archived. F1, F3 and F4 were committed separately; F2 and F5 in one commit, because
+both edit the runner. All three paper-book tasks are `Disabled`. The full suite and repo-wide
+ruff and strict mypy pass. The working tree is clean after the F2/F5 commit.
 
 ## Next safe action
 
-Archive copies of `logs/paper_runs/` and `logs/xs_monthly_new/paper_watch/` with a manifest.
+Get the founder's answer on the open F5 items (adjustment tool or refusal-only; the XS guard). Then
+run the restart checklist in the decision: move the live state into the archive and verify it
+against the manifest, run `scripts/configure_paper_book_tasks.ps1 -Enable`, and start both books
+fresh. Nothing restarts without the founder's go-ahead.

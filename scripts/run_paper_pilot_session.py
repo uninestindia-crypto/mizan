@@ -20,7 +20,7 @@ import os
 import signal
 import sys
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Collection, Mapping, Sequence
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -43,6 +43,7 @@ if env_file.exists():
                 os.environ[k] = v
 
 from quant_system.core.domain import (  # noqa: E402
+    OrderStatus,
     OrderType,
     Quote,
     Side,
@@ -327,6 +328,114 @@ def entry_quantity(
     return int(target / price)
 
 
+#: How far a held, still-selected name may sit from its equal-weight allocation before a rebalance
+#: trades it back. An engineering tolerance, not a measured parameter: the screen held exact equal
+#: weights, which integer shares cannot. A tenth of the allocation keeps every held name within 10%
+#: of equal weight while refusing trades of a few hundred rupees, on which the statutory cost is a
+#: large share of the value moved.
+REWEIGHT_BAND = Decimal("0.10")
+
+#: Order states in which an order can still fill.
+_OPEN_ORDER_STATUSES = frozenset(
+    {OrderStatus.PENDING, OrderStatus.SUBMITTED, OrderStatus.PARTIALLY_FILLED}
+)
+
+
+def reweight_orders(
+    *,
+    selected: Sequence[str],
+    positions: Mapping[str, Any],
+    marks: Mapping[str, Decimal],
+    allocation: Decimal,
+    available_cash: Decimal,
+    open_order_symbols: Collection[str],
+    band: Decimal = REWEIGHT_BAND,
+) -> list[tuple[str, Side, int]]:
+    """Trims and top-ups that bring held, still-selected names back to equal weight.
+
+    The entry loop only buys names the book does not hold, so a name that stayed selected was never
+    trimmed or topped up. Its weight drifted for as long as it stayed selected, and a book that
+    still contained the selection submitted no orders, so `evaluate_order` -- the only place
+    `max_position_weight` is enforced -- never ran (R6-08). The measured strategy equal-weights
+    every selected name at every rebalance; this is that rule in integer shares.
+
+    A name is left alone when it has an order still open (orders fill on the next step's quote, so
+    sizing it again before then would place the trade twice); when it has no mark to size against;
+    when its target is under one share (the entry rule skips such a name, and selling a selected
+    name to nothing is an exit the screen never made); or when it is within ``band`` of its
+    allocation.
+
+    Trims are never limited by cash. Top-ups spend at most 95% of ``available_cash``, the buffer the
+    entry loop keeps, and share that budget in rank order, because cash does not move until a fill.
+    """
+    orders: list[tuple[str, Side, int]] = []
+    budget = available_cash * Decimal("0.95")
+    for symbol in selected:
+        position = positions.get(symbol)
+        held = position.quantity if position is not None else 0
+        if held <= 0 or symbol in open_order_symbols:
+            continue
+        price = marks.get(symbol)
+        if price is None or price <= 0:
+            continue
+        target = int(allocation / price)
+        if target < 1:
+            continue
+        gap = target - held
+        if abs(Decimal(gap) * price) <= band * allocation:
+            continue
+        if gap < 0:
+            orders.append((symbol, Side.SELL, -gap))
+            continue
+        quantity = min(gap, int(budget / price)) if budget > 0 else 0
+        if quantity > 0:
+            orders.append((symbol, Side.BUY, quantity))
+            budget -= Decimal(quantity) * price
+    return orders
+
+
+def reweight_plan(
+    engine: PaperPilotEngine,
+    *,
+    selected: Sequence[str],
+    marks: Mapping[str, Decimal],
+    allocation: Decimal,
+) -> list[tuple[str, Side, int]]:
+    """The trims and top-ups `reweight_orders` asks for, given what the engine already has in flight.
+
+    The engine's own view decides what is in flight. An order still open for a name blocks a second
+    one, and cash already promised to open buys is subtracted from what a top-up may spend, because
+    `engine.cash` does not move until a fill. An open buy's remaining size is its quantity less what
+    its fills have delivered so far.
+
+    This plans and does not submit: every order is placed from inside the session loop, after the
+    daily drawdown baseline is anchored (`test_risk_governor_session_peaks`).
+    """
+    filled_by_order: dict[str, int] = {}
+    for fill in engine.fills:
+        filled_by_order[fill.order_id] = filled_by_order.get(fill.order_id, 0) + fill.quantity
+    open_orders = [
+        placed for placed in engine.orders.values() if placed.status in _OPEN_ORDER_STATUSES
+    ]
+    committed = sum(
+        (
+            Decimal(placed.quantity - filled_by_order.get(placed.order_id, 0))
+            * marks.get(placed.symbol, Decimal("0.00"))
+            for placed in open_orders
+            if placed.side is Side.BUY
+        ),
+        Decimal("0.00"),
+    )
+    return reweight_orders(
+        selected=selected,
+        positions=engine.positions,
+        marks=marks,
+        allocation=allocation,
+        available_cash=max(Decimal("0.00"), engine.cash - committed),
+        open_order_symbols={placed.symbol for placed in open_orders},
+    )
+
+
 def _positive_price(value: object) -> Decimal | None:
     """`value` as a paisa-quantised price, or None when it is not a usable one.
 
@@ -497,10 +606,10 @@ def weight_drift_report(
     for `max_position_weight`, never runs. A book 90% in one name against a declared 30% limit
     passes every check the session makes.
 
-    **This reports the drift; it does not correct it.** Correcting it means re-weighting at each
-    rebalance, which is what the measured strategy does and what this runner does not, and that is
-    a change to what the pilot trades rather than to what it observes. It is recorded as a decision
-    for the founder rather than made here, days before the first rebalance.
+    **This reports the drift; `reweight_orders` corrects it.** Since the founder's decision of
+    2026-09-23 every rebalance trades held, still-selected names back to equal weight, which is
+    what the measured strategy does. Between rebalances a book still drifts, and this is where
+    that is seen.
     """
     # Against total equity including cash, because that is the denominator
     # `PreTradeRiskGovernor.max_position_weight` uses. Measuring against the invested amount alone
@@ -989,7 +1098,6 @@ def fetch_upstox_live_quotes(
 
 
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
-from collections.abc import Sequence  # noqa: E402
 
 from cached_nifty50_evidence import historical_acquisition_from_verified  # noqa: E402
 
@@ -1002,6 +1110,10 @@ from quant_system.evidence import (  # noqa: E402
     EvidenceResourceType,
     EvidenceStore,
     EvidenceStoreConfig,
+)
+from quant_system.execution.corporate_action_guard import (  # noqa: E402
+    load_nse_corporate_actions,
+    structural_actions_on_holdings,
 )
 from quant_system.execution.governed_strategy import ExecutionSurface  # noqa: E402
 from quant_system.execution.mizan_execution import (  # noqa: E402
@@ -1036,6 +1148,11 @@ MIN_CROSS_SECTION_COVERAGE = 0.90
 PORTFOLIO_STATE_PATH = PROJECT_ROOT / "logs/paper_runs/portfolio_state.json"
 
 #: Caches searched for completed daily bars, cheapest first.
+#: The NSE corporate-action records the scheduled refresh stores for the NIFTY 500 universe.
+_CORPORATE_ACTIONS_DIR = (
+    PROJECT_ROOT / "data/evidence/market-cache/nifty500-refresh-20230828-20260827/corporate-actions"
+)
+
 _BAR_CACHES = (
     # Freshest first. The refresh cache is rebuilt by `ingest_all_market_data.py` and carries the
     # most recent completed sessions; the older stores are the fallback and stop at 2026-08-21.
@@ -1329,6 +1446,43 @@ def run_paper_session(
                 "Restore from backup (e.g. portfolio_state.backup.json) or pass --force-new-portfolio."
             )
         portfolio = PaperPortfolioState(cash=initial_cash)
+    # A carried holding that crossed a split, bonus, demerger or rights issue since it opened cannot
+    # be marked. Live quotes are never back-adjusted, so the ledger's pre-action share count at a
+    # post-action price reports a move that did not happen: HEG's 2026-09-07 demerger put a
+    # Rs 6,124 phantom loss into the XS book that way, and this runner had no check at all.
+    # Refused before anything trades rather than marked wrong; see
+    # `execution/corporate_action_guard.py`.
+    if portfolio.holdings:
+        ca_records, ca_missing = load_nse_corporate_actions(
+            _CORPORATE_ACTIONS_DIR, portfolio.holdings
+        )
+        if ca_missing:
+            logger.warning(
+                "No stored NSE corporate-action record for %d held name(s), so a structural action "
+                "on them cannot be ruled out: %s",
+                len(ca_missing),
+                ", ".join(ca_missing),
+            )
+        crossed = structural_actions_on_holdings(
+            {holding.symbol: holding.opened_on for holding in portfolio.holdings.values()},
+            session_date,
+            ca_records,
+        )
+        if crossed:
+            for action in crossed:
+                logger.error("  CORPORATE ACTION NOT APPLIED -- %s", action.describe())
+            logger.error(
+                "REFUSING TO TRADE: %d holding(s) crossed a corporate action this ledger has not "
+                "applied, so every mark of them is wrong and a sale would book a loss or gain that "
+                "did not happen. The holding's share count and cost must be adjusted from the "
+                "issuer's filing, or its entitlement recorded, before trading resumes. There is no "
+                "tool for that yet; it needs a developer. Do NOT hand-edit %s: it is "
+                "hash-protected.",
+                len(crossed),
+                PORTFOLIO_STATE_PATH,
+            )
+            raise SystemExit(11)
+
     horizon = int(model.config.label_horizon_sessions)
     rebalancing = portfolio.rebalance_due(horizon)
     logger.info(
@@ -1907,6 +2061,44 @@ def run_paper_session(
                             decision.reason or "OK",
                         )
 
+            # 5g. On a rebalance, bring held names that stay selected back to equal weight.
+            #
+            # The entry loop above only buys names the book does not hold, so without this a name
+            # that stayed selected kept whatever weight it had drifted to (R6-08). It runs after the
+            # entries so new names are funded first; a top-up the cash cannot cover yet is sized
+            # again on a later step, once exits and trims have filled. Cash already promised to open
+            # buys is subtracted, because `engine.cash` does not move until a fill.
+            if rebalancing and top_picks:
+                for sym, side, qty in reweight_plan(
+                    engine,
+                    selected=top_picks,
+                    marks={s: state["price"] for s, state in base_market.items()},
+                    allocation=per_name_alloc,
+                ):
+                    kind = "TOPUP" if side is Side.BUY else "TRIM"
+                    prop_id = f"prop_{session_id}_{step}_{sym}_{kind}"
+                    proposal = PaperProposal(
+                        proposal_id=prop_id,
+                        symbol=sym,
+                        side=side,
+                        quantity=qty,
+                        order_type=OrderType.MARKET,
+                        decision_at=loop_now,
+                        strategy_name="Mizan_Alpha_Reweight",
+                        model_artifact_id=model.config.model_id,
+                    )
+                    order, decision = engine.submit_proposal(proposal)
+                    proposals_submitted.append((proposal, decision))
+                    logger.info(
+                        "  [REWEIGHT PROPOSAL SUBMITTED] %s %s %d %s (Risk: %s, Reason: %s)",
+                        prop_id,
+                        side.value,
+                        qty,
+                        sym,
+                        "APPROVED" if decision.approved else "REJECTED",
+                        decision.reason or "OK",
+                    )
+
             # Update rolling status file for live monitoring
             snapshot_prices, unmarked_now = marks_for_open_positions(
                 {sym: state["price"] for sym, state in base_market.items()}, engine.positions
@@ -2178,9 +2370,9 @@ def run_paper_session(
     )
     if drifted:
         logger.error(
-            "%d name(s) exceed the declared %.0f%% per-name limit and the entry loop cannot trim "
-            "them: %s. The measured strategy re-weights at every rebalance; this runner only "
-            "enters names it does not already hold, so this drift is permanent.",
+            "%d name(s) exceed the declared %.0f%% per-name limit: %s. Held names that stay "
+            "selected are traded back to equal weight at each rebalance; a name above the limit "
+            "after one means the re-weighting did not complete.",
             len(drifted),
             governor.limits.max_position_weight * 100,
             ", ".join(f"{sym} {weight * 100:.1f}%" for sym, weight in drifted[:5]),
