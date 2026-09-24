@@ -1,6 +1,6 @@
 # Active work: stop the paper books, fix what they exposed, prepare a fresh restart
 
-STATUS: ACTIVE  
+STATUS: BLOCKED on founder decisions; handoff `agent_context/handoffs/20260924-claude-paper-books-restart-handoff.md`  
 OWNER: Claude Code session, on founder instruction  
 TOOL: Claude Code  
 STARTED_UTC: 2026-09-23T11:05:00Z  
