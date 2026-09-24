@@ -1,6 +1,6 @@
 # Handoff: restart the paper books as a system test
 
-STATUS: BLOCKED on founder decisions (see "Next safe action")  
+STATUS: WAITING for the founder's restart go-ahead (F5 decisions answered 2026-09-24)  
 FROM: Claude Code session  
 TO: unassigned; the same session continues if the founder answers here  
 DATE_UTC: 2026-09-24T06:25:00Z  
@@ -22,7 +22,10 @@ holds and the founder says go.
 - F3: XS exit replay on real data, all checks passing (`43f27b89`).
 - F4: task settings corrected but left disabled (`196c2b8b`).
 - F5: the flagship refuses to trade a holding carried across a split, bonus, demerger or rights
-  issue (`8f49c7c7`).
+  issue (`8f49c7c7`). Then, on the founder's 2026-09-24 choice:
+  - the review tool `scripts/apply_paper_corporate_action.py`, for both books;
+  - the same detection for XS legs;
+  - flagship schema v7 `reviewed_actions`.
 - Full suite 1670 passed; ruff and strict mypy clean; both audits pass.
 
 ## In progress
@@ -49,6 +52,13 @@ holds and the founder says go.
 - Corporate-action records are fetched up to the day before a run, so an action on the session day
   is caught the following session.
 - 23 Sep's missed run is unexplained, because Task Scheduler history is off.
+- XS reports each closed leg's research return (`net`) from the cached bars, not from the adjusted
+  leg. After a reviewed split the cash is right (whole shares x exit price), but that `net` is
+  only as consistent across the split as the cache is.
+- An order submitted before its own symbol has any quote is risk-checked only at first fill,
+  without held-position prices, so it is refused whenever the book holds anything
+  (`PORTFOLIO_VALUATION_UNAVAILABLE`). The runner never submits for an unquoted name, so this
+  does not bite today.
 
 ## Exact stop point
 
@@ -56,16 +66,18 @@ holds and the founder says go.
 
 ## Next safe action
 
-1. Founder decisions:
-   - F5(a): a tool to adjust a split or bonus holding, or refusal-only.
-   - F5(b): the same guard for the XS book.
-   - Two Windows settings: turn on Task Scheduler history, and set the lid-close action on AC.
-2. Then run the decision's restart checklist:
+1. The founder's two Windows settings, which only they can change:
+   - turn on Task Scheduler history;
+   - set the lid-close action on AC to "do nothing".
+2. On the founder's go-ahead, run the decision's restart checklist:
    - move the live state into `logs/archive/paper-books-20260923/` and verify it against the
      manifest;
    - run `powershell -ExecutionPolicy Bypass -File scripts/configure_paper_book_tasks.ps1 -Enable`;
-   - the first flagship session starts a pristine book. It needs `--force-new-portfolio` only if old
-     session reports remain in `logs/paper_runs/`.
+   - start both books fresh. The flagship needs `--force-new-portfolio` only if old session
+     reports remain in `logs/paper_runs/`.
+3. If a session exits 11 during the test, review the named action against the company's filing
+   and record it with `scripts/apply_paper_corporate_action.py`: first without `--apply`, then
+   with it.
 
 ## Do not do
 

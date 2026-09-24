@@ -6,17 +6,20 @@ Frozen rule (identical constants to ``screen.py`` — tuning here is forbidden):
 
 This module places no orders, imports no broker, no execution/paper path, no
 server. It only computes signals from cached bars and tracks hypothetical
-open/closed legs in a JSON state file the runner owns. Stdlib + bars/screen.
+open/closed legs in a JSON state file the runner owns. Stdlib + bars/screen, and the
+data-layer corporate-action finder shared with the flagship book.
 """
 
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping, Sequence
 from datetime import date
 from decimal import Decimal, localcontext
 from pathlib import Path
 from typing import Any, Final
 
+from quant_system.data.held_corporate_actions import structural_actions_on_holdings
 from quant_system.research_xs_monthly.bars import Bar
 from quant_system.research_xs_monthly.screen import (
     COST_RATIO,
@@ -118,6 +121,41 @@ def load_unpriced_entitlements(
                 f"to {ratio} x {resulting}, which has no price in this repository."
             )
     return flagged
+
+
+def unreviewed_corporate_actions(
+    positions: list[dict[str, Any]],
+    records: Mapping[str, Sequence[Mapping[str, Any]]],
+    asof: date,
+) -> dict[str, str]:
+    """``{symbol: reason}`` for legs held across a structural action no review has recorded.
+
+    The entitlement authority is kept by hand and lists one demerger. This reads every split, bonus,
+    consolidation, demerger and rights issue NSE published for the names held, from the records the
+    scheduled refresh stores. A leg carried across one is declined a value, exactly as the HEG leg
+    is, until a person reviews it with ``scripts/apply_paper_corporate_action.py --book xs``.
+
+    A review is recorded on the leg itself under ``corporate_actions``, which is why
+    ``settle_positions`` carries that key through every state: a leg that lost its record would be
+    flagged again, and a second review of a split would apply it twice.
+    """
+    earliest: dict[str, date] = {}
+    reviewed: set[tuple[str, date]] = set()
+    for pos in positions:
+        symbol = str(pos["symbol"])
+        entry = date.fromisoformat(str(pos["entry_date"]))
+        if symbol not in earliest or entry < earliest[symbol]:
+            earliest[symbol] = entry
+        for review in pos.get("corporate_actions", ()):
+            reviewed.add((symbol, date.fromisoformat(str(review["ex_date"]))))
+    flags: dict[str, str] = {}
+    for action in structural_actions_on_holdings(earliest, asof, records, reviewed=reviewed):
+        flags.setdefault(
+            action.symbol,
+            f"CORPORATE_ACTION_NOT_REVIEWED: {action.describe()}. Review it against the company's "
+            "filing and record it with scripts/apply_paper_corporate_action.py --book xs.",
+        )
+    return flags
 
 
 def size_positions(
@@ -316,18 +354,18 @@ def settle_positions(
         exit_pos = pos_of[entry_date] + hold
         reason = unpriced.get(symbol)
         if reason is not None and exit_pos < len(calendar):
-            unresolved.append(
-                {
-                    "symbol": symbol,
-                    "entry_date": pos["entry_date"],
-                    "entry_open": str(entry_open),
-                    "matured_on": calendar[exit_pos].isoformat(),
-                    "shares": int(pos.get("shares", 0)),
-                    "entry_value": str(pos.get("entry_value", "0")),
-                    "unpriced": True,
-                    "unpriced_reason": reason,
-                }
-            )
+            matured: dict[str, Any] = {
+                "symbol": symbol,
+                "entry_date": pos["entry_date"],
+                "entry_open": str(entry_open),
+                "matured_on": calendar[exit_pos].isoformat(),
+                "shares": int(pos.get("shares", 0)),
+                "entry_value": str(pos.get("entry_value", "0")),
+                "unpriced": True,
+                "unpriced_reason": reason,
+            }
+            _carry_reviews(pos, matured)
+            unresolved.append(matured)
             continue
         if exit_pos < len(calendar):
             net, locked = forward_net(idx, calendar, pos_of[entry_date], exit_pos)
@@ -346,6 +384,7 @@ def settle_positions(
                 exit_bar = idx.get(calendar[exit_pos])
                 if exit_bar is not None:
                     leg.update(_book_closed(pos, exit_bar.open))
+            _carry_reviews(pos, leg)
             closed.append(leg)
         else:
             latest_bar = idx.get(calendar[-1])
@@ -370,6 +409,7 @@ def settle_positions(
                 leg["unpriced_reason"] = reason
             if "shares" in pos:
                 leg.update(_book_open(pos, latest_bar.open, reason))
+            _carry_reviews(pos, leg)
             opened.append(leg)
     return {
         "closed": closed,
@@ -377,6 +417,12 @@ def settle_positions(
         "unresolved": unresolved,
         "asof": calendar[-1].isoformat(),
     }
+
+
+def _carry_reviews(pos: dict[str, Any], leg: dict[str, Any]) -> None:
+    """Keep a leg's corporate-action reviews on whatever settling makes of it."""
+    if "corporate_actions" in pos:
+        leg["corporate_actions"] = list(pos["corporate_actions"])
 
 
 def book_value(

@@ -43,13 +43,14 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 from quant_system.core.domain import Fill, Side
+from quant_system.data.held_corporate_actions import ShareAdjustment, adjust_holding
 from quant_system.data.market_data_evidence import canonical_sha256
 
 #: Schema identity for the persisted file, so a future shape change is detectable rather than
@@ -63,8 +64,10 @@ PORTFOLIO_SCHEMA_ID = "quantos.paper_portfolio"
 #: restarts on the same trading calendar date do not increment ``sessions_held`` or
 #: ``sessions_completed`` repeatedly. Version 6 adds the book's equity history -- ``inception_on``
 #: and one closing :class:`EquityMark` per completed session -- so a report can compare the book
-#: with the market over exactly the dates both were marked.
-PORTFOLIO_SCHEMA_VERSION = 6
+#: with the market over exactly the dates both were marked. Version 7 adds the reviewed
+#: corporate actions, so a split or bonus is applied to a holding in the same write that records
+#: it, and can be neither skipped nor applied twice.
+PORTFOLIO_SCHEMA_VERSION = 7
 
 
 class _Unchecked:
@@ -150,6 +153,50 @@ class EquityMark:
         return self.invested / self.equity
 
 
+@dataclass(frozen=True, slots=True)
+class ReviewedCorporateAction:
+    """A structural corporate action on a holding, reviewed against the company's filing.
+
+    Written in the same hash-protected save as the adjustment it describes, so a holding cannot be
+    adjusted without its record, and cannot be adjusted twice: the session guard skips a reviewed
+    ``(symbol, ex_date)``, and the review tool refuses to record one again.
+    """
+
+    symbol: str
+    ex_date: date
+    #: The NSE record's subject line the review was made against.
+    subject: str
+    #: ``adjusted: <ratio>`` or ``acknowledged: <reason>``.
+    resolution: str
+    quantity_before: int
+    quantity_after: int
+    average_cost_before: Decimal
+    average_cost_after: Decimal
+    #: UTC ISO-8601 time of the review.
+    reviewed_at: str
+
+    def __post_init__(self) -> None:
+        if self.quantity_before <= 0 or self.quantity_after <= 0:
+            raise PaperPortfolioError(
+                f"{self.symbol} {self.ex_date}: a reviewed holding must hold shares before and after"
+            )
+        if not self.resolution.strip():
+            raise PaperPortfolioError(f"{self.symbol} {self.ex_date}: a review needs a resolution")
+
+    def to_payload(self) -> dict[str, Any]:
+        return {
+            "symbol": self.symbol,
+            "ex_date": self.ex_date.isoformat(),
+            "subject": self.subject,
+            "resolution": self.resolution,
+            "quantity_before": self.quantity_before,
+            "quantity_after": self.quantity_after,
+            "average_cost_before": str(self.average_cost_before),
+            "average_cost_after": str(self.average_cost_after),
+            "reviewed_at": self.reviewed_at,
+        }
+
+
 @dataclass
 class PaperPortfolioState:
     """Cash, positions and running totals carried between sessions."""
@@ -219,6 +266,14 @@ class PaperPortfolioState:
     #: One closing mark per completed session, keyed by session date. See :class:`EquityMark`.
     equity_marks: dict[date, EquityMark] = field(default_factory=dict)
 
+    #: Corporate actions a person has reviewed, in the order they were recorded.
+    reviewed_actions: tuple[ReviewedCorporateAction, ...] = ()
+
+    @property
+    def reviewed(self) -> frozenset[tuple[str, date]]:
+        """The ``(symbol, ex_date)`` pairs already reviewed."""
+        return frozenset((action.symbol, action.ex_date) for action in self.reviewed_actions)
+
     @property
     def is_pristine(self) -> bool:
         """Whether nothing has happened to this book yet: no session, position, fee or P&L."""
@@ -228,6 +283,7 @@ class PaperPortfolioState:
             and self.realized_pnl == 0
             and self.total_fees == 0
             and not self.equity_marks
+            and not self.reviewed_actions
         )
 
     @property
@@ -345,6 +401,7 @@ class PaperPortfolioState:
                 {"on": m.on.isoformat(), "equity": str(m.equity), "invested": str(m.invested)}
                 for m in sorted(self.equity_marks.values(), key=lambda m: m.on)
             ],
+            "reviewed_actions": [action.to_payload() for action in self.reviewed_actions],
         }
 
 
@@ -368,7 +425,7 @@ def _migrated(payload: dict[str, Any], path: Path) -> dict[str, Any]:
         )
     if version == PORTFOLIO_SCHEMA_VERSION:
         return payload
-    if version not in (3, 4, 5):
+    if version not in (3, 4, 5, 6):
         raise PaperPortfolioError(
             f"portfolio state at {path} declares "
             f"{payload.get('schema_id')} v{version}, expected "
@@ -385,10 +442,13 @@ def _migrated(payload: dict[str, Any], path: Path) -> dict[str, Any]:
         upgraded["daily_anchor_equity"] = "0.00"
     if version in (3, 4):
         upgraded["last_completed_on"] = None
-    # v6 added the equity history. An older book has none, and none is the truth: its earlier
-    # closes were never recorded, and its start is unknown rather than "the next session".
-    upgraded["inception_on"] = None
-    upgraded["equity_marks"] = []
+    if version in (3, 4, 5):
+        # v6 added the equity history. An older book has none, and none is the truth: its earlier
+        # closes were never recorded, and its start is unknown rather than "the next session".
+        upgraded["inception_on"] = None
+        upgraded["equity_marks"] = []
+    # v7 added reviewed corporate actions. An older book has reviewed none.
+    upgraded["reviewed_actions"] = []
     upgraded["schema_version"] = PORTFOLIO_SCHEMA_VERSION
     return upgraded
 
@@ -496,6 +556,26 @@ def load_portfolio(path: Path) -> PaperPortfolioState | None:
                 f"portfolio state at {path} records two equity marks for {mark.on}"
             )
         equity_marks[mark.on] = mark
+    reviewed_actions = tuple(
+        ReviewedCorporateAction(
+            symbol=str(entry["symbol"]),
+            ex_date=date.fromisoformat(entry["ex_date"]),
+            subject=str(entry["subject"]),
+            resolution=str(entry["resolution"]),
+            quantity_before=int(entry["quantity_before"]),
+            quantity_after=int(entry["quantity_after"]),
+            average_cost_before=Decimal(entry["average_cost_before"]),
+            average_cost_after=Decimal(entry["average_cost_after"]),
+            reviewed_at=str(entry["reviewed_at"]),
+        )
+        for entry in payload["reviewed_actions"]
+    )
+    if len({(action.symbol, action.ex_date) for action in reviewed_actions}) != len(
+        reviewed_actions
+    ):
+        raise PaperPortfolioError(
+            f"portfolio state at {path} reviews the same corporate action twice"
+        )
     return PaperPortfolioState(
         cash=Decimal(payload["cash"]),
         holdings=holdings,
@@ -517,6 +597,7 @@ def load_portfolio(path: Path) -> PaperPortfolioState | None:
         last_completed_on=(date.fromisoformat(last_completed) if last_completed else None),
         inception_on=date.fromisoformat(inception) if inception else None,
         equity_marks=equity_marks,
+        reviewed_actions=reviewed_actions,
     )
 
 
@@ -622,4 +703,100 @@ def state_from_ledger(
         # traded and then aborted still began the book.
         inception_on=previous.inception_on or (session_date if previous.is_pristine else None),
         equity_marks=equity_marks,
+        # Carried unchanged: dropping one would let the session guard stop on it again, and a
+        # second review of a split already applied would apply it twice.
+        reviewed_actions=previous.reviewed_actions,
     )
+
+
+def _reviewable(state: PaperPortfolioState, symbol: str, ex_date: date) -> PortfolioHolding:
+    """The holding an action applies to, or a refusal saying why it cannot be reviewed."""
+    holding = state.holdings.get(symbol)
+    if holding is None:
+        raise PaperPortfolioError(f"{symbol} is not held, so there is nothing to review")
+    if not holding.opened_on < ex_date:
+        raise PaperPortfolioError(
+            f"{symbol} was opened on {holding.opened_on}, on or after the {ex_date} ex-date, so its "
+            "entry price already reflects the action"
+        )
+    if (symbol, ex_date) in state.reviewed:
+        raise PaperPortfolioError(
+            f"{symbol}'s {ex_date} corporate action has already been reviewed; applying it again "
+            "would adjust the holding twice"
+        )
+    return holding
+
+
+def adjust_for_corporate_action(
+    state: PaperPortfolioState,
+    *,
+    symbol: str,
+    ex_date: date,
+    subject: str,
+    adjustment: ShareAdjustment,
+    reviewed_at: str,
+) -> tuple[PaperPortfolioState, ReviewedCorporateAction]:
+    """The state with a split, consolidation or bonus applied to one holding, and its record.
+
+    The share count and the cost per share change; total cost, the entry fee, the open date, cash
+    and realized P&L do not, because a split is not a trade. The carried holding is replayed into
+    the next session's ledger at the new count and cost, so the ledger never sees the old ones.
+    """
+    holding = _reviewable(state, symbol, ex_date)
+    adjusted = adjust_holding(holding.quantity, holding.average_cost, adjustment)
+    record = ReviewedCorporateAction(
+        symbol=symbol,
+        ex_date=ex_date,
+        subject=subject,
+        resolution=f"adjusted: {adjustment.label}"
+        + (
+            f"; {float(adjusted.fractional_shares):.4f} fractional share(s) not credited"
+            if adjusted.fractional_shares
+            else ""
+        ),
+        quantity_before=holding.quantity,
+        quantity_after=adjusted.quantity,
+        average_cost_before=holding.average_cost,
+        average_cost_after=adjusted.average_cost,
+        reviewed_at=reviewed_at,
+    )
+    holdings = dict(state.holdings)
+    holdings[symbol] = replace(
+        holding, quantity=adjusted.quantity, average_cost=adjusted.average_cost
+    )
+    return (
+        replace(state, holdings=holdings, reviewed_actions=(*state.reviewed_actions, record)),
+        record,
+    )
+
+
+def acknowledge_corporate_action(
+    state: PaperPortfolioState,
+    *,
+    symbol: str,
+    ex_date: date,
+    subject: str,
+    reason: str,
+    reviewed_at: str,
+) -> tuple[PaperPortfolioState, ReviewedCorporateAction]:
+    """The state with an action recorded as reviewed and not applied, and its record.
+
+    For what no ratio can express here: a rights issue not taken up, a demerger whose new shares
+    this book does not hold, or a record that turns out not to affect the holding. The holding is
+    unchanged, so the reason must say what that means for its value.
+    """
+    if not reason.strip():
+        raise PaperPortfolioError("an acknowledgement needs a reason")
+    holding = _reviewable(state, symbol, ex_date)
+    record = ReviewedCorporateAction(
+        symbol=symbol,
+        ex_date=ex_date,
+        subject=subject,
+        resolution=f"acknowledged: {reason.strip()}",
+        quantity_before=holding.quantity,
+        quantity_after=holding.quantity,
+        average_cost_before=holding.average_cost,
+        average_cost_after=holding.average_cost,
+        reviewed_at=reviewed_at,
+    )
+    return replace(state, reviewed_actions=(*state.reviewed_actions, record)), record

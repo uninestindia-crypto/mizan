@@ -39,6 +39,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
+from quant_system.data.held_corporate_actions import load_nse_corporate_actions  # noqa: E402
 from quant_system.research_xs_monthly.bars import (  # noqa: E402
     Bar,
     load_cache_bars,
@@ -52,12 +53,16 @@ from quant_system.research_xs_monthly.paper import (  # noqa: E402
     load_unpriced_entitlements,
     settle_positions,
     size_positions,
+    unreviewed_corporate_actions,
 )
 from quant_system.research_xs_monthly.screen import build_calendar  # noqa: E402
 
 CACHE = ROOT / "data/evidence/market-cache/nifty500-refresh-20230828-20260827/store"
 UNIVERSE = ROOT / "data/authorities/nse-nifty500-constituents.csv"
 AUTHORITY = ROOT / ENTITLEMENT_AUTHORITY
+CORPORATE_ACTIONS = (
+    ROOT / "data/evidence/market-cache/nifty500-refresh-20230828-20260827/corporate-actions"
+)
 HOLD = int(str(FROZEN_RULE["hold_sessions"]))
 COST = Decimal(str(FROZEN_RULE["cost_ratio"]))
 
@@ -115,8 +120,21 @@ def replay(
     )
     state, injected = open_book(bars, entry_on)
     before_cash = Decimal(state["cash"])
-    priced = [leg for leg in state["open"] if not leg.get("unpriced")]
-    unpriced = [leg for leg in state["open"] if leg.get("unpriced")]
+    # What the runner will decline to value: the hand-kept authority's flags at open, plus every
+    # structural action NSE published for these names inside the hold, exactly as the runner reads
+    # them at settle.
+    records, _missing = load_nse_corporate_actions(
+        CORPORATE_ACTIONS, {str(leg["symbol"]) for leg in state["open"]}
+    )
+    nse_flags = unreviewed_corporate_actions(state["open"], records, calendar[-1])
+    priced = [
+        leg
+        for leg in state["open"]
+        if not leg.get("unpriced") and str(leg["symbol"]) not in nse_flags
+    ]
+    unpriced = [leg for leg in state["open"] if leg not in priced]
+    if nse_flags:
+        print(f"  flagged from NSE records: {sorted(nse_flags)}")
     print(
         f"  opened {len(state['open'])} legs ({len(priced)} priced, {len(unpriced)} unpriced), "
         f"cash left {before_cash}{'; HEG added to exercise the entitlement path' if injected else ''}"

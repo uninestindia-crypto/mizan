@@ -13,16 +13,23 @@ import json
 import os
 from datetime import date
 from decimal import Decimal
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 from unittest import mock
 
 import pytest
 
-from quant_system.execution.corporate_action_guard import (
+from quant_system.data.held_corporate_actions import (
     HeldThroughAction,
+    adjust_holding,
+    combine,
     load_nse_corporate_actions,
+    parse_bonus,
+    parse_face_value,
+    published_ratio_agrees,
     structural_actions_on_holdings,
+    structural_subjects_on,
 )
 from quant_system.execution.paper_portfolio import PortfolioHolding
 
@@ -225,3 +232,98 @@ def test_a_session_refuses_to_trade_a_book_carried_across_a_demerger(tmp_path, m
 
     assert refused.value.code == 11
     assert state_path.read_bytes() == before
+
+
+# --------------------------------------------------------------------------------------------
+# Reviewed actions are skipped, and a review is sized and cross-checked.
+# --------------------------------------------------------------------------------------------
+
+SPLIT_10_TO_2 = "Face Value Split (Sub-Division) - From Rs 10/- Per Share To Rs 2/- Per Share"
+
+
+def test_a_reviewed_action_is_not_found_again() -> None:
+    records = {"HEG": [{"exDate": "07-Sep-2026", "subject": "Demerger"}]}
+    found = structural_actions_on_holdings(
+        {"HEG": OPENED}, TODAY, records, reviewed={("HEG", date(2026, 9, 7))}
+    )
+    assert found == []
+
+
+def test_a_review_of_another_date_does_not_hide_this_one() -> None:
+    records = {"HEG": [{"exDate": "07-Sep-2026", "subject": "Demerger"}]}
+    found = structural_actions_on_holdings(
+        {"HEG": OPENED}, TODAY, records, reviewed={("HEG", date(2026, 9, 8))}
+    )
+    assert len(found) == 1
+
+
+def test_the_face_value_change_is_read_as_nse_writes_it() -> None:
+    split = parse_face_value("10:2")
+    assert split.multiplier == 5
+    assert "split" in split.label
+    consolidation = parse_face_value("1:10")
+    assert consolidation.multiplier == Fraction(1, 10)
+    assert "consolidation" in consolidation.label
+
+
+def test_a_bonus_is_a_new_shares_for_every_b_held() -> None:
+    assert parse_bonus("1:1").multiplier == 2
+    assert parse_bonus("2:3").multiplier == Fraction(5, 3)
+
+
+def test_a_malformed_ratio_is_refused_not_guessed() -> None:
+    for bad in ("10", "10:0", "0:1", "a:b", "10:10", "-1:2"):
+        with pytest.raises(ValueError):
+            parse_face_value(bad)
+    for bad in ("1", "1:0", "x:1"):
+        with pytest.raises(ValueError):
+            parse_bonus(bad)
+
+
+def test_a_split_and_a_bonus_in_one_record_multiply() -> None:
+    both = combine([parse_face_value("10:2"), parse_bonus("1:1")])
+    assert both.multiplier == 10
+    assert both.label == "face value 10:2 (split) + bonus 1:1"
+
+
+def test_an_adjusted_holding_keeps_its_total_cost() -> None:
+    adjusted = adjust_holding(98, Decimal("1542.59"), parse_bonus("1:1"))
+    assert adjusted.quantity == 196
+    assert adjusted.average_cost == Decimal("771.295000")
+    assert adjusted.fractional_shares == 0
+
+
+def test_whole_shares_are_credited_and_the_fraction_is_stated() -> None:
+    adjusted = adjust_holding(7, Decimal("100.00"), parse_bonus("1:2"))
+    assert adjusted.quantity == 10
+    assert adjusted.fractional_shares == Fraction(1, 2)
+
+
+def test_a_consolidation_that_leaves_under_one_share_needs_a_person() -> None:
+    with pytest.raises(ValueError, match="under one whole share"):
+        adjust_holding(5, Decimal("100.00"), parse_face_value("1:10"))
+
+
+def test_the_published_ratio_confirms_or_contradicts_the_one_given() -> None:
+    assert published_ratio_agrees(parse_face_value("10:2"), SPLIT_10_TO_2) is True
+    assert published_ratio_agrees(parse_face_value("10:5"), SPLIT_10_TO_2) is False
+    assert published_ratio_agrees(parse_bonus("1:1"), "Bonus 1:1") is True
+    assert published_ratio_agrees(parse_bonus("2:1"), "Bonus 1:1") is False
+    assert published_ratio_agrees(parse_bonus("2:1"), " Bonus 2:1") is True
+
+
+def test_a_line_stating_no_ratio_neither_confirms_nor_contradicts() -> None:
+    assert published_ratio_agrees(parse_bonus("1:1"), "Demerger") is None
+    assert published_ratio_agrees(parse_bonus("1:1"), "Bonus") is None
+
+
+def test_the_structural_subjects_on_a_date_skip_dividends_and_other_dates() -> None:
+    records = [
+        {"exDate": "07-Sep-2026", "subject": "Demerger"},
+        {"exDate": "07-Sep-2026", "subject": "Dividend - Rs 3.40 Per Share"},
+        {"exDate": "18-Oct-2024", "subject": SPLIT_10_TO_2},
+        {"exDate": "07-Sep-2026", "subject": "Demerger"},
+    ]
+    assert structural_subjects_on(records, date(2026, 9, 7)) == ["Demerger"]
+    assert structural_subjects_on(records, date(2024, 10, 18)) == [SPLIT_10_TO_2]
+    assert structural_subjects_on(records, date(2026, 9, 8)) == []

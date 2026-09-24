@@ -44,3 +44,22 @@ in any of those files, say so in your record and the work will stop on that path
 ## Claimed paths
 
 None. This notice claims nothing; it informs.
+
+## Update 2026-09-24: founder chose the review tool, and the XS guard
+
+The founder answered the open F5 items: build a review tool, and give XS the same protection.
+
+- **Hermes Agent (`20260903-hermes-xs-monthly-screen-new.md`), your paths changed.**
+  - `research_xs_monthly/paper.py` gains `unreviewed_corporate_actions`.
+  - `settle_positions` now carries a leg's `corporate_actions` reviews through the open, closed
+    and unresolved states.
+  - `scripts/run_xs_monthly_paper_watch.py` gains `--corporate-actions-dir`. It leaves a leg
+    unvalued when it was held across a split, bonus, consolidation, demerger or rights issue in the
+    stored NSE records and no one has reviewed it. Your hand-kept authority still takes precedence
+    where both name a leg.
+- **Flagship state is schema v7.** `reviewed_actions` records each review in the same
+  hash-protected write as the adjustment; v3-v6 files migrate.
+- **The shared finder moved** to `src/quant_system/data/held_corporate_actions.py`, so the XS
+  package imports nothing from the execution layer.
+- **The tool is `scripts/apply_paper_corporate_action.py`.** It is a dry run without `--apply`,
+  refuses a ratio that contradicts NSE's record, and records each action once.

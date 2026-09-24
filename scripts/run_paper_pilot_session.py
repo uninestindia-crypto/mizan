@@ -1101,6 +1101,10 @@ sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from cached_nifty50_evidence import historical_acquisition_from_verified  # noqa: E402
 
+from quant_system.data.held_corporate_actions import (  # noqa: E402
+    load_nse_corporate_actions,
+    structural_actions_on_holdings,
+)
 from quant_system.data.universe import (  # noqa: E402
     NIFTY50_SYMBOLS,
     NIFTY500_SYMBOLS,
@@ -1110,10 +1114,6 @@ from quant_system.evidence import (  # noqa: E402
     EvidenceResourceType,
     EvidenceStore,
     EvidenceStoreConfig,
-)
-from quant_system.execution.corporate_action_guard import (  # noqa: E402
-    load_nse_corporate_actions,
-    structural_actions_on_holdings,
 )
 from quant_system.execution.governed_strategy import ExecutionSurface  # noqa: E402
 from quant_system.execution.mizan_execution import (  # noqa: E402
@@ -1451,7 +1451,7 @@ def run_paper_session(
     # post-action price reports a move that did not happen: HEG's 2026-09-07 demerger put a
     # Rs 6,124 phantom loss into the XS book that way, and this runner had no check at all.
     # Refused before anything trades rather than marked wrong; see
-    # `execution/corporate_action_guard.py`.
+    # `data/held_corporate_actions.py`.
     if portfolio.holdings:
         ca_records, ca_missing = load_nse_corporate_actions(
             _CORPORATE_ACTIONS_DIR, portfolio.holdings
@@ -1467,16 +1467,24 @@ def run_paper_session(
             {holding.symbol: holding.opened_on for holding in portfolio.holdings.values()},
             session_date,
             ca_records,
+            reviewed=portfolio.reviewed,
         )
         if crossed:
             for action in crossed:
                 logger.error("  CORPORATE ACTION NOT APPLIED -- %s", action.describe())
+                logger.error(
+                    "    after checking the company's filing:  python "
+                    "scripts/apply_paper_corporate_action.py --book flagship --symbol %s "
+                    '--ex-date %s (--bonus A:B | --face-value FROM:TO | --acknowledge "reason") '
+                    "--apply",
+                    action.symbol,
+                    action.ex_date.isoformat(),
+                )
             logger.error(
-                "REFUSING TO TRADE: %d holding(s) crossed a corporate action this ledger has not "
-                "applied, so every mark of them is wrong and a sale would book a loss or gain that "
-                "did not happen. The holding's share count and cost must be adjusted from the "
-                "issuer's filing, or its entitlement recorded, before trading resumes. There is no "
-                "tool for that yet; it needs a developer. Do NOT hand-edit %s: it is "
+                "REFUSING TO TRADE: %d holding(s) crossed a corporate action no one has reviewed, "
+                "so every mark of them is wrong and a sale would book a loss or gain that did not "
+                "happen. Review each one against the company's filing and record it with the "
+                "command above; the next session then trades. Do NOT hand-edit %s: it is "
                 "hash-protected.",
                 len(crossed),
                 PORTFOLIO_STATE_PATH,
@@ -2613,6 +2621,15 @@ def run_paper_session(
         equity_marks=portfolio.equity_marks,
     )
     feedback_payload["baselines"] = baselines
+    # Reviewed corporate actions on names still held. An acknowledged one changed nothing in the
+    # ledger -- a demerger's new shares, say, are not held here -- so its effect on the numbers
+    # above is stated rather than left for a reader to rediscover.
+    reviewed_on_held = [
+        action for action in portfolio.reviewed_actions if action.symbol in portfolio.holdings
+    ]
+    feedback_payload["reviewed_corporate_actions"] = [
+        action.to_payload() for action in reviewed_on_held
+    ]
 
     # Save final JSON feedback
     json_path = output_dir / f"paper_session_{session_date}_{session_id}.json"
@@ -2664,6 +2681,15 @@ def run_paper_session(
         f.write(
             f"| Total Slippage Cost | Rs {_paisa_str(reconciliation.total_slippage_cost)} |\n\n"
         )
+        if reviewed_on_held:
+            f.write("**Corporate actions reviewed on names held**\n\n")
+            for review in reviewed_on_held:
+                f.write(
+                    f"- `{review.symbol}` {review.ex_date.isoformat()} ({review.subject.strip()}): "
+                    f"{review.resolution}; {review.quantity_before} -> {review.quantity_after} "
+                    f"shares, reviewed {review.reviewed_at}\n"
+                )
+            f.write("\n")
 
         f.write("## 2. Against the Market\n\n")
         f.write(

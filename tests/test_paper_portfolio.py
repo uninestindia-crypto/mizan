@@ -19,12 +19,15 @@ import pytest
 
 from quant_system.core.domain import Fill, Side
 from quant_system.core.ledger import DecimalLedger
+from quant_system.data.held_corporate_actions import parse_bonus, parse_face_value
 from quant_system.execution.paper_portfolio import (
     PORTFOLIO_SCHEMA_VERSION,
     EquityMark,
     PaperPortfolioError,
     PaperPortfolioState,
     PortfolioHolding,
+    acknowledge_corporate_action,
+    adjust_for_corporate_action,
     load_portfolio,
     save_portfolio,
     state_from_ledger,
@@ -650,10 +653,12 @@ def _write_at_version(path, state, version: int, drop=()) -> None:
     path.write_text(json.dumps(document), encoding="utf-8")
 
 
-V6_ADDED = ("inception_on", "equity_marks")
+V7_ADDED = ("reviewed_actions",)
+V6_ADDED = ("inception_on", "equity_marks", *V7_ADDED)
 V3_ABSENT = ("daily_anchor_on", "daily_anchor_equity", "last_completed_on", *V6_ADDED)
 V4_ABSENT = ("last_completed_on", *V6_ADDED)
 V5_ABSENT = V6_ADDED
+V6_ABSENT = V7_ADDED
 
 
 def test_a_v4_file_written_before_last_completed_on_still_loads(tmp_path) -> None:
@@ -1041,3 +1046,215 @@ def test_two_marks_for_one_date_are_refused(tmp_path) -> None:
 
     with pytest.raises(PaperPortfolioError, match="two equity marks for 2026-10-07"):
         load_portfolio(path)
+
+
+# --------------------------------------------------------------------------------------------
+# Reviewed corporate actions (v7): an adjustment and its record are one write.
+# --------------------------------------------------------------------------------------------
+
+EX = date(2026, 9, 7)
+REVIEWED_AT = "2026-09-24T07:00:00Z"
+
+
+def test_a_bonus_doubles_the_shares_and_halves_the_cost_keeping_total_cost() -> None:
+    before = _state()
+    after, record = adjust_for_corporate_action(
+        before,
+        symbol="INFY",
+        ex_date=EX,
+        subject="Bonus 1:1",
+        adjustment=parse_bonus("1:1"),
+        reviewed_at=REVIEWED_AT,
+    )
+    held = after.holdings["INFY"]
+    assert held.quantity == 196
+    assert held.average_cost == Decimal("771.295000")
+    assert held.cost_basis == before.holdings["INFY"].cost_basis
+    # Not a trade: cash, fees, realized P&L, the entry fee and the open date are untouched.
+    assert after.cash == before.cash
+    assert after.realized_pnl == before.realized_pnl
+    assert after.total_fees == before.total_fees
+    assert held.entry_fee == before.holdings["INFY"].entry_fee
+    assert held.opened_on == before.holdings["INFY"].opened_on
+    assert record.resolution == "adjusted: bonus 1:1"
+    assert after.reviewed == {("INFY", EX)}
+
+
+def test_a_split_that_leaves_a_fraction_says_so() -> None:
+    # 41 shares at a 3:2 face-value change is 61.5 new shares; 61 are credited.
+    after, record = adjust_for_corporate_action(
+        _state(),
+        symbol="TCS",
+        ex_date=EX,
+        subject="Face Value Split",
+        adjustment=parse_face_value("3:2"),
+        reviewed_at=REVIEWED_AT,
+    )
+    assert after.holdings["TCS"].quantity == 61
+    assert "0.5000 fractional share(s) not credited" in record.resolution
+
+
+def test_an_acknowledgement_changes_nothing_but_the_record() -> None:
+    before = _state()
+    after, record = acknowledge_corporate_action(
+        before,
+        symbol="INFY",
+        ex_date=EX,
+        subject="Rights 3:25 @ Premium Rs 1799/-",
+        reason="rights not taken up; the entitlement lapsed",
+        reviewed_at=REVIEWED_AT,
+    )
+    assert after.holdings == before.holdings
+    assert record.resolution == "acknowledged: rights not taken up; the entitlement lapsed"
+    assert record.quantity_before == record.quantity_after == 98
+
+
+def test_the_same_action_cannot_be_applied_twice() -> None:
+    once, _ = adjust_for_corporate_action(
+        _state(),
+        symbol="INFY",
+        ex_date=EX,
+        subject="Bonus 1:1",
+        adjustment=parse_bonus("1:1"),
+        reviewed_at=REVIEWED_AT,
+    )
+    with pytest.raises(PaperPortfolioError, match="already been reviewed"):
+        adjust_for_corporate_action(
+            once,
+            symbol="INFY",
+            ex_date=EX,
+            subject="Bonus 1:1",
+            adjustment=parse_bonus("1:1"),
+            reviewed_at=REVIEWED_AT,
+        )
+    with pytest.raises(PaperPortfolioError, match="already been reviewed"):
+        acknowledge_corporate_action(
+            once, symbol="INFY", ex_date=EX, subject="Bonus 1:1", reason="x", reviewed_at="t"
+        )
+
+
+def test_a_name_not_held_or_bought_after_the_action_cannot_be_reviewed() -> None:
+    with pytest.raises(PaperPortfolioError, match="not held"):
+        acknowledge_corporate_action(
+            _state(), symbol="WIPRO", ex_date=EX, subject="Bonus 1:1", reason="x", reviewed_at="t"
+        )
+    with pytest.raises(PaperPortfolioError, match="already reflects the action"):
+        acknowledge_corporate_action(
+            _state(),
+            symbol="INFY",
+            ex_date=date(2026, 8, 17),
+            subject="Bonus 1:1",
+            reason="x",
+            reviewed_at="t",
+        )
+
+
+def test_an_acknowledgement_needs_a_reason() -> None:
+    with pytest.raises(PaperPortfolioError, match="needs a reason"):
+        acknowledge_corporate_action(
+            _state(), symbol="INFY", ex_date=EX, subject="Demerger", reason="  ", reviewed_at="t"
+        )
+
+
+def test_a_review_survives_the_next_session_so_it_is_never_asked_again() -> None:
+    """Dropping it would let the guard stop again, and a second review would adjust twice."""
+    reviewed, _ = adjust_for_corporate_action(
+        _state(),
+        symbol="INFY",
+        ex_date=EX,
+        subject="Bonus 1:1",
+        adjustment=parse_bonus("1:1"),
+        reviewed_at=REVIEWED_AT,
+    )
+    after = state_from_ledger(
+        reviewed,
+        cash=reviewed.cash,
+        positions={"INFY": (196, Decimal("771.295000"))},
+        session_date=date(2026, 9, 25),
+        session_realized_pnl=Decimal("0.00"),
+        fees_paid=Decimal("0.00"),
+        rebalanced=False,
+    )
+    assert after.reviewed == {("INFY", EX)}
+
+
+def test_reviewed_actions_round_trip_through_the_state_file(tmp_path) -> None:
+    path = tmp_path / "portfolio.json"
+    state, _ = adjust_for_corporate_action(
+        _state(),
+        symbol="INFY",
+        ex_date=EX,
+        subject="Bonus 1:1",
+        adjustment=parse_bonus("1:1"),
+        reviewed_at=REVIEWED_AT,
+    )
+    save_portfolio(path, state)
+
+    loaded = load_portfolio(path)
+
+    assert loaded is not None
+    assert loaded.reviewed_actions == state.reviewed_actions
+    assert loaded.holdings["INFY"].quantity == 196
+
+
+def test_a_v6_file_keeps_its_equity_history_when_it_migrates(tmp_path) -> None:
+    """Only the new field is defaulted; resetting v6's history would lose the book's start."""
+    path = tmp_path / "portfolio.json"
+    first = date(2026, 10, 7)
+    v6 = _close(_pristine(), first, "998000.00", "850000.00")
+    _write_at_version(path, v6, 6, drop=V6_ABSENT)
+
+    loaded = load_portfolio(path)
+
+    assert loaded is not None
+    assert loaded.inception_on == first
+    assert loaded.equity_marks == v6.equity_marks
+    assert loaded.reviewed_actions == ()
+
+
+def test_a_file_reviewing_one_action_twice_is_refused(tmp_path) -> None:
+    from quant_system.data.market_data_evidence import canonical_sha256
+
+    path = tmp_path / "portfolio.json"
+    state, _ = acknowledge_corporate_action(
+        _state(), symbol="INFY", ex_date=EX, subject="Demerger", reason="x", reviewed_at="t"
+    )
+    save_portfolio(path, state)
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["payload"]["reviewed_actions"].append(dict(document["payload"]["reviewed_actions"][0]))
+    document["state_hash"] = canonical_sha256(document["payload"])
+    path.write_text(json.dumps(document), encoding="utf-8")
+
+    with pytest.raises(PaperPortfolioError, match="reviews the same corporate action twice"):
+        load_portfolio(path)
+
+
+def test_an_adjusted_holding_still_replays_to_exact_cash() -> None:
+    """A cost per share like 333.333333 must not leave a paisa of drift in the next ledger."""
+    for adjustment, quantity, cost in (
+        (parse_bonus("2:1"), 1, "1000.00"),
+        (parse_bonus("1:2"), 7, "101.37"),
+        (parse_face_value("10:3"), 13, "999.99"),
+    ):
+        before = PaperPortfolioState(
+            cash=Decimal("5000.00"),
+            holdings={
+                "X": PortfolioHolding(
+                    "X", quantity, Decimal(cost), date(2026, 10, 1), Decimal("3.21")
+                )
+            },
+            sessions_completed=2,
+        )
+        after, _ = adjust_for_corporate_action(
+            before,
+            symbol="X",
+            ex_date=date(2026, 10, 5),
+            subject="-",
+            adjustment=adjustment,
+            reviewed_at=REVIEWED_AT,
+        )
+        ledger = DecimalLedger(initial_cash=after.ledger_funding(), allow_short=False)
+        for fill in after.carry_forward_fills(AT):
+            ledger.process_fill(fill)
+        assert ledger.cash == after.cash, adjustment.label
+        assert after.holdings["X"].cost_basis == before.holdings["X"].cost_basis, adjustment.label

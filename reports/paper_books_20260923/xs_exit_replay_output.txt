@@ -1,6 +1,7 @@
 cache: 499 symbols, calendar ends 2026-09-18
 
 == case_a_exit_on_last_day: enter 2026-08-19, exit due at the 2026-09-18 open, cache ends 2026-09-18
+  flagged from NSE records: ['HEG']
   opened 99 legs (98 priced, 1 unpriced), cash left 161144.33
   PASS  runner exited 0
   PASS  every priced leg closed (98 of 98)
@@ -16,6 +17,7 @@ cache: 499 symbols, calendar ends 2026-09-18
   closed legs: mean net -2.6480%, 32 of 98 positive (costs included)
 
 == case_b_exit_before_last_day: enter 2026-08-18, exit due at the 2026-09-17 open, cache ends 2026-09-18
+  flagged from NSE records: ['HEG']
   opened 99 legs (98 priced, 1 unpriced), cash left 167778.08
   PASS  runner exited 0
   PASS  every priced leg closed (98 of 98)

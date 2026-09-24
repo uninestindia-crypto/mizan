@@ -45,8 +45,16 @@ then why the books are run at all. Measured the same day (`reports/paper_books_2
    - F3: XS's exit path is exercised by replaying past data through the runner on a scratch copy.
    - F4: scheduling. XS's task was refused on battery, and a session left running past midnight
      blocked the next morning's run.
-   - F5: shares received in a demerger with no price yet (HEG Graphite) stay visible and unvalued,
-     and get priced once they trade.
+   - F5: corporate actions on held names. Widened while investigating HEG: the flagship had no
+     corporate-action handling at all, so a split, bonus, demerger or rights issue on a held name
+     was marked as a loss or gain that did not happen. Both books now detect every structural
+     action NSE published for their names, from the records the refresh already stores. The
+     flagship refuses to trade and the XS watch declines to value the leg until a person reviews
+     the action. The founder chose on 2026-09-24 to build a review tool
+     (`scripts/apply_paper_corporate_action.py`). It applies a split or bonus confirmed from the
+     filing and cross-checked against NSE's published ratio, or records an acknowledgement with
+     its reason, once. Pricing a demerger's new shares once they list (HEG Graphite) remains
+     open.
 4. **Restart fresh at Rs 10L each, as a system test**, when the fixes are verified and the founder
    says go. Same models as before: the flagship's frozen `trial_mizan_h11_002` weights and the XS
    frozen rule. The restart tests the fixes, not a new model, and its report shows the book next to

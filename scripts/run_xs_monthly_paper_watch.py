@@ -20,6 +20,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from quant_system.data.held_corporate_actions import load_nse_corporate_actions
 from quant_system.research_xs_monthly.bars import load_cache_bars, read_universe_symbols
 from quant_system.research_xs_monthly.paper import (
     ENTITLEMENT_AUTHORITY,
@@ -30,7 +31,9 @@ from quant_system.research_xs_monthly.paper import (
     load_unpriced_entitlements,
     settle_positions,
     size_positions,
+    unreviewed_corporate_actions,
 )
+from quant_system.research_xs_monthly.screen import build_calendar
 
 STATE_NAME = "state.json"
 
@@ -61,6 +64,15 @@ def main(argv: list[str] | None = None) -> int:
         default=ENTITLEMENT_AUTHORITY,
         help="issuer-filed corporate-action entitlements; a leg held across one is not valued",
     )
+    parser.add_argument(
+        "--corporate-actions-dir",
+        type=Path,
+        default=Path(
+            "data/evidence/market-cache/nifty500-refresh-20230828-20260827/corporate-actions"
+        ),
+        help="NSE corporate-action records; a leg held across an unreviewed split, bonus, demerger "
+        "or rights issue is not valued",
+    )
     args = parser.parse_args(argv)
     args.state_dir.mkdir(parents=True, exist_ok=True)
     state_path = args.state_dir / STATE_NAME
@@ -90,6 +102,21 @@ def main(argv: list[str] | None = None) -> int:
     # unknown size cannot be valued as shares * latest_open; see paper.load_unpriced_entitlements.
     held = state.get("open", [])
     entitlements = load_unpriced_entitlements(held, bars, args.entitlement_authority)
+    # Every structural action NSE published for the names held, not only the hand-kept list. The
+    # authority's reason wins where both name a leg. A missing record file is a warning: "no record"
+    # is not "no action", but refusing the whole book over it would stop the watch on a data gap.
+    ca_records, ca_missing = load_nse_corporate_actions(
+        args.corporate_actions_dir, [str(leg["symbol"]) for leg in held]
+    )
+    if held and ca_missing:
+        print(
+            f"WARNING: no NSE corporate-action record for {len(ca_missing)} held name(s), so an "
+            f"action on them cannot be ruled out: {', '.join(ca_missing)}"
+        )
+    for symbol, reason in unreviewed_corporate_actions(
+        held, ca_records, build_calendar(bars)[-1]
+    ).items():
+        entitlements.setdefault(symbol, reason)
     settled = settle_positions(held, bars, unpriced_entitlements=entitlements)
     state["open"] = settled["open"]
     state["closed"] = state.get("closed", []) + settled["closed"]
