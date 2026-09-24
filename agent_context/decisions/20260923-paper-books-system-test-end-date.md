@@ -107,3 +107,39 @@ The restart needs all of these, then the founder's go-ahead:
 - QuantOS keeps its paper-execution capability (`.launch/STATE.md` scope).
 - Decision 1 of 1 Sep, locking concurrent sessions, is not decided here and stays open.
 - Nothing is promoted and no gate moves.
+
+## Restarted, 2026-09-24
+
+The founder said "restart" at 17:15 IST on 2026-09-24. The checklist above was run that evening:
+
+- **Old state moved, not deleted.** All 85 live files of both stopped books matched their stop-time
+  SHA-256 (none changed, none new). They were moved to
+  `logs/archive/paper-books-20260923/at-restart/`, recorded in
+  `reports/paper_books_20260923/restart-move-manifest.json`.
+- **The morning refresh was rehearsed.** 499/500 names refreshed, the newest bar moved
+  2026-09-18 -> 2026-09-23, and corporate-action records are current to 2026-09-23. All five index
+  series were fetched, including the new NIFTY 500 (744 closes).
+- **The tasks were re-enabled** with the F4 settings (`scripts/configure_paper_book_tasks.ps1
+  -Enable`). XS did not run on enabling.
+
+**The test's dates**, from the NSE holiday authority:
+
+| | Date |
+|---|---|
+| Flagship session 1, a fresh Rs 10L book | Fri 2026-09-25, from the 09:00 task |
+| XS first cohort | enters at the 2026-09-24 open (its first run is 2026-09-25 16:00, after that morning's refresh) |
+| Flagship rebalances | 2026-10-12 (session 11) and 2026-10-27 (session 21) |
+| XS first cohort exits | at the 2026-10-27 open, processed by the 2026-10-28 run |
+| **Test ends** | **Wed 2026-10-28** (session 22), once both are done |
+| **Hard stop** | **Mon 2026-11-09** (session 30) |
+
+**At the end:**
+
+1. The founder, or an agent with the founder's go-ahead that day, disables the three tasks.
+2. A closing report scores the system against the checklist, not the P&L:
+   - every trading day either ran or has a recorded reason;
+   - every flagship session reconciled at 0.00 paisa;
+   - both rebalances re-weighted;
+   - XS closed its cohort with cost charged once;
+   - every corporate action was caught and reviewed.
+3. Nothing is deleted. The books' P&L is market plus costs, not evidence about the model.

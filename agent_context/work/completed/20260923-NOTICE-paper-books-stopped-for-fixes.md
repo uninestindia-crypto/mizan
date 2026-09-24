@@ -1,6 +1,7 @@
 # NOTICE: both paper books are stopped for fixes, and restart fresh later as a system test
 
-STATUS: NOTICE, standing until the restart; then it moves to `work/completed/`. Additive: no other
+STATUS: ENDED 2026-09-24 at the restart; superseded by `work/active/20260924-NOTICE-paper-books-system-test-running.md`.
+Additive: no other
 record, `CURRENT.md`, or `.launch/STATE.md` is edited.  
 FILED_BY: Claude Code (Opus 5.5), 2026-09-23, recording a founder decision  
 OBSERVED_AT: `main` = `525b3997`  

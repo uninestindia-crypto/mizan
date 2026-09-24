@@ -1,6 +1,6 @@
 # Active work: stop the paper books, fix what they exposed, prepare a fresh restart
 
-STATUS: BLOCKED on the founder's restart go-ahead; every fix is done (`1edcc29c`). Handoff
+STATUS: COMPLETED 2026-09-24. Both books restarted; the end-of-test task is in
 `agent_context/handoffs/20260924-claude-paper-books-restart-handoff.md`  
 OWNER: Claude Code session, on founder instruction  
 TOOL: Claude Code  
@@ -106,12 +106,11 @@ F4 (scheduling):
    - F3: XS exit path checked by replaying past data through the runner on a scratch copy.
    - F4: scheduling: XS refused on battery; a session running past midnight blocks the next day.
    - F5: demerger entitlements with no price (HEG Graphite).
-5. Restart checklist for the founder. PENDING the founder's answers.
+5. Restart checklist. DONE 2026-09-24 on the founder's "restart".
 
 ## Current step
 
-5. F1-F5 done, including the review tool and the XS guard. Waiting on the founder: two Windows settings,
-and the restart go-ahead.
+Complete. The restarted test runs unattended; its end is a separate task (handoff).
 
 ## Fix status
 
@@ -148,6 +147,9 @@ for any paper book.
 | `pytest tests/` (full suite, after F2/F5) | PASS | 1670 passed in 752 s; `ruff check .`, `ruff format --check .` (710 files) and `mypy src launcher.py scripts` (211 files) clean |
 | `scripts/audit-agent-claims.ps1`; `scripts/audit-disk-layout.ps1 -Fast` | PASS | both exit 0 |
 | `pytest tests/` (full suite, after the review tool and XS guard) | PASS | 1710 passed in 816 s, plus `test_an_adjusted_holding_still_replays_to_exact_cash` added after collection (70 portfolio tests pass); `ruff check .`, `ruff format --check .` and `mypy src launcher.py scripts` (212 files) clean; both audits exit 0 |
+| Restart: live state verified against the stop-time manifest and moved | PASS | 85 files, 85 unchanged, 0 changed, 0 new; moved to `logs/archive/paper-books-20260923/at-restart/`; `reports/paper_books_20260923/restart-move-manifest.json` |
+| Restart: morning refresh rehearsed (`refresh_bars`, `refresh_macro` from `run_scheduled_paper_session.py`) | PASS | 499/500 names, newest bar 2026-09-18 -> 2026-09-23, corporate-action records current to 2026-09-23, 5 index series including NIFTY 500 (744 closes); macro covers 2026-09-23 |
+| Restart: `scripts/configure_paper_book_tasks.ps1 -Enable` | PASS | Settings verified; all three tasks `Ready`; XS did not run on enabling. Next runs: flagship 2026-09-25 09:00, XS 16:00 |
 
 ## Files changed
 
@@ -162,17 +164,17 @@ for any paper book.
 
 ## Stop point
 
-Books stopped and archived. F1, F3 and F4 were committed separately; F2 and F5 in one commit, because
-both edit the runner. All three paper-book tasks are `Disabled`. The full suite and repo-wide
-ruff and strict mypy pass. The working tree is clean after the F2/F5 commit.
+Both books restarted on the evening of 2026-09-24:
+
+- Old state was archived and hash-verified.
+- The refresh was rehearsed.
+- All three tasks are enabled.
+
+The test ends 2026-10-28, with a hard stop on 2026-11-09 (dates in the decision). Everything is
+committed, and the working tree is clean after the closing commit.
 
 ## Next safe action
 
-When the founder says restart, run the decision's restart checklist:
-
-1. Move the live state into `logs/archive/paper-books-20260923/` and verify it against the manifest.
-2. Run `scripts/configure_paper_book_tasks.ps1 -Enable`.
-3. Start both books fresh. The flagship needs `--force-new-portfolio` only if old session reports
-   remain in `logs/paper_runs/`.
-
-Nothing restarts without the founder's go-ahead.
+See the handoff `agent_context/handoffs/20260924-claude-paper-books-restart-handoff.md`: watch the
+sessions, review any corporate action with the tool, and end the test on 2026-10-28 with the
+founder's go-ahead.

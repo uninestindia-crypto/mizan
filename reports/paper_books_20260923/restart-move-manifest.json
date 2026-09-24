@@ -1,0 +1,434 @@
+{
+  "moved_at_utc": "2026-09-24T11:47:12Z",
+  "reason": "restart of both paper books as a system test; founder instruction 2026-09-24",
+  "unchanged_since_stop": 85,
+  "changed_since_stop": [],
+  "new_since_stop": [],
+  "files": [
+    {
+      "source": "logs/paper_runs/live_paper_status.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/live_paper_status.json",
+      "sha256": "f93da8a4a0dc3451bef7d4a8e26743aaa390f859d98b524da1c24cf912af4389"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_071013.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_071013.json",
+      "sha256": "9c4ee280532269ea1030900155c21685d49a69a6e6e4788e0f69e9f54191f52c"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_071013.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_071013.md",
+      "sha256": "8f30e73f80169c42df45c1db9493318414b5fe5de2706759987c88399d592386"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_071114.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_071114.json",
+      "sha256": "c79c3bf0db4c786536ac075d95949cc9fc30c0a5372213c72d94e2f9bd967a03"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_071114.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_071114.md",
+      "sha256": "17aa08207f82330e424394bcb242a93353a558a6d29bc0119b298dfa395d7a9c"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_071128.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_071128.json",
+      "sha256": "153ab1fa738bea53f714b15e716265253d287c50b6aa18d9b6215bcb5c76be15"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_071128.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_071128.md",
+      "sha256": "5873c86dc8b388eebe9d5dfe029c5d878f28921720b9890581c2083961ca4575"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_124408_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_124408_IST.json",
+      "sha256": "fb0bf90163aa97089d639a86e78f3848c1e5034da1e9eaec86d24d3d4d70bf96"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_124408_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_124408_IST.md",
+      "sha256": "5e498d9a0f976778870440d1c06ab8dd4cfd78b365b22c617f3b2074ec9a3afd"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_125250_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_125250_IST.json",
+      "sha256": "cbf8d8f35667d5db7bfab54cd99bf23a46404a39749abbd9cab7ead6453a3128"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_125250_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_125250_IST.md",
+      "sha256": "ed73b8395123446aa65857bfaa959f919be204bc30ab97035a0f242c6e840ccb"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_131409_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_131409_IST.json",
+      "sha256": "523184f5524816ac0190ba1dab7a3fbcd54999580899490056be2f3b5de26baf"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_131409_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_131409_IST.md",
+      "sha256": "6c59fa20524374b810eb987c85ad9ec5f577fabebe4de6792b6f9f1c08e57fa6"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_132755_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_132755_IST.json",
+      "sha256": "529b52cfa0f68da58393cab0acfbf5b42a9721e910b7f0ff2fee56f29abc4bb6"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_132755_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_132755_IST.md",
+      "sha256": "6c32cfc02f45f53a3f7934abc2c8889a16197e48905ac8f2e85c6a71a6a169fe"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_163718_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_163718_IST.json",
+      "sha256": "686b718348e2d67e56043b8419d6ae672570b9eaa5300b59fff707ff0dd32ed1"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-26_paper_ses_20260826_163718_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-26_paper_ses_20260826_163718_IST.md",
+      "sha256": "54f7a1c07a267b125d442cf2e6d440d0c21e369c8e72f8582cb25a24c32116ac"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-31_paper_ses_20260831_115554_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-31_paper_ses_20260831_115554_IST.json",
+      "sha256": "de12a502b338b9aaedbc0b0432ebc44b6dae72b9f921cd08301b42ef927212e0"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-31_paper_ses_20260831_115554_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-31_paper_ses_20260831_115554_IST.md",
+      "sha256": "2d61c3cd92178bb969f01953b66aa92468e75aa6b4afb6ffd6749a02c537b2fa"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-31_paper_ses_20260831_121739_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-31_paper_ses_20260831_121739_IST.json",
+      "sha256": "203bc3918aa3d868d6f74307f7c46be0caecae10e2f8848328a22d29c8dd3004"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-08-31_paper_ses_20260831_121739_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-08-31_paper_ses_20260831_121739_IST.md",
+      "sha256": "a9d2cc9127a44b1cdc9dd4da09b282fc5e278759e059d160eb5df907a953e7a4"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-01_paper_ses_20260901_101431_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-01_paper_ses_20260901_101431_IST.json",
+      "sha256": "9a8ab2aead759e8de7182e886f9b0dd1c50f8ffbba2b5601caae8946d576ad9f"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-01_paper_ses_20260901_101431_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-01_paper_ses_20260901_101431_IST.md",
+      "sha256": "0ec4f899bb924217cf398ce00bf1ade2aa91ed838c7b7f6735c853e1aca52fd8"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-02_paper_ses_20260902_115615_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-02_paper_ses_20260902_115615_IST.json",
+      "sha256": "d721b466b90e9b0c1c0330b6cb5066295763a7836b4fa0ed5866c3080a1a4f51"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-02_paper_ses_20260902_115615_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-02_paper_ses_20260902_115615_IST.md",
+      "sha256": "141ef11792272ba00daa36af861b822593d69bf53df3069f3ca72a7530cdfeff"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-03_paper_ses_20260903_103545_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-03_paper_ses_20260903_103545_IST.json",
+      "sha256": "520e81a879e643db44cae72af3ce73ecc97fe052e868dad9bd5003393b5ecb2d"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-03_paper_ses_20260903_103545_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-03_paper_ses_20260903_103545_IST.md",
+      "sha256": "c1fbe2ea076f7f27fd8f99448b0ceb78fe4b0e8ced7bf12a08e8e7e95cc11025"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-04_paper_ses_20260904_123148_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-04_paper_ses_20260904_123148_IST.json",
+      "sha256": "f171ff266e35483dab5772ced3a563ac6daa65e96f0333c873f9bb4ed73d5f9a"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-04_paper_ses_20260904_123148_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-04_paper_ses_20260904_123148_IST.md",
+      "sha256": "45abfe58afe2ab5013f381059b5d272072b7311c36027193811e32c92429c27d"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-07_paper_ses_20260907_112455_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-07_paper_ses_20260907_112455_IST.json",
+      "sha256": "655fce5e6f36541ba873a5c12c1c008f3e4ea9e5af061efb01861da3798bd653"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-07_paper_ses_20260907_112455_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-07_paper_ses_20260907_112455_IST.md",
+      "sha256": "d95f3c282e09eb64c655a7958f2e90973256dcd8141bbcca736183db8b132204"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-08_paper_ses_20260908_121231_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-08_paper_ses_20260908_121231_IST.json",
+      "sha256": "48419054d4fc9805aa3af0d49d48a63608f797242b8441adee5e92ea1c86e96f"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-08_paper_ses_20260908_121231_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-08_paper_ses_20260908_121231_IST.md",
+      "sha256": "cd50710f4ebee52499e14f116a3a56a35d45761198c667b5c73b17dca393670e"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-09_paper_ses_20260909_111619_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-09_paper_ses_20260909_111619_IST.json",
+      "sha256": "3adadc30d5b5f7622a0a4a1adfb68292948f261b74c51ce79f2ddf217b30d3d9"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-09_paper_ses_20260909_111619_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-09_paper_ses_20260909_111619_IST.md",
+      "sha256": "e05c661d5df46c6ffb039658f76d500167967ea06717fd018b59657bc6f689c0"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-10_paper_ses_20260910_091443_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-10_paper_ses_20260910_091443_IST.json",
+      "sha256": "2f5878b3d60a85bcb08de2125a88823f7d95884ffdd83df72aa80b3d30268643"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-10_paper_ses_20260910_091443_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-10_paper_ses_20260910_091443_IST.md",
+      "sha256": "607e06a442dae58ade21b74409a397c71e3f5df05f7bc59676a731761c78d197"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-11_paper_ses_20260911_121042_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-11_paper_ses_20260911_121042_IST.json",
+      "sha256": "978c534c8294bd37b8342c66b143fff0344c709c208f9e09d7b5aa4738ed7851"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-11_paper_ses_20260911_121042_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-11_paper_ses_20260911_121042_IST.md",
+      "sha256": "6b750ca09d29469611a48024b896a19294aefc2f4bd2c9f5ecf288034d9c7f08"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-15_paper_ses_20260915_121625_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-15_paper_ses_20260915_121625_IST.json",
+      "sha256": "c356136e11716280b099a7e79b0eb6c91fbc0da4ee81f18dcc7fd931141942aa"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-15_paper_ses_20260915_121625_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-15_paper_ses_20260915_121625_IST.md",
+      "sha256": "d77f46ba56ac3acfc716e01541504db4e11fe60e02e6e52f14e6bfa779e63744"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-16_paper_ses_20260916_174643_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-16_paper_ses_20260916_174643_IST.json",
+      "sha256": "a32f6411549a32e9fbd3eeb34fa131d4d36d1c46f578c0e6ab963b2a3fc6a9a4"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-16_paper_ses_20260916_174643_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-16_paper_ses_20260916_174643_IST.md",
+      "sha256": "230565871ef231e520c2d9af08a07dc460b92970eeba8a7d3e258d7b53ac2603"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-18_paper_ses_20260918_165607_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-18_paper_ses_20260918_165607_IST.json",
+      "sha256": "a5b15638b4a16d13e593ae8f52c3076775d978189477a0a748e0a23dc4279e1e"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-18_paper_ses_20260918_165607_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-18_paper_ses_20260918_165607_IST.md",
+      "sha256": "c6189997f9fe9dd3a2db3dfaef688b1dc7ecedc81d19f241228758f8d2153517"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-21_paper_ses_20260921_131253_IST.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-21_paper_ses_20260921_131253_IST.json",
+      "sha256": "bfbaaf8c77aefa607d45e21d5732347143ff72cef6630daf1c0b5c58d501cd28"
+    },
+    {
+      "source": "logs/paper_runs/paper_session_2026-09-21_paper_ses_20260921_131253_IST.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/paper_session_2026-09-21_paper_ses_20260921_131253_IST.md",
+      "sha256": "4cd68b7a1baa56d607169402b2e62702a94cf4fdd283737bda1b56184b3540b8"
+    },
+    {
+      "source": "logs/paper_runs/portfolio_state.backup-20260902-0338.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/portfolio_state.backup-20260902-0338.json",
+      "sha256": "e146e8a9638084b97f094566fafe131324040ec3b21adf16b6c35425a5dac535"
+    },
+    {
+      "source": "logs/paper_runs/portfolio_state.backup.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/portfolio_state.backup.json",
+      "sha256": "66a1937cfdb2362d70fe6b498a1a041b94626dc46303136dbac5aa3055907856"
+    },
+    {
+      "source": "logs/paper_runs/portfolio_state.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/portfolio_state.json",
+      "sha256": "66a1937cfdb2362d70fe6b498a1a041b94626dc46303136dbac5aa3055907856"
+    },
+    {
+      "source": "logs/paper_runs/runner.pid",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/runner.pid",
+      "sha256": "18367fd1e3d6cd04132641bad17be4c183bff4a9e43818e62d3b29286e837821"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260831.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260831.log",
+      "sha256": "1f15aa90b50155d46b11ca4c854e5b3a76a3a3c9c0b512dbc2387ab9dce7a288"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260831_fallback_aborted.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260831_fallback_aborted.log",
+      "sha256": "c637f91fb6765ea5363c26edbff9d9c3340c40d8dbf0e04d5d4b2630cb563787"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260831_keyerror_aborted.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260831_keyerror_aborted.log",
+      "sha256": "ef02d66349e2de5a1d5635b156aa15fb8143fa82bba4ac8251c35f9630aeb508"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260831_pre_pnl_fix.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260831_pre_pnl_fix.log",
+      "sha256": "367044f556fba11da302ccf48eb096e4b4bf8cc8688cf7f7ae052e701fe96ac3"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260901.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260901.log",
+      "sha256": "fb352742589964c761972c4e6dc89f25924a83712099aecee834ebb4054742aa"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260901_schema_aborted.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260901_schema_aborted.log",
+      "sha256": "755ab2ea0d260d4bef22f32024a8bb30bff2907ecb1997ebcafae2d99d45dfa2"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260902.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260902.log",
+      "sha256": "1617912ac05bb57765e49cfc0c7d8545068bb12803bdc469233671472e40de2e"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260903.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260903.log",
+      "sha256": "04f021de16eafa60f4d5c3763a6c30f133809f71a0b9cc65d0a8c6ab852df8d3"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260904.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260904.log",
+      "sha256": "8c832f4e5d4a0b9fa5c5166b41856903ef7e6eb6f82b034331ffc70d499d0132"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260907.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260907.log",
+      "sha256": "dce74024c69459a42d41d1ca57a2e594f15e5bbf2f07e8c33005d763b124a0f9"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260908.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260908.log",
+      "sha256": "a767a054d61f4122314f6fce376209f467de4e0afec51fefa0a1809538bfc0bf"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260909.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260909.log",
+      "sha256": "994bad9508622d2d5221568804ff1ab9301e77d4ec1e193a93a8a764643d6b98"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260910.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260910.log",
+      "sha256": "97ca30ac3d6eb137587ab5d853219e154ba0a0a2c67a0fd1bd82242e0d2167c3"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260911.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260911.log",
+      "sha256": "649d62e07756c1439b09f430392503a7f330aa958b1a8cf19a14a0c043665b3b"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260914.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260914.log",
+      "sha256": "d5a5f4e94f44706b68e8241f12b951c02883dd9a8f49cafea9dd49a266c04018"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260915.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260915.log",
+      "sha256": "5b9317ecb67c30db3ec94e0347e021faf26211c783ee797c8c36901cca2ad4f2"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260916.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260916.log",
+      "sha256": "fe50db1dc5e5ec3aa9499b7de0c91e32bec7b0fc35611340cfbea71ee308145b"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260917.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260917.log",
+      "sha256": "54a450913416eb951de7bea749ceab435b0898eea631a669461fab7014a702cf"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260918.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260918.log",
+      "sha256": "1c4dd4bc930d22ec47c1b367af107b318347ea59e4b976a3ec8852832582ddae"
+    },
+    {
+      "source": "logs/paper_runs/scheduled_20260921.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/flagship/scheduled_20260921.log",
+      "sha256": "1e208deb5ee746103ff447502cfa42c64f98ce39c61faac5d837ac0454f9f9a8"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/state.json",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/state.json",
+      "sha256": "c9998083366b8f2d65a62559546272aecf8d4910a42fc5af5ad475589863224d"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/task.log",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/task.log",
+      "sha256": "0eb9529483348bc84173dbacbfc4b0fe98591fd5ca0188efdf85c6b0a052bfc9"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/watch_20260903-105302Z.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/watch_20260903-105302Z.md",
+      "sha256": "fb1ae3a71ffcf24400b36aea0b0c919b67dd4c8579d7ada72537e2f06f72088b"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/watch_20260903-110702Z.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/watch_20260903-110702Z.md",
+      "sha256": "1d6f8f10d0542dcbcf24b7dc29bc2006a7f8c08be1ed8163f9ef4e93d1ac87f6"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/watch_20260904-082607Z.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/watch_20260904-082607Z.md",
+      "sha256": "33118fe8e2e7d2b73467a6c8feb72e2fc7914a1e532413f841058d89dd1445d4"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/watch_20260904-105658Z.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/watch_20260904-105658Z.md",
+      "sha256": "f018f59a7820fae1419d5f5cbfdb0e5f860fae049ba95e2dcc56eff0b7066316"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/watch_20260908-112551Z.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/watch_20260908-112551Z.md",
+      "sha256": "cfdd03a38507e9c3c46380fa915bfb54a4b024c5f6eace652b15e3086c28f435"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/watch_20260910-040904Z.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/watch_20260910-040904Z.md",
+      "sha256": "c2cc5da55f3b0f80a92db3b08d4a4f43a8f4da296a5422969b78bcdc059d8653"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/watch_20260911-104610Z.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/watch_20260911-104610Z.md",
+      "sha256": "06d10cc3f677cc7c2bcad5779f1431d87cde9391bd10b25837cb3aa27f6fe9d1"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/watch_20260912-113503Z.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/watch_20260912-113503Z.md",
+      "sha256": "2a969188f06744f9ce99f992565790c1819b42ae656a895e6c6c791129062ed7"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/watch_20260913-114634Z.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/watch_20260913-114634Z.md",
+      "sha256": "88e8818bb27689cf4405dfab3284f8d4521a6dfee0257cef2e915ef54927c167"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/watch_20260914-114646Z.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/watch_20260914-114646Z.md",
+      "sha256": "9eb634a2d720dc565b69588fea109db31bf55d68c391d7058612c6309eedecc4"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/watch_20260915-103051Z.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/watch_20260915-103051Z.md",
+      "sha256": "9e10a054c1730f57419932646eee13f96505c449ed697733f9e6c3b2eeb6bae4"
+    },
+    {
+      "source": "logs/xs_monthly_new/paper_watch/watch_20260917-125806Z.md",
+      "moved_to": "logs/archive/paper-books-20260923/at-restart/xs_monthly/watch_20260917-125806Z.md",
+      "sha256": "abfcc93bddb878d635917f2bb83c0d1993af1e2334e3f2e5627ad956600199fd"
+    }
+  ]
+}

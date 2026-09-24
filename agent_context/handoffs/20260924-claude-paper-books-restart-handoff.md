@@ -1,16 +1,25 @@
-# Handoff: restart the paper books as a system test
+# Handoff: end the paper-book system test on 2026-10-28
 
-STATUS: WAITING for the founder's restart go-ahead (F5 decisions answered 2026-09-24)  
+STATUS: READY_FOR_ADOPTION: the test runs unattended until its end on 2026-10-28  
 FROM: Claude Code session  
 TO: unassigned; the same session continues if the founder answers here  
 DATE_UTC: 2026-09-24T06:25:00Z  
-ACTIVE_RECORD: `agent_context/work/active/20260923-claude-paper-books-stop-fix-restart.md`
+ACTIVE_RECORD: none. The fixes and restart are complete in
+`agent_context/work/completed/20260923-claude-paper-books-stop-fix-restart.md`. Standing notice:
+`agent_context/work/active/20260924-NOTICE-paper-books-system-test-running.md`
 
 ## Objective and acceptance criteria
 
-Restart both paper books fresh at Rs 10L each as a labelled system test, per
-`agent_context/decisions/20260923-paper-books-system-test-end-date.md`, once its restart checklist
-holds and the founder says go.
+End the restarted system test and report on it. The test ends Wed 2026-10-28 (session 22), once
+XS's first cohort has exited at the 2026-10-27 open and the flagship has made its 2026-10-12 and
+2026-10-27 rebalances. The hard stop is Mon 2026-11-09. The closing report scores the system, not
+the P&L:
+
+- every trading day ran, or has a recorded reason;
+- every flagship session reconciled at 0.00 paisa;
+- both rebalances re-weighted held names (`[REWEIGHT PROPOSAL SUBMITTED]` in the logs);
+- XS closed its cohort at the exit open, with cost charged once and cash reconciling;
+- every corporate action was caught and reviewed.
 
 ## Completed
 
@@ -62,22 +71,21 @@ holds and the founder says go.
 
 ## Exact stop point
 
-`8f49c7c7` committed; the working tree was clean. Waiting on the founder.
+Restarted 2026-09-24 about 17:45 IST:
+
+- Old state was verified and moved (85 files, all unchanged since the stop).
+- The morning refresh was rehearsed: bars to 2026-09-23 and the NIFTY 500 series fetched.
+- All three tasks are enabled, and neither book has a state file yet.
+
+First runs: the flagship at 2026-09-25 09:00, XS at 16:00 the same day.
 
 ## Next safe action
 
-1. The founder's two Windows settings, which only they can change:
-   - turn on Task Scheduler history;
-   - set the lid-close action on AC to "do nothing".
-2. On the founder's go-ahead, run the decision's restart checklist:
-   - move the live state into `logs/archive/paper-books-20260923/` and verify it against the
-     manifest;
-   - run `powershell -ExecutionPolicy Bypass -File scripts/configure_paper_book_tasks.ps1 -Enable`;
-   - start both books fresh. The flagship needs `--force-new-portfolio` only if old session
-     reports remain in `logs/paper_runs/`.
-3. If a session exits 11 during the test, review the named action against the company's filing
-   and record it with `scripts/apply_paper_corporate_action.py`: first without `--apply`, then
-   with it.
+- Check each morning's session report, or `logs/trigger_verification.log`.
+- On an exit 11, or an XS leg unvalued for `CORPORATE_ACTION_NOT_REVIEWED`, review the action with
+  `scripts/apply_paper_corporate_action.py`.
+- On 2026-10-28, after XS processes its exit, get the founder's go-ahead. Then disable the three
+  tasks and write the closing report against the criteria above.
 
 ## Do not do
 
