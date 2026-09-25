@@ -238,5 +238,21 @@
     "series": "EQ",
     "subject": "Dividend - Rs 80 Per Share & Special Dividend Rs 50 Per Share",
     "symbol": "BAJAJHLDNG"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Bajaj Holdings & Investment Limited",
+    "exDate": "21-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE118A01012",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "21-Sep-2026",
+    "series": "EQ",
+    "subject": "Interim Dividend - Rs 65 Per Share",
+    "symbol": "BAJAJHLDNG"
   }
 ]

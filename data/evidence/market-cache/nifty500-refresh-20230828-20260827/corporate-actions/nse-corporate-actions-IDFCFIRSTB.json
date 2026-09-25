@@ -43,8 +43,8 @@
     "ndEndDate": "-",
     "ndStartDate": "-",
     "recDate": "03-Mar-2017",
-    "series": "HC",
-    "subject": " Buy Back",
+    "series": "HB",
+    "subject": " Interest Payment/Buyback",
     "symbol": "IDFCFIRSTB"
   },
   {
@@ -59,8 +59,8 @@
     "ndEndDate": "-",
     "ndStartDate": "-",
     "recDate": "03-Mar-2017",
-    "series": "HB",
-    "subject": " Interest Payment/Buyback",
+    "series": "HC",
+    "subject": " Buy Back",
     "symbol": "IDFCFIRSTB"
   },
   {

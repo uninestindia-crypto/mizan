@@ -128,22 +128,6 @@
     "symbol": "CCL"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "CCL Products (India) Limited",
-    "exDate": "18-Aug-2021",
-    "faceVal": "2",
-    "ind": "-",
-    "isin": "INE421D01014",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "20-Aug-2021",
-    "series": "EQ",
-    "subject": " Dividend - Rs 2 Per Share",
-    "symbol": "CCL"
-  },
-  {
     "bcEndDate": "26-Aug-2021",
     "bcStartDate": "21-Aug-2021",
     "caBroadcastDate": null,
@@ -157,6 +141,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": " Annual General Meeting",
+    "symbol": "CCL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "CCL Products (India) Limited",
+    "exDate": "18-Aug-2021",
+    "faceVal": "2",
+    "ind": "-",
+    "isin": "INE421D01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "20-Aug-2021",
+    "series": "EQ",
+    "subject": " Dividend - Rs 2 Per Share",
     "symbol": "CCL"
   },
   {

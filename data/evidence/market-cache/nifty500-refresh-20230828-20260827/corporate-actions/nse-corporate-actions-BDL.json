@@ -270,5 +270,21 @@
     "series": "EQ",
     "subject": "Interim Dividend - Rs 4.50 Per Share",
     "symbol": "BDL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Bharat Dynamics Limited",
+    "exDate": "21-Sep-2026",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE171Z01018",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "21-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.40 Per Share",
+    "symbol": "BDL"
   }
 ]

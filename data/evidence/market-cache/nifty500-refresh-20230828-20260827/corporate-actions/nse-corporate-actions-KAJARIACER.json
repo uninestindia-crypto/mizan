@@ -286,5 +286,21 @@
     "series": "EQ",
     "subject": "Buy Back",
     "symbol": "KAJARIACER"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Kajaria Ceramics Limited",
+    "exDate": "21-Sep-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE217B01028",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "21-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 6 Per Share",
+    "symbol": "KAJARIACER"
   }
 ]

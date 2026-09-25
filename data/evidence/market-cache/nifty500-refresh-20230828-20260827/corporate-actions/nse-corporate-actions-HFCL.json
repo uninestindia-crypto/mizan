@@ -158,5 +158,21 @@
     "series": "EQ",
     "subject": "Dividend - Re 0.10 Per Share",
     "symbol": "HFCL"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "HFCL Limited",
+    "exDate": "22-Sep-2026",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE548A01028",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "22-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.20 Per Share",
+    "symbol": "HFCL"
   }
 ]

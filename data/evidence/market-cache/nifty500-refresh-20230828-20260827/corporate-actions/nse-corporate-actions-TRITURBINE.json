@@ -160,22 +160,6 @@
     "symbol": "TRITURBINE"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "Triveni Turbine Limited",
-    "exDate": "06-Sep-2024",
-    "faceVal": "1",
-    "ind": "-",
-    "isin": "INE152M01016",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "06-Sep-2024",
-    "series": "EQ",
-    "subject": "Dividend - Rs 1.30 Per Share",
-    "symbol": "TRITURBINE"
-  },
-  {
     "bcEndDate": "13-Sep-2024",
     "bcStartDate": "07-Sep-2024",
     "caBroadcastDate": null,
@@ -189,6 +173,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": "Annual General Meeting",
+    "symbol": "TRITURBINE"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Triveni Turbine Limited",
+    "exDate": "06-Sep-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE152M01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "06-Sep-2024",
+    "series": "EQ",
+    "subject": "Dividend - Rs 1.30 Per Share",
     "symbol": "TRITURBINE"
   },
   {

@@ -350,5 +350,21 @@
     "series": "EQ",
     "subject": "Interim Dividend - Rs 3.60 Per Share",
     "symbol": "NLCINDIA"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "NLC India Limited",
+    "exDate": "22-Sep-2026",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE589A01014",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "22-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Re 0.25 Per Share",
+    "symbol": "NLCINDIA"
   }
 ]

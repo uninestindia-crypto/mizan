@@ -48,22 +48,6 @@
     "symbol": "LODHA"
   },
   {
-    "bcEndDate": "15-Sep-2023",
-    "bcStartDate": "09-Sep-2023",
-    "caBroadcastDate": null,
-    "comp": "Lodha Developers Limited",
-    "exDate": "08-Sep-2023",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE670K01029",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": "Annual General Meeting",
-    "symbol": "LODHA"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -77,6 +61,22 @@
     "recDate": "08-Sep-2023",
     "series": "EQ",
     "subject": "Dividend - Re 1 Per Share",
+    "symbol": "LODHA"
+  },
+  {
+    "bcEndDate": "15-Sep-2023",
+    "bcStartDate": "09-Sep-2023",
+    "caBroadcastDate": null,
+    "comp": "Lodha Developers Limited",
+    "exDate": "08-Sep-2023",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE670K01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
     "symbol": "LODHA"
   },
   {

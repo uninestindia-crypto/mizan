@@ -382,5 +382,21 @@
     "series": "EQ",
     "subject": "Interim Dividend - Rs 2.30 Per Share",
     "symbol": "BEML"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "BEML Limited",
+    "exDate": "22-Sep-2026",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE258A01016",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "22-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 12.28 Per Share",
+    "symbol": "BEML"
   }
 ]
