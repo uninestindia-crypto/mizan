@@ -2,6 +2,8 @@ param(
     [string]$PythonEnvironment = ".venv",
     [switch]$SkipPyInstaller = $false,
     [switch]$Clean = $false,
+    [switch]$SkipInstaller = $false,
+    [string]$SignCommand = "",
     [string]$OutputDir = "dist/quantos"
 )
 
@@ -80,6 +82,15 @@ if res.zip_archive:
     & $python -c "$buildScript"
     if ($LASTEXITCODE -ne 0) {
         throw "Release manifest / SBOM generation failed with exit code $LASTEXITCODE"
+    }
+
+    # 4. Compile the Windows installer (Inno Setup) -> dist\QuantOS_v<version>_Setup.exe
+    if (-not $SkipInstaller) {
+        Write-Host "`n[STEP 4] Compiling Windows installer (Inno Setup)..." -ForegroundColor Yellow
+        & (Join-Path $PSScriptRoot "build-windows-installer.ps1") -SignCommand $SignCommand
+        Write-Host "  -> Installer compiled." -ForegroundColor Green
+    } else {
+        Write-Host "`n[STEP 4] Skipping installer compilation (-SkipInstaller)." -ForegroundColor DarkGray
     }
 
     Write-Host "`n======================================================================" -ForegroundColor Cyan
