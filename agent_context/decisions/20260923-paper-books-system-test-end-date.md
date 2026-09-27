@@ -143,3 +143,41 @@ The founder said "restart" at 17:15 IST on 2026-09-24. The checklist above was r
    - XS closed its cohort with cost charged once;
    - every corporate action was caught and reviewed.
 3. Nothing is deleted. The books' P&L is market plus costs, not evidence about the model.
+
+## Start slipped, recorded 2026-09-28
+
+The first days did not go to plan. Evidence is in
+`agent_context/work/completed/20260928-claude-paper-books-first-days-and-end-reminder.md`.
+
+- **The flagship's session 1, Fri 2026-09-25, was missed.**
+  - The laptop was on battery with its lid closed. It hibernated at 00:31 on critical battery and
+    stayed off until about 11:21. A hibernated machine is not woken by the task's `WakeToRun`.
+  - Windows Update restarted the machine that afternoon, and it booted again at 20:08.
+    `StartWhenAvailable` then ran the missed task at 20:16. That run ended (0xC000013A) before it
+    reached the refresh, and it wrote nothing.
+- **XS's first cohort entered at the 2026-09-23 open, one session early.**
+  - Its 16:00 run on 09-25 read a cache ending 09-23, because the refresh is part of the flagship's
+    09:00 run.
+  - The formation used data to 09-22 only.
+  - The cohort is kept as it is. Moving it would mean hand-editing the state, and it tests the same
+    exit path.
+
+The dates, if the flagship starts on Mon 2026-09-28:
+
+| | Date |
+|---|---|
+| Flagship session 1 | Mon 2026-09-28 |
+| Flagship rebalances | 2026-10-13 (session 11) and 2026-10-28 (session 21) |
+| XS first cohort exits | at the 2026-10-26 open, processed by the 2026-10-27 run |
+| **Test ends** | **Wed 2026-10-28**, unchanged: both are done that day |
+| **Hard stop** | **Mon 2026-11-09**, unchanged: 30 trading sessions after the restart |
+
+Each further missed flagship session moves its rebalances and the end one trading day later. It
+does not move the hard stop. A one-time reminder in the founder's Claude desktop app
+(`end-paper-book-test`, 2026-10-28 18:07 IST) runs the end-of-test check read-only and asks for the
+go-ahead.
+
+Two weaknesses this exposed are reported to the founder and not changed here:
+
+- XS relies on the flagship's refresh and does not check that it happened.
+- The late-start fallback `QuantOS Session Supervisor` is disabled; its last run was 2026-09-15.
