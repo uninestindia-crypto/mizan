@@ -470,3 +470,38 @@ def test_setup_gui_components(project_root: Path, temp_workspace: Path) -> None:
 
     free_gb = get_free_space_gb(str(temp_workspace))
     assert free_gb >= 0.0
+
+
+def test_quantos_spec_multi_binary_configuration(project_root: Path) -> None:
+    """Verifies that installer/quantos.spec packages both quantos and quantos-studio."""
+    spec_path = project_root / "installer" / "quantos.spec"
+    assert spec_path.exists()
+    content = spec_path.read_text(encoding="utf-8")
+    assert "launcher.py" in content
+    assert "quantos_studio.py" in content
+    assert "quantos-studio" in content
+    assert "console=False" in content
+    assert "exe_studio" in content
+
+
+def test_setup_gui_studio_shortcut_and_uninstaller_contract(project_root: Path) -> None:
+    """Verifies that setup_gui.py targets Desktop Studio and safe evidence uninstallation."""
+    setup_gui_path = project_root / "installer" / "setup_gui.py"
+    assert setup_gui_path.exists()
+    content = setup_gui_path.read_text(encoding="utf-8")
+    assert "QuantOS Studio.lnk" in content
+    assert "quantos-studio.exe" in content
+    assert "uninstall.bat" in content
+    assert "quantos-studio.exe" in content
+    # Ensures evidence is preserved in data/ and logs/
+    assert "User datasets, evidence, and logs in data/ and logs/ will be preserved" in content
+
+
+def test_setup_installer_spec_configuration(project_root: Path) -> None:
+    """Verifies that setup_installer.spec builds QuantOS_v1.0.0_Setup."""
+    spec_path = project_root / "installer" / "setup_installer.spec"
+    assert spec_path.exists()
+    content = spec_path.read_text(encoding="utf-8")
+    assert "setup_gui.py" in content
+    assert "QuantOS_v1.0.0_Setup" in content
+    assert "console=False" in content

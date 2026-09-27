@@ -26,6 +26,78 @@ from quant_system import __version__
 from quant_system.config import load_env_file
 
 
+class NullStream:
+    """Safe no-op text stream replacement for None std streams in GUI apps."""
+
+    _is_fallback: bool = True
+
+    def write(self, text: str) -> int:
+        return len(text)
+
+    def writelines(self, lines: list[str]) -> None:
+        pass
+
+    def read(self, size: int = -1) -> str:
+        return ""
+
+    def readline(self, size: int = -1) -> str:
+        return ""
+
+    def flush(self) -> None:
+        pass
+
+    def isatty(self) -> bool:
+        return False
+
+    @property
+    def encoding(self) -> str:
+        return "utf-8"
+
+
+def ensure_safe_std_streams(app_root: Path | None = None) -> None:
+    """Ensures sys.stdin, sys.stdout, and sys.stderr are valid stream objects.
+
+    In GUI/windowed environments (such as pythonw.exe or PyInstaller console=False),
+    Windows starts the process with sys.stdin, sys.stdout, and sys.stderr set to None.
+    Any call to stream.isatty(), stream.write(), or stream.flush() results in
+    AttributeError: 'NoneType' object has no attribute '...'.
+    """
+    if sys.stdin is None:
+        try:
+            sys.stdin = open(os.devnull, encoding="utf-8")
+        except Exception:
+            sys.stdin = NullStream()
+
+    stdio_target = None
+    if app_root is not None:
+        try:
+            log_dir = app_root / "logs"
+            log_dir.mkdir(parents=True, exist_ok=True)
+            stdio_target = open(log_dir / "studio_stdio.log", "a", encoding="utf-8", buffering=1)
+        except Exception:
+            stdio_target = None
+
+    if sys.stdout is None or (
+        getattr(sys.stdout, "_is_fallback", False) and stdio_target is not None
+    ):
+        if stdio_target is not None:
+            sys.stdout = stdio_target
+        else:
+            sys.stdout = NullStream()
+
+    if sys.stderr is None or (
+        getattr(sys.stderr, "_is_fallback", False) and stdio_target is not None
+    ):
+        if stdio_target is not None:
+            sys.stderr = stdio_target
+        else:
+            sys.stderr = NullStream()
+
+
+# Replace any missing std streams immediately upon module load
+ensure_safe_std_streams()
+
+
 def configure_drive_isolation() -> Path:
     """Configures root-relative runtime directories to guarantee ZERO C: drive leakage."""
     if getattr(sys, "frozen", False):
@@ -36,18 +108,23 @@ def configure_drive_isolation() -> Path:
     for folder in ["tmp", "data", "logs"]:
         (app_root / folder).mkdir(parents=True, exist_ok=True)
 
+    ensure_safe_std_streams(app_root)
+
     local_tmp = str(app_root / "tmp")
     os.environ["TEMP"] = local_tmp
     os.environ["TMP"] = local_tmp
     os.environ["TMPDIR"] = local_tmp
     os.environ["MPLCONFIGDIR"] = str(app_root / "tmp" / "matplotlib")
     os.environ["PYTHONPYCACHEPREFIX"] = str(app_root / "tmp" / "pycache")
+    os.environ["WEBVIEW2_USER_DATA_FOLDER"] = str(app_root / "tmp" / "webview2_data")
     return app_root
 
 
 def setup_studio_logging(app_root: Path) -> logging.Logger:
     """Sets up file-based logging for the studio runner."""
-    log_file = app_root / "logs" / "studio.log"
+    log_dir = app_root / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / "studio.log"
     logger = logging.getLogger("quantos.studio")
     logger.setLevel(logging.INFO)
 
@@ -60,6 +137,13 @@ def setup_studio_logging(app_root: Path) -> logging.Logger:
         )
         fh.setFormatter(formatter)
         logger.addHandler(fh)
+
+        # Route uvicorn, uvicorn.error, and core loggers to studio.log
+        for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+            uv_logger = logging.getLogger(name)
+            uv_logger.setLevel(logging.INFO)
+            if fh not in uv_logger.handlers:
+                uv_logger.addHandler(fh)
 
     return logger
 
@@ -131,6 +215,7 @@ def find_app_browser() -> str | None:
 
 def run_studio() -> None:
     app_root = configure_drive_isolation()
+    ensure_safe_std_streams(app_root)
     logger = setup_studio_logging(app_root)
     logger.info("=" * 60)
     logger.info("Starting QuantOS Studio %s", __version__)
@@ -151,6 +236,8 @@ def run_studio() -> None:
         port=port,
         log_level="warning",
         access_log=False,
+        log_config=None,
+        use_colors=False,
     )
     server = uvicorn.Server(config)
 
@@ -240,4 +327,12 @@ def run_studio() -> None:
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
+    ensure_safe_std_streams()
+    if "--check-prerequisites" in sys.argv:
+        from launcher import run_prerequisite_checks
+
+        passed, logs = run_prerequisite_checks()
+        for log in logs:
+            print(log)
+        sys.exit(0 if passed else 1)
     run_studio()

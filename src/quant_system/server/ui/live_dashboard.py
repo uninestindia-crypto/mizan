@@ -24,29 +24,45 @@ HTML_DASHBOARD = """<!DOCTYPE html>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #0a0e17;
-      --card-bg: #111827;
-      --card-border: #1f2937;
-      --card-header: #1a2234;
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
-      --accent-blue: #3b82f6;
-      --accent-cyan: #06b6d4;
-      --profit-green: #10b981;
-      --profit-bg: rgba(16, 185, 129, 0.12);
-      --loss-red: #ef4444;
-      --loss-bg: rgba(239, 68, 68, 0.12);
-      --badge-bg: #374151;
-      --highlight: #6366f1;
-      --input-bg: #0f172a;
+      --bg-dark: #000000;
+      --card-bg: #1c1c1e;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-subtle: rgba(255, 255, 255, 0.04);
+      --surface-secondary: #2c2c2e;
+      --surface-tertiary: #3a3a3c;
+      --text-main: #f5f5f7;
+      --text-muted: rgba(235, 235, 245, 0.60);
+      --text-subtle: rgba(235, 235, 245, 0.35);
+      --accent-blue: #0a84ff;
+      --accent-blue-hover: #0071e3;
+      --accent-cyan: #64d2ff;
+      --profit-green: #30d158;
+      --profit-bg: rgba(48, 209, 88, 0.14);
+      --profit-border: rgba(48, 209, 88, 0.30);
+      --loss-red: #ff453a;
+      --loss-bg: rgba(255, 69, 58, 0.14);
+      --loss-border: rgba(255, 69, 58, 0.30);
+      --badge-bg: rgba(255, 255, 255, 0.08);
+      --highlight: #5e5ce6;
+      --input-bg: rgba(255, 255, 255, 0.05);
+      --radius-outer: 16px;
+      --radius-inner: 10px;
+      --radius-pill: 9999px;
+      --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.35);
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+      --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+      --font-mono: "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+      --transition-apple: 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background-color: var(--bg-dark);
       color: var(--text-main);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      padding: 24px;
-      line-height: 1.5;
+      font-family: var(--font-display);
+      padding: 24px 32px;
+      line-height: 1.47;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     .container { max-width: 1400px; margin: 0 auto; }
 
@@ -56,69 +72,144 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       justify-content: space-between;
       align-items: center;
       margin-bottom: 24px;
-      padding-bottom: 16px;
+      padding-bottom: 18px;
       border-bottom: 1px solid var(--card-border);
     }
     .header-left h1 {
       font-size: 22px;
       font-weight: 700;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.02em;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
     .badge-live {
-      background-color: rgba(16, 185, 129, 0.2);
+      background-color: var(--profit-bg);
       color: var(--profit-green);
-      border: 1px solid var(--profit-green);
-      padding: 2px 8px;
+      border: 1px solid var(--profit-border);
+      padding: 3px 10px;
       font-size: 11px;
       font-weight: 600;
-      border-radius: 9999px;
-      letter-spacing: 0.5px;
-      animation: pulse 2s infinite;
+      border-radius: var(--radius-pill);
+      letter-spacing: 0.04em;
+      animation: pulse 2.5s infinite;
     }
     .badge-stopped {
-      background-color: rgba(239, 68, 68, 0.2);
+      background-color: var(--loss-bg);
       color: var(--loss-red);
-      border: 1px solid var(--loss-red);
-      padding: 2px 8px;
+      border: 1px solid var(--loss-border);
+      padding: 3px 10px;
       font-size: 11px;
       font-weight: 600;
-      border-radius: 9999px;
+      border-radius: var(--radius-pill);
+      letter-spacing: 0.04em;
     }
     @keyframes pulse {
       0% { opacity: 1; }
-      50% { opacity: 0.5; }
+      50% { opacity: 0.55; }
       100% { opacity: 1; }
     }
     .header-sub {
       font-size: 13px;
       color: var(--text-muted);
-      margin-top: 4px;
-      font-family: 'JetBrains Mono', monospace;
+      margin-top: 6px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
     }
     .header-right {
       text-align: right;
-      font-family: 'JetBrains Mono', monospace;
     }
     .clock-ist {
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 600;
       color: var(--accent-cyan);
+      font-family: var(--font-display);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
     }
     .session-id {
       font-size: 12px;
       color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+
+    /* Model Switcher Segmented Control */
+    .model-nav {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: rgba(118, 118, 128, 0.24);
+      padding: 4px;
+      border-radius: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .nav-tab {
+      background: transparent;
+      border: none;
+      border-radius: 9px;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+      transition: background 0.15s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
+      font-family: inherit;
+    }
+    .nav-tab:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .nav-tab.active {
+      background: #636366;
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    }
+    .tab-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .nav-tab.active .tab-dot.dot-mizan {
+      background: var(--profit-green);
+      box-shadow: 0 0 6px var(--profit-green);
+    }
+    .nav-tab.active .tab-dot.dot-xs {
+      background: var(--accent-cyan);
+      box-shadow: 0 0 6px var(--accent-cyan);
+    }
+    .nav-tab.active .tab-dot.dot-registry {
+      background: var(--highlight);
+      box-shadow: 0 0 6px var(--highlight);
+    }
+    .tab-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+    }
+    .nav-tab.active .tab-badge {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
     }
 
     /* Automation Controls Panel */
     .controls-panel {
-      background: linear-gradient(180deg, #162032 0%, #111827 100%);
-      border: 1px solid #2563eb;
-      border-radius: 12px;
-      padding: 18px 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-outer);
+      padding: 20px 24px;
       margin-bottom: 24px;
+      box-shadow: var(--shadow-card);
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto;
       gap: 16px;
@@ -129,45 +220,55 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #93c5fd;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
     }
     .control-input, .control-select {
       background: var(--input-bg);
       border: 1px solid var(--card-border);
-      border-radius: 6px;
+      border-radius: var(--radius-inner);
       color: var(--text-main);
-      padding: 8px 12px;
-      font-family: 'JetBrains Mono', monospace;
+      padding: 9px 12px;
+      font-family: var(--font-mono);
       font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      min-height: 44px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .control-input:focus, .control-select:focus {
       border-color: var(--accent-blue);
-      outline: none;
+      box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.25);
     }
     .btn-group { display: flex; gap: 10px; }
     .btn {
-      padding: 9px 18px;
+      min-height: 44px;
+      padding: 0 20px;
       font-size: 13px;
       font-weight: 600;
-      border-radius: 6px;
+      border-radius: var(--radius-inner);
       cursor: pointer;
       border: none;
-      transition: all 0.15s ease;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+      transition: background 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.1s ease;
     }
+    .btn:active { transform: scale(0.98); }
     .btn-start {
-      background: #10b981;
-      color: #064e3b;
+      background: var(--accent-blue);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(10, 132, 255, 0.35);
     }
-    .btn-start:hover { background: #059669; color: #ffffff; }
+    .btn-start:hover { background: var(--accent-blue-hover); }
     .btn-stop {
-      background: #ef4444;
-      color: #7f1d1d;
+      background: var(--loss-red);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(255, 69, 58, 0.35);
     }
-    .btn-stop:hover { background: #dc2626; color: #ffffff; }
+    .btn-stop:hover { background: #d70015; }
 
     /* KPI Grid */
     .kpi-grid {
@@ -179,37 +280,39 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     .kpi-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 18px;
-      transition: transform 0.15s ease, border-color 0.15s ease;
+      border-radius: var(--radius-outer);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.15s ease;
     }
     .kpi-card:hover {
-      border-color: #374151;
-      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.16);
     }
     .kpi-label {
-      font-size: 12px;
-      font-weight: 500;
+      font-size: 11px;
+      font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
     }
     .kpi-val {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 24px;
+      font-family: var(--font-display);
+      font-size: 26px;
       font-weight: 700;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.025em;
+      font-variant-numeric: tabular-nums;
     }
     .kpi-sub {
       font-size: 12px;
-      margin-top: 4px;
-      font-family: 'JetBrains Mono', monospace;
+      margin-top: 6px;
+      font-variant-numeric: tabular-nums;
     }
     .text-green { color: var(--profit-green); }
     .text-red { color: var(--loss-red); }
     .text-cyan { color: var(--accent-cyan); }
     .text-blue { color: var(--accent-blue); }
+    .text-muted { color: var(--text-muted); }
 
     /* Main Content Grid */
     .content-grid {
@@ -226,13 +329,14 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     .card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 12px;
+      border-radius: var(--radius-outer);
       overflow: hidden;
       margin-bottom: 24px;
+      box-shadow: var(--shadow-card);
     }
     .card-head {
-      background: var(--card-header);
-      padding: 14px 20px;
+      background: var(--card-bg);
+      padding: 16px 20px;
       border-bottom: 1px solid var(--card-border);
       display: flex;
       justify-content: space-between;
@@ -241,50 +345,53 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     .card-title {
       font-size: 14px;
       font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: -0.01em;
       color: var(--text-main);
     }
-    .card-body { padding: 16px; }
+    .card-body { padding: 20px; }
 
     /* Tables */
     table {
       width: 100%;
       border-collapse: collapse;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 13px;
+      font-variant-numeric: tabular-nums;
     }
     th {
       text-align: left;
-      padding: 10px 14px;
+      padding: 12px 16px;
       color: var(--text-muted);
       font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.05em;
       border-bottom: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.02);
     }
     th.text-right, td.text-right { text-align: right; }
     td {
-      padding: 12px 14px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--card-border-subtle);
+      color: var(--text-main);
     }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
+    tr:hover td { background-color: rgba(255, 255, 255, 0.025); }
 
     /* Badges */
     .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
       font-size: 11px;
       font-weight: 600;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.02em;
     }
-    .badge-buy { background-color: var(--profit-bg); color: var(--profit-green); border: 1px solid var(--profit-green); }
-    .badge-sell { background-color: var(--loss-bg); color: var(--loss-red); border: 1px solid var(--loss-red); }
-    .badge-tag { background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; }
-    .badge-top { background-color: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid #6366f1; }
+    .badge-buy { background-color: var(--profit-bg); color: var(--profit-green); border: 1px solid var(--profit-border); }
+    .badge-sell { background-color: var(--loss-bg); color: var(--loss-red); border: 1px solid var(--loss-border); }
+    .badge-tag { background-color: rgba(255, 255, 255, 0.06); color: var(--text-muted); border: 1px solid var(--card-border); }
+    .badge-top { background-color: rgba(94, 92, 230, 0.16); color: #8e8cf8; border: 1px solid rgba(94, 92, 230, 0.32); }
 
     /* Alpha Signals Progress Bars */
     .alpha-row {
@@ -292,23 +399,24 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       align-items: center;
       justify-content: space-between;
       padding: 10px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      font-family: 'JetBrains Mono', monospace;
+      border-bottom: 1px solid var(--card-border-subtle);
+      font-family: var(--font-mono);
       font-size: 13px;
+      font-variant-numeric: tabular-nums;
     }
     .alpha-row:last-child { border-bottom: none; }
     .alpha-bar-bg {
       flex: 1;
-      height: 8px;
-      background: #1f2937;
-      border-radius: 4px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 3px;
       margin: 0 16px;
       overflow: hidden;
     }
     .alpha-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, #3b82f6, #06b6d4);
-      border-radius: 4px;
+      background: linear-gradient(90deg, #0a84ff, #64d2ff);
+      border-radius: 3px;
     }
 
     /* Risk Metrics Box */
@@ -316,90 +424,25 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 12px;
+      font-variant-numeric: tabular-nums;
     }
     .risk-item {
-      background: #0f172a;
-      border: 1px solid #1e293b;
-      border-radius: 8px;
-      padding: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-inner);
+      padding: 14px;
     }
-    .risk-item-label { color: var(--text-muted); font-size: 11px; margin-bottom: 4px; }
-    .risk-item-val { font-size: 14px; font-weight: 600; }
+    .risk-item-label { color: var(--text-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .risk-item-val { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
     /* Empty state */
     .empty-state {
-      padding: 30px;
+      padding: 36px;
       text-align: center;
       color: var(--text-muted);
       font-style: italic;
-    }
-    /* Model Navigation Bar */
-    .model-nav {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 24px;
-      border-bottom: 1px solid var(--card-border);
-      padding-bottom: 14px;
-      flex-wrap: wrap;
-    }
-    .nav-tab {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      color: var(--text-muted);
-      padding: 10px 18px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: all 0.15s ease;
-    }
-    .nav-tab:hover {
-      background: #1f2937;
-      color: var(--text-main);
-      border-color: #374151;
-    }
-    .nav-tab.active {
-      background: #1e293b;
-      color: #ffffff;
-      border-color: var(--accent-blue);
-      box-shadow: 0 0 12px rgba(59, 130, 246, 0.25);
-    }
-    .tab-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #64748b;
-    }
-    .nav-tab.active .tab-dot.dot-mizan {
-      background: var(--profit-green);
-      box-shadow: 0 0 8px var(--profit-green);
-    }
-    .nav-tab.active .tab-dot.dot-xs {
-      background: var(--accent-cyan);
-      box-shadow: 0 0 8px var(--accent-cyan);
-    }
-    .nav-tab.active .tab-dot.dot-registry {
-      background: var(--highlight);
-      box-shadow: 0 0 8px var(--highlight);
-    }
-    .tab-badge {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: #374151;
-      color: #d1d5db;
-    }
-    .nav-tab.active .tab-badge {
-      background: rgba(59, 130, 246, 0.2);
-      color: #93c5fd;
-      border: 1px solid rgba(59, 130, 246, 0.4);
     }
   </style>
 </head>
@@ -621,16 +664,16 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     <div class="card" style="border-left: 4px solid var(--accent-cyan); margin-bottom: 24px;">
       <div class="card-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
         <div>
-          <h2 style="font-size: 16px; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+          <h2 style="font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
             Mīzān XS-Monthly Momentum Strategy
-            <span class="badge" style="background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); border: 1px solid var(--accent-cyan);">21-Day Hold · Top 20%</span>
-            <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">RESEARCH ONLY · NO REAL ORDERS</span>
+            <span class="badge" style="background: rgba(100, 210, 255, 0.16); color: var(--accent-cyan); border: 1px solid rgba(100, 210, 255, 0.32);">21-Day Hold · Top 20%</span>
+            <span class="badge" style="background: var(--loss-bg); color: var(--loss-red); border: 1px solid var(--loss-border);">RESEARCH ONLY · NO REAL ORDERS</span>
           </h2>
-          <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace;">
+          <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono);">
             Cross-sectional momentum ranking on NIFTY 500 universe · 0.224% round-trip friction · Forward paper watch
           </div>
         </div>
-        <div style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);">
+        <div style="text-align: right; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);">
           Task: <span style="color: var(--accent-cyan);">QuantOS-XSMonthly-PaperWatch</span><br>
           Cadence: Mon–Fri 16:00 IST
         </div>
@@ -666,7 +709,7 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       </div>
     </section>
 
-    <div id="xs-unpriced-note" hidden style="margin: 0 0 16px; padding: 10px 14px; border-left: 3px solid var(--accent-amber, #d98e04); background: rgba(217, 142, 4, 0.08); font-size: 12px; line-height: 1.5;"></div>
+    <div id="xs-unpriced-note" hidden style="margin: 0 0 16px; padding: 12px 16px; border-left: 3px solid #ff9f0a; background: rgba(255, 159, 10, 0.12); border-radius: 0 var(--radius-inner) var(--radius-inner) 0; font-size: 12px; line-height: 1.5;"></div>
 
     <!-- XS Content Grid -->
     <div class="content-grid">
@@ -780,56 +823,56 @@ HTML_DASHBOARD = """<!DOCTYPE html>
               <td><code>cand_mizan_v1</code></td>
               <td>15-feature cross-sectional pooled L2 ridge regression · Intraday to multi-day</td>
               <td>Sharpe -0.4108, Deflated Sharpe 0.1760 (fails 0.95 gate)</td>
-              <td><span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">RESEARCH_ONLY</span></td>
-              <td><span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">Paper Pilot Active</span><br><span style="font-size: 10px; color: var(--text-muted);">Refused on live routing</span></td>
+              <td><span class="badge" style="background: var(--loss-bg); color: var(--loss-red); border: 1px solid var(--loss-border);">RESEARCH_ONLY</span></td>
+              <td><span class="badge" style="background: var(--profit-bg); color: var(--profit-green); border: 1px solid var(--profit-border);">Paper Pilot Active</span><br><span style="font-size: 10px; color: var(--text-muted);">Refused on live routing</span></td>
             </tr>
             <tr>
               <td><strong>Mīzān XS-Monthly Momentum</strong><br><span style="color: var(--text-muted); font-size: 11px;">quant_system.research_xs_monthly</span></td>
               <td><code>xs_monthly_top20</code></td>
               <td>Cross-sectional top-20% relative momentum ranker · 21 sessions (~1 month)</td>
               <td>Long-only +1.74%/period vs Market +1.69%/period; Selection edge +5 bps (noise); Long-short Sharpe -0.12</td>
-              <td><span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">RESEARCH_ONLY</span></td>
-              <td><span class="badge" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee;">Paper Watch Active</span><br><span style="font-size: 10px; color: var(--text-muted);">Scheduled out-of-sample test</span></td>
+              <td><span class="badge" style="background: var(--loss-bg); color: var(--loss-red); border: 1px solid var(--loss-border);">RESEARCH_ONLY</span></td>
+              <td><span class="badge" style="background: rgba(100, 210, 255, 0.16); color: var(--accent-cyan); border: 1px solid rgba(100, 210, 255, 0.32);">Paper Watch Active</span><br><span style="font-size: 10px; color: var(--text-muted);">Scheduled out-of-sample test</span></td>
             </tr>
             <tr>
               <td><strong>Governed Single-Name Ridge</strong><br><span style="color: var(--text-muted); font-size: 11px;">quant_system.modeling.ridge</span></td>
               <td><code>cand_ridge_v1</code></td>
               <td>6-feature technical linear model with L2 regularization · Daily</td>
               <td>INFY Sharpe -0.704; NIFTY 50 median Sharpe -0.228; Best DSR 0.218 vs 0.95 gate. No edge after 0.224% costs.</td>
-              <td><span class="badge" style="background: rgba(156, 163, 175, 0.2); color: #9ca3af;">RETIRED / RESEARCH_ONLY</span></td>
-              <td><span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">Blocked</span><br><span style="font-size: 10px; color: var(--text-muted);">Refused at promotion gate</span></td>
+              <td><span class="badge" style="background: rgba(255, 255, 255, 0.08); color: var(--text-muted); border: 1px solid var(--card-border);">RETIRED / RESEARCH_ONLY</span></td>
+              <td><span class="badge" style="background: var(--loss-bg); color: var(--loss-red); border: 1px solid var(--loss-border);">Blocked</span><br><span style="font-size: 10px; color: var(--text-muted);">Refused at promotion gate</span></td>
             </tr>
             <tr>
               <td><strong>Equity Dual Momentum</strong><br><span style="color: var(--text-muted); font-size: 11px;">quant_system.strategies.equity_momentum</span></td>
               <td><code>EquityDualMomentum</code></td>
               <td>Dual SMA trend filter (20/50) + 50-day relative momentum ranker · Swing</td>
               <td>Median Sharpe -2.2591 across NIFTY 50; beaten by losing Ridge on 26/40 names due to friction and whipsaws.</td>
-              <td><span class="badge" style="background: rgba(156, 163, 175, 0.2); color: #9ca3af;">INFERIOR BASELINE</span></td>
-              <td><span class="badge" style="background: rgba(156, 163, 175, 0.2); color: #9ca3af;">Registry Only</span></td>
+              <td><span class="badge" style="background: rgba(255, 255, 255, 0.08); color: var(--text-muted); border: 1px solid var(--card-border);">INFERIOR BASELINE</span></td>
+              <td><span class="badge" style="background: rgba(255, 255, 255, 0.08); color: var(--text-muted); border: 1px solid var(--card-border);">Registry Only</span></td>
             </tr>
             <tr>
               <td><strong>Rolling ML Equity / AI-Enhanced</strong><br><span style="color: var(--text-muted); font-size: 11px;">quant_system.strategies.ml_equity</span></td>
               <td><code>RollingRidgeClassifier</code></td>
               <td>Rolling unpurged ridge classifier with technical indicators & multi-agent AI advisory</td>
               <td>Lacks purging, embargoing, and multiplicity accounting.</td>
-              <td><span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">RESEARCH_ONLY</span></td>
-              <td><span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">Blocked</span><br><span style="font-size: 10px; color: var(--text-muted);">Refused at execution boundary (85ff535)</span></td>
+              <td><span class="badge" style="background: var(--loss-bg); color: var(--loss-red); border: 1px solid var(--loss-border);">RESEARCH_ONLY</span></td>
+              <td><span class="badge" style="background: var(--loss-bg); color: var(--loss-red); border: 1px solid var(--loss-border);">Blocked</span><br><span style="font-size: 10px; color: var(--text-muted);">Refused at execution boundary (85ff535)</span></td>
             </tr>
             <tr>
               <td><strong>Intraday ATM Straddle</strong><br><span style="color: var(--text-muted); font-size: 11px;">quant_system.strategies.options_straddle</span></td>
               <td><code>IntradayATMStraddle</code></td>
               <td>Options theta writing: Sell 09:20 IST ATM Call/Put, 25% stop-loss, 15:15 IST square-off</td>
               <td>Code complete; not yet run through governed historical options evidence pipeline.</td>
-              <td><span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">UNADJUDICATED</span></td>
-              <td><span class="badge" style="background: rgba(156, 163, 175, 0.2); color: #9ca3af;">Registry Only</span></td>
+              <td><span class="badge" style="background: rgba(255, 159, 10, 0.16); color: #ff9f0a; border: 1px solid rgba(255, 159, 10, 0.32);">UNADJUDICATED</span></td>
+              <td><span class="badge" style="background: rgba(255, 255, 255, 0.08); color: var(--text-muted); border: 1px solid var(--card-border);">Registry Only</span></td>
             </tr>
             <tr>
               <td><strong>Directional Vertical Spreads</strong><br><span style="color: var(--text-muted); font-size: 11px;">quant_system.strategies.options_spreads</span></td>
               <td><code>DirectionalVerticalSpreads</code></td>
               <td>Defined-risk 2-leg vertical options spreads (Bull Call / Bear Put)</td>
               <td>Code complete; awaiting point-in-time options chain datasets.</td>
-              <td><span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">UNADJUDICATED</span></td>
-              <td><span class="badge" style="background: rgba(156, 163, 175, 0.2); color: #9ca3af;">Registry Only</span></td>
+              <td><span class="badge" style="background: rgba(255, 159, 10, 0.16); color: #ff9f0a; border: 1px solid rgba(255, 159, 10, 0.32);">UNADJUDICATED</span></td>
+              <td><span class="badge" style="background: rgba(255, 255, 255, 0.08); color: var(--text-muted); border: 1px solid var(--card-border);">Registry Only</span></td>
             </tr>
           </tbody>
         </table>

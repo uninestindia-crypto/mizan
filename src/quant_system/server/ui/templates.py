@@ -64,7 +64,7 @@ def render_nav_tabs(active_tab_id: str = JOURNEY_INGESTION_ID) -> str:
 
     # Direct link to Live Trading & P&L Monitor screen
     tab_html.append(
-        '<a href="/live" class="tab-btn" style="text-decoration:none; color: var(--accent-cyan, #06b6d4); font-weight:600;" '
+        '<a href="/live" class="tab-btn" style="text-decoration:none; color: var(--color-accent); font-weight:600;" '
         'title="Open Live Trading & P&L Monitor Screen">📈 Live Trading & P&L</a>'
     )
 

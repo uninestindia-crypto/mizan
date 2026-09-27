@@ -1,0 +1,1215 @@
+{
+  "arm": "noise",
+  "code_revision": "c270017b3b6a9d8130ad57d157886985ca4f70d5",
+  "corporate_action_authority_sha256": "e68c8e1c2b7fec3a7840cdef06a189e602cd78771a747cf145a1fafe02ecff0a",
+  "declared_trials": 9,
+  "excluded_not_universe_bound": [],
+  "feature_store": "D:/quant_system/data/evidence/feature-store/mizan-adjusted-v1/mizan_feature_store.csv.gz",
+  "generated_at": "2026-09-25T09:12:29.495098+00:00",
+  "holdout_sessions": 252,
+  "is_control": true,
+  "noise_seed": 20260910,
+  "ridge_penalty": null,
+  "subset": [
+    "RELIANCE",
+    "HDFCBANK",
+    "ICICIBANK",
+    "SBIN",
+    "INFY",
+    "AXISBANK",
+    "TCS",
+    "BAJFINANCE",
+    "TMPV",
+    "BHARTIARTL",
+    "MARUTI",
+    "TATASTEEL",
+    "KOTAKBANK",
+    "LT",
+    "ITC",
+    "HINDUNILVR",
+    "M&M",
+    "SUNPHARMA",
+    "HINDALCO",
+    "HCLTECH",
+    "TITAN",
+    "TECHM",
+    "ASIANPAINT",
+    "ADANIENT",
+    "ADANIPORTS",
+    "BAJAJFINSV",
+    "ULTRACEMCO",
+    "WIPRO",
+    "POWERGRID",
+    "DRREDDY",
+    "ONGC",
+    "SHRIRAMFIN",
+    "NTPC",
+    "INDIGO",
+    "JSWSTEEL",
+    "BAJAJ-AUTO",
+    "APOLLOHOSP",
+    "COALINDIA",
+    "CIPLA",
+    "EICHERMOT",
+    "BEL",
+    "GRASIM",
+    "TATACONSUM",
+    "NESTLEIND",
+    "TRENT"
+  ],
+  "subset_rule": "research-universe names with a universe-bound governed acquisition, turnover-ranked",
+  "trials": {
+    "hold1": {
+      "abstention_applied_per_fold": [
+        {
+          "basis": "no earlier fold; held cash",
+          "fold": "0",
+          "threshold": ""
+        },
+        {
+          "basis": "folds < 1 only",
+          "fold": "1",
+          "threshold": "0.020"
+        },
+        {
+          "basis": "folds < 2 only",
+          "fold": "2",
+          "threshold": "0.012"
+        },
+        {
+          "basis": "folds < 3 only",
+          "fold": "3",
+          "threshold": "0.012"
+        },
+        {
+          "basis": "folds < 4 only",
+          "fold": "4",
+          "threshold": "0.020"
+        },
+        {
+          "basis": "folds < 5 only",
+          "fold": "5",
+          "threshold": "0.020"
+        },
+        {
+          "basis": "folds < 6 only",
+          "fold": "6",
+          "threshold": "0.020"
+        },
+        {
+          "basis": "folds < 7 only",
+          "fold": "7",
+          "threshold": "0.020"
+        },
+        {
+          "basis": "folds < 8 only",
+          "fold": "8",
+          "threshold": "0.020"
+        },
+        {
+          "basis": "folds < 9 only",
+          "fold": "9",
+          "threshold": "0.020"
+        },
+        {
+          "basis": "folds < 10 only",
+          "fold": "10",
+          "threshold": "0.020"
+        }
+      ],
+      "abstention_calibrated_on": "walk-forward validation folds, POOLED - disclosure only, not applied (holdout untouched)",
+      "abstention_grid": [
+        {
+          "mean_per_decision": "-0.0005855547758541462552801914521",
+          "threshold": "0",
+          "trades": 31124
+        },
+        {
+          "mean_per_decision": "-0.0005653972733062751963508456337",
+          "threshold": "0.001",
+          "trades": 29900
+        },
+        {
+          "mean_per_decision": "-0.0005548758283194294984018888229",
+          "threshold": "0.002",
+          "trades": 28746
+        },
+        {
+          "mean_per_decision": "-0.0005301651387221856378792502530",
+          "threshold": "0.003",
+          "trades": 27570
+        },
+        {
+          "mean_per_decision": "-0.0004719307496420552191580604231",
+          "threshold": "0.005",
+          "trades": 25208
+        },
+        {
+          "mean_per_decision": "-0.0003969608116359358185702124926",
+          "threshold": "0.008",
+          "trades": 21844
+        },
+        {
+          "mean_per_decision": "-0.0003026551044165207754453028381",
+          "threshold": "0.012",
+          "trades": 17532
+        },
+        {
+          "mean_per_decision": "-0.0001685956875311993061467049999",
+          "threshold": "0.020",
+          "trades": 10544
+        }
+      ],
+      "abstention_pooled_is_disclosure_only": true,
+      "abstention_refused": [],
+      "abstention_threshold": "0.020",
+      "deflated_sharpe_ratio": 3.2e-05,
+      "development_decision_dates": 2173,
+      "dsr_periods_per_year": 252,
+      "dsr_sample_periods": 1386,
+      "embargoed_rows": 990,
+      "folds": 11,
+      "gate_max_drawdown": "0.15",
+      "gate_min_deflated_sharpe": "0.95",
+      "gate_passed": false,
+      "gate_policy_id": "short-horizon-research-v1",
+      "held_sessions": 1,
+      "horizon_sessions": 2,
+      "missing_prediction_fraction": 0.0,
+      "missing_predictions": 0,
+      "multiplicity_count": 9,
+      "noise_distribution": {
+        "draws": [
+          {
+            "deflated_sharpe_ratio": 3.2e-05,
+            "exposure": 0.1742985175310387,
+            "seed": 0,
+            "sharpe": -1.0599584581697967
+          },
+          {
+            "deflated_sharpe_ratio": 2e-06,
+            "exposure": 0.15092915308138322,
+            "seed": 1,
+            "sharpe": -1.3433310061047572
+          },
+          {
+            "deflated_sharpe_ratio": 0.0,
+            "exposure": 0.15576364015997174,
+            "seed": 2,
+            "sharpe": -1.5815058875240529
+          },
+          {
+            "deflated_sharpe_ratio": 0.0,
+            "exposure": 0.19982011210870368,
+            "seed": 3,
+            "sharpe": -1.4611224149219868
+          },
+          {
+            "deflated_sharpe_ratio": 3.8e-05,
+            "exposure": 0.15369171712629093,
+            "seed": 4,
+            "sharpe": -1.0405375246822273
+          },
+          {
+            "deflated_sharpe_ratio": 3e-05,
+            "exposure": 0.15589213151089767,
+            "seed": 5,
+            "sharpe": -1.064764432044856
+          },
+          {
+            "deflated_sharpe_ratio": 2e-06,
+            "exposure": 0.1554424117826569,
+            "seed": 6,
+            "sharpe": -1.3192365294548118
+          },
+          {
+            "deflated_sharpe_ratio": 0.0,
+            "exposure": 0.1523586193604343,
+            "seed": 7,
+            "sharpe": -1.6260510509853343
+          },
+          {
+            "deflated_sharpe_ratio": 1e-05,
+            "exposure": 0.15354716435649926,
+            "seed": 8,
+            "sharpe": -1.175202496790557
+          },
+          {
+            "deflated_sharpe_ratio": 1.8e-05,
+            "exposure": 0.18562181783138723,
+            "seed": 9,
+            "sharpe": -1.113551343708394
+          },
+          {
+            "deflated_sharpe_ratio": 4e-06,
+            "exposure": 0.15094521450024895,
+            "seed": 10,
+            "sharpe": -1.2536461555907765
+          },
+          {
+            "deflated_sharpe_ratio": 1.2e-05,
+            "exposure": 0.1525513563868232,
+            "seed": 11,
+            "sharpe": -1.1539099309431835
+          },
+          {
+            "deflated_sharpe_ratio": 2.1e-05,
+            "exposure": 0.15107370585117488,
+            "seed": 12,
+            "sharpe": -1.099118744638766
+          },
+          {
+            "deflated_sharpe_ratio": 3e-06,
+            "exposure": 0.18811133775557734,
+            "seed": 13,
+            "sharpe": -1.2882559004431657
+          },
+          {
+            "deflated_sharpe_ratio": 1.2e-05,
+            "exposure": 0.16215608486853728,
+            "seed": 14,
+            "sharpe": -1.1553724434627362
+          },
+          {
+            "deflated_sharpe_ratio": 8.9e-05,
+            "exposure": 0.15147524132281845,
+            "seed": 15,
+            "sharpe": -0.951289502738759
+          },
+          {
+            "deflated_sharpe_ratio": 1e-06,
+            "exposure": 0.15388445415267984,
+            "seed": 16,
+            "sharpe": -1.3797956941680343
+          },
+          {
+            "deflated_sharpe_ratio": 0.0,
+            "exposure": 0.1549926920544161,
+            "seed": 17,
+            "sharpe": -1.4801591243980756
+          },
+          {
+            "deflated_sharpe_ratio": 7e-06,
+            "exposure": 0.15500875347328183,
+            "seed": 18,
+            "sharpe": -1.2023404043017913
+          },
+          {
+            "deflated_sharpe_ratio": 1e-06,
+            "exposure": 0.1522461894283741,
+            "seed": 19,
+            "sharpe": -1.4299361597620057
+          },
+          {
+            "deflated_sharpe_ratio": 5.8e-05,
+            "exposure": 0.17216234882189493,
+            "seed": 20,
+            "sharpe": -0.9971533603344754
+          },
+          {
+            "deflated_sharpe_ratio": 3.3e-05,
+            "exposure": 0.15264772490001766,
+            "seed": 21,
+            "sharpe": -1.0561604374218336
+          },
+          {
+            "deflated_sharpe_ratio": 1e-06,
+            "exposure": 0.1560848685372866,
+            "seed": 22,
+            "sharpe": -1.3821640860302766
+          },
+          {
+            "deflated_sharpe_ratio": 9e-06,
+            "exposure": 0.15231043510383707,
+            "seed": 23,
+            "sharpe": -1.1857504105245993
+          },
+          {
+            "deflated_sharpe_ratio": 9e-05,
+            "exposure": 0.15274409341321213,
+            "seed": 24,
+            "sharpe": -0.9505622756306061
+          },
+          {
+            "deflated_sharpe_ratio": 0.000156,
+            "exposure": 0.1516037326737444,
+            "seed": 25,
+            "sharpe": -0.8903279004386313
+          },
+          {
+            "deflated_sharpe_ratio": 0.00037,
+            "exposure": 0.16406739371356066,
+            "seed": 26,
+            "sharpe": -0.7914777891793056
+          },
+          {
+            "deflated_sharpe_ratio": 0.000139,
+            "exposure": 0.15361141003196221,
+            "seed": 27,
+            "sharpe": -0.9029950335772828
+          },
+          {
+            "deflated_sharpe_ratio": 9e-06,
+            "exposure": 0.17543887827050642,
+            "seed": 28,
+            "sharpe": -1.1825085636102792
+          },
+          {
+            "deflated_sharpe_ratio": 0.0,
+            "exposure": 0.1518285925378648,
+            "seed": 29,
+            "sharpe": -1.5493817384483362
+          }
+        ],
+        "dsr_max": 0.00037,
+        "dsr_median": 1e-05,
+        "dsr_min": 0.0,
+        "dsr_p90": 9e-05,
+        "seeds": 30,
+        "sharpe_max": -0.7914777891793056,
+        "sharpe_median": -1.175202496790557,
+        "sharpe_min": -1.6260510509853343
+      },
+      "purged_rows": 990,
+      "refused_constituents": [],
+      "strategies": [
+        {
+          "decisions": 62261,
+          "dropped_dates": 0,
+          "exposure": 0.174299,
+          "hit_rate": 0.454294,
+          "max_drawdown": 0.218948,
+          "mean_net_return_per_decision": "-0.0001498770249704469892870336165",
+          "portfolio_periods": 1386,
+          "sharpe": -1.059958,
+          "strategy_id": "CANDIDATE",
+          "total_net_return": "-0.19068323267011433",
+          "trades": 10852
+        },
+        {
+          "decisions": 62261,
+          "dropped_dates": 0,
+          "exposure": 0.499896,
+          "hit_rate": 0.449782,
+          "max_drawdown": 0.576343,
+          "mean_net_return_per_decision": "-0.0005855547758541462552801914521",
+          "portfolio_periods": 1386,
+          "sharpe": -1.460801,
+          "strategy_id": "CANDIDATE_NO_ABSTENTION",
+          "total_net_return": "-0.5686031441845618",
+          "trades": 31124
+        },
+        {
+          "decisions": 62261,
+          "dropped_dates": 0,
+          "exposure": 0.0,
+          "hit_rate": 0.0,
+          "max_drawdown": 0.0,
+          "mean_net_return_per_decision": "0",
+          "portfolio_periods": 1386,
+          "sharpe": 0.0,
+          "strategy_id": "CASH",
+          "total_net_return": "0.0",
+          "trades": 0
+        },
+        {
+          "decisions": 62261,
+          "dropped_dates": 0,
+          "exposure": 1.0,
+          "hit_rate": 0.451743,
+          "max_drawdown": 0.814125,
+          "mean_net_return_per_decision": "-0.001108733716461717608133502514",
+          "portfolio_periods": 1386,
+          "sharpe": -1.432049,
+          "strategy_id": "ALWAYS_TRADE",
+          "total_net_return": "-0.806862800835741",
+          "trades": 62261
+        },
+        {
+          "decisions": 62261,
+          "dropped_dates": 0,
+          "exposure": 0.51774,
+          "hit_rate": 0.441942,
+          "max_drawdown": 0.572749,
+          "mean_net_return_per_decision": "-0.0005397797987952008480429161112",
+          "portfolio_periods": 1386,
+          "sharpe": -1.28324,
+          "strategy_id": "PREVIOUS_SIGN",
+          "total_net_return": "-0.541649427715265",
+          "trades": 32235
+        }
+      ],
+      "train_rows": 680737,
+      "validation_rows": 62261,
+      "verdict": "RESEARCH_ONLY"
+    },
+    "hold2": {
+      "abstention_applied_per_fold": [
+        {
+          "basis": "no earlier fold; held cash",
+          "fold": "0",
+          "threshold": ""
+        },
+        {
+          "basis": "folds < 1 only",
+          "fold": "1",
+          "threshold": "0.020"
+        },
+        {
+          "basis": "folds < 2 only",
+          "fold": "2",
+          "threshold": "0.002"
+        },
+        {
+          "basis": "folds < 3 only",
+          "fold": "3",
+          "threshold": "0.001"
+        },
+        {
+          "basis": "folds < 4 only",
+          "fold": "4",
+          "threshold": "0"
+        },
+        {
+          "basis": "folds < 5 only",
+          "fold": "5",
+          "threshold": "0.001"
+        },
+        {
+          "basis": "folds < 6 only",
+          "fold": "6",
+          "threshold": "0.001"
+        },
+        {
+          "basis": "folds < 7 only",
+          "fold": "7",
+          "threshold": "0.001"
+        },
+        {
+          "basis": "folds < 8 only",
+          "fold": "8",
+          "threshold": "0.001"
+        },
+        {
+          "basis": "folds < 9 only",
+          "fold": "9",
+          "threshold": "0"
+        },
+        {
+          "basis": "folds < 10 only",
+          "fold": "10",
+          "threshold": "0.002"
+        }
+      ],
+      "abstention_calibrated_on": "walk-forward validation folds, POOLED - disclosure only, not applied (holdout untouched)",
+      "abstention_grid": [
+        {
+          "mean_per_decision": "-0.00007812216211265139589423972757",
+          "threshold": "0",
+          "trades": 31115
+        },
+        {
+          "mean_per_decision": "-0.00007640435066672021074951007164",
+          "threshold": "0.001",
+          "trades": 30238
+        },
+        {
+          "mean_per_decision": "-0.00007350099651307546503035949497",
+          "threshold": "0.002",
+          "trades": 29386
+        },
+        {
+          "mean_per_decision": "-0.00007859992707446911041860763967",
+          "threshold": "0.003",
+          "trades": 28532
+        },
+        {
+          "mean_per_decision": "-0.00009029195969157001959713432069",
+          "threshold": "0.005",
+          "trades": 26898
+        },
+        {
+          "mean_per_decision": "-0.0001433797537505220548077231985",
+          "threshold": "0.008",
+          "trades": 24384
+        },
+        {
+          "mean_per_decision": "-0.0001483165166427217528190959617",
+          "threshold": "0.012",
+          "trades": 21093
+        },
+        {
+          "mean_per_decision": "-0.0001100512636407138497124682751",
+          "threshold": "0.020",
+          "trades": 15177
+        }
+      ],
+      "abstention_pooled_is_disclosure_only": true,
+      "abstention_refused": [],
+      "abstention_threshold": "0.002",
+      "deflated_sharpe_ratio": 0.071233,
+      "development_decision_dates": 2172,
+      "dsr_periods_per_year": 126,
+      "dsr_sample_periods": 693,
+      "embargoed_rows": 1485,
+      "folds": 11,
+      "gate_max_drawdown": "0.15",
+      "gate_min_deflated_sharpe": "0.95",
+      "gate_passed": false,
+      "gate_policy_id": "short-horizon-research-v1",
+      "held_sessions": 2,
+      "horizon_sessions": 3,
+      "missing_prediction_fraction": 0.0,
+      "missing_predictions": 0,
+      "multiplicity_count": 9,
+      "noise_distribution": {
+        "draws": [
+          {
+            "deflated_sharpe_ratio": 0.071233,
+            "exposure": 0.41984450798342277,
+            "seed": 0,
+            "sharpe": 0.02308783719510594
+          },
+          {
+            "deflated_sharpe_ratio": 0.020369,
+            "exposure": 0.34555209303819834,
+            "seed": 1,
+            "sharpe": -0.22428373476989724
+          },
+          {
+            "deflated_sharpe_ratio": 0.050472,
+            "exposure": 0.40341182895878175,
+            "seed": 2,
+            "sharpe": -0.05100023420139612
+          },
+          {
+            "deflated_sharpe_ratio": 0.056378,
+            "exposure": 0.3625791113824011,
+            "seed": 3,
+            "sharpe": -0.027801269066458315
+          },
+          {
+            "deflated_sharpe_ratio": 0.206236,
+            "exposure": 0.41727439200693933,
+            "seed": 4,
+            "sharpe": 0.2991583306234468
+          },
+          {
+            "deflated_sharpe_ratio": 0.12937,
+            "exposure": 0.3705625341343528,
+            "seed": 5,
+            "sharpe": 0.16698896307456446
+          },
+          {
+            "deflated_sharpe_ratio": 0.02824,
+            "exposure": 0.32026857711954254,
+            "seed": 6,
+            "sharpe": -0.16498388210994697
+          },
+          {
+            "deflated_sharpe_ratio": 0.124036,
+            "exposure": 0.40541973206540943,
+            "seed": 7,
+            "sharpe": 0.1560371286626862
+          },
+          {
+            "deflated_sharpe_ratio": 0.038958,
+            "exposure": 0.32132874995984195,
+            "seed": 8,
+            "sharpe": -0.10333731347061235
+          },
+          {
+            "deflated_sharpe_ratio": 0.190548,
+            "exposure": 0.3726507533652456,
+            "seed": 9,
+            "sharpe": 0.2751279992366235
+          },
+          {
+            "deflated_sharpe_ratio": 0.039686,
+            "exposure": 0.2507148135059595,
+            "seed": 10,
+            "sharpe": -0.09968057459510923
+          },
+          {
+            "deflated_sharpe_ratio": 0.086106,
+            "exposure": 0.3351913130079995,
+            "seed": 11,
+            "sharpe": 0.06641061266280203
+          },
+          {
+            "deflated_sharpe_ratio": 0.115835,
+            "exposure": 0.41089729174028977,
+            "seed": 12,
+            "sharpe": 0.1385367450016321
+          },
+          {
+            "deflated_sharpe_ratio": 0.065886,
+            "exposure": 0.409547980852636,
+            "seed": 13,
+            "sharpe": 0.005813921695420354
+          },
+          {
+            "deflated_sharpe_ratio": 0.041166,
+            "exposure": 0.26814341247148776,
+            "seed": 14,
+            "sharpe": -0.09241097810684204
+          },
+          {
+            "deflated_sharpe_ratio": 0.18485,
+            "exposure": 0.376666559578501,
+            "seed": 15,
+            "sharpe": 0.26610256566493173
+          },
+          {
+            "deflated_sharpe_ratio": 0.048537,
+            "exposure": 0.39406303209432325,
+            "seed": 16,
+            "sharpe": -0.05907502352210368
+          },
+          {
+            "deflated_sharpe_ratio": 0.046375,
+            "exposure": 0.40628714620747264,
+            "seed": 17,
+            "sharpe": -0.06840510010853673
+          },
+          {
+            "deflated_sharpe_ratio": 0.138161,
+            "exposure": 0.4038134095801073,
+            "seed": 18,
+            "sharpe": 0.1843744978972812
+          },
+          {
+            "deflated_sharpe_ratio": 0.049152,
+            "exposure": 0.3953159636328589,
+            "seed": 19,
+            "sharpe": -0.05648284914201023
+          },
+          {
+            "deflated_sharpe_ratio": 0.137266,
+            "exposure": 0.32529636649853827,
+            "seed": 20,
+            "sharpe": 0.1826409592471993
+          },
+          {
+            "deflated_sharpe_ratio": 0.049256,
+            "exposure": 0.28807787451408745,
+            "seed": 21,
+            "sharpe": -0.05604546981856231
+          },
+          {
+            "deflated_sharpe_ratio": 0.065577,
+            "exposure": 0.41703344363414396,
+            "seed": 22,
+            "sharpe": 0.004783851252594778
+          },
+          {
+            "deflated_sharpe_ratio": 0.0466,
+            "exposure": 0.3873486041057603,
+            "seed": 23,
+            "sharpe": -0.0674155158973751
+          },
+          {
+            "deflated_sharpe_ratio": 0.10201,
+            "exposure": 0.4298197706171491,
+            "seed": 24,
+            "sharpe": 0.10692055449376879
+          },
+          {
+            "deflated_sharpe_ratio": 0.04913,
+            "exposure": 0.3919266231888714,
+            "seed": 25,
+            "sharpe": -0.0565742769471295
+          },
+          {
+            "deflated_sharpe_ratio": 0.096279,
+            "exposure": 0.35056381919234103,
+            "seed": 26,
+            "sharpe": 0.092898150983741
+          },
+          {
+            "deflated_sharpe_ratio": 0.119825,
+            "exposure": 0.4265428727471327,
+            "seed": 27,
+            "sharpe": 0.14715692408204997
+          },
+          {
+            "deflated_sharpe_ratio": 0.096613,
+            "exposure": 0.3898544671828316,
+            "seed": 28,
+            "sharpe": 0.09373230271697075
+          },
+          {
+            "deflated_sharpe_ratio": 0.101601,
+            "exposure": 0.42185241109005045,
+            "seed": 29,
+            "sharpe": 0.10593944584606338
+          }
+        ],
+        "dsr_max": 0.206236,
+        "dsr_median": 0.071233,
+        "dsr_min": 0.020369,
+        "dsr_p90": 0.138161,
+        "seeds": 30,
+        "sharpe_max": 0.2991583306234468,
+        "sharpe_median": 0.02308783719510594,
+        "sharpe_min": -0.22428373476989724
+      },
+      "purged_rows": 1485,
+      "refused_constituents": [],
+      "strategies": [
+        {
+          "decisions": 62254,
+          "dropped_dates": 0,
+          "exposure": 0.419845,
+          "hit_rate": 0.485327,
+          "max_drawdown": 0.168882,
+          "mean_net_return_per_decision": "0.00001268431712731712018504835031",
+          "portfolio_periods": 693,
+          "sharpe": 0.023088,
+          "strategy_id": "CANDIDATE",
+          "total_net_return": "-0.0021008788493681596",
+          "trades": 26137
+        },
+        {
+          "decisions": 62254,
+          "dropped_dates": 0,
+          "exposure": 0.499807,
+          "hit_rate": 0.483529,
+          "max_drawdown": 0.23748,
+          "mean_net_return_per_decision": "-0.00007812216211265139589423972757",
+          "portfolio_periods": 693,
+          "sharpe": -0.120176,
+          "strategy_id": "CANDIDATE_NO_ABSTENTION",
+          "total_net_return": "-0.07156291707613593",
+          "trades": 31115
+        },
+        {
+          "decisions": 62254,
+          "dropped_dates": 0,
+          "exposure": 0.0,
+          "hit_rate": 0.0,
+          "max_drawdown": 0.0,
+          "mean_net_return_per_decision": "0",
+          "portfolio_periods": 693,
+          "sharpe": 0.0,
+          "strategy_id": "CASH",
+          "total_net_return": "0.0",
+          "trades": 0
+        },
+        {
+          "decisions": 62254,
+          "dropped_dates": 0,
+          "exposure": 1.0,
+          "hit_rate": 0.485382,
+          "max_drawdown": 0.394599,
+          "mean_net_return_per_decision": "0.000002195375248530214925948533428",
+          "portfolio_periods": 693,
+          "sharpe": 0.000363,
+          "strategy_id": "ALWAYS_TRADE",
+          "total_net_return": "-0.06969866407964787",
+          "trades": 62254
+        },
+        {
+          "decisions": 62254,
+          "dropped_dates": 0,
+          "exposure": 0.517686,
+          "hit_rate": 0.47437,
+          "max_drawdown": 0.259766,
+          "mean_net_return_per_decision": "-0.00006716893291968387573489253703",
+          "portfolio_periods": 693,
+          "sharpe": -0.109037,
+          "strategy_id": "PREVIOUS_SIGN",
+          "total_net_return": "-0.0631917318877715",
+          "trades": 32228
+        }
+      ],
+      "train_rows": 679660,
+      "validation_rows": 62254,
+      "verdict": "RESEARCH_ONLY"
+    },
+    "hold3": {
+      "abstention_applied_per_fold": [
+        {
+          "basis": "no earlier fold; held cash",
+          "fold": "0",
+          "threshold": ""
+        },
+        {
+          "basis": "folds < 1 only",
+          "fold": "1",
+          "threshold": "0.020"
+        },
+        {
+          "basis": "folds < 2 only",
+          "fold": "2",
+          "threshold": "0"
+        },
+        {
+          "basis": "folds < 3 only",
+          "fold": "3",
+          "threshold": "0"
+        },
+        {
+          "basis": "folds < 4 only",
+          "fold": "4",
+          "threshold": "0"
+        },
+        {
+          "basis": "folds < 5 only",
+          "fold": "5",
+          "threshold": "0.001"
+        },
+        {
+          "basis": "folds < 6 only",
+          "fold": "6",
+          "threshold": "0.001"
+        },
+        {
+          "basis": "folds < 7 only",
+          "fold": "7",
+          "threshold": "0.001"
+        },
+        {
+          "basis": "folds < 8 only",
+          "fold": "8",
+          "threshold": "0"
+        },
+        {
+          "basis": "folds < 9 only",
+          "fold": "9",
+          "threshold": "0"
+        },
+        {
+          "basis": "folds < 10 only",
+          "fold": "10",
+          "threshold": "0"
+        }
+      ],
+      "abstention_calibrated_on": "walk-forward validation folds, POOLED - disclosure only, not applied (holdout untouched)",
+      "abstention_grid": [
+        {
+          "mean_per_decision": "0.0006979043956696386974472665349",
+          "threshold": "0",
+          "trades": 31160
+        },
+        {
+          "mean_per_decision": "0.0006978635698457275049399971083",
+          "threshold": "0.001",
+          "trades": 30439
+        },
+        {
+          "mean_per_decision": "0.0006695146618696483364660144264",
+          "threshold": "0.002",
+          "trades": 29747
+        },
+        {
+          "mean_per_decision": "0.0006574709500640834096422317541",
+          "threshold": "0.003",
+          "trades": 29050
+        },
+        {
+          "mean_per_decision": "0.0006445833277220749594357961026",
+          "threshold": "0.005",
+          "trades": 27588
+        },
+        {
+          "mean_per_decision": "0.0005871957624127588478159590020",
+          "threshold": "0.008",
+          "trades": 25502
+        },
+        {
+          "mean_per_decision": "0.0005262844461173389882243320963",
+          "threshold": "0.012",
+          "trades": 22777
+        },
+        {
+          "mean_per_decision": "0.0004085461538500168682828088101",
+          "threshold": "0.020",
+          "trades": 17583
+        }
+      ],
+      "abstention_pooled_is_disclosure_only": true,
+      "abstention_refused": [],
+      "abstention_threshold": "0",
+      "deflated_sharpe_ratio": 0.779438,
+      "development_decision_dates": 2171,
+      "dsr_periods_per_year": 84,
+      "dsr_sample_periods": 462,
+      "embargoed_rows": 1980,
+      "folds": 11,
+      "gate_max_drawdown": "0.15",
+      "gate_min_deflated_sharpe": "0.95",
+      "gate_passed": false,
+      "gate_policy_id": "short-horizon-research-v1",
+      "held_sessions": 3,
+      "horizon_sessions": 4,
+      "missing_prediction_fraction": 0.0,
+      "missing_predictions": 0,
+      "multiplicity_count": 9,
+      "noise_distribution": {
+        "draws": [
+          {
+            "deflated_sharpe_ratio": 0.779438,
+            "exposure": 0.4320690153742349,
+            "seed": 0,
+            "sharpe": 0.9789125540801794
+          },
+          {
+            "deflated_sharpe_ratio": 0.709138,
+            "exposure": 0.42061464809549054,
+            "seed": 1,
+            "sharpe": 0.8848573907696349
+          },
+          {
+            "deflated_sharpe_ratio": 0.637243,
+            "exposure": 0.3950873134448247,
+            "seed": 2,
+            "sharpe": 0.7993209786787212
+          },
+          {
+            "deflated_sharpe_ratio": 0.82982,
+            "exposure": 0.4335309332176651,
+            "seed": 3,
+            "sharpe": 1.0575124204037536
+          },
+          {
+            "deflated_sharpe_ratio": 0.743357,
+            "exposure": 0.4299163011872058,
+            "seed": 4,
+            "sharpe": 0.9289341795762657
+          },
+          {
+            "deflated_sharpe_ratio": 0.653061,
+            "exposure": 0.43508924124857423,
+            "seed": 5,
+            "sharpe": 0.8175109753565775
+          },
+          {
+            "deflated_sharpe_ratio": 0.584882,
+            "exposure": 0.42729770109402865,
+            "seed": 6,
+            "sharpe": 0.7408334847373165
+          },
+          {
+            "deflated_sharpe_ratio": 0.714533,
+            "exposure": 0.3938021109451058,
+            "seed": 7,
+            "sharpe": 0.891630656237559
+          },
+          {
+            "deflated_sharpe_ratio": 0.560623,
+            "exposure": 0.4370813051231385,
+            "seed": 8,
+            "sharpe": 0.7143811706175154
+          },
+          {
+            "deflated_sharpe_ratio": 0.655575,
+            "exposure": 0.43497678602984885,
+            "seed": 9,
+            "sharpe": 0.8204304863933363
+          },
+          {
+            "deflated_sharpe_ratio": 0.741898,
+            "exposure": 0.4487927129018266,
+            "seed": 10,
+            "sharpe": 0.926995604142679
+          },
+          {
+            "deflated_sharpe_ratio": 0.79387,
+            "exposure": 0.4361174032483493,
+            "seed": 11,
+            "sharpe": 1.0002006625487294
+          },
+          {
+            "deflated_sharpe_ratio": 0.666619,
+            "exposure": 0.4334024129676932,
+            "seed": 12,
+            "sharpe": 0.8333504176271103
+          },
+          {
+            "deflated_sharpe_ratio": 0.74634,
+            "exposure": 0.41222870178482496,
+            "seed": 13,
+            "sharpe": 0.9329153065480187
+          },
+          {
+            "deflated_sharpe_ratio": 0.631095,
+            "exposure": 0.43539447684225746,
+            "seed": 14,
+            "sharpe": 0.7923259576967859
+          },
+          {
+            "deflated_sharpe_ratio": 0.788498,
+            "exposure": 0.4150561472842065,
+            "seed": 15,
+            "sharpe": 0.9921767519770843
+          },
+          {
+            "deflated_sharpe_ratio": 0.672808,
+            "exposure": 0.4343663148424824,
+            "seed": 16,
+            "sharpe": 0.8406654003630197
+          },
+          {
+            "deflated_sharpe_ratio": 0.633586,
+            "exposure": 0.43155493437434733,
+            "seed": 17,
+            "sharpe": 0.7951551579921334
+          },
+          {
+            "deflated_sharpe_ratio": 0.655055,
+            "exposure": 0.4069111764422382,
+            "seed": 18,
+            "sharpe": 0.8198261387124767
+          },
+          {
+            "deflated_sharpe_ratio": 0.588529,
+            "exposure": 0.424004369688499,
+            "seed": 19,
+            "sharpe": 0.7448381815493332
+          },
+          {
+            "deflated_sharpe_ratio": 0.651554,
+            "exposure": 0.43639050877953955,
+            "seed": 20,
+            "sharpe": 0.8157651941051266
+          },
+          {
+            "deflated_sharpe_ratio": 0.611417,
+            "exposure": 0.43380403874885537,
+            "seed": 21,
+            "sharpe": 0.7701867722974926
+          },
+          {
+            "deflated_sharpe_ratio": 0.539271,
+            "exposure": 0.39510337847607113,
+            "seed": 22,
+            "sharpe": 0.6913128563751249
+          },
+          {
+            "deflated_sharpe_ratio": 0.640535,
+            "exposure": 0.4321814705929603,
+            "seed": 23,
+            "sharpe": 0.8030835564012585
+          },
+          {
+            "deflated_sharpe_ratio": 0.699579,
+            "exposure": 0.4327276816553408,
+            "seed": 24,
+            "sharpe": 0.8730016333862357
+          },
+          {
+            "deflated_sharpe_ratio": 0.722264,
+            "exposure": 0.4353623467797645,
+            "seed": 25,
+            "sharpe": 0.9014439176770835
+          },
+          {
+            "deflated_sharpe_ratio": 0.728123,
+            "exposure": 0.4366314842482369,
+            "seed": 26,
+            "sharpe": 0.9089693974562115
+          },
+          {
+            "deflated_sharpe_ratio": 0.509867,
+            "exposure": 0.42761900171895834,
+            "seed": 27,
+            "sharpe": 0.6597375671023832
+          },
+          {
+            "deflated_sharpe_ratio": 0.705945,
+            "exposure": 0.41054187350394394,
+            "seed": 28,
+            "sharpe": 0.880878148214289
+          },
+          {
+            "deflated_sharpe_ratio": 0.69482,
+            "exposure": 0.43492859093610936,
+            "seed": 29,
+            "sharpe": 0.8671640793602389
+          }
+        ],
+        "dsr_max": 0.82982,
+        "dsr_median": 0.672808,
+        "dsr_min": 0.509867,
+        "dsr_p90": 0.779438,
+        "seeds": 30,
+        "sharpe_max": 1.0575124204037536,
+        "sharpe_median": 0.8406654003630197,
+        "sharpe_min": 0.6597375671023832
+      },
+      "purged_rows": 1980,
+      "refused_constituents": [],
+      "strategies": [
+        {
+          "decisions": 62247,
+          "dropped_dates": 0,
+          "exposure": 0.432069,
+          "hit_rate": 0.510504,
+          "max_drawdown": 0.116505,
+          "mean_net_return_per_decision": "0.0006717136154220765659389207512",
+          "portfolio_periods": 462,
+          "sharpe": 0.978913,
+          "strategy_id": "CANDIDATE",
+          "total_net_return": "0.3502856653674351",
+          "trades": 26895
+        },
+        {
+          "decisions": 62247,
+          "dropped_dates": 0,
+          "exposure": 0.500586,
+          "hit_rate": 0.509082,
+          "max_drawdown": 0.192377,
+          "mean_net_return_per_decision": "0.0006979043956696386974472665349",
+          "portfolio_periods": 462,
+          "sharpe": 0.738563,
+          "strategy_id": "CANDIDATE_NO_ABSTENTION",
+          "total_net_return": "0.35569563679641814",
+          "trades": 31160
+        },
+        {
+          "decisions": 62247,
+          "dropped_dates": 0,
+          "exposure": 0.0,
+          "hit_rate": 0.0,
+          "max_drawdown": 0.0,
+          "mean_net_return_per_decision": "0",
+          "portfolio_periods": 462,
+          "sharpe": 0.0,
+          "strategy_id": "CASH",
+          "total_net_return": "0.0",
+          "trades": 0
+        },
+        {
+          "decisions": 62247,
+          "dropped_dates": 0,
+          "exposure": 1.0,
+          "hit_rate": 0.503028,
+          "max_drawdown": 0.365651,
+          "mean_net_return_per_decision": "0.001101555774761627066364644079",
+          "portfolio_periods": 462,
+          "sharpe": 0.590341,
+          "strategy_id": "ALWAYS_TRADE",
+          "total_net_return": "0.5516660539592564",
+          "trades": 62247
+        },
+        {
+          "decisions": 62247,
+          "dropped_dates": 0,
+          "exposure": 0.51768,
+          "hit_rate": 0.494942,
+          "max_drawdown": 0.141496,
+          "mean_net_return_per_decision": "0.0005237689262821662088132761418",
+          "portfolio_periods": 462,
+          "sharpe": 0.574811,
+          "strategy_id": "PREVIOUS_SIGN",
+          "total_net_return": "0.2521248350639058",
+          "trades": 32224
+        }
+      ],
+      "train_rows": 678583,
+      "validation_rows": 62247,
+      "verdict": "RESEARCH_ONLY"
+    }
+  }
+}

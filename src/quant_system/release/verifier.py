@@ -72,23 +72,47 @@ def is_valid_windows_pe_binary(file_path: Path) -> bool:
 
 def stage_clean_install(bundle_dir: Path, target_install_dir: Path) -> None:
     """Stages a clean installation of the release bundle into a target directory."""
-    for _ in range(5):
+    cleaned = False
+    for _ in range(8):
         if target_install_dir.exists():
             try:
                 shutil.rmtree(target_install_dir, onerror=_remove_readonly)
+                cleaned = True
                 break
             except Exception:
-                time.sleep(0.2)
+                time.sleep(0.3)
         else:
+            cleaned = True
             break
+
+    if not cleaned and target_install_dir.exists():
+        for p in target_install_dir.rglob("*"):
+            try:
+                os.chmod(p, stat.S_IWRITE)
+            except Exception:
+                pass
+        shutil.rmtree(target_install_dir, onerror=_remove_readonly)
+
     target_install_dir.mkdir(parents=True, exist_ok=True)
 
     for item in bundle_dir.iterdir():
         dest = target_install_dir / item.name
-        if item.is_dir():
-            shutil.copytree(item, dest, dirs_exist_ok=True)
-        else:
-            shutil.copy2(item, dest)
+        copied = False
+        for _ in range(5):
+            try:
+                if item.is_dir():
+                    shutil.copytree(item, dest, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(item, dest)
+                copied = True
+                break
+            except Exception:
+                time.sleep(0.3)
+        if not copied:
+            if item.is_dir():
+                shutil.copytree(item, dest, dirs_exist_ok=True)
+            else:
+                shutil.copy2(item, dest)
 
 
 def create_mock_evidence_store(evidence_dir: Path) -> dict[str, str]:
@@ -201,10 +225,10 @@ def simulate_uninstallation(install_dir: Path, preserve_paths: list[Path] | None
 
     items_to_clean = [item for item in install_dir.iterdir() if item not in preserved]
 
-    for _ in range(5):
+    for _ in range(8):
         if _attempt_clean(items_to_clean):
             return
-        time.sleep(0.3)
+        time.sleep(0.4)
 
     # Final attempt to raise if still failing
     _clean_all_items(items_to_clean)
@@ -307,7 +331,7 @@ def verify_clean_release(
                 else f"Self-test failed: {res.stderr or res.stdout}"
             )
             # Brief pause to release Windows OS executable handle
-            time.sleep(0.2)
+            time.sleep(0.5)
         else:
             # Run in-process prerequisite checks
             passed, logs = run_prerequisite_checks()

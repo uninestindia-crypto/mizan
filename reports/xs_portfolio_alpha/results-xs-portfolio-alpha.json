@@ -1,0 +1,42 @@
+{
+  "timestamp_utc": "2026-09-25T16:27:28Z",
+  "elapsed_seconds": 440.84,
+  "cagr": 0.2585,
+  "annualized_volatility": 0.2023,
+  "annualized_sharpe": 1.2390,
+  "max_drawdown": 0.4936,
+  "total_statutory_fees": "8114329.24",
+  "max_observed_exposure": "0.9984964627981879999689533394",
+  "is_decile_monotonic": true,
+  "top_bottom_spread_annualized": 0.1193,
+  "decile_annualized_returns": {
+    "1": 0.2996,
+    "2": 0.2582,
+    "3": 0.2368,
+    "4": 0.2343,
+    "5": 0.2123,
+    "6": 0.1906,
+    "7": 0.2229,
+    "8": 0.2047,
+    "9": 0.1837,
+    "10": 0.1803
+  },
+  "ic_summary": {
+    "mean_ic": 0.0209,
+    "std_ic": 0.1301,
+    "t_statistic": 3.32,
+    "n_periods": 427,
+    "is_significant": true
+  },
+  "cash_baseline_sharpe": 0.0,
+  "always_trade_sharpe": 0.3136,
+  "median_noise_sharpe": -0.1529,
+  "candidate_dsr": 0.0,
+  "median_noise_dsr": 0.0,
+  "passes_multiplicity_hurdle": true,
+  "quarantine_verified": true,
+  "total_dev_sessions": 2224,
+  "total_holdout_sessions": 252,
+  "rebalance_count": 433,
+  "acceptance_criteria_passed": true
+}
