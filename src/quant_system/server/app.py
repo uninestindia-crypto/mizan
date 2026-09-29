@@ -127,6 +127,7 @@ from quant_system.server.ui import (
     render_standalone_journey_html,
 )
 from quant_system.server.ui.live_dashboard import HTML_DASHBOARD
+from quant_system.server.v2 import register_v2
 from quant_system.strategies.registry import StrategyRegistry
 
 logger = logging.getLogger(__name__)
@@ -1358,9 +1359,9 @@ if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/classic", response_class=HTMLResponse)
 def serve_index() -> HTMLResponse:
-    """Serves the complete accessible QuantOS dashboard containing all 7 core journeys."""
+    """Serves the classic research console (all 7 journeys). The retail app now owns ``/``."""
     return HTMLResponse(content=render_full_dashboard_html(), status_code=200)
 
 
@@ -1404,3 +1405,8 @@ def serve_journey(journey_id: str) -> HTMLResponse:
         content=render_standalone_journey_html(journey_id),
         status_code=200,
     )
+
+
+# QuantOS 2.0: the retail app at ``/`` and its API under ``/api/v2``. Registered last so the
+# console and API routes above keep precedence.
+register_v2(app)

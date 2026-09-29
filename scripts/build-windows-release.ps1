@@ -3,6 +3,7 @@ param(
     [switch]$SkipPyInstaller = $false,
     [switch]$Clean = $false,
     [switch]$SkipInstaller = $false,
+    [switch]$SkipFrontend = $false,
     [string]$SignCommand = "",
     [string]$OutputDir = "dist/quantos"
 )
@@ -30,6 +31,32 @@ try {
         if (Test-Path $buildDir) { Remove-Item -Recurse -Force $buildDir }
         if (Test-Path $distDir) { Remove-Item -Recurse -Force $distDir }
         Write-Host "  -> Cleaned build/ and dist/ directories."
+    }
+
+    # 1b. Build the web interface into src\quant_system\server\static\app (bundled by the PyInstaller spec)
+    $frontendDir = Join-Path $projectRoot "frontend"
+    $builtIndex = Join-Path $projectRoot "src\quant_system\server\static\app\index.html"
+    if (-not $SkipFrontend -and (Test-Path -LiteralPath (Join-Path $frontendDir "package.json"))) {
+        Write-Host "`n[STEP 1b] Building the QuantOS web interface (frontend)..." -ForegroundColor Yellow
+        $npm = (Get-Command "npm.cmd" -ErrorAction SilentlyContinue | Select-Object -First 1).Source
+        if (-not $npm) {
+            throw "Node.js (npm) is required to build the web interface. Install the LTS version from https://nodejs.org and re-run."
+        }
+        Push-Location $frontendDir
+        try {
+            if (-not (Test-Path -LiteralPath (Join-Path $frontendDir "node_modules"))) {
+                & $npm ci --no-audit --no-fund
+                if ($LASTEXITCODE -ne 0) { throw "npm ci failed with exit code $LASTEXITCODE" }
+            }
+            & $npm run build
+            if ($LASTEXITCODE -ne 0) { throw "Frontend build failed with exit code $LASTEXITCODE" }
+        } finally {
+            Pop-Location
+        }
+        Write-Host "  -> Web interface built." -ForegroundColor Green
+    }
+    if (-not (Test-Path -LiteralPath $builtIndex)) {
+        throw "The web interface is not built ($builtIndex missing). Run without -SkipFrontend, or build frontend/ first."
     }
 
     # 2. PyInstaller standalone compilation
