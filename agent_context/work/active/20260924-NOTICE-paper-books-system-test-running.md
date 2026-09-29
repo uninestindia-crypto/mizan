@@ -16,12 +16,19 @@ UPDATED: 2026-09-28, the start slipped (below)
     flat battery. The flagship is due to start Mon 2026-09-28.
   - XS's first cohort entered at the 2026-09-23 open, one session early. Its 09-25 run read a cache
     that ended 09-23, because the flagship's missed run does the refresh.
-  - Detail: the decision record, section "Start slipped, recorded 2026-09-28".
+  - It slipped again on 2026-09-29. The start-up check that took hours was fixed (`45f95604`),
+    but the laptop was put to sleep at 10:34 and the session was lost. **As of 15:30 on
+    2026-09-29 the flagship has still not run a session.** Its real start is the
+    `inception_on` in `portfolio_state.json`, once that file exists.
+  - Detail: the decision record, sections "Start slipped, recorded 2026-09-28" and
+    "Start slipped again, recorded 2026-09-29".
 - They run the same frozen models as before, now with fixes F1-F5: the like-for-like report, re-weighting,
   scheduling, and the corporate-action guard with its review tool.
-- **Ends Wed 2026-10-28, unchanged by the slip; hard stop Mon 2026-11-09.**
+- **The end date now follows the flagship's real start:** its second rebalance, session 21, and
+  XS's exit at the 2026-10-26 open. Hard stop Mon 2026-11-09 is unchanged.
 - A one-time reminder in the founder's Claude desktop app (`end-paper-book-test`) fires on
-  2026-10-28 at 18:07 IST. It checks read-only and asks the founder for the go-ahead.
+  2026-10-29 at 18:07 IST. It works out the real dates from `inception_on`, checks read-only and
+  asks the founder for the go-ahead.
 
 ## What every agent must do
 

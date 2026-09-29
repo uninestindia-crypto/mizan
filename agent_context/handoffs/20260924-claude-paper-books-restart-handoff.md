@@ -62,9 +62,14 @@ The hard stop is Mon 2026-11-09. The closing report scores the system, not the P
 
 ## Known failures and risks
 
-- **The laptop must be on mains power.** On battery with the lid closed, Windows hibernates
-  ("Austerity Battery Drain Budget Exceeded", or critical battery). A hibernated machine is not
-  woken by `WakeToRun`. This is how the flagship's first session, 2026-09-25, was lost.
+- **The laptop must be on mains power and awake.** On battery with the lid closed, Windows
+  hibernates ("Austerity Battery Drain Budget Exceeded", or critical battery). A hibernated
+  machine is not woken by `WakeToRun`. This is how the flagship's first session, 2026-09-25, was
+  lost. On 2026-09-29 the session was lost differently: a Start-menu Sleep at 10:34 froze it, and
+  the run holds only `ES_SYSTEM_REQUIRED`, which does not block an explicit sleep.
+- **The scheduled run's start-up check used to take hours** (3 h 51 min on 09-21). Fixed in
+  `45f95604`; it took 68 s on 09-29. The price refresh is 5 min, macro 1.5 min, and the model's
+  rebalance step took 11 min on 09-21.
 - **XS takes its prices from the flagship's 09:00 refresh without checking that it ran.** On
   2026-09-25 it entered at the 09-23 open from a cache ending 09-23, and its marks stay as old as
   the cache.
@@ -101,7 +106,15 @@ At 2026-09-28 05:10 IST, before that day's runs:
 - **XS:** 99 open legs, all entered at the 2026-09-23 open. Cash is 94,409.99, and the marks are as
   of 09-23.
 - **Reminder:** a one-time reminder is set in the founder's Claude desktop app,
-  `end-paper-book-test`, for 2026-10-28 18:07 IST.
+  `end-paper-book-test`, now for 2026-10-29 18:07 IST.
+
+At 2026-09-29 15:30 IST:
+
+- **Flagship:** still no session and no `portfolio_state.json`. The start-up check was fixed and
+  session 1 was started by hand at 10:10, but a Start-menu Sleep at 10:34 lost it. The laptop was
+  at 19% on battery.
+- **XS:** unchanged, 99 open legs from the 09-23 open. Its next run is 16:00 on 09-29.
+- The end date follows the flagship's real start; see the decision record, "Start slipped again".
 
 ## Next safe action
 

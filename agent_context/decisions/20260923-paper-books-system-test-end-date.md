@@ -181,3 +181,22 @@ Two weaknesses this exposed are reported to the founder and not changed here:
 
 - XS relies on the flagship's refresh and does not check that it happened.
 - The late-start fallback `QuantOS Session Supervisor` is disabled; its last run was 2026-09-15.
+
+## Start slipped again, recorded 2026-09-29
+
+Evidence: `agent_context/work/completed/20260929-claude-flagship-startup-check-fix.md`.
+
+- **A code fault was found and fixed** (`45f95604`). The scheduled run's pre-refresh check verified
+  every dataset in the price cache, and the store grows by 499 datasets a day. It took 70 s on
+  09-01 and 3 h 51 min on 09-21, so a 09:00 run could not begin its refresh until the afternoon.
+  It now takes 68 s.
+- **The founder chose to fix it and run the session by hand on 09-29.** It started at 10:10 and
+  was lost. A user-mode process put the laptop to sleep at 10:34 (Kernel-Power 187, Start menu).
+  The machine stayed off until 15:18, and the session ended without saving.
+- **Result: as of 15:30 on 2026-09-29, session 1 has not happened.** The book is still a fresh
+  Rs 10L. XS is unaffected and continues from its 09-23 cohort.
+- **The dates now depend on when session 1 really runs.** Session 21 is the second rebalance,
+  and the test ends when it and XS's exit at the 2026-10-26 open are done. The hard stop stays
+  Mon 2026-11-09, which is 30 trading sessions after the restart.
+- **Open founder decision: the laptop.** No script can stop an explicit Sleep. The flagship needs
+  the laptop awake and on mains from 09:00 to 15:30 on trading days, or an always-on machine.
