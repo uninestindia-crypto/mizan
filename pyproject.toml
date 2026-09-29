@@ -16,6 +16,9 @@ dependencies = [
     "uvicorn>=0.29.0",
     "pydantic>=2.6.0",
     "python-multipart>=0.0.9",
+    # Native window for the desktop app (Windows WebView2). Optional at runtime: quantos_studio.py
+    # falls back to an Edge/Chrome app window when it cannot be imported.
+    "pywebview>=5.4; sys_platform == 'win32'",
 ]
 
 [project.optional-dependencies]
