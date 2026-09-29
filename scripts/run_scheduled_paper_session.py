@@ -28,11 +28,11 @@ from __future__ import annotations
 
 import subprocess
 import sys
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     import argparse
@@ -206,7 +206,31 @@ def trading_sessions_between(start: date, end: date) -> int:
 
 
 def newest_cached_bar_date() -> date | None:
-    """The newest exchange date already in the bars cache, or None when it is empty."""
+    """The newest exchange date in the bars cache, read from each instrument's newest dataset.
+
+    The store never deletes. Every daily refresh adds a complete new dataset for each of 499
+    instruments, so by 2026-09-29 it held 8,236 datasets and 474.5 MB. The first version verified
+    and parsed **all** of them through `list_verified`, which returns every dataset with every
+    record at once. From each day's log, the time between "scheduled paper session" and "newest
+    cached bar":
+
+        2026-09-01      70 s      (~1,250 datasets)
+        2026-09-11   1,057 s      (~4,750)
+        2026-09-21  13,880 s      (~7,250) -- 3 h 51 min, the machine awake throughout
+
+    So a session started at 09:00 could not begin its refresh until the afternoon, and each day
+    was worse. The restarted book never got past this line: its 2026-09-25 and 2026-09-28 runs
+    were killed at shutdowns with nothing logged after the session date.
+
+    Now the manifests alone (no blob bodies) choose the newest dataset per provider instrument, and
+    only those are verified and parsed, one at a time. The date still comes from verified records,
+    never from a manifest's `received_range` claim.
+
+    One consequence is deliberate. The old maximum ran over every dataset ever stored, so a
+    refresh that wrote a *truncated* dataset could never lower it, and the "went backwards" refusal
+    in `_run` was unreachable. Reading each instrument's newest dataset reports what the newest
+    data actually holds, and that refusal can now fire.
+    """
     sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
     sys.path.insert(0, str(PROJECT_ROOT / "src"))
     from cached_nifty50_evidence import historical_acquisition_from_verified
@@ -218,11 +242,38 @@ def newest_cached_bar_date() -> date | None:
         return None
     store = EvidenceStore(EvidenceStoreConfig(root=store_root))
     newest: date | None = None
-    for verified in store.list_verified(EvidenceResourceType.DATASET):
+    for resource_id in newest_dataset_per_instrument(
+        store.list_manifests(EvidenceResourceType.DATASET)
+    ):
+        verified = store.open_verified(EvidenceResourceType.DATASET, resource_id)
         records = historical_acquisition_from_verified(verified).records
         if records and (newest is None or records[-1].exchange_date > newest):
             newest = records[-1].exchange_date
     return newest
+
+
+def newest_dataset_per_instrument(manifests: Iterable[Any]) -> list[str]:
+    """Resource ids of the most recently created dataset for each provider instrument.
+
+    Keyed on `provider_instrument_id` rather than the ticker, because tickers are renamed and the
+    provider key is what an acquisition is bound to. A manifest without one is refused rather than
+    skipped: a dataset this check cannot place is one it would silently stop looking at. Equal
+    `created_at` values resolve to the greater resource id, so the choice never depends on
+    directory order.
+    """
+    newest: dict[str, tuple[datetime, str]] = {}
+    for manifest in manifests:
+        instrument = manifest.metadata.get("provider_instrument_id")
+        if not instrument:
+            raise ValueError(
+                f"dataset {manifest.resource_id} has no provider_instrument_id; refusing to guess "
+                "which instrument it belongs to"
+            )
+        candidate = (manifest.created_at, manifest.resource_id)
+        current = newest.get(str(instrument))
+        if current is None or candidate > current:
+            newest[str(instrument)] = candidate
+    return sorted(resource_id for _, resource_id in newest.values())
 
 
 def build_universe_csv(universe_name: str) -> int:
