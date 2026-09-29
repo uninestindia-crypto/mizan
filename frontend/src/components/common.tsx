@@ -214,9 +214,12 @@ export function VerdictBanner({
           <p className="mt-1.5 max-w-3xl text-[14.5px] leading-relaxed text-ink-2">{body}</p>
         </div>
         <div className="w-full shrink-0 sm:w-56">
-          {level === "TOO_SHORT" ? (
+          {level === "TOO_SHORT" || level === "LOST" ? (
             <p className="text-[12.5px] leading-relaxed text-ink-2">
-              <span className="font-semibold text-ink">No probability shown.</span> With this little history any number would look more certain than it is.
+              <span className="font-semibold text-ink">No probability shown.</span>{" "}
+              {level === "LOST"
+                ? "It finished behind, so there is no edge to measure."
+                : "With this little history any number would look more certain than it is."}
             </p>
           ) : (
             <>
