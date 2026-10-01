@@ -382,5 +382,21 @@
     "series": "EQ",
     "subject": "Interim Dividend - Rs 1.50 Per Share",
     "symbol": "ENGINERSIN"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Engineers India Limited",
+    "exDate": "24-Sep-2026",
+    "faceVal": "5",
+    "ind": "-",
+    "isin": "INE510A01010",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "24-Sep-2026",
+    "series": "EQ",
+    "subject": "Dividend - Rs 2.50 Per Share",
+    "symbol": "ENGINERSIN"
   }
 ]

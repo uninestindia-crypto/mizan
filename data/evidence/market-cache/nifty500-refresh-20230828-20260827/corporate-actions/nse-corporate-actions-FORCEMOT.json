@@ -80,22 +80,6 @@
     "symbol": "FORCEMOT"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "FORCE MOTORS LTD",
-    "exDate": "28-Aug-2024",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE451A01017",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "28-Aug-2024",
-    "series": "EQ",
-    "subject": "Dividend - Rs 20 Per Share",
-    "symbol": "FORCEMOT"
-  },
-  {
     "bcEndDate": "04-Sep-2024",
     "bcStartDate": "29-Aug-2024",
     "caBroadcastDate": null,
@@ -109,6 +93,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": "Annual General Meeting",
+    "symbol": "FORCEMOT"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "FORCE MOTORS LTD",
+    "exDate": "28-Aug-2024",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE451A01017",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "28-Aug-2024",
+    "series": "EQ",
+    "subject": "Dividend - Rs 20 Per Share",
     "symbol": "FORCEMOT"
   },
   {

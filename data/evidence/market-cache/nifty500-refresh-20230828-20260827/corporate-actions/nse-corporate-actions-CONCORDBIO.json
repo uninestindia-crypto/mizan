@@ -1,21 +1,5 @@
 [
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "Concord Biotech Limited",
-    "exDate": "21-Jun-2024",
-    "faceVal": "1",
-    "ind": "-",
-    "isin": "INE338H01029",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "22-Jun-2024",
-    "series": "EQ",
-    "subject": "Dividend - Rs 8.75 Per Share",
-    "symbol": "CONCORDBIO"
-  },
-  {
     "bcEndDate": "29-Jun-2024",
     "bcStartDate": "23-Jun-2024",
     "caBroadcastDate": null,
@@ -29,6 +13,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": "Annual General Meeting",
+    "symbol": "CONCORDBIO"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Concord Biotech Limited",
+    "exDate": "21-Jun-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE338H01029",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "22-Jun-2024",
+    "series": "EQ",
+    "subject": "Dividend - Rs 8.75 Per Share",
     "symbol": "CONCORDBIO"
   },
   {

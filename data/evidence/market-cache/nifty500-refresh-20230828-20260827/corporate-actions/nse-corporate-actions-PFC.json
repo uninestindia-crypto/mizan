@@ -176,22 +176,6 @@
     "symbol": "PFC"
   },
   {
-    "bcEndDate": "-",
-    "bcStartDate": "-",
-    "caBroadcastDate": null,
-    "comp": "Power Finance Corporation Limited",
-    "exDate": "31-Aug-2021",
-    "faceVal": "10",
-    "ind": "-",
-    "isin": "INE134E01011",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "01-Sep-2021",
-    "series": "EQ",
-    "subject": " Interim Dividend - Rs 2.25 Per Share",
-    "symbol": "PFC"
-  },
-  {
     "bcEndDate": "21-Sep-2021",
     "bcStartDate": "02-Sep-2021",
     "caBroadcastDate": null,
@@ -205,6 +189,22 @@
     "recDate": "-",
     "series": "EQ",
     "subject": " Annual General Meeting",
+    "symbol": "PFC"
+  },
+  {
+    "bcEndDate": "-",
+    "bcStartDate": "-",
+    "caBroadcastDate": null,
+    "comp": "Power Finance Corporation Limited",
+    "exDate": "31-Aug-2021",
+    "faceVal": "10",
+    "ind": "-",
+    "isin": "INE134E01011",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "01-Sep-2021",
+    "series": "EQ",
+    "subject": " Interim Dividend - Rs 2.25 Per Share",
     "symbol": "PFC"
   },
   {

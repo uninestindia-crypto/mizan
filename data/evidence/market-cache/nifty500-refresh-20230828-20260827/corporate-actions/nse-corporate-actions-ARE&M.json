@@ -224,22 +224,6 @@
     "symbol": "ARE&M"
   },
   {
-    "bcEndDate": "25-Jul-2024",
-    "bcStartDate": "19-Jul-2024",
-    "caBroadcastDate": null,
-    "comp": "Amara Raja Energy & Mobility Limited",
-    "exDate": "18-Jul-2024",
-    "faceVal": "1",
-    "ind": "-",
-    "isin": "INE885A01032",
-    "ndEndDate": "-",
-    "ndStartDate": "-",
-    "recDate": "-",
-    "series": "EQ",
-    "subject": "Annual General Meeting",
-    "symbol": "ARE&M"
-  },
-  {
     "bcEndDate": "-",
     "bcStartDate": "-",
     "caBroadcastDate": null,
@@ -253,6 +237,22 @@
     "recDate": "18-Jul-2024",
     "series": "EQ",
     "subject": "Dividend - Rs 5.10 Per Share",
+    "symbol": "ARE&M"
+  },
+  {
+    "bcEndDate": "25-Jul-2024",
+    "bcStartDate": "19-Jul-2024",
+    "caBroadcastDate": null,
+    "comp": "Amara Raja Energy & Mobility Limited",
+    "exDate": "18-Jul-2024",
+    "faceVal": "1",
+    "ind": "-",
+    "isin": "INE885A01032",
+    "ndEndDate": "-",
+    "ndStartDate": "-",
+    "recDate": "-",
+    "series": "EQ",
+    "subject": "Annual General Meeting",
     "symbol": "ARE&M"
   },
   {
