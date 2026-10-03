@@ -1,6 +1,6 @@
 # Active work: installer / first-run usability (data auto-find, live AI model names, browser-based CLI sign-in)
 
-STATUS: ACTIVE  
+STATUS: COMPLETED (unsigned installer; founder to install and try it)  
 OWNER: Claude Code session (founder instruction 2026-10-03: "where are we on installer ... it should
 automatically find [market data] ... model names should always be the latest ... CLI sign-in should be
 one-click and browser based ... check there might be more")  
@@ -141,19 +141,19 @@ the key pool, new clients and the assistant fallback (the advisory consensus pan
 
 ## Stop point / next safe action
 
-STATUS: HANDOFF_REQUIRED (code and tests done, not committed, installer rebuilt; bundle smoke-tested, installer not run)
+STATUS: COMPLETED. Five commits on `main` (not pushed): `2a3bf5f14` first-run work, `9695aa065` stop tracking the generated
+web app, `46b2fd9e9` no plaintext `.env`, `331423c7f` Gemini/DeepSeek/Mistral keys, `415cb930a` market-data download.
 
-- Full suite: 2,221 passed, 3 failed. All three also fail on a clean `git archive HEAD` export, so they predate this work:
-  `test_corporate_actions::test_the_real_heg_demerger...` (local data file has no "Demerger" record),
-  `test_server_supervisor::test_supervisor_heartbeats_and_progress_tracking` (known load flake),
-  `test_ui_journeys::test_static_index_html_contains_all_seven_journeys` (`static/index.html` says v2.0.0, package is 2.0.1;
-  that file is claimed by other active records, so not edited).
-- Rebuilt with `scripts/build-windows-release.ps1 -SkipFrontend`: `dist\QuantOS_v2.0.1_Setup.exe` (49.3 MB, unsigned).
-  The manifest binds HEAD `0e571272f` but the build includes these uncommitted changes: commit, then rebuild before any release.
-  Smoke test PASSED on the unpacked bundle (`dist/quantos/quantos.exe --no-browser --port 8771`): version 2.0.1, data auto-found
-  (12,376 datasets), CLI status and live model list work in the frozen app, serves the new frontend bundle. Audits: disk layout PASS;
-  claims audit exit 0 (other agents' stale claims are theirs to close).
-  NOT run: the installer itself (it shares an AppId with the founder's installed `D:\QuantOS` and would rewrite its
-  uninstall record) (and the native folder dialog inside the frozen app).
-- Nothing committed or pushed. Preview server on 8767 stopped.
-- Next: commit on founder instruction, rebuild, smoke-test the bundle, then decide findings 1-5 above.
+- Full suite at the last code commit: 2,245 passed, 3 failed. All three also fail on a clean `git archive` of the
+  pre-session HEAD, so they are not from this work: `test_corporate_actions::test_the_real_heg_demerger...` (local data file
+  has no "Demerger" record), `test_server_supervisor::test_supervisor_heartbeats_and_progress_tracking` (known load flake),
+  `test_ui_journeys::test_static_index_html_contains_all_seven_journeys` (`static/index.html` says v2.0.0, package 2.0.1;
+  that file is claimed by other active records, so not edited). `ruff check`, `ruff format --check`, strict `mypy` (250 files): clean.
+- Rebuilt at HEAD `415cb930a`: `dist\QuantOS_v2.0.1_Setup.exe` (49.3 MB, unsigned). The packaged app was smoke-tested without
+  running the installer: version, auto-found data, CLI status, live model list, and a real download inside it (45 stocks in
+  25 s, then Stop worked and reported it can resume).
+- NOT done: running the installer itself (shares an AppId with the founder's `D:\QuantOS`); a full Claude/Codex browser
+  sign-in to completion; the native folder dialog inside the packaged app; code signing (needs a certificate).
+- Left for the founder: download covers NIFTY 500 only (not all ~3,300 listed stocks); older download vintages are not pruned;
+  OpenAI-style requests send `temperature: 0.1` which reasoning models may reject (no key to test); the assistant's OpenAI/Groq
+  clients force JSON mode, which can reject a plain-text prompt (unverified).
