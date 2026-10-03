@@ -28,6 +28,8 @@ installed app:
 
 - `src/quant_system/alpha/{model_catalog,key_pool,direct_providers}.py`; three lines in `assistant/service.py`
   (claimed by `20260904-antigravity-claude-fable-analysis.md`; notice filed, founder-instructed)
+- `src/quant_system/market/downloader.py` (new), `src/quant_system/data/upstox.py` (one opt-in flag), `lab/runner.py`
+  and `market/reference.py` (a hard-coded "423" label only), `tests/test_market_downloader.py`, `tests/test_lab.py` (one string)
 - `src/quant_system/server/v2/paths.py`, `cli_bridge.py`, `credentials.py`, `router.py`, `schemas.py`
 - `src/quant_system/server/v2/models.py` (new), `system.py` (new)
 - `frontend/src/pages/Welcome.tsx`, `Settings.tsx`; `frontend/src/components/AgentCliBridge.tsx`;
@@ -101,6 +103,29 @@ Stale claim noticed: `20260928-claude-retail-redesign-build.md` (HANDOFF_REQUIRE
   credentials,router,schemas}.py`, `frontend/src/{pages/Welcome,pages/Settings,components/AgentCliBridge,
   lib/queries,lib/types}.ts(x)`, `static/app/**` (rebuilt), `tests/{test_cli_bridge,test_v2_api,
   test_credentials_v2}.py`, `frontend/e2e/serve*.py` (format only)
+
+## Founder follow-up (2026-10-03: "yes do it all one by one")
+
+Done in this order, one commit each: (1) commit + stop tracking the generated web app, (2) plaintext `.env` mirror
+removed (removal scrubs only a leftover line whose value matches), (3) Gemini, DeepSeek and Mistral keys wired into
+the key pool, new clients and the assistant fallback (the advisory consensus panel deliberately left alone; NOTICE
+`20261003-NOTICE-assistant-provider-fallback-under-antigravity-claim.md`), (4) first-run market-data download.
+
+### Market-data download, measured
+
+- Sources, all public, checked 2026-10-03: NSE `ind_nifty500list.csv`, Upstox `NSE.json.gz` instrument list, Upstox
+  v3 historical-candle (answers with no token; `UpstoxClient(allow_anonymous_history=True)` is an opt-in, the default
+  still fails closed), NSE corporate-actions API.
+- Real run, a stranger's PC simulated (no data anywhere): 495 targets, **493 saved, 2 left out by the strict data checks
+  (MAZDOCK, IDEA: DATA_QUALITY_BLOCKED)**, 4 m 31 s, 147 MB, 0 stocks without corporate actions. The index then built
+  itself: 493 symbols, session 2026-10-01, 19 gap flags; computed liquid universe 326 stocks; home screen, breadth and a
+  Strategy Lab run all worked on it.
+- Files it writes only when absent or previously written by it: `authorities/nse-corporate-actions-<SYM>.json`
+  (tracked by a `nse-corporate-actions-downloaded.txt` list), `nse-all-listed-equities.csv`, and the computed liquid
+  universe (marked `# QuantOS download:`). A source checkout's own authority files are never replaced.
+- Found along the way and fixed: the half-written download folder appeared as a "found" candidate and was preselected;
+  a hard-coded "Liquid 423" label (wrong for any other universe) in Home, Markets and the Lab.
+- Not done: downloading all ~3,300 listed stocks (this is NIFTY 500 only); pruning older download vintages.
 
 ## Open findings reported, not changed
 

@@ -82,7 +82,7 @@ def load_listings(data_folder: Path) -> dict[str, Listing]:
 
 
 def load_liquid_universe(data_folder: Path) -> list[str]:
-    """Symbols of the 423-name research universe (>= 9.5y history, median turnover >= ₹5 crore)."""
+    """Symbols of the liquid research universe (>= 9.5y history, median turnover >= ₹5 crore)."""
     path = authorities_dir(data_folder) / LIQUID_UNIVERSE_FILE
     if not path.is_file():
         return []

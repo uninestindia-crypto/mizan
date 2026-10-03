@@ -90,7 +90,13 @@ class UpstoxClient:
         *,
         dependencies: UpstoxClientDependencies | None = None,
         config: UpstoxClientConfig | None = None,
+        allow_anonymous_history: bool = False,
     ) -> None:
+        # Off by default: every governed caller still fails closed with PROVIDER_UNAUTHORIZED when no
+        # token is configured. Upstox's daily historical-candle endpoint answers without a token
+        # (measured 2026-10-03), which lets a first-time user download data with no account; only that
+        # opt-in caller sets this.
+        self.allow_anonymous_history = allow_anonymous_history
         # `api_key` remains only for source compatibility; V3 data requires a bearer token.
         self.api_key = api_key or os.getenv("UPSTOX_API_KEY", "")
         # Analytics token first, then the standard access token.
@@ -128,7 +134,7 @@ class UpstoxClient:
     ) -> HistoricalAcquisitionOutcome:
         """Acquire and validate one NSE-equity daily range without implicit fallback."""
         acquired_at = require_aware_utc(self.dependencies.clock())
-        if not self.is_authenticated:
+        if not self.is_authenticated and not self.allow_anonymous_history:
             return create_failure(
                 AcquisitionFailureCode.PROVIDER_UNAUTHORIZED,
                 acquired_at,

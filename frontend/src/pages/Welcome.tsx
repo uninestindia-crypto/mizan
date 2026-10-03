@@ -251,7 +251,7 @@ function StepData({ onBack, onFinish, finishing }: { onBack: () => void; onFinis
               Open QuantOS
             </Button>
           ) : (
-            <Button size="lg" loading={setFolder.isPending || build.isPending || job.state === "RUNNING"} disabled={!path} onClick={connect}>
+            <Button size="lg" loading={setFolder.isPending || build.isPending || job.state === "RUNNING"} disabled={!path || data.download.state === "RUNNING"} onClick={connect}>
               {job.state === "RUNNING" ? "Building index" : "Connect and build"}
             </Button>
           )}

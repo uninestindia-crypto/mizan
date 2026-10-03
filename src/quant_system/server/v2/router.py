@@ -33,6 +33,7 @@ from quant_system.lab import (
 )
 from quant_system.lab.runner import UNIVERSES
 from quant_system.market import MarketIndex, SymbolNotFoundError
+from quant_system.market.downloader import MarketDownload
 from quant_system.market.index import BENCHMARK_SYMBOL
 from quant_system.market.sources import discover_caches, store_fingerprint
 from quant_system.server.security import format_error_response
@@ -108,11 +109,19 @@ class Services:
     index: MarketIndex
     job: IndexJob
     credentials: CredentialStore
+    download: MarketDownload
 
 
 _services: Services | None = None
 _services_lock = threading.Lock()
 _fingerprint_cache: dict[str, tuple[float, str]] = {}
+
+
+def _connect_downloaded_data(folder: Path) -> None:
+    """After a download: use that folder and build the index, so the person lands on a working app."""
+    svc = services()
+    svc.state.update_settings({"data_folder": str(folder.resolve())})
+    svc.job.start(folder, paths.index_dir())
 
 
 def services() -> Services:
@@ -125,6 +134,7 @@ def services() -> Services:
                 index=MarketIndex(paths.index_dir()),
                 job=IndexJob(),
                 credentials=CredentialStore(),
+                download=MarketDownload(on_done=_connect_downloaded_data),
             )
         return _services
 
@@ -225,6 +235,7 @@ def status() -> dict[str, Any]:
             "candidates": _folder_candidates(scan),
             "scan": scan["state"],
         },
+        "download": svc.download.snapshot(),
         "index": index_info,
         "credentials_available": svc.credentials.available,
         "costs_covered_from": COSTS_COVERED_FROM.isoformat(),
@@ -248,6 +259,25 @@ def set_data_folder(body: DataFolderRequest) -> dict[str, Any]:
         )
     settings = services().state.update_settings({"data_folder": str(folder)})
     return {"data_folder": settings.data_folder}
+
+
+@router.post("/data/download")
+def start_download() -> dict[str, Any]:
+    """Download NIFTY 500 daily prices to this computer from public sources, then connect them."""
+    svc = services()
+    started = svc.download.start(paths.app_root() / "data")
+    return {"started": started, "download": svc.download.snapshot()}
+
+
+@router.get("/data/download")
+def download_status() -> dict[str, Any]:
+    return services().download.snapshot()
+
+
+@router.post("/data/download/cancel")
+def cancel_download() -> dict[str, Any]:
+    services().download.cancel()
+    return services().download.snapshot()
 
 
 @router.post("/data/scan")

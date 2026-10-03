@@ -810,3 +810,35 @@ def test_the_assistant_falls_back_to_the_new_providers() -> None:
     source = inspect.getsource(service)
     for name in ("GEMINI", "DEEPSEEK", "MISTRAL"):
         assert f"ProviderType.{name}" in source
+
+
+# ------------------------------------------------------------------ downloading the data
+
+
+def test_the_download_api_starts_reports_and_stops(
+    client: TestClient, headers: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from quant_system.market.downloader import MarketDownload
+
+    started: list[Path] = []
+    monkeypatch.setattr(
+        MarketDownload, "start", lambda self, folder, **kw: started.append(folder) or True
+    )
+    body = client.post("/api/v2/data/download", headers=headers).json()
+    assert body["started"] is True
+    assert started == [paths.app_root() / "data"]  # inside the install folder, never another drive
+    assert client.get("/api/v2/data/download").json()["state"] == "IDLE"
+    assert client.get("/api/v2/status").json()["download"]["state"] == "IDLE"
+    assert client.post("/api/v2/data/download/cancel", headers=headers).status_code == 200
+
+
+def test_a_finished_download_is_connected_and_indexed_without_another_click(
+    client: TestClient, tmp_path: Path
+) -> None:
+    folder = tmp_path / "downloaded" / "data"
+    build_standard_store(folder)
+    router._connect_downloaded_data(folder)
+    router.services().job.wait(60)
+    status = client.get("/api/v2/status").json()
+    assert status["data_folder"]["valid"] is True
+    assert status["index"]["ready"] is True and status["index"]["matches_folder"] is True

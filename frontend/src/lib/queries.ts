@@ -47,7 +47,7 @@ export function useStatus() {
     refetchInterval: (query) => {
       const data = query.state.data;
       if (data?.index.job.state === "RUNNING") return 800;
-      if (data?.data_folder.scan === "RUNNING") return 1_000;
+      if (data?.data_folder.scan === "RUNNING" || data?.download.state === "RUNNING") return 1_000;
       return 30_000;
     },
   });
@@ -158,6 +158,22 @@ export function useScanForData() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => api<{ state: string }>("/api/v2/data/scan", "POST"),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.status }),
+  });
+}
+
+export function useStartDownload() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<{ started: boolean }>("/api/v2/data/download", "POST"),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.status }),
+  });
+}
+
+export function useCancelDownload() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<unknown>("/api/v2/data/download/cancel", "POST"),
     onSuccess: () => void qc.invalidateQueries({ queryKey: keys.status }),
   });
 }

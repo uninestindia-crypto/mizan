@@ -27,8 +27,22 @@ export interface IndexJob {
   finished_at: string | null;
 }
 
+export interface DownloadState {
+  state: "IDLE" | "RUNNING" | "DONE" | "CANCELLED" | "ERROR";
+  message: string;
+  progress: number;
+  total: number;
+  done: number;
+  saved: number;
+  failed: number;
+  failures: { symbol: string; reason: string }[];
+  without_actions: number;
+  cache: string;
+}
+
 export interface Status {
   version: string;
+  download: DownloadState;
   settings: Settings;
   data_folder: {
     path: string | null;

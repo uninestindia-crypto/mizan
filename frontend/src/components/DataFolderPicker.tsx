@@ -1,9 +1,94 @@
-import { FolderOpen, FolderSearch, RefreshCw } from "lucide-react";
+import { Download, FolderOpen, FolderSearch, RefreshCw } from "lucide-react";
 import { useEffect } from "react";
 import { errorMessage } from "../lib/api";
 import { int } from "../lib/format";
-import { usePickFolder, useScanForData, useStatus } from "../lib/queries";
-import { Button, Callout, cx, Field, Input, Spinner } from "./ui";
+import { useCancelDownload, usePickFolder, useScanForData, useStartDownload, useStatus } from "../lib/queries";
+import { Button, Callout, cx, Field, Input, ProgressBar, Spinner } from "./ui";
+
+/** Download the data for me: the answer for a computer that has none. */
+function DownloadData({ prominent }: { prominent: boolean }) {
+  const status = useStatus();
+  const start = useStartDownload();
+  const cancel = useCancelDownload();
+  const download = status.data?.download;
+  if (!download) return null;
+  const running = download.state === "RUNNING";
+
+  if (running) {
+    return (
+      <div className="space-y-2 rounded-xl border border-brand/30 bg-brand/5 p-4">
+        <ProgressBar value={download.progress} label="Downloading market data" />
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[12.5px] text-ink-3">
+          <span>
+            {download.message} {int(download.done)} of {int(download.total)} stocks
+          </span>
+          <Button size="sm" variant="ghost" loading={cancel.isPending} onClick={() => cancel.mutate()}>
+            Stop
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const left = download.failures.length > 0 && (
+    <details className="mt-1 text-[12px] text-ink-3">
+      <summary className="cursor-pointer">
+        {download.failed} stocks were left out by the data checks
+        {download.without_actions > 0 ? ` · ${download.without_actions} without corporate-action history` : ""}
+      </summary>
+      <ul className="mt-1 space-y-0.5">
+        {download.failures.map((f) => (
+          <li key={f.symbol}>
+            <span className="font-mono text-ink-2">{f.symbol}</span>: {f.reason}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+
+  return (
+    <div className={cx("rounded-xl border p-4", prominent ? "border-brand/40 bg-brand/5" : "border-line bg-surface-2/50")}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-[14rem] flex-1">
+          <div className="text-[13.5px] font-semibold text-ink">{prominent ? "No market data yet? Download it." : "Download fresh data instead"}</div>
+          <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-3">
+            NIFTY 500 stocks, ten years of daily prices and corporate actions, about 150 MB. Takes around five to ten minutes. It comes straight from the NSE and Upstox's public
+            services to this computer, with no account needed.
+          </p>
+        </div>
+        <Button
+          variant={prominent ? "primary" : "secondary"}
+          icon={<Download className="size-4" aria-hidden />}
+          loading={start.isPending}
+          onClick={() => start.mutate()}
+        >
+          Download market data
+        </Button>
+      </div>
+      {download.state === "ERROR" && (
+        <Callout tone="danger" className="mt-3" title="The download did not finish">
+          {download.message}
+        </Callout>
+      )}
+      {download.state === "CANCELLED" && (
+        <Callout tone="info" className="mt-3">
+          {download.message}
+        </Callout>
+      )}
+      {download.state === "DONE" && (
+        <Callout tone="success" className="mt-3">
+          {download.message}
+        </Callout>
+      )}
+      {left}
+      {start.isError && (
+        <Callout tone="danger" className="mt-3">
+          {errorMessage(start.error)}
+        </Callout>
+      )}
+    </div>
+  );
+}
 
 /**
  * Choosing the market-data folder without typing a path.
@@ -19,12 +104,14 @@ export function DataFolderPicker({ path, onPath }: { path: string; onPath: (path
   const folder = status.data?.data_folder;
   const candidates = folder?.candidates ?? [];
   const scanning = folder?.scan === "RUNNING" || scan.isPending;
+  const downloading = status.data?.download.state === "RUNNING";
   const best = candidates[0]?.path;
 
-  // Select the best match as soon as one is found, unless a folder is already chosen.
+  // Select the best match as soon as one is found, unless a folder is already chosen. Not while a
+  // download is filling a folder: that half-written folder is not data to connect yet.
   useEffect(() => {
-    if (!path && best) onPath(best);
-  }, [path, best, onPath]);
+    if (!path && best && !downloading) onPath(best);
+  }, [path, best, downloading, onPath]);
 
   const browse = () =>
     pick.mutate(
@@ -32,9 +119,11 @@ export function DataFolderPicker({ path, onPath }: { path: string; onPath: (path
       { onSuccess: (result) => result.path && onPath(result.path) },
     );
 
+  const noneFound = !scanning && candidates.length === 0;
   return (
     <div className="space-y-4">
-      {candidates.length > 0 && (
+      {(noneFound || downloading) && <DownloadData prominent />}
+      {!downloading && candidates.length > 0 && (
         <div className="space-y-2">
           <div className="text-[12.5px] font-medium text-ink-3">Found on this computer</div>
           {candidates.map((candidate) => (
@@ -55,15 +144,15 @@ export function DataFolderPicker({ path, onPath }: { path: string; onPath: (path
         </div>
       )}
 
-      {scanning && (
+      {scanning && !downloading && (
         <div className="rounded-xl border border-line bg-surface-2/60 px-4 py-3">
           <Spinner label={candidates.length ? "Still searching your drives for more…" : "Looking for your market data on this computer…"} />
         </div>
       )}
 
-      {!scanning && candidates.length === 0 && (
+      {noneFound && (
         <Callout tone="warn" title="We could not find market data on this computer">
-          Choose the folder that holds it with the Browse button below. If you do not have market data yet, you can skip this step and add it later in Settings.
+          If you already have a QuantOS data folder, choose it with Browse. Otherwise use the download above, or skip this step and do it later in Settings.
         </Callout>
       )}
 
@@ -89,6 +178,8 @@ export function DataFolderPicker({ path, onPath }: { path: string; onPath: (path
         </Button>
         <span className="text-[12.5px] text-ink-3">Looks through your internal drives. Nothing leaves this computer.</span>
       </div>
+
+      {!noneFound && !downloading && <DownloadData prominent={false} />}
 
       {(pick.isError || scan.isError) && (
         <Callout tone="danger">{errorMessage(pick.error ?? scan.error)}</Callout>

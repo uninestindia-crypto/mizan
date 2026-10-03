@@ -85,7 +85,7 @@ function Screener() {
           value={universe}
           onChange={setUniverse}
           options={[
-            { value: "liquid", label: "Liquid 423" },
+            { value: "liquid", label: "Liquid stocks" },
             { value: "nifty500", label: "NIFTY 500" },
             { value: "all", label: "All listed" },
           ]}

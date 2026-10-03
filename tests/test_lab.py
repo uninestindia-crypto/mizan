@@ -401,7 +401,7 @@ def test_run_lab_refuses_a_test_across_a_demerger(index: MarketIndex) -> None:
         (LabRequest("buy_hold", {}, "stocks", ("ZZZ",)), "not in the market data"),
         (LabRequest("buy_hold", {}, "stocks", ()), "between 1 and 20"),
         (LabRequest("buy_hold", {}, "universe", universe="liquid"), "cannot be run"),
-        (LabRequest("momentum", {}, "universe", universe="moon"), "Liquid 423"),
+        (LabRequest("momentum", {}, "universe", universe="moon"), "Liquid stocks"),
         (LabRequest("buy_hold", {}, "stocks", ("AAA",), end="2020-07-10"), "too short"),
         (LabRequest("buy_hold", {}, "stocks", ("AAA",), capital=Decimal("5")), "Capital"),
         (LabRequest("buy_hold", {}, "stocks", ("AAA",), start="yesterday"), "not a valid date"),

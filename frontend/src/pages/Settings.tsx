@@ -288,7 +288,7 @@ function DataSection() {
           <Button
             icon={<RefreshCw className="size-4" aria-hidden />}
             loading={setFolder.isPending || build.isPending || job.state === "RUNNING"}
-            disabled={!path}
+            disabled={!path || data.download.state === "RUNNING"}
             onClick={() => setFolder.mutate(path, { onSuccess: () => build.mutate() })}
           >
             {job.state === "RUNNING" ? "Building index" : data.index.ready ? "Rebuild index" : "Connect and build"}

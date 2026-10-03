@@ -99,7 +99,7 @@ function Breadth() {
   const total = b ? b.advancers + b.decliners + b.unchanged : 0;
   return (
     <Card>
-      <CardHeader title="Market breadth" subtitle={b ? `Liquid 423 · session of ${date(b.asof)}` : "Liquid stocks"} />
+      <CardHeader title="Market breadth" subtitle={b ? `Liquid ${b.count} · session of ${date(b.asof)}` : "Liquid stocks"} />
       {overview.isPending || !b ? (
         <Skeleton className="h-24" />
       ) : (
@@ -172,7 +172,7 @@ function Movers() {
       <div className="flex items-center justify-between gap-3 px-5 pt-5">
         <div>
           <h2 className="text-[15px] font-semibold text-ink">Biggest moves</h2>
-          <p className="mt-0.5 text-[13px] text-ink-3">Liquid 423, last session</p>
+          <p className="mt-0.5 text-[13px] text-ink-3">Liquid stocks, last session</p>
         </div>
         <Segmented
           label="Movers"

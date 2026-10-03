@@ -20,7 +20,7 @@ from quant_system.market.index import BENCHMARK_SYMBOL, BarSeries, MarketIndex, 
 MAX_STOCKS = 20
 MAX_TRADES_RETURNED = 1000
 _LIST_NOTIONAL = Decimal("1000000000")
-UNIVERSES = {"liquid": "Liquid 423 (10-year, ₹5 cr+/day)", "nifty500": "NIFTY 500"}
+UNIVERSES = {"liquid": "Liquid stocks (10-year history, ₹5 cr+/day)", "nifty500": "NIFTY 500"}
 
 
 class LabError(ValueError):
@@ -268,7 +268,7 @@ def run_lab(
 def _resolve_symbols(index: MarketIndex, request: LabRequest) -> list[str]:
     if request.scope == "universe":
         if request.universe not in UNIVERSES:
-            raise LabError("Choose the Liquid 423 or NIFTY 500 universe.")
+            raise LabError("Choose the Liquid stocks or NIFTY 500 universe.")
         symbols = [s for s in index.universe(request.universe) if s != BENCHMARK_SYMBOL]
         if not symbols:
             raise LabError("That universe has no stocks in the market data.")
