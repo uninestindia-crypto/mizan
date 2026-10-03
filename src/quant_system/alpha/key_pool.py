@@ -20,6 +20,9 @@ class ProviderType(StrEnum):
     GROQ = "GROQ"
     OPENAI = "OPENAI"
     ANTHROPIC = "ANTHROPIC"
+    GEMINI = "GEMINI"
+    DEEPSEEK = "DEEPSEEK"
+    MISTRAL = "MISTRAL"
     CLAUDE_CLI = "CLAUDE_CLI"
     CODEX_CLI = "CODEX_CLI"
     ANTIGRAVITY_CLI = "ANTIGRAVITY_CLI"
@@ -122,6 +125,9 @@ class KeyPoolManager:
             ("GROQ_API_KEY", "GROQ_API_KEYS", ProviderType.GROQ),
             ("OPENAI_API_KEY", "OPENAI_API_KEYS", ProviderType.OPENAI),
             ("ANTHROPIC_API_KEY", "ANTHROPIC_API_KEYS", ProviderType.ANTHROPIC),
+            ("GEMINI_API_KEY", "GEMINI_API_KEYS", ProviderType.GEMINI),
+            ("DEEPSEEK_API_KEY", "DEEPSEEK_API_KEYS", ProviderType.DEEPSEEK),
+            ("MISTRAL_API_KEY", "MISTRAL_API_KEYS", ProviderType.MISTRAL),
         ]
         for single_var, multi_var, provider in env_mappings:
             raw_keys: list[str] = []

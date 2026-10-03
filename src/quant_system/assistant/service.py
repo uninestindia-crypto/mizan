@@ -376,6 +376,9 @@ class PlatformAssistantService:
             ProviderType.ANTHROPIC,
             ProviderType.OPENAI,
             ProviderType.OPENROUTER,
+            ProviderType.GEMINI,
+            ProviderType.DEEPSEEK,
+            ProviderType.MISTRAL,
         ]:
             key = self.key_pool.get_active_key(provider)
             if key:

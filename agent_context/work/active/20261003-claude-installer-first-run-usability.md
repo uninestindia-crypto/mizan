@@ -26,6 +26,8 @@ installed app:
 
 ## Owned paths
 
+- `src/quant_system/alpha/{model_catalog,key_pool,direct_providers}.py`; three lines in `assistant/service.py`
+  (claimed by `20260904-antigravity-claude-fable-analysis.md`; notice filed, founder-instructed)
 - `src/quant_system/server/v2/paths.py`, `cli_bridge.py`, `credentials.py`, `router.py`, `schemas.py`
 - `src/quant_system/server/v2/models.py` (new), `system.py` (new)
 - `frontend/src/pages/Welcome.tsx`, `Settings.tsx`; `frontend/src/components/AgentCliBridge.tsx`;

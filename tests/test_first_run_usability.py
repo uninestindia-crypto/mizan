@@ -709,3 +709,104 @@ def test_scrubbing_leaves_a_file_alone_when_nothing_matches(tmp_path: Path) -> N
     assert env_file.read_bytes() == b"A=1\r\nB=2\r\n"
     assert scrub_mirrored_value(env_file, "A", "1") is True
     assert env_file.read_bytes() == b"B=2\r\n"  # the other line and its line ending are untouched
+
+
+# ------------------------------------------- every key the Settings page accepts is used
+
+
+def test_the_key_pool_loads_gemini_deepseek_and_mistral_keys(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from quant_system.alpha.key_pool import KeyPoolManager, ProviderType
+
+    monkeypatch.setenv("GEMINI_API_KEY", "g-1")
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "d-1")
+    monkeypatch.setenv("MISTRAL_API_KEYS", "m-1,m-2")
+    pool = KeyPoolManager()
+    pool.load_from_env()
+    assert pool.get_active_key(ProviderType.GEMINI) is not None
+    assert pool.get_active_key(ProviderType.DEEPSEEK) is not None
+    assert [k.secret_value for k in pool.keys if k.provider == ProviderType.MISTRAL] == [
+        "m-1",
+        "m-2",
+    ]
+
+
+def _key(secret: str = "secret-value") -> Any:
+    key = MagicMock(spec=ManagedKey)
+    key.secret_value = secret
+    return key
+
+
+def test_every_provider_with_a_settings_card_has_a_client() -> None:
+    from quant_system.alpha.direct_providers import get_direct_client_for_provider
+    from quant_system.alpha.key_pool import ProviderType
+
+    for provider in (
+        ProviderType.OPENROUTER,
+        ProviderType.GROQ,
+        ProviderType.OPENAI,
+        ProviderType.ANTHROPIC,
+        ProviderType.GEMINI,
+        ProviderType.DEEPSEEK,
+        ProviderType.MISTRAL,
+    ):
+        assert get_direct_client_for_provider(provider) is not None
+
+
+def test_deepseek_and_mistral_requests_name_the_newest_model_and_force_no_json_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from quant_system.alpha.direct_providers import DeepSeekClient, MistralClient
+
+    seen: list[tuple[str, tuple[str, ...]]] = []
+
+    def latest(provider: str, key: str | None, *, prefer: tuple[str, ...] = ()) -> str:
+        seen.append((provider, prefer))
+        return f"{provider}-newest"
+
+    monkeypatch.setattr("quant_system.alpha.direct_providers.latest_model_id", latest)
+    for client, url in (
+        (DeepSeekClient(), "https://api.deepseek.com/chat/completions"),
+        (MistralClient(), "https://api.mistral.ai/v1/chat/completions"),
+    ):
+        request = client.build_request("hello", _key("k"))
+        body = json.loads(request.data or b"")  # type: ignore[arg-type]
+        assert request.full_url == url
+        assert request.get_header("Authorization") == "Bearer k"
+        assert body["model"].endswith("-newest") and "response_format" not in body
+        assert body["messages"][-1] == {"role": "user", "content": "hello"}
+        assert (
+            client.parse_response_content(b'{"choices": [{"message": {"content": "hi there"}}]}')
+            == "hi there"
+        )
+    assert [p for p, _ in seen] == ["deepseek", "mistral"]
+
+
+def test_gemini_request_keeps_the_key_out_of_the_url_and_reads_the_reply(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from quant_system.alpha.direct_providers import GeminiClient
+
+    monkeypatch.setattr(
+        "quant_system.alpha.direct_providers.latest_model_id",
+        lambda provider, key, *, prefer=(): "gemini-9-flash",
+    )
+    client = GeminiClient()
+    request = client.build_request("hello", _key("AIza-secret"))
+    assert request.full_url.endswith("/models/gemini-9-flash:generateContent")
+    assert "AIza-secret" not in request.full_url
+    assert request.get_header("X-goog-api-key") == "AIza-secret"
+    reply = b'{"candidates": [{"content": {"parts": [{"text": "Hel"}, {"text": "lo"}]}}]}'
+    assert client.parse_response_content(reply) == "Hello"
+    assert client.parse_response_content(b'{"candidates": []}') == ""
+
+
+def test_the_assistant_falls_back_to_the_new_providers() -> None:
+    import inspect
+
+    from quant_system.assistant import service
+
+    source = inspect.getsource(service)
+    for name in ("GEMINI", "DEEPSEEK", "MISTRAL"):
+        assert f"ProviderType.{name}" in source

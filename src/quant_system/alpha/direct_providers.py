@@ -1,4 +1,4 @@
-"""Direct REST API clients for OpenRouter, Groq, OpenAI, and Anthropic."""
+"""Direct REST API clients for OpenRouter, Groq, OpenAI, Anthropic, Gemini, DeepSeek and Mistral."""
 
 from __future__ import annotations
 
@@ -288,6 +288,95 @@ class AnthropicClient(BaseDirectAPIClient):
         return ""
 
 
+class OpenAICompatibleClient(BaseDirectAPIClient):
+    """Chat-completions clients that speak OpenAI's wire format (DeepSeek, Mistral).
+
+    Plain text in, plain text out: no JSON mode is forced, because this client also answers
+    conversational questions. Callers that need JSON parse it tolerantly with
+    :func:`parse_json_from_llm_response`.
+    """
+
+    ENDPOINT = ""
+    SYSTEM_PROMPT = "You are a quantitative trading advisory assistant."
+
+    def build_request(
+        self, prompt: str, key: ManagedKey, model: str | None = None
+    ) -> urllib.request.Request:
+        payload = {
+            "model": self.resolve_model(key, model),
+            "messages": [
+                {"role": "system", "content": self.SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.1,
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {key.secret_value}",
+            "User-Agent": "QuantOS/2.0",
+        }
+        return urllib.request.Request(
+            self.ENDPOINT, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST"
+        )
+
+    def parse_response_content(self, response_body: bytes) -> str:
+        data = json.loads(response_body.decode("utf-8"))
+        choices = data.get("choices", [])
+        if choices and "message" in choices[0]:
+            return str(choices[0]["message"].get("content", ""))
+        return ""
+
+
+class DeepSeekClient(OpenAICompatibleClient):
+    """Direct REST client for DeepSeek (https://api.deepseek.com)."""
+
+    ENDPOINT = "https://api.deepseek.com/chat/completions"
+    PROVIDER = "deepseek"
+    PREFER = ("chat",)
+
+
+class MistralClient(OpenAICompatibleClient):
+    """Direct REST client for Mistral (https://api.mistral.ai)."""
+
+    ENDPOINT = "https://api.mistral.ai/v1/chat/completions"
+    PROVIDER = "mistral"
+    PREFER = ("large",)
+
+
+class GeminiClient(BaseDirectAPIClient):
+    """Direct REST client for the Gemini API (https://generativelanguage.googleapis.com)."""
+
+    ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    PROVIDER = "gemini"
+    PREFER = ("flash",)  # the assistant favours a fast model; the newest Flash is chosen live
+
+    def build_request(
+        self, prompt: str, key: ManagedKey, model: str | None = None
+    ) -> urllib.request.Request:
+        payload = {
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.1},
+        }
+        headers = {
+            "Content-Type": "application/json",
+            # In a header, not the URL, so the key never lands in a log or an error message.
+            "x-goog-api-key": key.secret_value,
+            "User-Agent": "QuantOS/2.0",
+        }
+        url = self.ENDPOINT.format(model=self.resolve_model(key, model))
+        return urllib.request.Request(
+            url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST"
+        )
+
+    def parse_response_content(self, response_body: bytes) -> str:
+        data = json.loads(response_body.decode("utf-8"))
+        candidates = data.get("candidates", [])
+        if candidates:
+            parts = candidates[0].get("content", {}).get("parts", [])
+            return "".join(str(part.get("text", "")) for part in parts if isinstance(part, dict))
+        return ""
+
+
 def get_direct_client_for_provider(provider: ProviderType) -> BaseDirectAPIClient | None:
     """Factory helper returning appropriate direct API client."""
     if provider == ProviderType.OPENROUTER:
@@ -298,4 +387,10 @@ def get_direct_client_for_provider(provider: ProviderType) -> BaseDirectAPIClien
         return OpenAIClient()
     if provider == ProviderType.ANTHROPIC:
         return AnthropicClient()
+    if provider == ProviderType.GEMINI:
+        return GeminiClient()
+    if provider == ProviderType.DEEPSEEK:
+        return DeepSeekClient()
+    if provider == ProviderType.MISTRAL:
+        return MistralClient()
     return None
