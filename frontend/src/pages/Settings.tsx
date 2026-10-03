@@ -439,7 +439,7 @@ function Accounts() {
         </Callout>
       )}
       <Callout tone="info">
-        Keys and tokens are encrypted locally for your Windows account and mirrored to your local .env file. They never leave this computer and are never sent to external servers except to ping the respective provider API.
+        Keys and tokens are stored encrypted in Windows Credential Manager for your Windows account. They are never written to a file, never leave this computer, and are sent only to the provider they belong to.
       </Callout>
 
       {/* 1. Upstox V3 Highlight Card */}

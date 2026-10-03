@@ -48,7 +48,7 @@ from quant_system.server.v2.credentials import (
     AI_KEY_NAMES,
     CredentialError,
     CredentialStore,
-    sync_to_local_env,
+    scrub_mirrored_value,
     verify_credential_connection,
     with_saved_credentials,
 )
@@ -603,7 +603,6 @@ def put_credential(name: str, body: SecretRequest) -> dict[str, Any]:
         raise V2Error(400, "CREDENTIAL_REFUSED", str(err)) from err
     val = body.value.strip()
     os.environ[name] = val
-    sync_to_local_env(name, val)
     return {"available": store.available, "secrets": store.status()}
 
 
@@ -611,12 +610,13 @@ def put_credential(name: str, body: SecretRequest) -> dict[str, Any]:
 def delete_credential(name: str) -> dict[str, Any]:
     store = services().credentials
     try:
+        previous = store.get(name)
         store.delete(name)
     except CredentialError as err:
         raise V2Error(400, "CREDENTIAL_REFUSED", str(err)) from err
     if name in os.environ:
         os.environ.pop(name, None)
-    sync_to_local_env(name, None)
+    scrub_mirrored_value(paths.app_root() / ".env", name, previous)
     return {"available": store.available, "secrets": store.status()}
 
 

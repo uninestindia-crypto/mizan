@@ -1,7 +1,7 @@
 """API keys and tokens in Windows Credential Manager, never in a file written by QuantOS.
 
 Values are write-only from the UI's point of view: the API reports whether a secret is set and where
-it came from, never the secret itself. Stored secrets are copied into the process environment at
+it came from, never the secret itself. They are never copied into a file. Stored secrets are copied into the process environment at
 startup (without overriding a value already set, e.g. from ``.env``), which is how the existing
 provider clients read them.
 """
@@ -12,6 +12,7 @@ import ctypes
 import os
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 TARGET_PREFIX = "QuantOS:"
@@ -345,40 +346,35 @@ class _WinCredApi:
         )
 
 
-def sync_to_local_env(name: str, value: str | None) -> None:
-    """Safely updates the install-root-relative .env file without leaking across drives."""
-    from pathlib import Path
+def scrub_mirrored_value(env_file: Path, name: str, value: str | None) -> bool:
+    """Remove ``NAME=value`` from a ``.env`` file, but only when the value is the one being removed.
 
-    if getattr(sys, "frozen", False):
-        root_dir = Path(sys.executable).parent.resolve()
-    else:
-        root_dir = Path(__file__).resolve().parents[4]
-
-    env_file = root_dir / ".env"
-    lines: list[str] = []
-    found = False
-
-    if env_file.exists():
-        try:
-            content = env_file.read_text(encoding="utf-8")
-            for line in content.splitlines():
-                stripped = line.strip()
-                if stripped.startswith(f"{name}=") or stripped == name:
-                    if value is not None:
-                        lines.append(f"{name}={value.strip()}")
-                    found = True
-                else:
-                    lines.append(line)
-        except Exception:
-            lines = []
-
-    if not found and value is not None:
-        lines.append(f"{name}={value.strip()}")
-
+    Earlier builds copied every saved secret into a plaintext ``.env``. Nothing writes there any
+    more, yet an old copy would quietly bring a removed key back at the next start. So removing a
+    secret also deletes that one leftover line. A line with a different value is someone's own
+    configuration and is left alone, as is the rest of the file.
+    """
+    if not value or not env_file.is_file():
+        return False
     try:
-        env_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    except Exception:
-        pass
+        raw = env_file.read_bytes().decode("utf-8")
+    except (OSError, UnicodeDecodeError):
+        return False
+    kept: list[str] = []
+    removed = False
+    for line in raw.splitlines(keepends=True):
+        key, sep, rest = line.strip().partition("=")
+        if sep and key.strip() == name and rest.strip().strip("\"'") == value.strip():
+            removed = True
+            continue
+        kept.append(line)
+    if not removed:
+        return False
+    try:
+        env_file.write_bytes("".join(kept).encode("utf-8"))
+    except OSError:
+        return False
+    return True
 
 
 def verify_credential_connection(provider: str, credentials: dict[str, str]) -> dict[str, Any]:

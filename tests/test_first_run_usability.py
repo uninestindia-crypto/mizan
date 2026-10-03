@@ -645,3 +645,67 @@ def test_the_code_endpoint_refuses_when_nothing_is_waiting(
     response = client.post("/api/v2/cli/jobs/claude/input", json={"text": "abc"}, headers=headers)
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "NO_SIGN_IN_WAITING"
+
+
+# ------------------------------------------------------------- keys never go into a file
+
+
+@pytest.fixture()
+def credential_client(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[TestClient]:
+    import uuid
+
+    from quant_system.server.v2.credentials import CredentialStore
+
+    store = CredentialStore(prefix=f"QuantOS-test-{uuid.uuid4().hex[:8]}:")
+    router.services().credentials = store
+    yield client
+    for secret in store.status():
+        store.delete(str(secret["name"]))
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+
+
+def test_saving_a_key_writes_nothing_to_a_dot_env_file(
+    credential_client: TestClient, headers: dict[str, str], tmp_path: Path
+) -> None:
+    response = credential_client.put(
+        "/api/v2/credentials/HF_TOKEN", json={"value": "hf_example_value"}, headers=headers
+    )
+    assert response.status_code == 200
+    assert not (tmp_path / "app" / ".env").exists()
+
+
+def test_removing_a_key_clears_only_its_own_leftover_line(
+    credential_client: TestClient, headers: dict[str, str], tmp_path: Path
+) -> None:
+    env_file = tmp_path / "app" / ".env"
+    credential_client.put(
+        "/api/v2/credentials/HF_TOKEN", json={"value": "hf_example_value"}, headers=headers
+    )
+    credential_client.put(
+        "/api/v2/credentials/GROQ_API_KEY", json={"value": "gsk_example"}, headers=headers
+    )
+    # What an older build left behind, plus the person's own settings.
+    env_file.write_text(
+        "PORT=8000\nHF_TOKEN=hf_example_value\nGROQ_API_KEY=my-own-different-value\n",
+        encoding="utf-8",
+    )
+    credential_client.delete("/api/v2/credentials/HF_TOKEN", headers=headers)
+    credential_client.delete("/api/v2/credentials/GROQ_API_KEY", headers=headers)
+    assert (
+        env_file.read_text(encoding="utf-8") == "PORT=8000\nGROQ_API_KEY=my-own-different-value\n"
+    )
+
+
+def test_scrubbing_leaves_a_file_alone_when_nothing_matches(tmp_path: Path) -> None:
+    from quant_system.server.v2.credentials import scrub_mirrored_value
+
+    env_file = tmp_path / ".env"
+    env_file.write_bytes(b"A=1\r\nB=2\r\n")
+    assert scrub_mirrored_value(env_file, "A", "other") is False
+    assert scrub_mirrored_value(env_file, "A", None) is False
+    assert scrub_mirrored_value(tmp_path / "missing.env", "A", "1") is False
+    assert env_file.read_bytes() == b"A=1\r\nB=2\r\n"
+    assert scrub_mirrored_value(env_file, "A", "1") is True
+    assert env_file.read_bytes() == b"B=2\r\n"  # the other line and its line ending are untouched
