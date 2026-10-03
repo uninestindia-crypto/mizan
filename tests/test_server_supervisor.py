@@ -16,6 +16,11 @@ from quant_system.server.supervisor import (
 )
 
 _POLL_SECONDS = 0.05
+# A worker is a freshly spawned Python process that imports the server stack before it runs its
+# action. On the reference machine (Snapdragon X, Windows 11 ARM64) that start-up alone is about
+# 3 s, so a 0.8 s task finishes at about 4 s (measured 2026-10-03). The deadline only has to be
+# longer than a healthy start; it is not an assertion about speed.
+_WORKER_START_BUDGET = 15.0
 
 
 def _failed_or_lost(record: OperationRecord) -> str | None:
@@ -101,7 +106,7 @@ def test_supervisor_heartbeats_and_progress_tracking(
         supervisor_instance,
         op.operation_id,
         lambda record: record.last_heartbeat_at is not None,
-        timeout=3.0,
+        timeout=_WORKER_START_BUDGET,
         describe="the worker to emit its first heartbeat",
         abort_on=_failed_or_lost,
     )
@@ -110,7 +115,7 @@ def test_supervisor_heartbeats_and_progress_tracking(
         supervisor_instance,
         op.operation_id,
         lambda record: record.status == OperationStatus.SUCCEEDED,
-        timeout=3.0,
+        timeout=_WORKER_START_BUDGET,
         describe="the operation to succeed",
     )
     assert final_op.status == OperationStatus.SUCCEEDED

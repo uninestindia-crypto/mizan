@@ -675,11 +675,11 @@ def test_the_real_heg_demerger_is_left_unresolved_because_nothing_prices_the_ent
     verdict, and it is what lets the paper book disclose an unpriced asset instead of booking a
     fabricated loss or a fabricated recovery.
     """
-    ca = (
-        REPO_ROOT
-        / "data/evidence/market-cache/nifty500-refresh-20230828-20260827"
-        / "corporate-actions/nse-corporate-actions-HEG.json"
-    )
+    # The authority as NSE returned it on 2026-09-10 (provenance beside it). It is a fixture rather
+    # than the cache file because the cache file was overwritten on 2026-09-30 by a refresh that got
+    # NSE's now-empty answer for the symbol, and this test pins the handling of the event, not the
+    # state of a mutable cache.
+    ca = REPO_ROOT / "tests/fixtures/nse-corporate-actions-HEG-20260910.json"
     records = json.loads(ca.read_text(encoding="utf-8"))
     assert any("Demerger" in str(r.get("subject", "")) for r in records)
 
