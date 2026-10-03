@@ -228,7 +228,7 @@ try {
         "pyproject.toml",
         ".github/workflows/release.yml",
         "scripts/publish-github-release.ps1",
-        "agent_context/work/active/20261003-antigravity-automated-github-releases.md"
+        "agent_context/work/active/20261003-antigravity-release-quantos-2.0.0.md"
     )
 
     foreach ($file in $ownedFiles) {
