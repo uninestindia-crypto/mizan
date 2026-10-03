@@ -1,41 +1,189 @@
-import {
-  Copy,
-  Cpu,
-  LogIn,
-  Play,
-  Terminal,
-} from "lucide-react";
+import { CheckCircle2, Cpu, Download, ExternalLink, LogIn, RefreshCw, Terminal } from "lucide-react";
 import { useState } from "react";
 import { errorMessage } from "../lib/api";
-import { useAgentClis, useLaunchCli } from "../lib/queries";
-import { Badge, Button, Card, CardHeader, Input, Skeleton } from "./ui";
+import { useAgentClis, useLaunchCli, useRefreshAgentClis, useSendCliCode } from "../lib/queries";
+import type { AgentCli } from "../lib/types";
+import { Badge, Button, Callout, Card, CardHeader, Input, Skeleton, Spinner } from "./ui";
+
+type Action = "run" | "signin" | "install" | "custom";
+
+function StateBadge({ agent }: { agent: AgentCli }) {
+  if (agent.job?.state === "RUNNING") return <Badge tone="brand">{agent.job.action === "install" ? "Installing" : "Signing in"}</Badge>;
+  switch (agent.state) {
+    case "CONNECTED":
+      return <Badge tone="up">Connected</Badge>;
+    case "NEEDS_SIGN_IN":
+      return <Badge tone="warn">Sign in needed</Badge>;
+    case "UNKNOWN":
+      return <Badge>Not checked</Badge>;
+    default:
+      return <Badge>Not installed</Badge>;
+  }
+}
+
+function RunningJob({ agent }: { agent: AgentCli }) {
+  const job = agent.job!;
+  const send = useSendCliCode();
+  const [code, setCode] = useState("");
+  return (
+    <div className="mt-3 rounded-lg border border-brand/30 bg-brand/5 p-3 text-[12.5px]">
+      <Spinner label={job.message || "Working…"} />
+      {job.action === "signin" && job.url && (
+        <div className="mt-2 text-ink-3">
+          Browser did not open?{" "}
+          <a href={job.url} target="_blank" rel="noreferrer" className="font-medium text-brand hover:underline">
+            Open the sign-in page <ExternalLink className="inline size-3" aria-hidden />
+          </a>
+        </div>
+      )}
+      {job.accepts_code && job.url && (
+        <form
+          className="mt-2 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (code.trim()) send.mutate({ agentId: agent.id, text: code.trim() }, { onSuccess: () => setCode("") });
+          }}
+        >
+          <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="If the page shows a code, paste it here" spellCheck={false} aria-label="Sign-in code" className="font-mono text-[12px]" />
+          <Button size="sm" type="submit" loading={send.isPending} disabled={!code.trim()}>
+            Submit
+          </Button>
+        </form>
+      )}
+      {send.isError && <div className="mt-1 text-[11.5px] text-down">{errorMessage(send.error)}</div>}
+      <div className="mt-1 text-[11.5px] text-ink-3">{Math.round(job.seconds)}s</div>
+    </div>
+  );
+}
+
+function AgentCard({
+  agent,
+  busy,
+  note,
+  onAction,
+  onRecheck,
+}: {
+  agent: AgentCli;
+  busy: boolean;
+  note: string | null;
+  onAction: (action: Action) => void;
+  onRecheck: () => void;
+}) {
+  const running = agent.job?.state === "RUNNING";
+  const failed = agent.job?.state === "FAILED" ? agent.job : null;
+  const terminalSignin = agent.signin_mode === "terminal";
+
+  return (
+    <div className="flex flex-col justify-between rounded-xl border border-line bg-surface p-4 shadow-[var(--shadow-card)]">
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-surface-2 text-ink">
+              <Cpu className="size-4" aria-hidden />
+            </div>
+            <div>
+              <span className="font-semibold text-ink">{agent.name}</span>
+              <div className="text-[11.5px] text-ink-3">by {agent.maker}</div>
+            </div>
+          </div>
+          <StateBadge agent={agent} />
+        </div>
+        <p className="mt-2.5 text-[12.5px] leading-relaxed text-ink-2">{agent.description}</p>
+        {agent.installed && (
+          <div className="mt-2 text-[11.5px] text-ink-3">
+            {agent.version ? `Version ${agent.version} · ` : ""}
+            {agent.auth_detail}
+          </div>
+        )}
+
+        {running && <RunningJob agent={agent} />}
+
+        {failed && (
+          <Callout tone="danger" className="mt-3" title={failed.message}>
+            {failed.output.length > 0 && (
+              <details className="mt-1">
+                <summary className="cursor-pointer text-[12px] text-ink-3">Show details</summary>
+                <pre className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-ink-2">{failed.output.join("\n")}</pre>
+              </details>
+            )}
+          </Callout>
+        )}
+
+        {note && !running && (
+          <Callout tone="info" className="mt-3">
+            {note}
+          </Callout>
+        )}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line/60 pt-3">
+        {!agent.installed && (
+          <Button size="sm" icon={<Download className="size-3.5" aria-hidden />} loading={running || busy} onClick={() => onAction("install")}>
+            Install
+          </Button>
+        )}
+        {agent.installed && agent.state !== "CONNECTED" && (
+          <Button size="sm" icon={<LogIn className="size-3.5" aria-hidden />} loading={running || busy} onClick={() => onAction("signin")}>
+            {terminalSignin ? "Sign in" : agent.state === "UNKNOWN" ? "Sign in or check" : "Sign in with browser"}
+          </Button>
+        )}
+        {agent.installed && (
+          <Button size="sm" variant={agent.state === "CONNECTED" ? "primary" : "secondary"} icon={<Terminal className="size-3.5" aria-hidden />} disabled={running} onClick={() => onAction("run")}>
+            Open in terminal
+          </Button>
+        )}
+        {terminalSignin && agent.installed && agent.state !== "CONNECTED" && (
+          <Button size="sm" variant="ghost" icon={<RefreshCw className="size-3.5" aria-hidden />} onClick={onRecheck}>
+            Check again
+          </Button>
+        )}
+        {agent.state === "CONNECTED" && (
+          <span className="inline-flex items-center gap-1 text-[12px] text-up">
+            <CheckCircle2 className="size-3.5" aria-hidden /> Ready
+          </span>
+        )}
+      </div>
+
+      {!agent.installed && (
+        <details className="mt-2 text-[11.5px] text-ink-3">
+          <summary className="cursor-pointer">What Install will run</summary>
+          <p className="mt-1">The official installer from the maker, run for you without a terminal window:</p>
+          {agent.install_steps.map((step) => (
+            <code key={step} className="mt-1 block break-all rounded-md border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-ink">
+              {step}
+            </code>
+          ))}
+        </details>
+      )}
+    </div>
+  );
+}
 
 export function AgentCliBridge() {
   const agentQuery = useAgentClis();
-  const launchMutation = useLaunchCli();
-  const [copied, setCopied] = useState<string | null>(null);
+  const launch = useLaunchCli();
+  const refresh = useRefreshAgentClis();
+  const [notes, setNotes] = useState<Record<string, string | null>>({});
+  const [error, setError] = useState<string | null>(null);
   const [customCmd, setCustomCmd] = useState("");
-  const [launchMessage, setLaunchMessage] = useState<string | null>(null);
 
-  const copy = (text: string) => {
-    void navigator.clipboard?.writeText(text);
-    setCopied(text);
-    setTimeout(() => setCopied(null), 1500);
-  };
-
-  const handleLaunch = (agentId: string, action: "run" | "signin" | "install" | "custom", customCommand?: string) => {
-    setLaunchMessage(null);
-    launchMutation.mutate(
-      { agent_id: agentId, action, custom_command: customCommand },
+  const run = (agentId: string, action: Action, custom?: string) => {
+    setError(null);
+    setNotes((prev) => ({ ...prev, [agentId]: null }));
+    launch.mutate(
+      { agent_id: agentId, action, custom_command: custom },
       {
         onSuccess: (data) => {
-          setLaunchMessage(data.message || `Launched ${agentId} session.`);
-          setTimeout(() => setLaunchMessage(null), 5000);
+          // A background job reports its own progress on the card; only a terminal needs a note.
+          if (!data.job && action === "signin") {
+            setNotes((prev) => ({
+              ...prev,
+              [agentId]: "A window opened. Choose “Login with Google” there and finish in your browser, then come back and press Check again.",
+            }));
+          }
         },
-        onError: (err) => {
-          setLaunchMessage(`Error: ${errorMessage(err)}`);
-        },
-      }
+        onError: (err) => setError(errorMessage(err)),
+      },
     );
   };
 
@@ -43,130 +191,56 @@ export function AgentCliBridge() {
     <div className="space-y-5">
       <Card>
         <CardHeader
-          title="Coding Agent CLI Bridge"
-          subtitle="One-click connect, authenticate, and launch interactive pairing sessions with Google Antigravity, OpenAI Codex, and Claude Code directly in your QuantOS project."
+          title="Coding agents"
+          subtitle="Install a coding agent and sign in with your browser. No commands to type: QuantOS runs the maker's own installer and opens the sign-in page for you."
+          action={
+            <Button size="sm" variant="ghost" icon={<RefreshCw className="size-3.5" aria-hidden />} loading={refresh.isPending} onClick={() => refresh.mutate()}>
+              Check status
+            </Button>
+          }
         />
-        {launchMessage && (
-          <div className="mb-4 flex items-center gap-2 rounded-lg bg-brand/10 px-3.5 py-2 text-[13px] font-medium text-brand">
-            <Terminal className="size-4 shrink-0" />
-            <span>{launchMessage}</span>
-          </div>
+        {error && (
+          <Callout tone="danger" className="mb-4">
+            {error}
+          </Callout>
         )}
-
         {agentQuery.isPending ? (
           <Skeleton className="h-64" />
+        ) : agentQuery.isError ? (
+          <Callout tone="danger">{errorMessage(agentQuery.error)}</Callout>
         ) : (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {(agentQuery.data ?? []).map((agent) => {
-              const isInstalled = agent.installed;
-              const isAuth = agent.authenticated;
-
-              return (
-                <div key={agent.id} className="flex flex-col justify-between rounded-xl border border-line bg-surface p-4 shadow-[var(--shadow-card)]">
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-surface-2 text-ink">
-                          <Cpu className="size-4" />
-                        </div>
-                        <div>
-                          <span className="font-semibold text-ink">{agent.name}</span>
-                          <div className="text-[11.5px] text-ink-3">by {agent.maker}</div>
-                        </div>
-                      </div>
-                      {isInstalled && isAuth ? (
-                        <Badge tone="up">Connected</Badge>
-                      ) : isInstalled ? (
-                        <Badge tone="warn">Sign In Required</Badge>
-                      ) : (
-                        <Badge>Not Installed</Badge>
-                      )}
-                    </div>
-
-                    <p className="mt-2.5 text-[12.5px] leading-relaxed text-ink-2">{agent.description}</p>
-
-                    <div className="mt-3 space-y-1 rounded-lg border border-line/70 bg-surface-2/60 p-2.5 text-[12px]">
-                      <div className="flex justify-between text-ink-3">
-                        <span>Binary:</span>
-                        <span className="font-mono text-ink">{isInstalled ? agent.version ?? agent.command : "Not in PATH"}</span>
-                      </div>
-                      <div className="flex justify-between text-ink-3">
-                        <span>Auth status:</span>
-                        <span className="text-ink">{agent.auth_detail}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-3">
-                    {isInstalled ? (
-                      <div className="flex w-full flex-wrap items-center gap-2">
-                        <Button
-                          size="sm"
-                          icon={<Play className="size-3.5" />}
-                          loading={launchMutation.isPending && launchMutation.variables?.agent_id === agent.id && launchMutation.variables?.action === "run"}
-                          onClick={() => handleLaunch(agent.id, "run")}
-                        >
-                          Launch CLI
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          icon={<LogIn className="size-3.5" />}
-                          loading={launchMutation.isPending && launchMutation.variables?.agent_id === agent.id && launchMutation.variables?.action === "signin"}
-                          onClick={() => handleLaunch(agent.id, "signin")}
-                        >
-                          Sign In
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex w-full items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[12px] text-ink-3">Install</span>
-                          <code className="rounded-lg border border-line bg-surface-2 px-2.5 py-1 font-mono text-[11.5px] text-ink">{agent.install_cmd}</code>
-                          <button type="button" onClick={() => copy(agent.install_cmd)} aria-label={`Copy ${agent.install_cmd}`} className="rounded-lg p-1.5 text-ink-3 hover:bg-surface-2 hover:text-ink">
-                            {copied === agent.install_cmd ? <span className="text-[11px] text-up">Copied</span> : <Copy className="size-3.5" aria-hidden />}
-                          </button>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          loading={launchMutation.isPending && launchMutation.variables?.agent_id === agent.id && launchMutation.variables?.action === "install"}
-                          onClick={() => handleLaunch(agent.id, "install")}
-                        >
-                          Run Install
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {agentQuery.data.map((agent) => (
+              <AgentCard
+                key={agent.id}
+                agent={agent}
+                busy={launch.isPending && launch.variables?.agent_id === agent.id}
+                note={notes[agent.id] ?? null}
+                onAction={(action) => run(agent.id, action)}
+                onRecheck={() => refresh.mutate()}
+              />
+            ))}
           </div>
         )}
       </Card>
 
-      {/* Custom Agent CLI Launcher */}
-      <Card>
-        <CardHeader
-          title="Custom Agent / Script Runner"
-          subtitle="1-Click execute any local AI agent script, Python runner, or CLI tool in the QuantOS workspace."
-        />
-        <div className="flex gap-2">
-          <Input
-            placeholder="e.g. python -m my_agent or agy --prompt 'analyze portfolio'"
-            value={customCmd}
-            onChange={(e) => setCustomCmd(e.target.value)}
-            className="font-mono text-[12.5px]"
-          />
-          <Button
-            disabled={!customCmd.trim()}
-            loading={launchMutation.isPending && launchMutation.variables?.action === "custom"}
-            onClick={() => handleLaunch("custom", "custom", customCmd.trim())}
-          >
-            Launch in Terminal
-          </Button>
-        </div>
-      </Card>
+      <details className="group">
+        <summary className="cursor-pointer text-[13px] font-medium text-ink-2 hover:text-ink">Advanced: run your own command in a terminal</summary>
+        <Card className="mt-3">
+          <div className="flex gap-2">
+            <Input
+              placeholder="e.g. python -m my_agent"
+              value={customCmd}
+              onChange={(e) => setCustomCmd(e.target.value)}
+              className="font-mono text-[12.5px]"
+              aria-label="Command to run in a terminal"
+            />
+            <Button disabled={!customCmd.trim()} loading={launch.isPending && launch.variables?.action === "custom"} onClick={() => run("custom", "custom", customCmd.trim())}>
+              Open in terminal
+            </Button>
+          </div>
+        </Card>
+      </details>
     </div>
   );
 }

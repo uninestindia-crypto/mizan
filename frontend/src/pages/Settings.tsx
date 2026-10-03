@@ -4,8 +4,6 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Copy,
-  Cpu,
   Database,
   ExternalLink,
   Eye,
@@ -13,24 +11,22 @@ import {
   Info,
   KeyRound,
   Landmark,
-  LogIn,
-  Play,
   RefreshCw,
   Sparkles,
-  Terminal,
   UserRound,
   Zap,
 } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { NavLink, useParams } from "react-router";
 import { AsOf } from "../components/common";
+import { AgentCliBridge } from "../components/AgentCliBridge";
+import { DataFolderPicker } from "../components/DataFolderPicker";
 import { Badge, Button, Callout, Card, CardHeader, cx, Field, Input, PageHeader, ProgressBar, Segmented, Skeleton } from "../components/ui";
 import { errorMessage } from "../lib/api";
 import { date, dateTime, inr, int } from "../lib/format";
 import {
-  useAgentClis,
+  useAiModels,
   useBuildIndex,
-  useLaunchCli,
   useSecretMutation,
   useSecrets,
   useSetDataFolder,
@@ -253,7 +249,7 @@ function DataSection() {
           </div>
         ) : (
           <Callout tone="warn" title="No market data connected">
-            Choose your QuantOS data folder below and build the index.
+            QuantOS is searching for it. Pick the folder below and build the index.
           </Callout>
         )}
         {data.index.ready && data.index.matches_folder === false && (
@@ -287,18 +283,7 @@ function DataSection() {
       </Card>
       <Card>
         <CardHeader title="Data folder" />
-        <Field label="Folder path" htmlFor="d-path" hint="The folder that contains evidence\market-cache.">
-          <Input id="d-path" value={path} onChange={(e) => setPath(e.target.value)} spellCheck={false} className="font-mono text-[13px]" />
-        </Field>
-        {data.data_folder.candidates.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {data.data_folder.candidates.map((c) => (
-              <button key={c.path} type="button" onClick={() => setPath(c.path)} className="rounded-full border border-line bg-surface-2 px-3 py-1 font-mono text-[12px] text-ink-2 hover:border-line-strong">
-                {c.path} · {int(c.datasets)} datasets
-              </button>
-            ))}
-          </div>
-        )}
+        <DataFolderPicker path={path} onPath={setPath} />
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button
             icon={<RefreshCw className="size-4" aria-hidden />}
@@ -386,7 +371,7 @@ function Accounts() {
       secretName: "ANTHROPIC_API_KEY",
       name: "Anthropic Claude",
       maker: "Anthropic",
-      models: "Claude 3.5 Sonnet, Claude 3.7 Sonnet, Haiku 3.5",
+      blurb: "Claude models: Opus, Sonnet and Haiku",
       placeholder: "sk-ant-api03-...",
       link: "https://console.anthropic.com/settings/keys",
     },
@@ -395,7 +380,7 @@ function Accounts() {
       secretName: "OPENAI_API_KEY",
       name: "OpenAI",
       maker: "OpenAI",
-      models: "GPT-4o, o1, o3-mini, Codex",
+      blurb: "GPT models from OpenAI",
       placeholder: "sk-proj-...",
       link: "https://platform.openai.com/api-keys",
     },
@@ -404,7 +389,7 @@ function Accounts() {
       secretName: "GEMINI_API_KEY",
       name: "Google Gemini",
       maker: "Google AI",
-      models: "Gemini 2.0 Flash, Gemini 1.5 Pro, Thinking",
+      blurb: "Gemini models: Pro and Flash",
       placeholder: "AIzaSy...",
       link: "https://aistudio.google.com/app/apikey",
     },
@@ -413,7 +398,7 @@ function Accounts() {
       secretName: "OPENROUTER_API_KEY",
       name: "OpenRouter",
       maker: "OpenRouter",
-      models: "200+ models via universal gateway",
+      blurb: "One key for hundreds of models",
       placeholder: "sk-or-v1-...",
       link: "https://openrouter.ai/keys",
     },
@@ -422,7 +407,7 @@ function Accounts() {
       secretName: "GROQ_API_KEY",
       name: "Groq Cloud",
       maker: "Groq",
-      models: "Llama 3.3 70B, Mixtral 8x7B (Ultra-fast)",
+      blurb: "Fast open models such as Llama",
       placeholder: "gsk_...",
       link: "https://console.groq.com/keys",
     },
@@ -431,7 +416,7 @@ function Accounts() {
       secretName: "DEEPSEEK_API_KEY",
       name: "DeepSeek",
       maker: "DeepSeek",
-      models: "DeepSeek-V3, DeepSeek-R1 Reasoning",
+      blurb: "DeepSeek chat and reasoning models",
       placeholder: "sk-...",
       link: "https://platform.deepseek.com/api_keys",
     },
@@ -440,7 +425,7 @@ function Accounts() {
       secretName: "MISTRAL_API_KEY",
       name: "Mistral AI",
       maker: "Mistral",
-      models: "Mistral Large, Codestral, Pixtral",
+      blurb: "Mistral models",
       placeholder: "...",
       link: "https://console.mistral.ai/api-keys/",
     },
@@ -803,7 +788,7 @@ function Accounts() {
       <Card>
         <CardHeader
           title="AI Cloud Providers"
-          subtitle="Instant 1-click paste and test for OpenAI, Claude, Gemini, Groq, DeepSeek, OpenRouter, and Mistral."
+          subtitle="Paste a key and test it. QuantOS reads the newest models straight from each provider, so this list never goes out of date."
         />
         <div className="grid grid-cols-1 gap-4 pt-2 md:grid-cols-2">
           {aiProviders.map((prov) => {
@@ -830,7 +815,8 @@ function Accounts() {
                       <Badge>Not Set</Badge>
                     )}
                   </div>
-                  <div className="mt-1 text-[11.5px] text-ink-3">{prov.models}</div>
+                  <div className="mt-1 text-[11.5px] text-ink-3">{prov.blurb}</div>
+                  <ProviderModels provider={prov.id} connected={Boolean(isStored || isActive)} refreshKey={test?.valid ? "ok" : "idle"} />
 
                   <div className="relative mt-3">
                     <Input
@@ -895,168 +881,24 @@ function Accounts() {
 }
 
 function AiAssistants() {
-  const agentQuery = useAgentClis();
-  const launchMutation = useLaunchCli();
-  const [copied, setCopied] = useState<string | null>(null);
-  const [customCmd, setCustomCmd] = useState("");
-  const [launchMessage, setLaunchMessage] = useState<string | null>(null);
-
-  const copy = (text: string) => {
-    void navigator.clipboard?.writeText(text);
-    setCopied(text);
-    setTimeout(() => setCopied(null), 1500);
-  };
-
-  const handleLaunch = (agentId: string, action: "run" | "signin" | "install" | "custom", customCommand?: string) => {
-    setLaunchMessage(null);
-    launchMutation.mutate(
-      { agent_id: agentId, action, custom_command: customCommand },
-      {
-        onSuccess: (data) => {
-          setLaunchMessage(data.message || `Launched ${agentId} session.`);
-          setTimeout(() => setLaunchMessage(null), 4000);
-        },
-        onError: (err) => {
-          setLaunchMessage(`Error: ${errorMessage(err)}`);
-        },
-      }
-    );
-  };
-
-  return (
-    <>
-      <Card>
-        <CardHeader
-          title="Coding Agent CLI Bridge"
-          subtitle="One-click connect, sign in, and pair-program with Antigravity CLI, OpenAI Codex CLI, and Claude Code CLI in dedicated workspace terminal sessions."
-        />
-        {launchMessage && (
-          <div className="mb-4 flex items-center gap-2 rounded-lg bg-brand/10 px-3.5 py-2 text-[13px] font-medium text-brand">
-            <Terminal className="size-4 shrink-0" />
-            <span>{launchMessage}</span>
-          </div>
-        )}
-
-        {agentQuery.isPending ? (
-          <Skeleton className="h-64" />
-        ) : (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {(agentQuery.data ?? []).map((agent) => {
-              const isInstalled = agent.installed;
-              const isAuth = agent.authenticated;
-
-              return (
-                <div key={agent.id} className="flex flex-col justify-between rounded-xl border border-line bg-surface p-4 shadow-[var(--shadow-card)]">
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-surface-2 text-ink">
-                          <Cpu className="size-4" />
-                        </div>
-                        <div>
-                          <span className="font-semibold text-ink">{agent.name}</span>
-                          <div className="text-[11.5px] text-ink-3">by {agent.maker}</div>
-                        </div>
-                      </div>
-                      {isInstalled && isAuth ? (
-                        <Badge tone="up">Connected</Badge>
-                      ) : isInstalled ? (
-                        <Badge tone="warn">Sign In Required</Badge>
-                      ) : (
-                        <Badge>Not Installed</Badge>
-                      )}
-                    </div>
-
-                    <p className="mt-2.5 text-[12.5px] leading-relaxed text-ink-2">{agent.description}</p>
-
-                    <div className="mt-3 space-y-1 rounded-lg border border-line/70 bg-surface-2/60 p-2.5 text-[12px]">
-                      <div className="flex justify-between text-ink-3">
-                        <span>Binary:</span>
-                        <span className="font-mono text-ink">{isInstalled ? agent.version ?? agent.command : "Not in PATH"}</span>
-                      </div>
-                      <div className="flex justify-between text-ink-3">
-                        <span>Auth status:</span>
-                        <span className="text-ink">{agent.auth_detail}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-3">
-                    {isInstalled ? (
-                      <div className="flex w-full flex-wrap items-center gap-2">
-                        <Button
-                          size="sm"
-                          icon={<Play className="size-3.5" />}
-                          loading={launchMutation.isPending && launchMutation.variables?.agent_id === agent.id && launchMutation.variables?.action === "run"}
-                          onClick={() => handleLaunch(agent.id, "run")}
-                        >
-                          Launch CLI
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          icon={<LogIn className="size-3.5" />}
-                          loading={launchMutation.isPending && launchMutation.variables?.agent_id === agent.id && launchMutation.variables?.action === "signin"}
-                          onClick={() => handleLaunch(agent.id, "signin")}
-                        >
-                          Sign In
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex w-full items-center justify-between gap-2">
-                        <CommandChip text={agent.install_cmd} copied={copied} onCopy={copy} label="Install" />
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          loading={launchMutation.isPending && launchMutation.variables?.agent_id === agent.id && launchMutation.variables?.action === "install"}
-                          onClick={() => handleLaunch(agent.id, "install")}
-                        >
-                          Run Install
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
-
-      {/* Custom Agent CLI Launcher */}
-      <Card>
-        <CardHeader
-          title="Custom Agent / Script Runner"
-          subtitle="1-Click execute any local AI agent script, Python runner, or CLI tool in the QuantOS workspace."
-        />
-        <div className="flex gap-2">
-          <Input
-            placeholder="e.g. python -m my_agent or agy --prompt 'analyze portfolio'"
-            value={customCmd}
-            onChange={(e) => setCustomCmd(e.target.value)}
-            className="font-mono text-[12.5px]"
-          />
-          <Button
-            disabled={!customCmd.trim()}
-            loading={launchMutation.isPending && launchMutation.variables?.action === "custom"}
-            onClick={() => handleLaunch("custom", "custom", customCmd.trim())}
-          >
-            Launch in Terminal
-          </Button>
-        </div>
-      </Card>
-    </>
-  );
+  return <AgentCliBridge />;
 }
 
-function CommandChip({ text, copied, onCopy, label }: { text: string; copied: string | null; onCopy: (text: string) => void; label: string }) {
+/** The newest models this key can use, read live from the provider. */
+function ProviderModels({ provider, connected, refreshKey }: { provider: string; connected: boolean; refreshKey: string }) {
+  const models = useAiModels(provider, connected);
+  const refetch = models.refetch;
+  useEffect(() => {
+    if (connected && refreshKey === "ok") void refetch();
+  }, [connected, refreshKey, refetch]);
+  if (!connected) return null;
+  if (models.isPending) return <div className="mt-2 text-[11.5px] text-ink-3">Reading the newest models…</div>;
+  if (models.isError) return <div className="mt-2 text-[11.5px] text-ink-3">{errorMessage(models.error)}</div>;
+  if (models.data.newest.length === 0) return null;
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-[12px] text-ink-3">{label}</span>
-      <code className="rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 font-mono text-[12px] text-ink">{text}</code>
-      <button type="button" onClick={() => onCopy(text)} aria-label={`Copy ${text}`} className="rounded-lg p-1.5 text-ink-3 hover:bg-surface-2 hover:text-ink">
-        {copied === text ? <span className="text-[12px] text-up">Copied</span> : <Copy className="size-4" aria-hidden />}
-      </button>
+    <div className="mt-2 text-[11.5px] text-ink-2">
+      <span className="text-ink-3">Newest on your key: </span>
+      {models.data.newest.map((m) => m.name).join(" · ")}
     </div>
   );
 }

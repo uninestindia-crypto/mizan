@@ -13,6 +13,11 @@ class DataFolderRequest(BaseModel):
     path: str = Field(min_length=3, max_length=500)
 
 
+class FolderPickRequest(BaseModel):
+    title: str = Field(default="Choose your QuantOS data folder", max_length=100)
+    initial: str | None = Field(default=None, max_length=500)
+
+
 class LabRunRequest(BaseModel):
     template_id: str = Field(min_length=1, max_length=40)
     params: dict[str, Any] = Field(default_factory=dict)
@@ -84,3 +89,6 @@ class CliLaunchRequest(BaseModel):
     action: Literal["run", "signin", "install", "custom"] = "run"
     custom_command: str | None = Field(default=None, max_length=500)
 
+
+class CliCodeRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=500)

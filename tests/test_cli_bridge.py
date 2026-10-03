@@ -9,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from quant_system.server.app import app
+from quant_system.server.v2 import cli_bridge
 from quant_system.server.v2.cli_bridge import (
     SUPPORTED_AGENTS,
     launch_agent_session,
@@ -45,40 +46,34 @@ def test_list_cli_status_returns_all_agents() -> None:
         assert "name" in item
         assert "installed" in item
         assert "authenticated" in item
-        assert "install_cmd" in item
-        assert "signin_cmd" in item
+        assert item["install_steps"]
         assert "run_cmd" in item
+        assert item["state"] in ("NOT_INSTALLED", "NEEDS_SIGN_IN", "CONNECTED", "UNKNOWN")
 
 
 def test_auth_detection_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test-key")
+    monkeypatch.setattr(cli_bridge, "_find", lambda command: r"C:\claude.exe")
+    monkeypatch.setattr(cli_bridge, "_run_hidden", lambda args, **kw: (1, "Not logged in"))
     status_list = list_cli_status(force=True)
     claude_info = next(item for item in status_list if item["id"] == "claude")
     assert claude_info["authenticated"] is True
+    assert claude_info["state"] == "CONNECTED"
     assert "ANTHROPIC_API_KEY" in claude_info["auth_detail"]
+    cli_bridge.invalidate_cache()
 
 
 def test_launch_agent_session_run_mocked(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_popen = MagicMock()
     monkeypatch.setattr(subprocess, "Popen", mock_popen)
-    monkeypatch.setattr("quant_system.server.v2.cli_bridge.find_windows_terminal", lambda: "C:\\wt.exe")
+    monkeypatch.setattr(
+        "quant_system.server.v2.cli_bridge.find_windows_terminal", lambda: "C:\\wt.exe"
+    )
 
     res = launch_agent_session("antigravity", action="run")
     assert res["success"] is True
     assert res["action"] == "run"
     assert res["command"] == "agy"
-    assert mock_popen.called
-
-
-def test_launch_agent_session_signin_mocked(monkeypatch: pytest.MonkeyPatch) -> None:
-    mock_popen = MagicMock()
-    monkeypatch.setattr(subprocess, "Popen", mock_popen)
-    monkeypatch.setattr("quant_system.server.v2.cli_bridge.find_windows_terminal", lambda: None)
-
-    res = launch_agent_session("codex", action="signin")
-    assert res["success"] is True
-    assert res["action"] == "signin"
-    assert res["command"] == "codex login"
     assert mock_popen.called
 
 
@@ -93,7 +88,9 @@ def test_cli_status_api_endpoint(client: TestClient) -> None:
     assert "claude" in agent_ids
 
 
-def test_cli_launch_api_endpoint(client: TestClient, headers: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cli_launch_api_endpoint(
+    client: TestClient, headers: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     mock_popen = MagicMock()
     monkeypatch.setattr(subprocess, "Popen", mock_popen)
 

@@ -44,7 +44,12 @@ export function useStatus() {
   return useQuery({
     queryKey: keys.status,
     queryFn: () => api<Status>("/api/v2/status"),
-    refetchInterval: (query) => (query.state.data?.index.job.state === "RUNNING" ? 800 : 30_000),
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (data?.index.job.state === "RUNNING") return 800;
+      if (data?.data_folder.scan === "RUNNING") return 1_000;
+      return 30_000;
+    },
   });
 }
 
@@ -142,6 +147,21 @@ export function useSetDataFolder() {
   });
 }
 
+export function usePickFolder() {
+  return useMutation({
+    mutationFn: (body: { title?: string; initial?: string | null }) =>
+      api<{ path: string | null }>("/api/v2/system/pick-folder", "POST", body),
+  });
+}
+
+export function useScanForData() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<{ state: string }>("/api/v2/data/scan", "POST"),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.status }),
+  });
+}
+
 export function useBuildIndex() {
   const qc = useQueryClient();
   return useMutation({
@@ -230,7 +250,16 @@ export function useAgentClis() {
   return useQuery({
     queryKey: ["agent-clis"],
     queryFn: () => api<import("./types").AgentCli[]>("/api/v2/cli/status"),
-    refetchInterval: 15_000,
+    // Check quickly while an install or sign-in is running, lazily otherwise.
+    refetchInterval: (query) => (query.state.data?.some((a) => a.job?.state === "RUNNING") ? 1_500 : 15_000),
+  });
+}
+
+export function useRefreshAgentClis() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<import("./types").AgentCli[]>("/api/v2/cli/status?refresh=true"),
+    onSuccess: (data) => qc.setQueryData(["agent-clis"], data),
   });
 }
 
@@ -238,10 +267,33 @@ export function useLaunchCli() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { agent_id: string; action?: "run" | "signin" | "install" | "custom"; custom_command?: string }) =>
-      api<{ success: boolean; command: string; launcher: string; message: string }>("/api/v2/cli/launch", "POST", body),
+      api<{ success: boolean; command?: string; launcher?: string; message: string; job?: import("./types").AgentCliJob }>(
+        "/api/v2/cli/launch",
+        "POST",
+        body,
+      ),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["agent-clis"] });
     },
+  });
+}
+
+export function useSendCliCode() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ agentId, text }: { agentId: string; text: string }) =>
+      api<{ sent: boolean }>(`/api/v2/cli/jobs/${agentId}/input`, "POST", { text }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["agent-clis"] }),
+  });
+}
+
+export function useAiModels(provider: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["ai-models", provider],
+    queryFn: () => api<import("./types").AiModels>(`/api/v2/ai/models/${provider}`),
+    enabled,
+    retry: false,
+    staleTime: 10 * 60_000,
   });
 }
 

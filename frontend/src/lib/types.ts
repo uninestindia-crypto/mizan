@@ -30,7 +30,13 @@ export interface IndexJob {
 export interface Status {
   version: string;
   settings: Settings;
-  data_folder: { path: string | null; valid: boolean; candidates: { path: string; datasets: number }[] };
+  data_folder: {
+    path: string | null;
+    valid: boolean;
+    candidates: { path: string; datasets: number }[];
+    /** Background search of this PC for market data. */
+    scan: "IDLE" | "RUNNING" | "DONE";
+  };
   index: {
     ready: boolean;
     latest_session?: string;
@@ -422,21 +428,43 @@ export interface AiTool {
   sign_in: string;
 }
 
+export interface AgentCliJob {
+  id: string;
+  action: "install" | "signin";
+  state: "RUNNING" | "DONE" | "FAILED";
+  message: string;
+  /** A sign-in address the tool printed, offered if the browser did not open by itself. */
+  url: string | null;
+  /** The running sign-in can take a code pasted from the sign-in page. */
+  accepts_code: boolean;
+  output: string[];
+  seconds: number;
+}
+
 export interface AgentCli {
   id: string;
   name: string;
   maker: string;
+  description: string;
+  docs_url: string;
   installed: boolean;
   command: string;
   path: string | null;
   version: string | null;
-  authenticated: boolean;
+  /** null: this tool cannot report its sign-in state until it is checked. */
+  authenticated: boolean | null;
   auth_detail: string;
-  auth_env_var: string;
-  install_cmd: string;
-  signin_cmd: string;
+  state: "NOT_INSTALLED" | "NEEDS_SIGN_IN" | "CONNECTED" | "UNKNOWN";
+  signin_mode: "browser" | "terminal";
+  install_steps: string[];
   run_cmd: string;
-  description: string;
+  job: AgentCliJob | null;
+}
+
+export interface AiModels {
+  provider: string;
+  total: number;
+  newest: { id: string; name: string; created: number | null }[];
 }
 
 export interface CredentialTestResult {

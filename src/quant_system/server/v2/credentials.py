@@ -28,8 +28,15 @@ class SecretSpec:
 
 SECRETS: tuple[SecretSpec, ...] = (
     # Indian Stock Market Brokers (Upstox is default)
-    SecretSpec("UPSTOX_API_KEY", "Upstox API key", "Upstox (Default)", "From your Upstox developer app."),
-    SecretSpec("UPSTOX_API_SECRET", "Upstox API secret", "Upstox (Default)", "From your Upstox developer app."),
+    SecretSpec(
+        "UPSTOX_API_KEY", "Upstox API key", "Upstox (Default)", "From your Upstox developer app."
+    ),
+    SecretSpec(
+        "UPSTOX_API_SECRET",
+        "Upstox API secret",
+        "Upstox (Default)",
+        "From your Upstox developer app.",
+    ),
     SecretSpec(
         "UPSTOX_ACCESS_TOKEN",
         "Upstox access token",
@@ -37,34 +44,142 @@ SECRETS: tuple[SecretSpec, ...] = (
         "Daily access token for live market data and historical quotes.",
     ),
     SecretSpec(
-        "UPSTOX_ANALYTICS_TOKEN", "Upstox analytics token", "Upstox (Default)", "Read-only analytics market data token."
+        "UPSTOX_ANALYTICS_TOKEN",
+        "Upstox analytics token",
+        "Upstox (Default)",
+        "Read-only analytics market data token.",
     ),
-    SecretSpec("KITE_API_KEY", "Zerodha Kite API key", "Zerodha Kite", "From your Kite Connect developer console."),
-    SecretSpec("KITE_ACCESS_TOKEN", "Zerodha Kite access token", "Zerodha Kite", "Daily access token from Kite Connect login."),
-    SecretSpec("ANGEL_API_KEY", "Angel One SmartAPI key", "Angel One", "From your SmartAPI developer account."),
-    SecretSpec("ANGEL_CLIENT_CODE", "Angel One client code", "Angel One", "Your Angel One trading account ID."),
-    SecretSpec("ANGEL_PIN", "Angel One trading MPIN", "Angel One", "Your 4-digit Angel One trading PIN."),
-    SecretSpec("ANGEL_TOTP_KEY", "Angel One TOTP secret", "Angel One", "Secret key for automated 2FA TOTP generation."),
-    SecretSpec("DHAN_CLIENT_ID", "Dhan client ID", "Dhan", "Your Dhan 10-digit client ID."),
-    SecretSpec("DHAN_ACCESS_TOKEN", "Dhan access token", "Dhan", "API access token generated from Dhan web portal."),
-    SecretSpec("FYERS_APP_ID", "Fyers App ID", "Fyers", "App ID from Fyers API dashboard."),
-    SecretSpec("FYERS_ACCESS_TOKEN", "Fyers access token", "Fyers", "Generated Fyers 2FA access token."),
-
-    # AI Cloud Providers
-    SecretSpec("ANTHROPIC_API_KEY", "Anthropic Claude API key", "AI Cloud Providers", "For Claude 3.5 Sonnet / Haiku / Opus models."),
-    SecretSpec("OPENAI_API_KEY", "OpenAI API key", "AI Cloud Providers", "For GPT-4o / o1 / Codex models."),
-    SecretSpec("GEMINI_API_KEY", "Google Gemini API key", "AI Cloud Providers", "From Google AI Studio for Gemini 1.5 / 2.0 / Flash."),
-    SecretSpec("OPENROUTER_API_KEY", "OpenRouter API key", "AI Cloud Providers", "Universal gateway for 200+ models with one key."),
-    SecretSpec("GROQ_API_KEY", "Groq API key", "AI Cloud Providers", "Ultra-fast inference for Llama 3 / Mixtral."),
-    SecretSpec("DEEPSEEK_API_KEY", "DeepSeek API key", "AI Cloud Providers", "For DeepSeek-V3 and DeepSeek-R1 reasoning models."),
-    SecretSpec("MISTRAL_API_KEY", "Mistral AI API key", "AI Cloud Providers", "For Mistral Large / Codestral."),
-    SecretSpec("CUSTOM_AI_BASE_URL", "Custom AI Base URL", "AI Cloud Providers", "Base URL for OpenAI-compatible local/remote models."),
-    SecretSpec("CUSTOM_AI_API_KEY", "Custom AI API key", "AI Cloud Providers", "API key for your custom OpenAI-compatible endpoint."),
     SecretSpec(
-        "HF_TOKEN", "Hugging Face token", "Research Models", "For downloading gated weights and fine-tuned models."
+        "KITE_API_KEY",
+        "Zerodha Kite API key",
+        "Zerodha Kite",
+        "From your Kite Connect developer console.",
+    ),
+    SecretSpec(
+        "KITE_ACCESS_TOKEN",
+        "Zerodha Kite access token",
+        "Zerodha Kite",
+        "Daily access token from Kite Connect login.",
+    ),
+    SecretSpec(
+        "ANGEL_API_KEY",
+        "Angel One SmartAPI key",
+        "Angel One",
+        "From your SmartAPI developer account.",
+    ),
+    SecretSpec(
+        "ANGEL_CLIENT_CODE",
+        "Angel One client code",
+        "Angel One",
+        "Your Angel One trading account ID.",
+    ),
+    SecretSpec(
+        "ANGEL_PIN", "Angel One trading MPIN", "Angel One", "Your 4-digit Angel One trading PIN."
+    ),
+    SecretSpec(
+        "ANGEL_TOTP_KEY",
+        "Angel One TOTP secret",
+        "Angel One",
+        "Secret key for automated 2FA TOTP generation.",
+    ),
+    SecretSpec("DHAN_CLIENT_ID", "Dhan client ID", "Dhan", "Your Dhan 10-digit client ID."),
+    SecretSpec(
+        "DHAN_ACCESS_TOKEN",
+        "Dhan access token",
+        "Dhan",
+        "API access token generated from Dhan web portal.",
+    ),
+    SecretSpec("FYERS_APP_ID", "Fyers App ID", "Fyers", "App ID from Fyers API dashboard."),
+    SecretSpec(
+        "FYERS_ACCESS_TOKEN", "Fyers access token", "Fyers", "Generated Fyers 2FA access token."
+    ),
+    # AI Cloud Providers
+    SecretSpec(
+        "ANTHROPIC_API_KEY",
+        "Anthropic Claude API key",
+        "AI Cloud Providers",
+        "For Claude models. Your key decides which ones you can use.",
+    ),
+    SecretSpec(
+        "OPENAI_API_KEY",
+        "OpenAI API key",
+        "AI Cloud Providers",
+        "For OpenAI GPT models. Your key decides which ones you can use.",
+    ),
+    SecretSpec(
+        "GEMINI_API_KEY",
+        "Google Gemini API key",
+        "AI Cloud Providers",
+        "From Google AI Studio, for Gemini models.",
+    ),
+    SecretSpec(
+        "OPENROUTER_API_KEY",
+        "OpenRouter API key",
+        "AI Cloud Providers",
+        "Universal gateway for 200+ models with one key.",
+    ),
+    SecretSpec(
+        "GROQ_API_KEY",
+        "Groq API key",
+        "AI Cloud Providers",
+        "Fast inference for open models such as Llama.",
+    ),
+    SecretSpec(
+        "DEEPSEEK_API_KEY",
+        "DeepSeek API key",
+        "AI Cloud Providers",
+        "For DeepSeek chat and reasoning models.",
+    ),
+    SecretSpec(
+        "MISTRAL_API_KEY", "Mistral AI API key", "AI Cloud Providers", "For Mistral models."
+    ),
+    SecretSpec(
+        "CUSTOM_AI_BASE_URL",
+        "Custom AI Base URL",
+        "AI Cloud Providers",
+        "Base URL for OpenAI-compatible local/remote models.",
+    ),
+    SecretSpec(
+        "CUSTOM_AI_API_KEY",
+        "Custom AI API key",
+        "AI Cloud Providers",
+        "API key for your custom OpenAI-compatible endpoint.",
+    ),
+    SecretSpec(
+        "HF_TOKEN",
+        "Hugging Face token",
+        "Research Models",
+        "For downloading gated weights and fine-tuned models.",
     ),
 )
 _NAMES = {spec.name for spec in SECRETS}
+
+# Which stored secret opens each AI provider's model list.
+AI_KEY_NAMES: dict[str, str] = {
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openai": "OPENAI_API_KEY",
+    "gemini": "GEMINI_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
+    "groq": "GROQ_API_KEY",
+    "deepseek": "DEEPSEEK_API_KEY",
+    "mistral": "MISTRAL_API_KEY",
+}
+
+
+def with_saved_credentials(provided: dict[str, str]) -> dict[str, str]:
+    """Fill in any secret the caller left blank from what is already saved (or in the environment).
+
+    The Test Connection button is enabled for a key that is already saved, but the page never holds
+    a saved key (values are write-only), so it sends nothing. Without this a saved key could never
+    be tested.
+    """
+    merged = {name: value for name, value in provided.items() if value and value.strip()}
+    for spec in SECRETS:
+        if spec.name not in merged:
+            saved = os.environ.get(spec.name, "").strip()
+            if saved:
+                merged[spec.name] = saved
+    return merged
 
 
 class CredentialError(RuntimeError):
@@ -287,7 +402,11 @@ def verify_credential_connection(provider: str, credentials: dict[str, str]) -> 
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 models_count = len(data.get("data", []))
-                return {"valid": True, "provider": "OpenAI", "message": f"Connected! {models_count} models available."}
+                return {
+                    "valid": True,
+                    "provider": "OpenAI",
+                    "message": f"Connected! {models_count} models available.",
+                }
 
         elif prov in ("anthropic", "claude"):
             key = credentials.get("ANTHROPIC_API_KEY", "").strip()
@@ -302,18 +421,28 @@ def verify_credential_connection(provider: str, credentials: dict[str, str]) -> 
                 },
             )
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return {"valid": True, "provider": "Anthropic Claude", "message": "Connected successfully to Claude API."}
+                return {
+                    "valid": True,
+                    "provider": "Anthropic Claude",
+                    "message": "Connected successfully to Claude API.",
+                }
 
         elif prov == "gemini":
             key = credentials.get("GEMINI_API_KEY", "").strip()
             if not key:
                 return {"valid": False, "message": "GEMINI_API_KEY is empty."}
-            url = f"https://generativelanguage.googleapis.com/v1beta/models?key={key}"
-            req = urllib.request.Request(url, headers={"User-Agent": "QuantOS/2.0"})
+            req = urllib.request.Request(
+                "https://generativelanguage.googleapis.com/v1beta/models",
+                headers={"x-goog-api-key": key, "User-Agent": "QuantOS/2.0"},
+            )
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 count = len(data.get("models", []))
-                return {"valid": True, "provider": "Google Gemini", "message": f"Connected! {count} models available."}
+                return {
+                    "valid": True,
+                    "provider": "Google Gemini",
+                    "message": f"Connected! {count} models available.",
+                }
 
         elif prov == "groq":
             key = credentials.get("GROQ_API_KEY", "").strip()
@@ -324,7 +453,11 @@ def verify_credential_connection(provider: str, credentials: dict[str, str]) -> 
                 headers={"Authorization": f"Bearer {key}", "User-Agent": "QuantOS/2.0"},
             )
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return {"valid": True, "provider": "Groq", "message": "Connected successfully to Groq Cloud."}
+                return {
+                    "valid": True,
+                    "provider": "Groq",
+                    "message": "Connected successfully to Groq Cloud.",
+                }
 
         elif prov == "deepseek":
             key = credentials.get("DEEPSEEK_API_KEY", "").strip()
@@ -335,7 +468,11 @@ def verify_credential_connection(provider: str, credentials: dict[str, str]) -> 
                 headers={"Authorization": f"Bearer {key}", "User-Agent": "QuantOS/2.0"},
             )
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return {"valid": True, "provider": "DeepSeek", "message": "Connected successfully to DeepSeek API."}
+                return {
+                    "valid": True,
+                    "provider": "DeepSeek",
+                    "message": "Connected successfully to DeepSeek API.",
+                }
 
         elif prov == "openrouter":
             key = credentials.get("OPENROUTER_API_KEY", "").strip()
@@ -353,7 +490,10 @@ def verify_credential_connection(provider: str, credentials: dict[str, str]) -> 
         elif prov == "upstox":
             token = credentials.get("UPSTOX_ACCESS_TOKEN", "").strip()
             if not token:
-                return {"valid": False, "message": "UPSTOX_ACCESS_TOKEN is required to test connection."}
+                return {
+                    "valid": False,
+                    "message": "UPSTOX_ACCESS_TOKEN is required to test connection.",
+                }
             req = urllib.request.Request(
                 "https://api.upstox.com/v2/user/profile",
                 headers={
@@ -365,13 +505,20 @@ def verify_credential_connection(provider: str, credentials: dict[str, str]) -> 
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8")).get("data", {})
                 user_name = data.get("user_name", "Upstox User")
-                return {"valid": True, "provider": "Upstox", "message": f"Connected as {user_name}!"}
+                return {
+                    "valid": True,
+                    "provider": "Upstox",
+                    "message": f"Connected as {user_name}!",
+                }
 
         elif prov in ("kite", "zerodha"):
             api_key = credentials.get("KITE_API_KEY", "").strip()
             token = credentials.get("KITE_ACCESS_TOKEN", "").strip()
             if not api_key or not token:
-                return {"valid": False, "message": "Both KITE_API_KEY and KITE_ACCESS_TOKEN are required."}
+                return {
+                    "valid": False,
+                    "message": "Both KITE_API_KEY and KITE_ACCESS_TOKEN are required.",
+                }
             req = urllib.request.Request(
                 "https://api.kite.trade/user/profile",
                 headers={
@@ -383,7 +530,11 @@ def verify_credential_connection(provider: str, credentials: dict[str, str]) -> 
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8")).get("data", {})
                 user_name = data.get("user_name", "Kite User")
-                return {"valid": True, "provider": "Zerodha Kite", "message": f"Connected as {user_name}!"}
+                return {
+                    "valid": True,
+                    "provider": "Zerodha Kite",
+                    "message": f"Connected as {user_name}!",
+                }
 
         elif prov == "dhan":
             client_id = credentials.get("DHAN_CLIENT_ID", "").strip()
@@ -406,7 +557,10 @@ def verify_credential_connection(provider: str, credentials: dict[str, str]) -> 
             app_id = credentials.get("FYERS_APP_ID", "").strip()
             token = credentials.get("FYERS_ACCESS_TOKEN", "").strip()
             if not token or not app_id:
-                return {"valid": False, "message": "Both FYERS_APP_ID and FYERS_ACCESS_TOKEN are required."}
+                return {
+                    "valid": False,
+                    "message": "Both FYERS_APP_ID and FYERS_ACCESS_TOKEN are required.",
+                }
             req = urllib.request.Request(
                 "https://api-t1.fyers.in/api/v3/profile",
                 headers={"Authorization": f"{app_id}:{token}", "User-Agent": "QuantOS/2.0"},
@@ -428,7 +582,10 @@ def verify_credential_connection(provider: str, credentials: dict[str, str]) -> 
                 err_msg = str(data["error"])
         except Exception:
             pass
-        return {"valid": False, "provider": provider, "message": f"Authentication failed: {err_msg}"}
+        return {
+            "valid": False,
+            "provider": provider,
+            "message": f"Authentication failed: {err_msg}",
+        }
     except Exception as err:
         return {"valid": False, "provider": provider, "message": f"Connection error: {err}"}
-

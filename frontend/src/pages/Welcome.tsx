@@ -1,7 +1,8 @@
-import { Check, Database, FolderSearch, LineChart, ShieldCheck, Sprout, Zap } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { Check, Database, LineChart, ShieldCheck, Sprout, Zap } from "lucide-react";
+import { type ReactNode, useState } from "react";
 import { useNavigate } from "react-router";
 import { Illustration } from "../components/common";
+import { DataFolderPicker } from "../components/DataFolderPicker";
 import { Logo } from "../components/Logo";
 import { Button, Callout, cx, Field, Input, ProgressBar } from "../components/ui";
 import { errorMessage } from "../lib/api";
@@ -230,11 +231,6 @@ function StepData({ onBack, onFinish, finishing }: { onBack: () => void; onFinis
   const job = data.index.job;
   const ready = data.index.ready && data.index.matches_folder === true && !data.index.stale && job.state !== "RUNNING";
 
-  useEffect(() => {
-    const first = data.data_folder.candidates[0];
-    if (!path && first) setPath(first.path);
-  }, [data.data_folder.candidates, path]);
-
   const connect = () =>
     setFolder.mutate(path, {
       onSuccess: () => build.mutate(),
@@ -243,7 +239,7 @@ function StepData({ onBack, onFinish, finishing }: { onBack: () => void; onFinis
   return (
     <StepShell
       title="Connect your market data"
-      subtitle="QuantOS reads real NSE daily prices from your QuantOS data folder and builds a fast local index. Nothing is uploaded anywhere."
+      subtitle="QuantOS looks for your NSE price data on this computer and builds a fast local index. You can change the folder at any time. Nothing is uploaded anywhere."
       art={<Illustration name="empty-data" className="size-72" />}
       footer={
         <>
@@ -267,29 +263,7 @@ function StepData({ onBack, onFinish, finishing }: { onBack: () => void; onFinis
         </>
       }
     >
-      <Field label="QuantOS data folder" htmlFor="folder" hint="The folder that contains evidence\market-cache, for example D:\quant_system\data.">
-        <Input id="folder" value={path} onChange={(e) => setPath(e.target.value)} placeholder="D:\quant_system\data" spellCheck={false} />
-      </Field>
-      {data.data_folder.candidates.length > 0 && (
-        <div className="mt-3 space-y-2">
-          <div className="text-[12.5px] font-medium text-ink-3">Found on this computer</div>
-          {data.data_folder.candidates.map((candidate) => (
-            <button
-              key={candidate.path}
-              type="button"
-              onClick={() => setPath(candidate.path)}
-              className={cx(
-                "flex w-full items-center gap-3 rounded-xl border bg-surface px-4 py-3 text-left text-sm",
-                path === candidate.path ? "border-brand ring-3 ring-brand/15" : "border-line hover:border-line-strong",
-              )}
-            >
-              <FolderSearch className="size-4 shrink-0 text-brand" aria-hidden />
-              <span className="min-w-0 flex-1 break-all font-mono text-[13px] text-ink">{candidate.path}</span>
-              <span className="num shrink-0 text-[12.5px] text-ink-3">{int(candidate.datasets)} datasets</span>
-            </button>
-          ))}
-        </div>
-      )}
+      <DataFolderPicker path={path} onPath={setPath} />
       {(setFolder.isError || build.isError) && (
         <Callout tone="danger" className="mt-4">
           {errorMessage(setFolder.error ?? build.error)}

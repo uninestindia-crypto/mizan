@@ -21,6 +21,10 @@ from tests.market_fixtures import build_standard_store
 @pytest.fixture()
 def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     monkeypatch.setenv("QUANTOS_APP_ROOT", str(tmp_path / "app"))
+    # The first-run search for market data must never walk this machine's real drives in a test.
+    monkeypatch.setattr(paths, "fixed_drive_roots", lambda: [])
+    monkeypatch.setattr(paths, "_user_folders", lambda: [])
+    monkeypatch.setattr(paths, "data_scan", paths.DataFolderScan())
     router.reset_services()
     test_store = CredentialStore(prefix=f"QuantOS-test-{uuid.uuid4().hex[:8]}:")
     router.services().credentials = test_store

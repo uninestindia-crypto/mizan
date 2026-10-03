@@ -15,6 +15,14 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from quant_system import __version__
+from quant_system.alpha.model_catalog import (
+    PROVIDERS as AI_PROVIDERS,
+)
+from quant_system.alpha.model_catalog import (
+    ModelCatalogError,
+    fetch_models,
+    newest_models,
+)
 from quant_system.lab import (
     COSTS_COVERED_FROM,
     TEMPLATES,
@@ -30,20 +38,29 @@ from quant_system.market.sources import discover_caches, store_fingerprint
 from quant_system.server.security import format_error_response
 from quant_system.server.v2 import paths
 from quant_system.server.v2.aitools import detect_cli_tools
-from quant_system.server.v2.cli_bridge import launch_agent_session, list_cli_status
+from quant_system.server.v2.cli_bridge import (
+    launch_agent_session,
+    list_cli_status,
+    send_job_input,
+    start_agent_job,
+)
 from quant_system.server.v2.credentials import (
+    AI_KEY_NAMES,
     CredentialError,
     CredentialStore,
     sync_to_local_env,
     verify_credential_connection,
+    with_saved_credentials,
 )
 from quant_system.server.v2.jobs import IndexJob
 from quant_system.server.v2.portfolio import paper_books, portfolio_summary
 from quant_system.server.v2.schemas import (
+    CliCodeRequest,
     CliLaunchRequest,
     CostsRequest,
     CredentialTestRequest,
     DataFolderRequest,
+    FolderPickRequest,
     HoldingRequest,
     LabRunRequest,
     OptionsPayoffRequest,
@@ -52,6 +69,7 @@ from quant_system.server.v2.schemas import (
     WatchlistRequest,
 )
 from quant_system.server.v2.state import AppState, Settings
+from quant_system.server.v2.system import FolderPickerError, pick_folder
 from quant_system.server.v2.tools import (
     OptionLeg,
     ToolError,
@@ -153,6 +171,17 @@ def _store_fingerprint(folder: Path) -> str:
     return value
 
 
+def _folder_candidates(scan: dict[str, Any]) -> list[dict[str, Any]]:
+    """Quick known locations plus whatever the background search has found, fullest first."""
+    merged = {str(p): n for p, n in paths.data_folder_candidates()}
+    for item in scan["found"]:
+        merged.setdefault(item["path"], item["datasets"])
+    return [
+        {"path": path, "datasets": count}
+        for path, count in sorted(merged.items(), key=lambda item: -item[1])
+    ]
+
+
 def _today() -> date:
     return datetime.now(UTC).astimezone().date()
 
@@ -184,15 +213,17 @@ def status() -> dict[str, Any]:
             "stale": stale,
         }
     index_info["job"] = svc.job.snapshot()
+    if folder is None:
+        paths.data_scan.start()  # nothing connected yet: look for market data without being asked
+    scan = paths.data_scan.snapshot()
     return {
         "version": __version__,
         "settings": settings.model_dump(mode="json"),
         "data_folder": {
             "path": settings.data_folder,
             "valid": folder is not None,
-            "candidates": [
-                {"path": str(p), "datasets": n} for p, n in paths.data_folder_candidates()
-            ],
+            "candidates": _folder_candidates(scan),
+            "scan": scan["state"],
         },
         "index": index_info,
         "credentials_available": svc.credentials.available,
@@ -206,15 +237,33 @@ def status() -> dict[str, Any]:
 
 @router.post("/data/folder")
 def set_data_folder(body: DataFolderRequest) -> dict[str, Any]:
-    folder = Path(body.path.strip().strip('"'))
-    if not paths.is_data_folder(folder):
+    chosen = Path(body.path.strip().strip('"'))
+    folder = paths.resolve_data_folder(chosen)
+    if folder is None:
         raise V2Error(
             400,
             "NOT_A_DATA_FOLDER",
-            f"{folder} does not contain QuantOS market data (expected evidence\\market-cache inside it).",
+            f"No QuantOS market data found in {chosen}. Choose the folder that holds your market "
+            "data (it contains evidence\\market-cache).",
         )
-    settings = services().state.update_settings({"data_folder": str(folder.resolve())})
+    settings = services().state.update_settings({"data_folder": str(folder)})
     return {"data_folder": settings.data_folder}
+
+
+@router.post("/data/scan")
+def scan_for_data() -> dict[str, Any]:
+    """Search this PC again for market data (the search runs in the background)."""
+    paths.data_scan.start(force=True)
+    return paths.data_scan.snapshot()
+
+
+@router.post("/system/pick-folder")
+def pick_a_folder(body: FolderPickRequest) -> dict[str, Any]:
+    """Show the standard Windows folder dialog. ``path`` is null when the person cancels."""
+    try:
+        return {"path": pick_folder(body.title, body.initial)}
+    except FolderPickerError as err:
+        raise V2Error(503, "FOLDER_DIALOG_UNAVAILABLE", str(err)) from err
 
 
 @router.post("/data/index/build")
@@ -542,7 +591,7 @@ def get_credentials() -> dict[str, Any]:
 
 @router.post("/credentials/test")
 def test_credential(body: CredentialTestRequest) -> dict[str, Any]:
-    return verify_credential_connection(body.provider, body.credentials)
+    return verify_credential_connection(body.provider, with_saved_credentials(body.credentials))
 
 
 @router.put("/credentials/{name}")
@@ -582,6 +631,15 @@ def get_cli_status(refresh: bool = False) -> list[dict[str, Any]]:
 @router.post("/cli/launch")
 def post_cli_launch(body: CliLaunchRequest) -> dict[str, Any]:
     try:
+        if body.action in ("install", "signin"):
+            status = {item["id"]: item for item in list_cli_status()}.get(body.agent_id)
+            terminal_signin = (
+                body.action == "signin"
+                and status is not None
+                and status["signin_mode"] == "terminal"
+            )
+            if not terminal_signin:
+                return start_agent_job(body.agent_id, body.action)
         return launch_agent_session(
             agent_id=body.agent_id,
             action=body.action,
@@ -589,6 +647,34 @@ def post_cli_launch(body: CliLaunchRequest) -> dict[str, Any]:
         )
     except Exception as err:
         raise V2Error(400, "CLI_LAUNCH_FAILED", str(err)) from err
+
+
+@router.post("/cli/jobs/{agent_id}/input")
+def post_cli_job_input(agent_id: str, body: CliCodeRequest) -> dict[str, bool]:
+    if not send_job_input(agent_id, body.text):
+        raise V2Error(409, "NO_SIGN_IN_WAITING", "There is no sign-in waiting for a code.")
+    return {"sent": True}
+
+
+# ---------------------------------------------------------------------------- AI models
+
+
+@router.get("/ai/models/{provider}")
+def ai_models(provider: str, refresh: bool = False) -> dict[str, Any]:
+    """The newest models this provider offers, read live with the saved key (never a fixed list)."""
+    name = provider.lower()
+    if name not in AI_PROVIDERS:
+        raise V2Error(404, "UNKNOWN_PROVIDER", f"{provider} is not an AI provider QuantOS knows.")
+    key = os.environ.get(AI_KEY_NAMES.get(name, ""), "").strip() or None
+    try:
+        models = fetch_models(name, key, refresh=refresh)
+    except ModelCatalogError as err:
+        raise V2Error(400, "MODELS_UNAVAILABLE", str(err)) from err
+    return {
+        "provider": name,
+        "total": len(models),
+        "newest": [m.as_dict() for m in newest_models(name, models)],
+    }
 
 
 # ---------------------------------------------------------------------------- AI tools

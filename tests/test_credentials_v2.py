@@ -64,7 +64,9 @@ def test_credential_verify_empty_keys() -> None:
 @patch("urllib.request.urlopen")
 def test_credential_verify_openai_success(mock_urlopen: MagicMock) -> None:
     mock_resp = MagicMock()
-    mock_resp.read.return_value = json.dumps({"data": [{"id": "gpt-4o"}, {"id": "o1"}]}).encode("utf-8")
+    mock_resp.read.return_value = json.dumps({"data": [{"id": "gpt-4o"}, {"id": "o1"}]}).encode(
+        "utf-8"
+    )
     mock_resp.__enter__.return_value = mock_resp
     mock_urlopen.return_value = mock_resp
 

@@ -19,4 +19,6 @@ os.environ["QUANTOS_APP_ROOT"] = str(state / "app")
 
 from quant_system.server.app import app  # noqa: E402
 
-uvicorn.run(app, host="127.0.0.1", port=int(os.environ.get("QUANTOS_E2E_PORT", "8771")), log_level="warning")
+uvicorn.run(
+    app, host="127.0.0.1", port=int(os.environ.get("QUANTOS_E2E_PORT", "8771")), log_level="warning"
+)

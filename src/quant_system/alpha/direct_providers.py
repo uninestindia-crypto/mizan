@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from quant_system.alpha.key_pool import ManagedKey, ProviderType
+from quant_system.alpha.model_catalog import ModelCatalogError, latest_model_id
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +45,25 @@ def parse_json_from_llm_response(text: str) -> dict[str, Any] | None:
 
 
 class BaseDirectAPIClient(ABC):
-    """Abstract direct REST client with standard HTTP POST and rate-limit detection."""
+    """Abstract direct REST client with standard HTTP POST and rate-limit detection.
 
-    def __init__(self, default_model: str, timeout_seconds: float = 5.0) -> None:
+    A client with no ``default_model`` asks the provider which model is newest for the key being
+    used (see :mod:`quant_system.alpha.model_catalog`), so no model name is pinned in code.
+    """
+
+    PROVIDER: str = ""
+    PREFER: tuple[str, ...] = ()
+
+    def __init__(self, default_model: str | None = None, timeout_seconds: float = 5.0) -> None:
         self.default_model = default_model
         self.timeout_seconds = timeout_seconds
+
+    def resolve_model(self, key: ManagedKey, model: str | None = None) -> str:
+        """An explicit model wins, then the configured default, then the provider's newest."""
+        explicit = model or self.default_model
+        if explicit:
+            return explicit
+        return latest_model_id(self.PROVIDER, key.secret_value, prefer=self.PREFER)
 
     @abstractmethod
     def build_request(
@@ -69,7 +84,10 @@ class BaseDirectAPIClient(ABC):
         model: str | None = None,
     ) -> tuple[str | None, int, float | None, str | None]:
         """Execute request returning (response_text, status_code, retry_after_seconds, error_msg)."""
-        req = self.build_request(prompt, key, model=model)
+        try:
+            req = self.build_request(prompt, key, model=model)
+        except ModelCatalogError as error:
+            return None, 503, None, f"Could not choose a model: {error}"
         try:
             with urllib.request.urlopen(req, timeout=self.timeout_seconds) as resp:
                 body = resp.read()
@@ -100,10 +118,12 @@ class OpenRouterClient(BaseDirectAPIClient):
     """Direct REST client for OpenRouter (https://openrouter.ai)."""
 
     ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
+    PROVIDER = "openrouter"
+    PREFER = ("anthropic/claude-sonnet", "claude-sonnet")
 
     def __init__(
         self,
-        default_model: str = "anthropic/claude-3.7-sonnet",
+        default_model: str | None = None,
         timeout_seconds: float = 5.0,
     ) -> None:
         super().__init__(default_model=default_model, timeout_seconds=timeout_seconds)
@@ -112,7 +132,7 @@ class OpenRouterClient(BaseDirectAPIClient):
         self, prompt: str, key: ManagedKey, model: str | None = None
     ) -> urllib.request.Request:
         payload = {
-            "model": model or self.default_model,
+            "model": self.resolve_model(key, model),
             "messages": [
                 {"role": "system", "content": "You are a quantitative trading advisory assistant."},
                 {"role": "user", "content": prompt},
@@ -141,10 +161,12 @@ class GroqClient(BaseDirectAPIClient):
     """Direct REST client for Groq high-speed LPU inference (https://groq.com)."""
 
     ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
+    PROVIDER = "groq"
+    PREFER = ("llama",)
 
     def __init__(
         self,
-        default_model: str = "llama-3.3-70b-versatile",
+        default_model: str | None = None,
         timeout_seconds: float = 5.0,
     ) -> None:
         super().__init__(default_model=default_model, timeout_seconds=timeout_seconds)
@@ -153,7 +175,7 @@ class GroqClient(BaseDirectAPIClient):
         self, prompt: str, key: ManagedKey, model: str | None = None
     ) -> urllib.request.Request:
         payload = {
-            "model": model or self.default_model,
+            "model": self.resolve_model(key, model),
             "messages": [
                 {
                     "role": "system",
@@ -184,10 +206,12 @@ class OpenAIClient(BaseDirectAPIClient):
     """Direct REST client for OpenAI (https://api.openai.com)."""
 
     ENDPOINT = "https://api.openai.com/v1/chat/completions"
+    PROVIDER = "openai"
+    PREFER = ("gpt-",)
 
     def __init__(
         self,
-        default_model: str = "gpt-4o",
+        default_model: str | None = None,
         timeout_seconds: float = 5.0,
     ) -> None:
         super().__init__(default_model=default_model, timeout_seconds=timeout_seconds)
@@ -196,7 +220,7 @@ class OpenAIClient(BaseDirectAPIClient):
         self, prompt: str, key: ManagedKey, model: str | None = None
     ) -> urllib.request.Request:
         payload = {
-            "model": model or self.default_model,
+            "model": self.resolve_model(key, model),
             "messages": [
                 {
                     "role": "system",
@@ -226,10 +250,12 @@ class AnthropicClient(BaseDirectAPIClient):
     """Direct REST client for Anthropic Messages API (https://api.anthropic.com)."""
 
     ENDPOINT = "https://api.anthropic.com/v1/messages"
+    PROVIDER = "anthropic"
+    PREFER = ("sonnet",)
 
     def __init__(
         self,
-        default_model: str = "claude-3-7-sonnet-20250219",
+        default_model: str | None = None,
         timeout_seconds: float = 5.0,
     ) -> None:
         super().__init__(default_model=default_model, timeout_seconds=timeout_seconds)
@@ -238,7 +264,7 @@ class AnthropicClient(BaseDirectAPIClient):
         self, prompt: str, key: ManagedKey, model: str | None = None
     ) -> urllib.request.Request:
         payload = {
-            "model": model or self.default_model,
+            "model": self.resolve_model(key, model),
             "max_tokens": 1024,
             "messages": [
                 {"role": "user", "content": prompt},
