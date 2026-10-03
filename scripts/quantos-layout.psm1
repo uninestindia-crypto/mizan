@@ -15,12 +15,21 @@ function Get-QuantOsLayout {
 
     $installRoot = [System.IO.Path]::GetFullPath((Join-Path $ModuleRoot ".."))
     $driveRoot = [System.IO.Path]::GetPathRoot($installRoot)
+    $parentDir = Split-Path -Path $installRoot -Parent
     $installLeaf = Split-Path -Path $installRoot -Leaf
-    $workspacesRoot = Join-Path $driveRoot ($installLeaf + "_workspaces")
+
+    $candidateWorkspaces = Join-Path $parentDir ($installLeaf + "_workspaces")
+    if (Test-Path -LiteralPath $candidateWorkspaces) {
+        $workspacesRoot = $candidateWorkspaces
+        $effectiveParent = $parentDir
+    } else {
+        $workspacesRoot = Join-Path $driveRoot ($installLeaf + "_workspaces")
+        $effectiveParent = $driveRoot
+    }
 
     return [pscustomobject]@{
         InstallRoot         = $installRoot
-        DriveRoot           = $driveRoot
+        DriveRoot           = $effectiveParent
         InstallLeaf         = $installLeaf
         WorkspacesRoot      = $workspacesRoot
         ClonesBucket        = Join-Path $workspacesRoot "verification_clones"

@@ -11,7 +11,7 @@
 # change gets verified rather than assumed.
 
 $ErrorActionPreference = "Continue"
-$root = "D:\quant_system"
+$root = "D:\Quant OS\quant_system"
 $out = Join-Path $root "logs\trigger_verification.log"
 if (-not (Test-Path -LiteralPath (Split-Path $out))) {
     New-Item -ItemType Directory -Path (Split-Path $out) -Force | Out-Null

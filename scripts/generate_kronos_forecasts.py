@@ -61,7 +61,7 @@ sys.path.insert(0, str(ROOT_DIR / "scripts"))
 sys.path.insert(0, str(ROOT_DIR / "src"))
 
 IST = timezone(timedelta(hours=5, minutes=30))
-WORKSPACE = Path("D:/quant_system_workspaces/scratch/kronos-trial-20260928")
+WORKSPACE = Path("D:/Quant OS/quant_system_workspaces/scratch/kronos-trial-20260928")
 
 TOKENIZER_REPO = "NeoQuasar/Kronos-Tokenizer-base"
 MODEL_REPOS = {"base": "NeoQuasar/Kronos-base", "small": "NeoQuasar/Kronos-small"}

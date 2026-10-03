@@ -19,7 +19,7 @@
 #   powershell -ExecutionPolicy Bypass -File scripts/supervise_timesfm_forecasts.ps1
 
 param(
-    [string]$Python = "D:/quant_system_workspaces/scratch/timesfm-probe-20260910/Scripts/python.exe",
+    [string]$Python = "D:/Quant OS/quant_system_workspaces/scratch/timesfm-probe-20260910/Scripts/python.exe",
     [string]$Out    = "reports/short_horizon/timesfm-forecasts.json",
     [string]$Log    = "reports/short_horizon/timesfm-generation.log",
     [string]$ErrLog = "reports/short_horizon/timesfm-generation.err.log",

@@ -15,7 +15,7 @@
 
 param(
     [int]$Port = 8080,
-    [string]$ProjectRoot = "D:\quant_system"
+    [string]$ProjectRoot = "D:\Quant OS\quant_system"
 )
 
 $ErrorActionPreference = "Continue"

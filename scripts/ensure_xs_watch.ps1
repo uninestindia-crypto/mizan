@@ -21,7 +21,7 @@
 #     "suggests" is not "established", and it is not this agent's book to establish it on.
 
 param(
-    [string]$ProjectRoot = "D:\quant_system",
+    [string]$ProjectRoot = "D:\Quant OS\quant_system",
     [int]$Port = 8091,
     [string]$WatchTask = "QuantOS-XSMonthly-PaperWatch",
     [int]$EarliestHour = 16,

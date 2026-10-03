@@ -17,7 +17,7 @@
 # session is deliberately NOT restarted.
 
 param(
-    [string]$ProjectRoot = "D:\quant_system",
+    [string]$ProjectRoot = "D:\Quant OS\quant_system",
     [string]$UniverseName = "NIFTY500",
     [int]$EarliestHour = 9,
     [int]$LatestHour = 15

@@ -7,7 +7,7 @@ kind of QuantOS directory belongs, so the drive root stays readable and no agent
 ## Canonical layout
 
 ```text
-D:\
+D:\Quant OS\
 ├── quant_system\                        # the platform. The only checkout that is ever developed in.
 │   ├── src\  tests\  scripts\  configs\  docs\  .launch\  agent_context\
 │   ├── .venv\                           # local environment, gitignored
@@ -21,14 +21,13 @@ D:\
     └── archive\                         # retained but finished environments
 ```
 
-Exactly two QuantOS entries may exist at the drive root: `quant_system` and
-`quant_system_workspaces`. Anything else matching `quant_system*` is a violation.
+The canonical home of QuantOS is `D:\Quant OS`.
+For full backwards-compatibility with ongoing scheduled tasks and external tooling, `D:\quant_system` and `D:\quant_system_workspaces` are maintained as transparent NTFS directory junctions pointing directly to `D:\Quant OS\quant_system` and `D:\Quant OS\quant_system_workspaces`.
 
 ## Rules
 
-1. **Never develop outside the install root.** `D:\quant_system` is the only checkout that receives
-   ordinary edits. It is cited as the origin of every clone, as `WORKTREE_OR_BRANCH` in every work
-   record, and as the CLEAN CLONE base in `.launch/reports/`. Do not move, rename, or duplicate it.
+1. **Never develop outside the install root.** `D:\Quant OS\quant_system` is the primary checkout that receives
+   ordinary edits. (Legacy references to `D:\quant_system` transparently map to this folder via junction).
 
 2. **Never create a working directory at the drive root.** Verification clones, Red Team clones,
    mutation environments, and agent worktrees all belong under `quant_system_workspaces`.
