@@ -220,6 +220,14 @@ def run_studio() -> None:
     logger.info("=" * 60)
     logger.info("Starting QuantOS Studio %s", __version__)
 
+    # One QuantOS at a time: a second launch brings the first window to the front and exits.
+    from quant_system.shell import acquire_single_instance, focus_existing_window, run_native_window
+
+    if not acquire_single_instance():
+        logger.info("QuantOS is already running; focusing the existing window.")
+        focus_existing_window()
+        sys.exit(0)
+
     # Load environment variables
     load_env_file()
 
@@ -260,27 +268,11 @@ def run_studio() -> None:
     logger.info("Server is healthy and ready on %s", url)
 
     # Launch UI Window
-    # Strategy 1: Try pywebview if installed
-    opened_via_webview = False
-    try:
-        import webview  # type: ignore[import-not-found]
-
-        logger.info("Launching native window via pywebview WebView2 engine.")
-        webview.create_window(
-            title=f"QuantOS Studio — v{__version__}",
-            url=url,
-            width=1440,
-            height=900,
-            min_size=(1024, 700),
-            text_select=True,
-            confirm_close=False,
-        )
-        opened_via_webview = True
-        webview.start()
-        logger.info("WebView window closed by user.")
-    except (ImportError, Exception) as exc:
-        logger.info("pywebview not active (%s). Using Native App Window Shell.", exc)
-        opened_via_webview = False
+    # Strategy 1: a native window (Windows WebView2 through pywebview)
+    logger.info("Opening the native QuantOS window.")
+    opened_via_webview = run_native_window(url, title="QuantOS", logger=logger)
+    if not opened_via_webview:
+        logger.info("No native window available; using an Edge/Chrome app window instead.")
 
     # Strategy 2: Dedicated Windows App Mode Shell (Isolated Edge/Chrome window)
     if not opened_via_webview:

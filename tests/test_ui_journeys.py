@@ -93,7 +93,7 @@ def test_static_js_served_with_controller_functions(client: TestClient) -> None:
     assert "formatINR" in content
 
 
-@pytest.mark.parametrize("route", ["/", "/ui", "/static/index.html"])
+@pytest.mark.parametrize("route", ["/classic", "/ui", "/static/index.html"])
 def test_dashboard_has_no_external_chart_script(client: TestClient, route: str) -> None:
     html = client.get(route).text
     assert "cdn.jsdelivr.net" not in html
@@ -145,7 +145,7 @@ def test_static_index_html_contains_all_seven_journeys(client: TestClient) -> No
 # =============================================================================
 
 
-@pytest.mark.parametrize("route", ["/", "/ui"])
+@pytest.mark.parametrize("route", ["/classic", "/ui"])
 def test_dashboard_routes_serve_semantic_html(client: TestClient, route: str) -> None:
     res = client.get(route)
     assert res.status_code == 200
@@ -523,7 +523,7 @@ def test_journey_7_paper_pilot_dom_and_api(
 
 # test-allow: loop-in-test — iteration over regex matched DOM elements with non-empty assertions
 def test_accessibility_tab_panel_relationships(client: TestClient) -> None:
-    res = client.get("/")
+    res = client.get("/classic")
     html = res.text
 
     # 1. Verify every tab button has aria-controls matching a panel ID

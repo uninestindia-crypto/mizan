@@ -112,6 +112,38 @@ def test_release_build_compiles_inno_installer_not_tk_wizard() -> None:
     assert "/DSignToolName=quantos" in installer
 
 
+def test_release_builds_the_web_interface_into_the_folder_the_app_bundles() -> None:
+    release = (PROJECT_ROOT / "scripts" / "build-windows-release.ps1").read_text(encoding="utf-8")
+    assert "npm run build" in release
+    assert r"src\quant_system\server\static\app\index.html" in release
+    # The build fails closed rather than packaging an app with no interface.
+    assert "The web interface is not built" in release
+
+    vite = (PROJECT_ROOT / "frontend" / "vite.config.ts").read_text(encoding="utf-8")
+    assert "../src/quant_system/server/static/app" in vite
+    assert "assetsInlineLimit: 0" in vite  # the server CSP allows no data: fonts
+
+    spec = (INSTALLER_DIR / "quantos.spec").read_text(encoding="utf-8")
+    assert (
+        "'src' / 'quant_system' / 'server' / 'static'" in spec
+    )  # bundles static/, hence static/app
+
+    ignore = (PROJECT_ROOT / "src" / "quant_system" / "server" / "static" / ".gitignore").read_text(
+        encoding="utf-8"
+    )
+    assert "/app/" in ignore  # build output is never committed
+
+
+def test_built_interface_has_no_inline_scripts_when_present() -> None:
+    index = PROJECT_ROOT / "src" / "quant_system" / "server" / "static" / "app" / "index.html"
+    if not index.is_file():
+        pytest.skip("frontend not built in this checkout")
+    html = index.read_text(encoding="utf-8")
+    # script-src 'self': an inline <script> body would be blocked and the app would never start.
+    assert not re.search(r"<script(?![^>]*\bsrc=)[^>]*>\s*\S", html)
+    assert "fonts.googleapis.com" not in html
+
+
 def test_icon_file_holds_all_standard_sizes() -> None:
     data = (INSTALLER_DIR / "assets" / "quantos.ico").read_bytes()
     reserved, kind, count = struct.unpack_from("<HHH", data, 0)

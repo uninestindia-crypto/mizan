@@ -1,0 +1,213 @@
+"""The QuantOS desktop window: a native Windows window around the local interface.
+
+The engine serves the interface on ``127.0.0.1``; this module shows it in its own window using
+Windows' WebView2 engine (through pywebview), so QuantOS behaves like an installed program:
+its own taskbar entry and icon (the executable's), no address bar, no dependence on which browser
+the user prefers, and one instance at a time.
+
+Everything here is best effort. ``run_native_window`` returns ``False`` when a native window cannot
+be shown (pywebview or the WebView2 runtime missing), and the caller falls back to an Edge/Chrome
+app window. It never raises for those reasons.
+"""
+
+from __future__ import annotations
+
+import ctypes
+import logging
+import os
+import sys
+from collections.abc import Callable
+from pathlib import Path
+
+DEFAULT_TITLE = "QuantOS"
+MUTEX_NAME = "Local\\QuantOS.Desktop.SingleInstance"
+
+_ERROR_ALREADY_EXISTS = 183
+_SW_RESTORE = 9
+
+# Background shown for the instant before the page paints, so a dark system never flashes white.
+LIGHT_BACKGROUND = "#f4f6fa"
+DARK_BACKGROUND = "#080d17"
+
+# Kept alive for the life of the process: closing the handle would release the single-instance lock.
+_mutex_handle: int | None = None
+
+
+def system_prefers_dark() -> bool:
+    """Whether Windows apps are set to dark mode (False when it cannot be determined)."""
+    if sys.platform != "win32":
+        return False
+    try:
+        import winreg
+
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+        ) as key:
+            value, _kind = winreg.QueryValueEx(key, "AppsUseLightTheme")
+        return int(value) == 0
+    except OSError:
+        return False
+
+
+def webview2_runtime_version() -> str | None:
+    """Installed WebView2 Evergreen runtime version, or None when it is not installed."""
+    if sys.platform != "win32":
+        return None
+    try:
+        import winreg
+    except ImportError:
+        return None
+    guid = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+    locations = (
+        (winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{guid}"),
+        (winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\Microsoft\EdgeUpdate\Clients\{guid}"),
+        (winreg.HKEY_CURRENT_USER, rf"Software\Microsoft\EdgeUpdate\Clients\{guid}"),
+    )
+    for hive, path in locations:
+        try:
+            with winreg.OpenKey(hive, path) as key:
+                version, _kind = winreg.QueryValueEx(key, "pv")
+        except OSError:
+            continue
+        text = str(version).strip()
+        if text and text != "0.0.0.0":
+            return text
+    return None
+
+
+def acquire_single_instance(name: str = MUTEX_NAME) -> bool:
+    """Take the per-user single-instance lock. False means another QuantOS window owns it."""
+    global _mutex_handle
+    if sys.platform != "win32":
+        return True
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateMutexW.restype = ctypes.c_void_p
+    kernel32.CreateMutexW.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_wchar_p]
+    handle = kernel32.CreateMutexW(None, False, name)
+    already_running = ctypes.get_last_error() == _ERROR_ALREADY_EXISTS
+    if already_running:
+        if handle:
+            kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+            kernel32.CloseHandle(handle)
+        return False
+    _mutex_handle = int(handle) if handle else None
+    return True
+
+
+def focus_existing_window(title: str = DEFAULT_TITLE) -> bool:
+    """Bring the already-running QuantOS window to the front. Returns whether one was found."""
+    if sys.platform != "win32":
+        return False
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    user32.FindWindowW.restype = ctypes.c_void_p
+    user32.FindWindowW.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p]
+    hwnd = user32.FindWindowW(None, title)
+    if not hwnd:
+        return False
+    user32.ShowWindow.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    user32.SetForegroundWindow.argtypes = [ctypes.c_void_p]
+    user32.ShowWindow(hwnd, _SW_RESTORE)
+    user32.SetForegroundWindow(hwnd)
+    return True
+
+
+def diagnostics_port(environ: dict[str, str] | None = None) -> int | None:
+    """The WebView2 remote-debugging port requested through ``QUANTOS_DEBUG_PORT``, if valid.
+
+    Off by default. Accepts only a whole number from 1024 to 65535; anything else is ignored.
+    """
+    raw = (environ if environ is not None else os.environ).get("QUANTOS_DEBUG_PORT", "").strip()
+    if not raw.isdigit():
+        return None
+    port = int(raw)
+    return port if 1024 <= port <= 65535 else None
+
+
+def fit_to_screen(
+    screen_size: tuple[int, int] | None,
+    desired: tuple[int, int] = (1440, 900),
+    minimum: tuple[int, int] = (1024, 700),
+) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Window size and minimum size that fit a display (logical pixels).
+
+    A laptop at 150% scaling reports 1280x800, so a fixed 1440x900 window would run off the screen.
+    """
+    if screen_size is None:
+        return desired, minimum
+    screen_width, screen_height = screen_size
+    width = min(desired[0], int(screen_width * 0.92))
+    height = min(desired[1], int(screen_height * 0.9))
+    return (width, height), (min(minimum[0], width), min(minimum[1], height))
+
+
+def run_native_window(
+    url: str,
+    *,
+    title: str = DEFAULT_TITLE,
+    storage_path: str | None = None,
+    logger: logging.Logger | None = None,
+    width: int = 1440,
+    height: int = 900,
+    min_size: tuple[int, int] = (1024, 700),
+    start: Callable[..., object] | None = None,
+) -> bool:
+    """Show ``url`` in a native window and block until it is closed.
+
+    Returns True if a native window was shown and then closed by the user, False if none could be
+    shown (the caller should fall back). ``start`` is injectable for tests.
+    """
+    log = logger or logging.getLogger("quantos.shell")
+    try:
+        import webview
+    except ImportError as err:
+        log.info("pywebview is not installed (%s); no native window.", err)
+        return False
+
+    if webview2_runtime_version() is None:
+        log.info("The WebView2 runtime is not installed; no native window.")
+        return False
+
+    debug_port = diagnostics_port()
+    if debug_port is not None:
+        # Opt-in only, for automated tests and support: exposes the window to local tools.
+        webview.settings["REMOTE_DEBUGGING_PORT"] = debug_port
+        log.warning("Diagnostics port %d is open on localhost (QUANTOS_DEBUG_PORT).", debug_port)
+
+    try:
+        try:
+            primary = webview.screens[0]
+            screen_size: tuple[int, int] | None = (int(primary.width), int(primary.height))
+        except Exception:
+            screen_size = None
+        (width, height), min_size = fit_to_screen(screen_size, (width, height), min_size)
+        webview.create_window(
+            title=title,
+            url=url,
+            width=width,
+            height=height,
+            min_size=min_size,
+            background_color=DARK_BACKGROUND if system_prefers_dark() else LIGHT_BACKGROUND,
+            text_select=True,
+            confirm_close=False,
+        )
+        launcher = start or webview.start
+        # gui="edgechromium" refuses to fall back to the legacy Internet Explorer engine, which
+        # cannot run the interface at all.
+        launcher(
+            gui="edgechromium",
+            private_mode=False,
+            storage_path=storage_path or os.environ.get("WEBVIEW2_USER_DATA_FOLDER"),
+            debug=False,
+        )
+    except Exception as err:
+        log.warning("Native window failed (%s: %s); falling back.", type(err).__name__, err)
+        return False
+    log.info("Native window closed by the user.")
+    return True
+
+
+def data_dir_hint() -> Path | None:
+    """Where WebView2 keeps its profile, if the launcher configured it."""
+    value = os.environ.get("WEBVIEW2_USER_DATA_FOLDER")
+    return Path(value) if value else None

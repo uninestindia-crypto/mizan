@@ -1,0 +1,2 @@
+# Build output of frontend/ (npm run build). Rebuilt by scripts/build-windows-release.ps1.
+/app/
