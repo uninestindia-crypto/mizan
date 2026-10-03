@@ -308,10 +308,10 @@ $($checksumLines -join "`n")
     }
 
     # Delete pre-existing release if draft or collision
-    $existingRelease = & gh release view $tag --repo uninestindia-crypto/quant-system 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "  -> Existing release $tag found. Updating release assets..." -ForegroundColor Yellow
-        & gh release delete $tag --repo uninestindia-crypto/quant-system --yes --cleanup-tag=false
+    $existingReleases = & gh release list --repo uninestindia-crypto/quant-system 2>$null
+    if ($existingReleases -match [regex]::Escape($tag)) {
+        Write-Host "  -> Existing release $tag found. Replacing release..." -ForegroundColor Yellow
+        & gh release delete $tag --repo uninestindia-crypto/quant-system --yes --cleanup-tag=false 2>$null
     }
 
     Write-Host "  -> Uploading release binaries to GitHub..."
