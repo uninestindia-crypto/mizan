@@ -384,6 +384,7 @@ class PlatformAssistantService:
             if key:
                 client = get_direct_client_for_provider(provider)
                 if client is not None:
+                    client.json_mode = False  # a chat answer is prose, not a forced JSON object
                     try:
                         system_prompt = (
                             "You are QuantOS Copilot, an institutional quantitative trading assistant. "

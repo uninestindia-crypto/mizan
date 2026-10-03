@@ -77,6 +77,35 @@ class BaseDirectAPIClient(ABC):
         """Extract the model response text from the provider JSON payload."""
         raise NotImplementedError
 
+    # Request shaping, applied to whatever ``build_request`` produced.
+    #
+    # ``json_mode`` asks the provider to force a JSON reply. The advisory panel needs that; a chat
+    # answer does not, and OpenAI-style providers reject JSON mode when the prompt never says "JSON".
+    # ``omit_temperature`` drops the sampling temperature; it is set automatically when a provider
+    # answers that the chosen model supports only its default (reasoning models do).
+    json_mode: bool = True
+    omit_temperature: bool = False
+
+    def _shape(self, request: urllib.request.Request) -> urllib.request.Request:
+        data = request.data
+        if (self.json_mode and not self.omit_temperature) or not isinstance(data, bytes):
+            return request
+        try:
+            payload = json.loads(data.decode("utf-8"))
+        except ValueError:
+            return request
+        if not isinstance(payload, dict):
+            return request
+        if not self.json_mode:
+            payload.pop("response_format", None)
+        if self.omit_temperature:
+            payload.pop("temperature", None)
+            config = payload.get("generationConfig")
+            if isinstance(config, dict):
+                config.pop("temperature", None)
+        request.data = json.dumps(payload).encode("utf-8")
+        return request
+
     def execute(
         self,
         prompt: str,
@@ -84,10 +113,23 @@ class BaseDirectAPIClient(ABC):
         model: str | None = None,
     ) -> tuple[str | None, int, float | None, str | None]:
         """Execute request returning (response_text, status_code, retry_after_seconds, error_msg)."""
-        try:
-            req = self.build_request(prompt, key, model=model)
-        except ModelCatalogError as error:
-            return None, 503, None, f"Could not choose a model: {error}"
+        result: tuple[str | None, int, float | None, str | None] = (None, 500, None, None)
+        for attempt in (1, 2):
+            try:
+                req = self._shape(self.build_request(prompt, key, model=model))
+            except ModelCatalogError as error:
+                return None, 503, None, f"Could not choose a model: {error}"
+            result = self._send(req)
+            refused_temperature = result[1] == 400 and "temperature" in (result[3] or "").lower()
+            if attempt == 1 and refused_temperature and not self.omit_temperature:
+                self.omit_temperature = True  # retry once with the model's default temperature
+                continue
+            return result
+        return result
+
+    def _send(
+        self, req: urllib.request.Request
+    ) -> tuple[str | None, int, float | None, str | None]:
         try:
             with urllib.request.urlopen(req, timeout=self.timeout_seconds) as resp:
                 body = resp.read()

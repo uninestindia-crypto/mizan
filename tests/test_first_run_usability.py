@@ -842,3 +842,102 @@ def test_a_finished_download_is_connected_and_indexed_without_another_click(
     status = client.get("/api/v2/status").json()
     assert status["data_folder"]["valid"] is True
     assert status["index"]["ready"] is True and status["index"]["matches_folder"] is True
+
+
+# ----------------------------------------- chat requests adapt to what the provider accepts
+
+
+def _send_recorder(monkeypatch: pytest.MonkeyPatch, answers: list[Any]) -> list[dict[str, Any]]:
+    """Replace the network: record each JSON body sent, answer from ``answers`` in order."""
+    sent: list[dict[str, Any]] = []
+
+    class _Response:
+        status = 200
+
+        def __enter__(self) -> _Response:
+            return self
+
+        def __exit__(self, *exc: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b'{"choices": [{"message": {"content": "hello"}}]}'
+
+    def fake_urlopen(request: Any, timeout: float) -> _Response:
+        sent.append(json.loads(request.data))
+        answer = answers.pop(0)
+        if isinstance(answer, Exception):
+            raise answer
+        return _Response()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    return sent
+
+
+def test_a_chat_request_does_not_force_json_mode_but_the_advisory_panel_still_does(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "quant_system.alpha.direct_providers.latest_model_id",
+        lambda provider, key, *, prefer=(): "m",
+    )
+    sent = _send_recorder(monkeypatch, [None, None])
+    advisory = OpenAIClient()
+    assert advisory.execute("hi", _key())[0] == "hello"
+    chat = OpenAIClient()
+    chat.json_mode = False
+    assert chat.execute("hi", _key())[0] == "hello"
+    assert sent[0]["response_format"] == {"type": "json_object"}  # unchanged for the panel
+    assert "response_format" not in sent[1]
+
+
+def test_a_model_that_refuses_a_temperature_is_retried_once_without_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import io
+
+    monkeypatch.setattr(
+        "quant_system.alpha.direct_providers.latest_model_id",
+        lambda provider, key, *, prefer=(): "reasoning-model",
+    )
+    refusal = urllib.error.HTTPError(
+        "u",
+        400,
+        "Bad Request",
+        {},  # type: ignore[arg-type]
+        io.BytesIO(b"Unsupported value: 'temperature' does not support 0.1 with this model."),
+    )
+    sent = _send_recorder(monkeypatch, [refusal, None])
+    client = OpenAIClient()
+    text, status, _, _ = client.execute("hi", _key())
+    assert (text, status) == ("hello", 200)
+    assert "temperature" in sent[0] and "temperature" not in sent[1]
+    assert client.omit_temperature is True  # remembered for the next question
+
+
+def test_other_client_errors_are_not_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+    import io
+
+    monkeypatch.setattr(
+        "quant_system.alpha.direct_providers.latest_model_id",
+        lambda provider, key, *, prefer=(): "m",
+    )
+    bad_key = urllib.error.HTTPError(
+        "u",
+        401,
+        "Unauthorized",
+        {},
+        io.BytesIO(b"invalid key"),  # type: ignore[arg-type]
+    )
+    sent = _send_recorder(monkeypatch, [bad_key])
+    text, status, _, error = OpenAIClient().execute("hi", _key())
+    assert text is None and status == 401 and "invalid key" in str(error)
+    assert len(sent) == 1
+
+
+def test_the_assistant_asks_for_prose_not_json() -> None:
+    import inspect
+
+    from quant_system.assistant import service
+
+    assert "client.json_mode = False" in inspect.getsource(service)
