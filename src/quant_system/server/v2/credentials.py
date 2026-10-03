@@ -12,6 +12,7 @@ import ctypes
 import os
 import sys
 from dataclasses import dataclass
+from typing import Any
 
 TARGET_PREFIX = "QuantOS:"
 _MAX_BLOB = 5 * 512  # CRED_MAX_CREDENTIAL_BLOB_SIZE for generic credentials
@@ -26,20 +27,41 @@ class SecretSpec:
 
 
 SECRETS: tuple[SecretSpec, ...] = (
-    SecretSpec("UPSTOX_API_KEY", "Upstox API key", "Upstox", "From your Upstox developer app."),
+    # Indian Stock Market Brokers (Upstox is default)
+    SecretSpec("UPSTOX_API_KEY", "Upstox API key", "Upstox (Default)", "From your Upstox developer app."),
+    SecretSpec("UPSTOX_API_SECRET", "Upstox API secret", "Upstox (Default)", "From your Upstox developer app."),
     SecretSpec(
         "UPSTOX_ACCESS_TOKEN",
         "Upstox access token",
-        "Upstox",
-        "Expires every day around 3:30 AM; paste a fresh one each trading day.",
+        "Upstox (Default)",
+        "Daily access token for live market data and historical quotes.",
     ),
     SecretSpec(
-        "UPSTOX_ANALYTICS_TOKEN", "Upstox analytics token", "Upstox", "Read-only market data token."
+        "UPSTOX_ANALYTICS_TOKEN", "Upstox analytics token", "Upstox (Default)", "Read-only analytics market data token."
     ),
-    SecretSpec("ANTHROPIC_API_KEY", "Anthropic API key", "AI assistants", "For Claude models."),
-    SecretSpec("OPENAI_API_KEY", "OpenAI API key", "AI assistants", "For OpenAI models."),
+    SecretSpec("KITE_API_KEY", "Zerodha Kite API key", "Zerodha Kite", "From your Kite Connect developer console."),
+    SecretSpec("KITE_ACCESS_TOKEN", "Zerodha Kite access token", "Zerodha Kite", "Daily access token from Kite Connect login."),
+    SecretSpec("ANGEL_API_KEY", "Angel One SmartAPI key", "Angel One", "From your SmartAPI developer account."),
+    SecretSpec("ANGEL_CLIENT_CODE", "Angel One client code", "Angel One", "Your Angel One trading account ID."),
+    SecretSpec("ANGEL_PIN", "Angel One trading MPIN", "Angel One", "Your 4-digit Angel One trading PIN."),
+    SecretSpec("ANGEL_TOTP_KEY", "Angel One TOTP secret", "Angel One", "Secret key for automated 2FA TOTP generation."),
+    SecretSpec("DHAN_CLIENT_ID", "Dhan client ID", "Dhan", "Your Dhan 10-digit client ID."),
+    SecretSpec("DHAN_ACCESS_TOKEN", "Dhan access token", "Dhan", "API access token generated from Dhan web portal."),
+    SecretSpec("FYERS_APP_ID", "Fyers App ID", "Fyers", "App ID from Fyers API dashboard."),
+    SecretSpec("FYERS_ACCESS_TOKEN", "Fyers access token", "Fyers", "Generated Fyers 2FA access token."),
+
+    # AI Cloud Providers
+    SecretSpec("ANTHROPIC_API_KEY", "Anthropic Claude API key", "AI Cloud Providers", "For Claude 3.5 Sonnet / Haiku / Opus models."),
+    SecretSpec("OPENAI_API_KEY", "OpenAI API key", "AI Cloud Providers", "For GPT-4o / o1 / Codex models."),
+    SecretSpec("GEMINI_API_KEY", "Google Gemini API key", "AI Cloud Providers", "From Google AI Studio for Gemini 1.5 / 2.0 / Flash."),
+    SecretSpec("OPENROUTER_API_KEY", "OpenRouter API key", "AI Cloud Providers", "Universal gateway for 200+ models with one key."),
+    SecretSpec("GROQ_API_KEY", "Groq API key", "AI Cloud Providers", "Ultra-fast inference for Llama 3 / Mixtral."),
+    SecretSpec("DEEPSEEK_API_KEY", "DeepSeek API key", "AI Cloud Providers", "For DeepSeek-V3 and DeepSeek-R1 reasoning models."),
+    SecretSpec("MISTRAL_API_KEY", "Mistral AI API key", "AI Cloud Providers", "For Mistral Large / Codestral."),
+    SecretSpec("CUSTOM_AI_BASE_URL", "Custom AI Base URL", "AI Cloud Providers", "Base URL for OpenAI-compatible local/remote models."),
+    SecretSpec("CUSTOM_AI_API_KEY", "Custom AI API key", "AI Cloud Providers", "API key for your custom OpenAI-compatible endpoint."),
     SecretSpec(
-        "HF_TOKEN", "Hugging Face token", "Research", "Only for downloading research models."
+        "HF_TOKEN", "Hugging Face token", "Research Models", "For downloading gated weights and fine-tuned models."
     ),
 )
 _NAMES = {spec.name for spec in SECRETS}
@@ -206,3 +228,207 @@ class _WinCredApi:
         raise CredentialError(
             f"Windows refused to delete the secret (error {ctypes.get_last_error()})."
         )
+
+
+def sync_to_local_env(name: str, value: str | None) -> None:
+    """Safely updates the install-root-relative .env file without leaking across drives."""
+    from pathlib import Path
+
+    if getattr(sys, "frozen", False):
+        root_dir = Path(sys.executable).parent.resolve()
+    else:
+        root_dir = Path(__file__).resolve().parents[4]
+
+    env_file = root_dir / ".env"
+    lines: list[str] = []
+    found = False
+
+    if env_file.exists():
+        try:
+            content = env_file.read_text(encoding="utf-8")
+            for line in content.splitlines():
+                stripped = line.strip()
+                if stripped.startswith(f"{name}=") or stripped == name:
+                    if value is not None:
+                        lines.append(f"{name}={value.strip()}")
+                    found = True
+                else:
+                    lines.append(line)
+        except Exception:
+            lines = []
+
+    if not found and value is not None:
+        lines.append(f"{name}={value.strip()}")
+
+    try:
+        env_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    except Exception:
+        pass
+
+
+def verify_credential_connection(provider: str, credentials: dict[str, str]) -> dict[str, Any]:
+    """Tests live connectivity for Indian Stock Market brokers or AI Cloud Providers."""
+    import json
+    import urllib.error
+    import urllib.request
+
+    prov = provider.lower().strip()
+    timeout = 8.0
+
+    try:
+        if prov == "openai":
+            key = credentials.get("OPENAI_API_KEY", "").strip()
+            if not key:
+                return {"valid": False, "message": "OPENAI_API_KEY is empty."}
+            req = urllib.request.Request(
+                "https://api.openai.com/v1/models",
+                headers={"Authorization": f"Bearer {key}", "User-Agent": "QuantOS/2.0"},
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                models_count = len(data.get("data", []))
+                return {"valid": True, "provider": "OpenAI", "message": f"Connected! {models_count} models available."}
+
+        elif prov in ("anthropic", "claude"):
+            key = credentials.get("ANTHROPIC_API_KEY", "").strip()
+            if not key:
+                return {"valid": False, "message": "ANTHROPIC_API_KEY is empty."}
+            req = urllib.request.Request(
+                "https://api.anthropic.com/v1/models",
+                headers={
+                    "x-api-key": key,
+                    "anthropic-version": "2023-06-01",
+                    "User-Agent": "QuantOS/2.0",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return {"valid": True, "provider": "Anthropic Claude", "message": "Connected successfully to Claude API."}
+
+        elif prov == "gemini":
+            key = credentials.get("GEMINI_API_KEY", "").strip()
+            if not key:
+                return {"valid": False, "message": "GEMINI_API_KEY is empty."}
+            url = f"https://generativelanguage.googleapis.com/v1beta/models?key={key}"
+            req = urllib.request.Request(url, headers={"User-Agent": "QuantOS/2.0"})
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                count = len(data.get("models", []))
+                return {"valid": True, "provider": "Google Gemini", "message": f"Connected! {count} models available."}
+
+        elif prov == "groq":
+            key = credentials.get("GROQ_API_KEY", "").strip()
+            if not key:
+                return {"valid": False, "message": "GROQ_API_KEY is empty."}
+            req = urllib.request.Request(
+                "https://api.groq.com/openai/v1/models",
+                headers={"Authorization": f"Bearer {key}", "User-Agent": "QuantOS/2.0"},
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return {"valid": True, "provider": "Groq", "message": "Connected successfully to Groq Cloud."}
+
+        elif prov == "deepseek":
+            key = credentials.get("DEEPSEEK_API_KEY", "").strip()
+            if not key:
+                return {"valid": False, "message": "DEEPSEEK_API_KEY is empty."}
+            req = urllib.request.Request(
+                "https://api.deepseek.com/models",
+                headers={"Authorization": f"Bearer {key}", "User-Agent": "QuantOS/2.0"},
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return {"valid": True, "provider": "DeepSeek", "message": "Connected successfully to DeepSeek API."}
+
+        elif prov == "openrouter":
+            key = credentials.get("OPENROUTER_API_KEY", "").strip()
+            if not key:
+                return {"valid": False, "message": "OPENROUTER_API_KEY is empty."}
+            req = urllib.request.Request(
+                "https://openrouter.ai/api/v1/auth/key",
+                headers={"Authorization": f"Bearer {key}", "User-Agent": "QuantOS/2.0"},
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8")).get("data", {})
+                label = data.get("label", "Key active")
+                return {"valid": True, "provider": "OpenRouter", "message": f"Connected! ({label})"}
+
+        elif prov == "upstox":
+            token = credentials.get("UPSTOX_ACCESS_TOKEN", "").strip()
+            if not token:
+                return {"valid": False, "message": "UPSTOX_ACCESS_TOKEN is required to test connection."}
+            req = urllib.request.Request(
+                "https://api.upstox.com/v2/user/profile",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/json",
+                    "User-Agent": "QuantOS/2.0",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8")).get("data", {})
+                user_name = data.get("user_name", "Upstox User")
+                return {"valid": True, "provider": "Upstox", "message": f"Connected as {user_name}!"}
+
+        elif prov in ("kite", "zerodha"):
+            api_key = credentials.get("KITE_API_KEY", "").strip()
+            token = credentials.get("KITE_ACCESS_TOKEN", "").strip()
+            if not api_key or not token:
+                return {"valid": False, "message": "Both KITE_API_KEY and KITE_ACCESS_TOKEN are required."}
+            req = urllib.request.Request(
+                "https://api.kite.trade/user/profile",
+                headers={
+                    "X-Kite-Version": "3",
+                    "Authorization": f"token {api_key}:{token}",
+                    "User-Agent": "QuantOS/2.0",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8")).get("data", {})
+                user_name = data.get("user_name", "Kite User")
+                return {"valid": True, "provider": "Zerodha Kite", "message": f"Connected as {user_name}!"}
+
+        elif prov == "dhan":
+            client_id = credentials.get("DHAN_CLIENT_ID", "").strip()
+            token = credentials.get("DHAN_ACCESS_TOKEN", "").strip()
+            if not token:
+                return {"valid": False, "message": "DHAN_ACCESS_TOKEN is required."}
+            req = urllib.request.Request(
+                "https://api.dhan.co/v2/profile",
+                headers={
+                    "access-token": token,
+                    "client-id": client_id,
+                    "Content-Type": "application/json",
+                    "User-Agent": "QuantOS/2.0",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return {"valid": True, "provider": "Dhan", "message": "Connected to Dhan API!"}
+
+        elif prov == "fyers":
+            app_id = credentials.get("FYERS_APP_ID", "").strip()
+            token = credentials.get("FYERS_ACCESS_TOKEN", "").strip()
+            if not token or not app_id:
+                return {"valid": False, "message": "Both FYERS_APP_ID and FYERS_ACCESS_TOKEN are required."}
+            req = urllib.request.Request(
+                "https://api-t1.fyers.in/api/v3/profile",
+                headers={"Authorization": f"{app_id}:{token}", "User-Agent": "QuantOS/2.0"},
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return {"valid": True, "provider": "Fyers", "message": "Connected to Fyers API!"}
+
+        else:
+            return {"valid": False, "message": f"Unknown provider: {provider}"}
+
+    except urllib.error.HTTPError as err:
+        err_msg = f"HTTP {err.code}: {err.reason}"
+        try:
+            body = err.read().decode("utf-8")
+            data = json.loads(body)
+            if "message" in data:
+                err_msg = data["message"]
+            elif "error" in data:
+                err_msg = str(data["error"])
+        except Exception:
+            pass
+        return {"valid": False, "provider": provider, "message": f"Authentication failed: {err_msg}"}
+    except Exception as err:
+        return {"valid": False, "provider": provider, "message": f"Connection error: {err}"}
+

@@ -30,11 +30,19 @@ from quant_system.market.sources import discover_caches, store_fingerprint
 from quant_system.server.security import format_error_response
 from quant_system.server.v2 import paths
 from quant_system.server.v2.aitools import detect_cli_tools
-from quant_system.server.v2.credentials import CredentialError, CredentialStore
+from quant_system.server.v2.cli_bridge import launch_agent_session, list_cli_status
+from quant_system.server.v2.credentials import (
+    CredentialError,
+    CredentialStore,
+    sync_to_local_env,
+    verify_credential_connection,
+)
 from quant_system.server.v2.jobs import IndexJob
 from quant_system.server.v2.portfolio import paper_books, portfolio_summary
 from quant_system.server.v2.schemas import (
+    CliLaunchRequest,
     CostsRequest,
+    CredentialTestRequest,
     DataFolderRequest,
     HoldingRequest,
     LabRunRequest,
@@ -532,6 +540,11 @@ def get_credentials() -> dict[str, Any]:
     return {"available": store.available, "secrets": store.status()}
 
 
+@router.post("/credentials/test")
+def test_credential(body: CredentialTestRequest) -> dict[str, Any]:
+    return verify_credential_connection(body.provider, body.credentials)
+
+
 @router.put("/credentials/{name}")
 def put_credential(name: str, body: SecretRequest) -> dict[str, Any]:
     store = services().credentials
@@ -539,7 +552,9 @@ def put_credential(name: str, body: SecretRequest) -> dict[str, Any]:
         store.set(name, body.value)
     except CredentialError as err:
         raise V2Error(400, "CREDENTIAL_REFUSED", str(err)) from err
-    os.environ[name] = body.value.strip()
+    val = body.value.strip()
+    os.environ[name] = val
+    sync_to_local_env(name, val)
     return {"available": store.available, "secrets": store.status()}
 
 
@@ -550,7 +565,30 @@ def delete_credential(name: str) -> dict[str, Any]:
         store.delete(name)
     except CredentialError as err:
         raise V2Error(400, "CREDENTIAL_REFUSED", str(err)) from err
+    if name in os.environ:
+        os.environ.pop(name, None)
+    sync_to_local_env(name, None)
     return {"available": store.available, "secrets": store.status()}
+
+
+# ---------------------------------------------------------------------------- Agent CLI Bridge
+
+
+@router.get("/cli/status")
+def get_cli_status(refresh: bool = False) -> list[dict[str, Any]]:
+    return list_cli_status(force=refresh)
+
+
+@router.post("/cli/launch")
+def post_cli_launch(body: CliLaunchRequest) -> dict[str, Any]:
+    try:
+        return launch_agent_session(
+            agent_id=body.agent_id,
+            action=body.action,
+            custom_command=body.custom_command,
+        )
+    except Exception as err:
+        raise V2Error(400, "CLI_LAUNCH_FAILED", str(err)) from err
 
 
 # ---------------------------------------------------------------------------- AI tools

@@ -421,3 +421,27 @@ export interface AiTool {
   install: string;
   sign_in: string;
 }
+
+export interface AgentCli {
+  id: string;
+  name: string;
+  maker: string;
+  installed: boolean;
+  command: string;
+  path: string | null;
+  version: string | null;
+  authenticated: boolean;
+  auth_detail: string;
+  auth_env_var: string;
+  install_cmd: string;
+  signin_cmd: string;
+  run_cmd: string;
+  description: string;
+}
+
+export interface CredentialTestResult {
+  valid: boolean;
+  provider: string;
+  message: string;
+}
+

@@ -20,6 +20,7 @@ app_icon = str(Path(SPECPATH) / 'assets' / 'quantos.ico')
 added_files = [
     (str(root_dir / 'src' / 'quant_system' / 'server' / 'static'), 'quant_system/server/static'),
     (str(root_dir / 'configs'), 'configs'),
+    (str(root_dir / 'assets'), 'assets'),
 ]
 
 hidden_imports = [
@@ -40,6 +41,8 @@ hidden_imports = [
     'scipy',
     'yaml',
     'tomllib',
+    'webview',
+    'webview.platforms.winforms',
     'quant_system',
     'quant_system.release',
 ] + collect_submodules('quant_system')

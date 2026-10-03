@@ -226,6 +226,32 @@ export function useSecretMutation() {
   });
 }
 
+export function useAgentClis() {
+  return useQuery({
+    queryKey: ["agent-clis"],
+    queryFn: () => api<import("./types").AgentCli[]>("/api/v2/cli/status"),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useLaunchCli() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { agent_id: string; action?: "run" | "signin" | "install" | "custom"; custom_command?: string }) =>
+      api<{ success: boolean; command: string; launcher: string; message: string }>("/api/v2/cli/launch", "POST", body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["agent-clis"] });
+    },
+  });
+}
+
+export function useTestCredential() {
+  return useMutation({
+    mutationFn: (body: { provider: string; credentials: Record<string, string> }) =>
+      api<import("./types").CredentialTestResult>("/api/v2/credentials/test", "POST", body),
+  });
+}
+
 export const tools = {
   costs: (body: unknown) => api<CostsResult>("/api/v2/tools/costs", "POST", body),
   positionSize: (body: unknown) => api<PositionSizeResult>("/api/v2/tools/position-size", "POST", body),

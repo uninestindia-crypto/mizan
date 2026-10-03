@@ -8,10 +8,13 @@ import { errorMessage } from "../lib/api";
 import { inr, inrSigned, int, num, pct, tone } from "../lib/format";
 import { tools, useStatus } from "../lib/queries";
 
+import { AgentCliBridge } from "../components/AgentCliBridge";
+
 const TOOLS = [
   { id: "costs", label: "Trade costs" },
   { id: "position-size", label: "Position size" },
   { id: "options", label: "Options payoff" },
+  { id: "agents", label: "Agent CLI Bridge" },
 ];
 
 function useDebounced<T>(value: T, ms = 300): T {
@@ -43,7 +46,7 @@ export default function Tools() {
           </NavLink>
         ))}
       </nav>
-      {tool === "position-size" ? <PositionSize /> : tool === "options" ? <OptionsPayoff /> : <Costs />}
+      {tool === "position-size" ? <PositionSize /> : tool === "options" ? <OptionsPayoff /> : tool === "agents" ? <AgentCliBridge /> : <Costs />}
     </>
   );
 }

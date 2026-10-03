@@ -72,3 +72,15 @@ class OptionsPayoffRequest(BaseModel):
 
 class SecretRequest(BaseModel):
     value: str = Field(min_length=1, max_length=2560)
+
+
+class CredentialTestRequest(BaseModel):
+    provider: str = Field(min_length=1, max_length=50)
+    credentials: dict[str, str] = Field(default_factory=dict)
+
+
+class CliLaunchRequest(BaseModel):
+    agent_id: str = Field(min_length=1, max_length=50)
+    action: Literal["run", "signin", "install", "custom"] = "run"
+    custom_command: str | None = Field(default=None, max_length=500)
+

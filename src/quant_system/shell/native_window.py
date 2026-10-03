@@ -21,6 +21,7 @@ from pathlib import Path
 
 DEFAULT_TITLE = "QuantOS"
 MUTEX_NAME = "Local\\QuantOS.Desktop.SingleInstance"
+APP_USER_MODEL_ID = "QuantOS.Desktop.Studio.2.0"
 
 _ERROR_ALREADY_EXISTS = 183
 _SW_RESTORE = 9
@@ -31,6 +32,19 @@ DARK_BACKGROUND = "#080d17"
 
 # Kept alive for the life of the process: closing the handle would release the single-instance lock.
 _mutex_handle: int | None = None
+
+
+def ensure_app_user_model_id(app_id: str = APP_USER_MODEL_ID) -> None:
+    """Set the Windows Application User Model ID for dedicated taskbar grouping and icon display."""
+    if sys.platform == "win32":
+        try:
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+        except Exception:
+            pass
+
+
+# Ensure AppUserModelID is registered immediately upon import
+ensure_app_user_model_id()
 
 
 def system_prefers_dark() -> bool:
@@ -141,10 +155,29 @@ def fit_to_screen(
     return (width, height), (min(minimum[0], width), min(minimum[1], height))
 
 
+def default_icon_path() -> str | None:
+    """Finds the QuantOS icon file across development and installed directories."""
+    candidates = [
+        Path.cwd() / "assets" / "quantos.ico",
+        Path.cwd() / "installer" / "assets" / "quantos.ico",
+        Path(__file__).resolve().parents[3] / "assets" / "quantos.ico",
+        Path(__file__).resolve().parents[3] / "installer" / "assets" / "quantos.ico",
+        Path(sys.executable).parent / "assets" / "quantos.ico",
+        Path(sys.executable).parent / "installer" / "assets" / "quantos.ico",
+    ]
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        candidates.insert(0, Path(sys._MEIPASS) / "assets" / "quantos.ico")
+    for p in candidates:
+        if p.is_file():
+            return str(p.resolve())
+    return None
+
+
 def run_native_window(
     url: str,
     *,
     title: str = DEFAULT_TITLE,
+    icon: str | None = None,
     storage_path: str | None = None,
     logger: logging.Logger | None = None,
     width: int = 1440,
@@ -157,6 +190,7 @@ def run_native_window(
     Returns True if a native window was shown and then closed by the user, False if none could be
     shown (the caller should fall back). ``start`` is injectable for tests.
     """
+    ensure_app_user_model_id()
     log = logger or logging.getLogger("quantos.shell")
     try:
         import webview
@@ -192,14 +226,25 @@ def run_native_window(
             confirm_close=False,
         )
         launcher = start or webview.start
-        # gui="edgechromium" refuses to fall back to the legacy Internet Explorer engine, which
-        # cannot run the interface at all.
-        launcher(
-            gui="edgechromium",
-            private_mode=False,
-            storage_path=storage_path or os.environ.get("WEBVIEW2_USER_DATA_FOLDER"),
-            debug=False,
-        )
+        resolved_icon = icon or default_icon_path()
+        storage = storage_path or os.environ.get("WEBVIEW2_USER_DATA_FOLDER")
+
+        if resolved_icon and os.path.isfile(resolved_icon):
+            log.info("Applying QuantOS icon: %s", resolved_icon)
+            launcher(
+                gui="edgechromium",
+                private_mode=False,
+                storage_path=storage,
+                debug=False,
+                icon=resolved_icon,
+            )
+        else:
+            launcher(
+                gui="edgechromium",
+                private_mode=False,
+                storage_path=storage,
+                debug=False,
+            )
     except Exception as err:
         log.warning("Native window failed (%s: %s); falling back.", type(err).__name__, err)
         return False

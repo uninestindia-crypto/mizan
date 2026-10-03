@@ -9,6 +9,7 @@ Unsloth Studio / LM Studio-style zero-console application runner.
 
 from __future__ import annotations
 
+import ctypes
 import logging
 import multiprocessing
 import os
@@ -24,6 +25,17 @@ import uvicorn
 
 from quant_system import __version__
 from quant_system.config import load_env_file
+
+APP_USER_MODEL_ID = "QuantOS.Desktop.Studio.2.0"
+
+# Explicitly set the Application User Model ID before any window or COM library is initialized.
+# This informs the Windows Shell taskbar that QuantOS is an independent desktop application,
+# preventing Windows from grouping WebView2/Chromium windows under Google Chrome.
+if sys.platform == "win32":
+    try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_USER_MODEL_ID)
+    except Exception:
+        pass
 
 
 class NullStream:
@@ -213,6 +225,22 @@ def find_app_browser() -> str | None:
     return None
 
 
+def find_app_icon(app_root: Path) -> str | None:
+    """Locates the QuantOS application icon across development and frozen runtimes."""
+    candidates = [
+        app_root / "assets" / "quantos.ico",
+        app_root / "installer" / "assets" / "quantos.ico",
+        Path(__file__).parent / "assets" / "quantos.ico",
+        Path(__file__).parent / "installer" / "assets" / "quantos.ico",
+    ]
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        candidates.insert(0, Path(sys._MEIPASS) / "assets" / "quantos.ico")
+    for c in candidates:
+        if c.is_file():
+            return str(c.resolve())
+    return None
+
+
 def run_studio() -> None:
     app_root = configure_drive_isolation()
     ensure_safe_std_streams(app_root)
@@ -270,7 +298,8 @@ def run_studio() -> None:
     # Launch UI Window
     # Strategy 1: a native window (Windows WebView2 through pywebview)
     logger.info("Opening the native QuantOS window.")
-    opened_via_webview = run_native_window(url, title="QuantOS", logger=logger)
+    icon_path = find_app_icon(app_root)
+    opened_via_webview = run_native_window(url, title="QuantOS", icon=icon_path, logger=logger)
     if not opened_via_webview:
         logger.info("No native window available; using an Edge/Chrome app window instead.")
 
