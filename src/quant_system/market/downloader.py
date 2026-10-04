@@ -33,7 +33,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from quant_system.data.evidence_draft import draft_from_historical_acquisition
 from quant_system.data.market_data import (
@@ -58,6 +58,8 @@ _BROWSER_AGENT = (
 )
 
 HISTORY_DAYS = 3650  # just under Upstox's ten-year retrieval limit
+REFRESH_DAYS = 1095  # three years: the rolling window the index stitches onto the history
+MARKER = ".quantos-download"  # written in every cache this download creates (and may later replace)
 WORKERS = 6
 MIN_FREE_BYTES = 1_300_000_000  # the evidence store refuses to write below 1 GiB free
 LIQUID_MIN_TURNOVER = 50_000_000  # Rs 5 crore median daily turnover
@@ -185,14 +187,47 @@ def build_targets(work_dir: Path) -> TargetSet:
 
 
 def window(today: date) -> tuple[date, date]:
+    """The ten-year baseline window."""
     return today - timedelta(days=HISTORY_DAYS), today
 
 
+def refresh_window(today: date) -> tuple[date, date]:
+    """The recent window an update re-reads."""
+    return today - timedelta(days=REFRESH_DAYS), today
+
+
 def cache_names(today: date) -> tuple[str, str]:
-    """``(members cache, benchmark cache)``. Members are a refresh cache so they join the NIFTY 500."""
-    start, end = window(today)
-    span = f"{start:%Y%m%d}-{end:%Y%m%d}"
-    return f"nifty500-refresh-{span}", f"all-market-{span}"
+    """``(history cache, refresh cache)``.
+
+    The ten-year baseline is a history cache. The recent window is a refresh cache, which is what
+    makes the stocks NIFTY 500 members and lets a later update replace only the recent prices.
+    """
+    hist_start, end = window(today)
+    ref_start, _ = refresh_window(today)
+    return (
+        f"all-market-{hist_start:%Y%m%d}-{end:%Y%m%d}",
+        f"nifty500-refresh-{ref_start:%Y%m%d}-{end:%Y%m%d}",
+    )
+
+
+def _marked(market_cache: Path, prefix: str) -> list[Path]:
+    """Caches this download created (they carry the marker), newest name first."""
+    if not market_cache.is_dir():
+        return []
+    found = [
+        child
+        for child in market_cache.iterdir()
+        if child.is_dir() and child.name.startswith(prefix) and (child / MARKER).is_file()
+    ]
+    return sorted(found, key=lambda path: path.name, reverse=True)
+
+
+def baseline_exists(data_folder: Path) -> bool:
+    """Whether a ten-year baseline made by this download is already on disk (so an update is enough)."""
+    return any(
+        (cache / "store" / "datasets").is_dir()
+        for cache in _marked(data_folder / "evidence" / "market-cache", "all-market-")
+    )
 
 
 def _fetch_actions(symbol: str, start: date, end: date) -> list[Any]:
@@ -299,6 +334,7 @@ class MarketDownload:
         self.failed = 0
         self.no_actions = 0
         self.cache = ""
+        self.mode = ""
         self.started_at: str | None = None
         self.finished_at: str | None = None
 
@@ -315,6 +351,7 @@ class MarketDownload:
                 "failures": self.failures[:25],
                 "without_actions": self.no_actions,
                 "cache": self.cache,
+                "mode": self.mode,
                 "started_at": self.started_at,
                 "finished_at": self.finished_at,
             }
@@ -330,9 +367,19 @@ class MarketDownload:
         return True
 
     def start(
-        self, data_folder: Path, *, today: date | None = None, limit: int | None = None
+        self,
+        data_folder: Path,
+        *,
+        today: date | None = None,
+        limit: int | None = None,
+        mode: Literal["auto", "full", "update"] = "auto",
     ) -> bool:
-        """Begin downloading into ``data_folder``. False if a download is already running."""
+        """Begin downloading into ``data_folder``. False if a download is already running.
+
+        ``full`` reads ten years and then the recent window; ``update`` reads only the recent window
+        and keeps the existing baseline; ``auto`` updates when a baseline exists and downloads in
+        full otherwise.
+        """
         with self._lock:
             if self.state == "RUNNING":
                 return False
@@ -343,7 +390,10 @@ class MarketDownload:
             self._cancel.clear()
         day = today or datetime.now(UTC).astimezone().date()
         self._thread = threading.Thread(
-            target=self._run, args=(data_folder, day, limit), name="QuantOS-Download", daemon=True
+            target=self._run,
+            args=(data_folder, day, limit, mode),
+            name="QuantOS-Download",
+            daemon=True,
         )
         self._thread.start()
         return True
@@ -353,9 +403,15 @@ class MarketDownload:
             for name, value in changes.items():
                 setattr(self, name, value)
 
-    def _run(self, data_folder: Path, today: date, limit: int | None) -> None:
+    def _run(
+        self,
+        data_folder: Path,
+        today: date,
+        limit: int | None,
+        mode: Literal["auto", "full", "update"],
+    ) -> None:
         try:
-            self._download(data_folder, today, limit)
+            self._download(data_folder, today, limit, mode)
         except DownloadError as error:
             self._set(state="ERROR", message=error.message)
         except Exception as error:  # a worker must always end in a state the page can show
@@ -364,7 +420,13 @@ class MarketDownload:
         finally:
             self._set(finished_at=datetime.now(UTC).isoformat(timespec="seconds"))
 
-    def _download(self, data_folder: Path, today: date, limit: int | None) -> None:
+    def _download(
+        self,
+        data_folder: Path,
+        today: date,
+        limit: int | None,
+        mode: Literal["auto", "full", "update"],
+    ) -> None:
         data_folder.mkdir(parents=True, exist_ok=True)
         if shutil.disk_usage(data_folder).free < MIN_FREE_BYTES:
             raise DownloadError(
@@ -372,31 +434,59 @@ class MarketDownload:
             )
         targets = build_targets(data_folder / "downloads")
         members = list(targets.members[:limit] if limit else targets.members)
-        start, end = window(today)
-        members_name, history_name = cache_names(today)
+        everyone = [*members, *([targets.benchmark] if targets.benchmark else [])]
         market_cache = data_folder / "evidence" / "market-cache"
+        history_name, refresh_name = cache_names(today)
+        baseline = _marked(market_cache, "all-market-")
+        # Same-day re-run of a full download is a resume (finish what is missing); a baseline from an
+        # earlier day only needs the recent window refreshed.
+        newer_baseline = bool(baseline) and baseline[0].name != history_name
+        updating = baseline_exists(data_folder) and (
+            mode == "update" or (mode == "auto" and newer_baseline)
+        )
+        if updating:
+            history_name = baseline[0].name  # keep the baseline that is already there
+        hist_start, end = window(today)
+        ref_start, _ = refresh_window(today)
+
+        # History first, so a stopped run keeps the longest data.
+        jobs: list[tuple[Target, str, str, date, date]] = []
+        if not updating:
+            jobs += [(t, history_name, "HISTORY", hist_start, end) for t in everyone]
+        jobs += [(t, refresh_name, "REFRESH", ref_start, end) for t in everyone]
+
         stores: dict[str, EvidenceStore] = {}
         have: dict[str, set[str]] = {}
-        for name in (members_name, history_name):
-            root = market_cache / name / "store"
+        for name, kind in sorted({(j[1], j[2]) for j in jobs}):
+            cache_dir = market_cache / name
+            root = cache_dir / "store"
             root.mkdir(parents=True, exist_ok=True)
+            marker = cache_dir / MARKER
+            if not marker.exists():
+                marker.write_text(
+                    json.dumps({"kind": kind, "created": datetime.now(UTC).isoformat()}),
+                    encoding="utf-8",
+                )
             stores[name] = EvidenceStore(EvidenceStoreConfig(root=root))
+            role: Literal["HISTORY", "REFRESH"] = "HISTORY" if kind == "HISTORY" else "REFRESH"
             have[name] = (
-                {ref.symbol for ref in scan_datasets(CacheRef(name, "REFRESH", root))}
+                {ref.symbol for ref in scan_datasets(CacheRef(name, role, root))}
                 if (root / "datasets").is_dir()
                 else set()
             )
 
-        jobs: list[tuple[Target, str]] = [(t, members_name) for t in members]
-        if targets.benchmark is not None:
-            jobs.append((targets.benchmark, history_name))
-        pending = [(t, c) for t, c in jobs if t.symbol not in have[c]]
+        pending = [j for j in jobs if j[0].symbol not in have[j[1]]]
         self._set(
             total=len(jobs),
             done=len(jobs) - len(pending),
             saved=len(jobs) - len(pending),
-            cache=members_name,
-            message=f"Downloading {len(pending)} stocks...",
+            cache=refresh_name,
+            mode="update" if updating else "full",
+            message=(
+                f"Updating recent prices for {len(everyone)} stocks..."
+                if updating
+                else f"Downloading ten years of prices for {len(everyone)} stocks..."
+            ),
         )
 
         commit_lock = threading.Lock()
@@ -409,46 +499,51 @@ class MarketDownload:
             else set()
         )
 
-        def one(job: tuple[Target, str]) -> None:
-            try:
-                save(job)
-            except Exception as error:  # one stock must never stop the others
-                logger.warning("Could not download %s: %s", job[0].symbol, error)
-                self._record_failure(job[0].symbol, "something unexpected went wrong")
-
-        def save(job: tuple[Target, str]) -> None:
-            target, cache = job
+        def save(job: tuple[Target, str, str, date, date]) -> None:
+            target, cache, kind, job_start, job_end = job
             if self._cancel.is_set():
                 return
-            outcome = _acquire(target, start, end)
+            outcome = _acquire(target, job_start, job_end)
             if isinstance(outcome, HistoricalAcquisitionFailure):
                 self._record_failure(target.symbol, _reason(outcome))
                 return
             try:
                 with commit_lock:
-                    _commit(stores[cache], outcome, f"download-{target.symbol}-{end:%Y%m%d}")
+                    _commit(
+                        stores[cache],
+                        outcome,
+                        f"download-{kind.lower()}-{target.symbol}-{job_end:%Y%m%d}",
+                    )
             except Exception as error:
                 logger.warning("Could not save %s: %s", target.symbol, error)
                 self._record_failure(target.symbol, "it could not be saved safely")
                 return
-            with actions_gate:
-                try:
-                    records = _fetch_actions(target.symbol, start, end)
-                    path = actions_dir / f"nse-corporate-actions-{target.symbol}.json"
-                    with self._lock:
-                        writable = not path.exists() or target.symbol in generated
-                    if writable:
-                        _atomic_write(
-                            path, json.dumps(records, separators=(",", ":")).encode("utf-8")
-                        )
+            if kind == "REFRESH":  # corporate actions come with the newest pass only
+                with actions_gate:
+                    try:
+                        records = _fetch_actions(target.symbol, hist_start, end)
+                        path = actions_dir / f"nse-corporate-actions-{target.symbol}.json"
                         with self._lock:
-                            generated.add(target.symbol)
-                except (OSError, ValueError):
-                    with self._lock:
-                        self.no_actions += 1
+                            writable = not path.exists() or target.symbol in generated
+                        if writable:
+                            _atomic_write(
+                                path, json.dumps(records, separators=(",", ":")).encode("utf-8")
+                            )
+                            with self._lock:
+                                generated.add(target.symbol)
+                    except (OSError, ValueError):
+                        with self._lock:
+                            self.no_actions += 1
             with self._lock:
                 self.saved += 1
                 self.done += 1
+
+        def one(job: tuple[Target, str, str, date, date]) -> None:
+            try:
+                save(job)
+            except Exception as error:  # one stock must never stop the others
+                logger.warning("Could not download %s: %s", job[0].symbol, error)
+                self._record_failure(job[0].symbol, "something unexpected went wrong")
 
         with ThreadPoolExecutor(max_workers=WORKERS, thread_name_prefix="QuantOS-dl") as pool:
             list(pool.map(one, pending))
@@ -456,25 +551,41 @@ class MarketDownload:
         if self._cancel.is_set():
             self._set(
                 state="CANCELLED",
-                message=f"Stopped after {self.saved} stocks. Start again to continue where it left off.",
+                message=(
+                    f"Stopped after {self.saved} downloads. "
+                    "Start again to continue where it left off."
+                ),
             )
             return
         if self.saved == 0:
             first = self.failures[0]["reason"] if self.failures else "no data came back"
             raise DownloadError("NOTHING_SAVED", f"No stocks could be downloaded: {first}.")
 
+        actions_dir.mkdir(parents=True, exist_ok=True)
         _atomic_write(generated_path, "\n".join(sorted(generated)).encode("utf-8"))
         write_listings(actions_dir, members, targets.benchmark)
-        write_liquid_universe(actions_dir, market_cache / members_name / "store", members_name, end)
-        self._set(state="DONE", message=f"Downloaded {self.saved} stocks up to {end:%d %b %Y}.")
+        write_liquid_universe(actions_dir, market_cache / history_name / "store", history_name, end)
+        _prune(market_cache, keep={history_name, refresh_name})
+        verb = "Updated" if updating else "Downloaded"
+        saved_stocks = len(everyone) - len({f["symbol"] for f in self.failures})
+        self._set(state="DONE", message=f"{verb} {saved_stocks} stocks up to {end:%d %b %Y}.")
         if self._on_done is not None:
             self._on_done(data_folder)
 
     def _record_failure(self, symbol: str, reason: str) -> None:
         with self._lock:
-            self.failed += 1
             self.done += 1
-            self.failures.append({"symbol": symbol, "reason": reason})
+            if all(f["symbol"] != symbol for f in self.failures):  # a stock counts once
+                self.failed += 1
+                self.failures.append({"symbol": symbol, "reason": reason})
+
+
+def _prune(market_cache: Path, keep: set[str]) -> None:
+    """Remove caches this download made that a newer run has superseded. Nothing else is touched."""
+    for prefix in ("all-market-", "nifty500-refresh-"):
+        for old in _marked(market_cache, prefix):
+            if old.name not in keep:
+                shutil.rmtree(old, ignore_errors=True)
 
 
 # ------------------------------------------------------------------ reference files
@@ -526,7 +637,7 @@ def write_liquid_universe(authorities: Path, store: Path, cache: str, end: date)
     ):
         return 0
     rows: list[tuple[str, str, str, float, float]] = []
-    for ref in scan_datasets(CacheRef(cache, "REFRESH", store)):
+    for ref in scan_datasets(CacheRef(cache, "HISTORY", store)):
         bars = read_bars(ref)
         if len(bars) < 250:
             continue

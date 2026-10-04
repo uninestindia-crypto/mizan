@@ -6,7 +6,7 @@ import { useCancelDownload, usePickFolder, useScanForData, useStartDownload, use
 import { Button, Callout, cx, Field, Input, ProgressBar, Spinner } from "./ui";
 
 /** Download the data for me: the answer for a computer that has none. */
-function DownloadData({ prominent }: { prominent: boolean }) {
+export function DownloadData({ prominent }: { prominent: boolean }) {
   const status = useStatus();
   const start = useStartDownload();
   const cancel = useCancelDownload();
@@ -50,19 +50,22 @@ function DownloadData({ prominent }: { prominent: boolean }) {
     <div className={cx("rounded-xl border p-4", prominent ? "border-brand/40 bg-brand/5" : "border-line bg-surface-2/50")}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-[14rem] flex-1">
-          <div className="text-[13.5px] font-semibold text-ink">{prominent ? "No market data yet? Download it." : "Download fresh data instead"}</div>
+          <div className="text-[13.5px] font-semibold text-ink">
+            {download.can_update ? "Update market data" : prominent ? "No market data yet? Download it." : "Download fresh data instead"}
+          </div>
           <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-3">
-            NIFTY 500 stocks, ten years of daily prices and corporate actions, about 150 MB. Takes around five to ten minutes. It comes straight from the NSE and Upstox's public
-            services to this computer, with no account needed.
+            {download.can_update
+              ? "Fetch the newest prices and corporate actions for the NIFTY 500 (the last three years are refreshed; your ten-year history stays). Takes about two to three minutes."
+              : "NIFTY 500 stocks, ten years of daily prices and corporate actions, about 200 MB. Takes around seven minutes. It comes straight from the NSE and Upstox's public services to this computer, with no account needed."}
           </p>
         </div>
         <Button
           variant={prominent ? "primary" : "secondary"}
           icon={<Download className="size-4" aria-hidden />}
           loading={start.isPending}
-          onClick={() => start.mutate()}
+          onClick={() => start.mutate(download.can_update ? "update" : "full")}
         >
-          Download market data
+          {download.can_update ? "Update market data" : "Download market data"}
         </Button>
       </div>
       {download.state === "ERROR" && (

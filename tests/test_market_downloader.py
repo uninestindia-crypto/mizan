@@ -13,19 +13,22 @@ import threading
 from datetime import UTC, date, datetime
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Literal
 
 import pytest
 
 from quant_system.data.market_data import AcquisitionFailureCode, HistoricalAcquisitionFailure
 from quant_system.market import downloader
 from quant_system.market.downloader import (
+    MARKER,
     DownloadError,
     MarketDownload,
     Target,
     TargetSet,
+    baseline_exists,
     build_targets,
     cache_names,
+    refresh_window,
     window,
 )
 from quant_system.market.sources import discover_caches, scan_datasets
@@ -142,9 +145,13 @@ def test_no_internet_and_no_saved_copy_is_a_plain_message(
 def test_the_window_stays_inside_upstoxs_ten_year_limit_and_names_match_the_index() -> None:
     start, end = window(date(2026, 10, 3))
     assert (end - start).days < 3653
-    members, history = cache_names(date(2026, 10, 3))
-    assert members == "nifty500-refresh-20161005-20261003"
-    assert history == "all-market-20161005-20261003"  # the benchmark ETF is a history cache
+    history, refresh = cache_names(date(2026, 10, 3))
+    assert history == "all-market-20161005-20261003"  # the ten-year baseline
+    assert (
+        refresh == "nifty500-refresh-20231004-20261003"
+    )  # the recent window; makes NIFTY 500 members
+    recent_start, recent_end = refresh_window(date(2026, 10, 3))
+    assert (recent_end - recent_start).days == 1095
 
 
 # -------------------------------------------------------------------------------- the job
@@ -212,8 +219,13 @@ def fakes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> _Fakes:
     return fake
 
 
-def _run(job: MarketDownload, folder: Path, today: date = date(2026, 10, 3)) -> dict[str, Any]:
-    assert job.start(folder, today=today) is True
+def _run(
+    job: MarketDownload,
+    folder: Path,
+    today: date = date(2026, 10, 3),
+    mode: Literal["auto", "full", "update"] = "auto",
+) -> dict[str, Any]:
+    assert job.start(folder, today=today, mode=mode) is True
     assert job.wait(30)
     return job.snapshot()
 
@@ -223,19 +235,26 @@ def test_a_download_saves_every_stock_and_prepares_what_the_app_reads(fakes: _Fa
     job = MarketDownload(on_done=done.append)
     snapshot = _run(job, fakes.data_folder)
 
-    assert snapshot["state"] == "DONE" and snapshot["saved"] == 4 and snapshot["failed"] == 0
-    assert snapshot["progress"] == 1.0 and snapshot["message"].startswith("Downloaded 4 stocks")
-    assert sorted(fakes.committed) == ["ALPHA", "BETA", "CHARLIE", "NIFTYBEES"]
+    # Two passes over four stocks: the ten-year baseline, then the recent window.
+    assert snapshot["state"] == "DONE" and snapshot["saved"] == 8 and snapshot["failed"] == 0
+    assert snapshot["total"] == 8 and snapshot["mode"] == "full"
+    assert (
+        snapshot["progress"] == 1.0
+        and snapshot["message"] == "Downloaded 4 stocks up to 03 Oct 2026."
+    )
+    assert sorted(fakes.committed) == sorted(["ALPHA", "BETA", "CHARLIE", "NIFTYBEES"] * 2)
     assert done == [fakes.data_folder]
 
-    members_cache, history_cache = cache_names(date(2026, 10, 3))
-    caches = {
-        c.name: c.role for c in discover_caches(fakes.data_folder / "evidence" / "market-cache")
-    }
+    history_cache, refresh_cache = cache_names(date(2026, 10, 3))
+    market_cache = fakes.data_folder / "evidence" / "market-cache"
+    caches = {c.name: c.role for c in discover_caches(market_cache)}
     assert caches == {
-        members_cache: "REFRESH",
         history_cache: "HISTORY",
+        refresh_cache: "REFRESH",
     }  # the roles the index uses
+    assert (market_cache / history_cache / MARKER).is_file()
+    assert (market_cache / refresh_cache / MARKER).is_file()
+    assert baseline_exists(fakes.data_folder)
 
     authorities = fakes.data_folder / "authorities"
     listings = (authorities / "nse-all-listed-equities.csv").read_text(encoding="utf-8")
@@ -256,7 +275,9 @@ def test_one_bad_stock_never_stops_the_others_and_is_listed_with_a_reason(fakes:
     fakes.fail_symbols = {"BETA"}
     fakes.explode_symbols = {"CHARLIE"}
     snapshot = _run(MarketDownload(), fakes.data_folder)
-    assert snapshot["state"] == "DONE" and snapshot["saved"] == 2 and snapshot["failed"] == 2
+    # Two stocks get through both passes (4 saves); each failed stock is counted once, not per pass.
+    assert snapshot["state"] == "DONE" and snapshot["saved"] == 4 and snapshot["failed"] == 2
+    assert len(snapshot["failures"]) == 2
     reasons = {f["symbol"]: f["reason"] for f in snapshot["failures"]}
     assert "data checks" in reasons["BETA"]
     assert reasons["CHARLIE"] == "something unexpected went wrong"
@@ -273,20 +294,20 @@ def test_missing_corporate_actions_are_counted_not_fatal(fakes: _Fakes) -> None:
 def test_a_second_run_continues_instead_of_downloading_everything_again(fakes: _Fakes) -> None:
     fakes.fail_symbols = {"CHARLIE"}
     _run(MarketDownload(), fakes.data_folder)
-    assert sorted(fakes.committed) == ["ALPHA", "BETA", "NIFTYBEES"]
+    assert sorted(fakes.committed) == sorted(["ALPHA", "BETA", "NIFTYBEES"] * 2)
 
     fakes.committed.clear()
     fakes.fail_symbols = set()
     snapshot = _run(MarketDownload(), fakes.data_folder)
-    assert fakes.committed == ["CHARLIE"]  # only the one that is missing
-    assert snapshot["saved"] == 4 and snapshot["state"] == "DONE"
-    members_cache, _ = cache_names(date(2026, 10, 3))
+    assert fakes.committed == ["CHARLIE", "CHARLIE"]  # only the one that is missing, in both passes
+    assert snapshot["saved"] == 8 and snapshot["state"] == "DONE"
+    _, refresh_cache = cache_names(date(2026, 10, 3))
     cache = next(
         c
         for c in discover_caches(fakes.data_folder / "evidence" / "market-cache")
-        if c.name == members_cache
+        if c.name == refresh_cache
     )
-    assert len(scan_datasets(cache)) == 3  # ALPHA, BETA, CHARLIE: one dataset each, none twice
+    assert len(scan_datasets(cache)) == 4  # one dataset per stock and the benchmark, none twice
 
 
 def test_a_file_that_did_not_come_from_a_download_is_never_replaced(fakes: _Fakes) -> None:
@@ -407,3 +428,50 @@ def test_a_left_out_stock_is_explained_in_words_not_codes() -> None:
     assert "2 days where" in both and " and 1 day listed twice" in both
     assert downloader._reason(blocked()) == "its price history failed the data checks"
     assert "DATA_QUALITY" not in many
+
+
+def _cache_dirs(folder: Path) -> set[str]:
+    return {c.name for c in (folder / "evidence" / "market-cache").iterdir() if c.is_dir()}
+
+
+def test_a_later_days_run_only_updates_the_recent_window_and_replaces_the_old_one(
+    fakes: _Fakes,
+) -> None:
+    _run(MarketDownload(), fakes.data_folder)  # day one: the full download
+    history, first_refresh = cache_names(date(2026, 10, 3))
+    fakes.committed.clear()
+
+    snapshot = _run(MarketDownload(), fakes.data_folder, today=date(2026, 10, 4))
+    _, second_refresh = cache_names(date(2026, 10, 4))
+    assert snapshot["mode"] == "update" and snapshot["state"] == "DONE"
+    assert snapshot["total"] == 4 and snapshot["message"] == "Updated 4 stocks up to 04 Oct 2026."
+    assert sorted(fakes.committed) == ["ALPHA", "BETA", "CHARLIE", "NIFTYBEES"]  # one pass only
+    # The baseline stays; the superseded recent window is gone; the new one is in place.
+    assert _cache_dirs(fakes.data_folder) == {history, second_refresh}
+    assert first_refresh not in _cache_dirs(fakes.data_folder)
+
+
+def test_asking_for_a_full_download_rebuilds_the_baseline_and_clears_the_old_one(
+    fakes: _Fakes,
+) -> None:
+    _run(MarketDownload(), fakes.data_folder)
+    old_history, old_refresh = cache_names(date(2026, 10, 3))
+    snapshot = _run(MarketDownload(), fakes.data_folder, today=date(2026, 10, 4), mode="full")
+    new_history, new_refresh = cache_names(date(2026, 10, 4))
+    assert snapshot["mode"] == "full" and snapshot["total"] == 8
+    assert _cache_dirs(fakes.data_folder) == {new_history, new_refresh}
+    assert old_history not in _cache_dirs(fakes.data_folder)
+    assert old_refresh not in _cache_dirs(fakes.data_folder)
+
+
+def test_a_cache_this_download_did_not_make_is_never_removed(fakes: _Fakes) -> None:
+    market_cache = fakes.data_folder / "evidence" / "market-cache"
+    theirs = market_cache / "nifty500-refresh-20200101-20200102"  # no marker: someone else's
+    (theirs / "store" / "datasets").mkdir(parents=True)
+    _run(MarketDownload(), fakes.data_folder)
+    _run(MarketDownload(), fakes.data_folder, today=date(2026, 10, 4))
+    assert theirs.is_dir()
+
+
+def test_there_is_no_baseline_on_an_empty_folder(tmp_path: Path) -> None:
+    assert baseline_exists(tmp_path) is False
