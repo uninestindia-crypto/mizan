@@ -14,7 +14,8 @@ Before planning or editing:
 4. Read every record in `agent_context/work/active/`.
 5. Run `git worktree list` and `git branch --list`. Every registered worktree and non-default branch
    is a live agent until proven otherwise, even with no matching record.
-6. Create your own uniquely named active-work record before editing. Declare exact owned paths.
+6. Run `python scripts/release_status.py` so you know whether a release is already due (see the Release rule).
+7. Create your own uniquely named active-work record before editing. Declare exact owned paths.
    If you will work in a worktree, create the record here in the install root **first**, and name
    the workspace path and branch in it.
 
@@ -71,6 +72,26 @@ Exactly two QuantOS entries may exist at the drive root: the install root `quant
   `scripts/organize-disk-layout.ps1` fixes them; it moves and never deletes.
 
 The full contract is `agent_context/DISK-LAYOUT.md`.
+
+## Release rule
+
+The founder updates the installed software from GitHub releases, so work must reach a release regularly.
+After every few major updates a new release is published; this is a rule, not a favour.
+
+- Before ending any session that changed user-visible behaviour, run `python scripts/release_status.py`.
+  It says whether a release is **DUE**: three or more user-visible commits (`feat`, `fix`, `perf`) since the
+  last `v*` tag, any security fix, any breaking change, or the founder asking for one.
+- If it is due, the agent whose commit crossed the threshold cuts the release before ending the session,
+  unless the founder says hold: `powershell -ExecutionPolicy Bypass -File scripts/release.ps1`
+  (`-DryRun` shows the plan and release notes without changing anything). It bumps the version in every file
+  with `scripts/bump_version.py`, runs the gates, builds the installer from the release commit, tags, pushes
+  and publishes the GitHub release. The installed app then shows an "update available" notice.
+- Commit messages use conventional types (`feat:`, `fix:`, `perf:`, `chore:`, `docs:`, `test:`). The release
+  notes are generated from them, so write the subject for a person, not for a developer.
+- Never edit a version number by hand: `python scripts/bump_version.py --check` must pass (a test guards it).
+- Patch release for fixes only, minor for new features, major only for breaking changes.
+
+The full decision, with rejected alternatives, is `agent_context/decisions/20261004-release-cadence.md`.
 
 ## Required work record
 

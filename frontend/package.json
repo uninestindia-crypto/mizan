@@ -1,7 +1,7 @@
 {
   "name": "quantos-app",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "description": "QuantOS 2.0 retail interface (built into src/quant_system/server/static/app)",
   "scripts": {
