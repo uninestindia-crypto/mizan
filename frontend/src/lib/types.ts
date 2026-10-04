@@ -38,6 +38,10 @@ export interface DownloadState {
   failures: { symbol: string; reason: string }[];
   without_actions: number;
   cache: string;
+  /** "full" (ten years, then the recent window) or "update" (recent window only). */
+  mode: string;
+  /** A ten-year baseline is already on disk, so an update is enough. */
+  can_update: boolean;
 }
 
 export interface Status {
@@ -487,3 +491,123 @@ export interface CredentialTestResult {
   message: string;
 }
 
+
+// ------------------------------------------------------------------------- paper books (started in this app)
+
+export type PaperStatus = "WAITING" | "RUNNING" | "STOPPED" | "ATTENTION";
+
+export interface PaperScope {
+  kind: "stocks" | "universe";
+  symbols?: string[] | null;
+  universe?: string | null;
+  universe_label?: string | null;
+  used?: number;
+}
+
+export interface PaperBookSummary {
+  id: string;
+  name: string;
+  created_at: string;
+  status: PaperStatus;
+  template: string;
+  scope: PaperScope;
+  start_session: string;
+  last_session: string | null;
+  sessions: number;
+  capital: number;
+  equity: number;
+  return: number;
+  benchmark_return: number;
+  excess: number;
+  queued: number;
+  positions: number;
+  attention: number;
+  spark: number[];
+  /** Set when the book cannot be replayed (for example its stock left the data); says why in words. */
+  error: string | null;
+}
+
+export interface PaperPosition {
+  symbol: string;
+  quantity: number;
+  average_price: number;
+  last_close: number;
+  market_value: number;
+  unrealized_pnl: number;
+  weight: number;
+}
+
+export interface PaperQueuedOrder {
+  side: "BUY" | "SELL";
+  symbol: string;
+  quantity: number;
+  reference_price: number | null;
+}
+
+export interface PaperTrade {
+  date: string;
+  symbol: string;
+  side: "BUY" | "SELL";
+  quantity: number;
+  price: number;
+  fee: number;
+  slippage: number;
+}
+
+export interface PaperBookDetail {
+  id: string;
+  name: string;
+  created_at: string;
+  status: PaperStatus;
+  error?: string | null;
+  template: { id: string; name: string; summary: string };
+  params: Record<string, number | boolean>;
+  scope: PaperScope;
+  capital: number;
+  slippage_bps: number;
+  start_session: string;
+  last_session: string | null;
+  stop_session: string | null;
+  sessions: number;
+  equity: number;
+  cash: number;
+  return: number;
+  benchmark_return: number;
+  excess: number;
+  charges: number;
+  slippage: number;
+  positions: PaperPosition[];
+  queued: PaperQueuedOrder[];
+  trades: PaperTrade[];
+  /** [session, book equity, NIFTY equity], same starting money. */
+  curve: [string, number, number][];
+  round_trips: number;
+  win_rate: number | null;
+  max_drawdown: number;
+  attention: string[];
+  skipped: string[];
+  reading: { level: "TOO_EARLY" | "SOME_HISTORY"; title: string; body: string };
+}
+
+export interface PaperBookInput {
+  name: string;
+  template_id: string;
+  params: Record<string, number | boolean>;
+  scope: "stocks" | "universe";
+  symbols: string[];
+  universe: string | null;
+  capital: string;
+  slippage_bps: string;
+}
+
+export interface UpdateInfo {
+  current: string;
+  latest: string | null;
+  update_available: boolean;
+  url: string | null;
+  notes: string;
+  published_at: string | null;
+  installer: string | null;
+  /** false when GitHub could not be reached; the app then says nothing. */
+  checked: boolean;
+}

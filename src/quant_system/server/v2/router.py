@@ -33,7 +33,7 @@ from quant_system.lab import (
 )
 from quant_system.lab.runner import UNIVERSES
 from quant_system.market import MarketIndex, SymbolNotFoundError
-from quant_system.market.downloader import MarketDownload
+from quant_system.market.downloader import MarketDownload, baseline_exists
 from quant_system.market.index import BENCHMARK_SYMBOL
 from quant_system.market.sources import discover_caches, store_fingerprint
 from quant_system.server.security import format_error_response
@@ -54,6 +54,7 @@ from quant_system.server.v2.credentials import (
     with_saved_credentials,
 )
 from quant_system.server.v2.jobs import IndexJob
+from quant_system.server.v2.paper_books import PaperBooks
 from quant_system.server.v2.portfolio import paper_books, portfolio_summary
 from quant_system.server.v2.schemas import (
     CliCodeRequest,
@@ -61,10 +62,12 @@ from quant_system.server.v2.schemas import (
     CostsRequest,
     CredentialTestRequest,
     DataFolderRequest,
+    DownloadRequest,
     FolderPickRequest,
     HoldingRequest,
     LabRunRequest,
     OptionsPayoffRequest,
+    PaperBookRequest,
     PositionSizeRequest,
     SecretRequest,
     WatchlistRequest,
@@ -78,6 +81,7 @@ from quant_system.server.v2.tools import (
     position_size,
     trade_costs,
 )
+from quant_system.server.v2.updates import UpdateChecker
 
 router = APIRouter(prefix="/api/v2", tags=["QuantOS 2.0"])
 
@@ -110,11 +114,18 @@ class Services:
     job: IndexJob
     credentials: CredentialStore
     download: MarketDownload
+    paper: PaperBooks
+    updates: UpdateChecker
 
 
 _services: Services | None = None
 _services_lock = threading.Lock()
 _fingerprint_cache: dict[str, tuple[float, str]] = {}
+
+
+def _download_snapshot(svc: Services) -> dict[str, Any]:
+    """The download's progress, plus whether a quick update is possible (a baseline is on disk)."""
+    return {**svc.download.snapshot(), "can_update": baseline_exists(paths.app_root() / "data")}
 
 
 def _connect_downloaded_data(folder: Path) -> None:
@@ -129,12 +140,15 @@ def services() -> Services:
     with _services_lock:
         if _services is None:
             state_dir = paths.state_dir()
+            state = AppState(state_dir / "app.sqlite")
             _services = Services(
-                state=AppState(state_dir / "app.sqlite"),
+                state=state,
                 index=MarketIndex(paths.index_dir()),
                 job=IndexJob(),
                 credentials=CredentialStore(),
                 download=MarketDownload(on_done=_connect_downloaded_data),
+                paper=PaperBooks(state),
+                updates=UpdateChecker(__version__),
             )
         return _services
 
@@ -235,7 +249,7 @@ def status() -> dict[str, Any]:
             "candidates": _folder_candidates(scan),
             "scan": scan["state"],
         },
-        "download": svc.download.snapshot(),
+        "download": _download_snapshot(svc),
         "index": index_info,
         "credentials_available": svc.credentials.available,
         "costs_covered_from": COSTS_COVERED_FROM.isoformat(),
@@ -262,22 +276,22 @@ def set_data_folder(body: DataFolderRequest) -> dict[str, Any]:
 
 
 @router.post("/data/download")
-def start_download() -> dict[str, Any]:
-    """Download NIFTY 500 daily prices to this computer from public sources, then connect them."""
+def start_download(body: DownloadRequest | None = None) -> dict[str, Any]:
+    """Download (or quickly update) NIFTY 500 daily prices from public sources, then connect them."""
     svc = services()
-    started = svc.download.start(paths.app_root() / "data")
-    return {"started": started, "download": svc.download.snapshot()}
+    started = svc.download.start(paths.app_root() / "data", mode=(body or DownloadRequest()).mode)
+    return {"started": started, "download": _download_snapshot(svc)}
 
 
 @router.get("/data/download")
 def download_status() -> dict[str, Any]:
-    return services().download.snapshot()
+    return _download_snapshot(services())
 
 
 @router.post("/data/download/cancel")
 def cancel_download() -> dict[str, Any]:
     services().download.cancel()
-    return services().download.snapshot()
+    return _download_snapshot(services())
 
 
 @router.post("/data/scan")
@@ -552,6 +566,56 @@ def delete_holding(holding_id: int) -> dict[str, bool]:
 
 
 # ------------------------------------------------------------------------------ paper
+
+
+@router.get("/update")
+def update_status(refresh: bool = False) -> dict[str, Any]:
+    """Is a newer release available? Never an error: a failed check just says so quietly."""
+    return services().updates.check(force=refresh)
+
+
+@router.get("/paper/mine")
+def my_paper_books() -> list[dict[str, Any]]:
+    """The paper books started in this app, each replayed against the latest market data."""
+    return services().paper.summaries(_index())
+
+
+@router.post("/paper/mine")
+def start_paper_book(body: PaperBookRequest) -> dict[str, Any]:
+    index = _index()
+    svc = services()
+    broker = svc.state.settings().broker.model_dump(mode="json")
+    try:
+        return svc.paper.create(
+            index,
+            name=body.name,
+            template_id=body.template_id,
+            params=body.params,
+            scope=body.scope,
+            symbols=body.symbols,
+            universe=body.universe,
+            capital=body.capital,
+            slippage_bps=body.slippage_bps,
+            broker=broker,
+        )
+    except (LabError, ValueError) as err:
+        raise V2Error(400, "PAPER_REFUSED", str(err)) from err
+
+
+@router.get("/paper/mine/{book_id}")
+def paper_book_detail(book_id: str) -> dict[str, Any]:
+    try:
+        return services().paper.detail(_index(), book_id)
+    except KeyError as err:
+        raise V2Error(404, "PAPER_BOOK_NOT_FOUND", "That paper book does not exist.") from err
+
+
+@router.post("/paper/mine/{book_id}/stop")
+def stop_paper_book(book_id: str) -> dict[str, Any]:
+    try:
+        return services().paper.stop(_index(), book_id)
+    except KeyError as err:
+        raise V2Error(404, "PAPER_BOOK_NOT_FOUND", "That paper book does not exist.") from err
 
 
 @router.get("/paper/books")

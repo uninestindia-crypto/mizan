@@ -45,6 +45,22 @@ CREATE TABLE IF NOT EXISTS lab_runs(
     period_end TEXT NOT NULL,
     result_json TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS paper_books(
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    spec_json TEXT NOT NULL,
+    broker_json TEXT NOT NULL,
+    stopped_session TEXT,
+    stopped_at TEXT
+);
+CREATE TABLE IF NOT EXISTS paper_snapshots(
+    book_id TEXT NOT NULL,
+    session TEXT NOT NULL,
+    equity REAL NOT NULL,
+    recorded_at TEXT NOT NULL,
+    PRIMARY KEY(book_id, session)
+);
 """
 
 
@@ -246,6 +262,75 @@ class AppState:
         result["id"] = row["id"]
         result["created_at"] = row["created_at"]
         return result
+
+    # ---------------------------------------------------------------------- paper books
+    #
+    # Paper books are stopped, never deleted, and the equity recorded for each session is written once
+    # and never replaced: if the provider later re-adjusts history, the book can say its past moved.
+
+    def create_paper_book(self, name: str, spec: dict[str, Any], broker: dict[str, Any]) -> str:
+        book_id = uuid.uuid4().hex[:12]
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                "INSERT INTO paper_books(id, name, created_at, spec_json, broker_json) "
+                "VALUES (?,?,?,?,?)",
+                (
+                    book_id,
+                    name,
+                    _now(),
+                    json.dumps(spec, separators=(",", ":")),
+                    json.dumps(broker, separators=(",", ":")),
+                ),
+            )
+        return book_id
+
+    def paper_books(self) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM paper_books ORDER BY created_at DESC, rowid DESC"
+            ).fetchall()
+        return [self._paper_row(r) for r in rows]
+
+    def paper_book(self, book_id: str) -> dict[str, Any] | None:
+        with self._connect() as conn:
+            row = conn.execute("SELECT * FROM paper_books WHERE id = ?", (book_id,)).fetchone()
+        return self._paper_row(row) if row is not None else None
+
+    @staticmethod
+    def _paper_row(row: sqlite3.Row) -> dict[str, Any]:
+        return {
+            "id": row["id"],
+            "name": row["name"],
+            "created_at": row["created_at"],
+            "spec": json.loads(row["spec_json"]),
+            "broker": json.loads(row["broker_json"]),
+            "stopped_session": row["stopped_session"],
+            "stopped_at": row["stopped_at"],
+        }
+
+    def stop_paper_book(self, book_id: str, session: str) -> bool:
+        with self._lock, self._connect() as conn:
+            cursor = conn.execute(
+                "UPDATE paper_books SET stopped_session = ?, stopped_at = ? "
+                "WHERE id = ? AND stopped_session IS NULL",
+                (session, _now(), book_id),
+            )
+        return cursor.rowcount > 0
+
+    def paper_snapshots(self, book_id: str) -> dict[str, float]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT session, equity FROM paper_snapshots WHERE book_id = ?", (book_id,)
+            ).fetchall()
+        return {str(r["session"]): float(r["equity"]) for r in rows}
+
+    def record_paper_snapshots(self, book_id: str, equity_by_session: dict[str, float]) -> None:
+        """Record each session's equity the first time it is seen. Existing rows are never replaced."""
+        with self._lock, self._connect() as conn:
+            conn.executemany(
+                "INSERT OR IGNORE INTO paper_snapshots VALUES (?,?,?,?)",
+                [(book_id, d, e, _now()) for d, e in sorted(equity_by_session.items())],
+            )
 
 
 def _deep_merge(base: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:

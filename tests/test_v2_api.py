@@ -413,3 +413,25 @@ def test_an_index_from_another_folder_is_flagged_and_a_source_checkout_is_not_a_
     assert paths.is_data_folder(checkout) is False
     refused = ready.post("/api/v2/data/folder", json={"path": str(checkout)}, headers=headers)
     assert refused.status_code == 400 and _error(refused) == "NOT_A_DATA_FOLDER"
+
+
+def test_every_page_the_web_app_defines_is_served_on_reload(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A page the React app routes to must also be a URL the server answers. A new page that is only
+    registered in the app works when clicked to and 404s on reload or a direct link."""
+    import re
+
+    built = tmp_path / "spa-built"
+    built.mkdir()
+    (built / "index.html").write_text("<!doctype html><div id=root></div>", encoding="utf-8")
+    monkeypatch.setattr(paths, "spa_dir", lambda: built)
+    source = (Path(__file__).resolve().parent.parent / "frontend/src/App.tsx").read_text(
+        encoding="utf-8"
+    )
+    routes = re.findall(r'<Route\s+path="([^"*]+)"', source)
+    assert "/paper/new" in routes and "/lab/runs/:runId" in routes  # the pattern found real routes
+    for route in routes:
+        concrete = re.sub(r":\w+", "x", route)
+        response = client.get(concrete)
+        assert response.status_code == 200, f"{concrete} (from {route}) is not served"

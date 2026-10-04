@@ -15,6 +15,8 @@ const LabNew = lazy(() => import("./pages/LabNew"));
 const LabRun = lazy(() => import("./pages/LabRun"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
 const Paper = lazy(() => import("./pages/Paper"));
+const PaperNew = lazy(() => import("./pages/PaperNew"));
+const PaperBook = lazy(() => import("./pages/PaperBook"));
 const Tools = lazy(() => import("./pages/Tools"));
 const Settings = lazy(() => import("./pages/Settings"));
 
@@ -73,6 +75,8 @@ export function App() {
           <Route path="/lab/runs/:runId" element={<LabRun />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/paper" element={<Paper />} />
+          <Route path="/paper/new" element={<PaperNew />} />
+          <Route path="/paper/:id" element={<PaperBook />} />
           <Route path="/tools" element={<Navigate to="/tools/costs" replace />} />
           <Route path="/tools/:tool" element={<Tools />} />
           <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />

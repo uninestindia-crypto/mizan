@@ -80,6 +80,16 @@ class OpenPosition:
     unrealized_pnl: Decimal
 
 
+@dataclass(frozen=True, slots=True)
+class QueuedOrder:
+    """An order the strategy decided at the final close, to fill at the next session's open."""
+
+    symbol: str
+    side: str
+    quantity: int
+    reference_price: Decimal | None  # the last close it was sized from
+
+
 @dataclass(slots=True)
 class SimResult:
     dates: list[str] = field(default_factory=list)
@@ -89,6 +99,8 @@ class SimResult:
     round_trips: list[RoundTrip] = field(default_factory=list)
     open_positions: list[OpenPosition] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
+    # Only filled when ``simulate(..., queue_last=True)``: what would trade at the next open.
+    queued: list[QueuedOrder] = field(default_factory=list)
 
     @property
     def charges(self) -> Decimal:
@@ -126,7 +138,14 @@ def simulate(
     first_trade: int,
     fee_fn: FeeFn,
     config: SimConfig,
+    queue_last: bool = False,
 ) -> SimResult:
+    """Run the strategy over ``panel``.
+
+    ``queue_last`` also lets the strategy decide at the final close and returns those orders in
+    ``result.queued`` instead of dropping them. A backtest has no next session to fill them in; a
+    paper book does: they are tomorrow's orders.
+    """
     if not 0 <= first_trade < len(panel.dates):
         raise ValueError("The first trading session is outside the price data")
     strategy.prepare(panel)
@@ -191,6 +210,26 @@ def simulate(
                 pending = _orders_for(
                     targets, positions, equity, panel, t, last_close, config, result
                 )
+        elif queue_last:
+            held = frozenset(s for s, p in positions.items() if p.quantity > 0)
+            targets = strategy.decide(t, held)
+            if targets is not None:
+                queued = _orders_for(
+                    targets, positions, equity, panel, t, last_close, config, result
+                )
+
+                closes = {o.symbol: panel.close[o.symbol][t] for o in queued}
+                result.queued = [
+                    QueuedOrder(
+                        o.symbol,
+                        o.side.value,
+                        o.quantity,
+                        to_decimal(closes[o.symbol])
+                        if not math.isnan(closes[o.symbol])
+                        else last_close.get(o.symbol),
+                    )
+                    for o in queued
+                ]
 
     for symbol, position in ledger.positions.items():
         if position.quantity <= 0:

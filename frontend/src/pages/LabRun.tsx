@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronDown, RotateCcw } from "lucide-react";
+import { ArrowLeft, ChevronDown, FileText, RotateCcw } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { DrawdownChart, EquityChart, type EquitySeries } from "../components/charts";
@@ -61,11 +61,16 @@ function Result({ result }: { result: LabResult }) {
           </>
         }
         actions={
-          <Link to={rerun}>
-            <Button variant="secondary" icon={<RotateCcw className="size-4" aria-hidden />}>
-              Test again with changes
-            </Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link to={`/paper/new?from=${result.id}`}>
+              <Button icon={<FileText className="size-4" aria-hidden />}>Paper trade this</Button>
+            </Link>
+            <Link to={rerun}>
+              <Button variant="secondary" icon={<RotateCcw className="size-4" aria-hidden />}>
+                Test again with changes
+              </Button>
+            </Link>
+          </div>
         }
       />
       <VerdictBanner {...result.verdict} />

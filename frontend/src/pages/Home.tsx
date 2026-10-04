@@ -5,7 +5,7 @@ import { Sparkline } from "../components/charts";
 import { AsOf, DataGate, Illustration } from "../components/common";
 import { Badge, Button, Card, CardHeader, Delta, EmptyState, PageHeader, Segmented, Skeleton, Stat } from "../components/ui";
 import { ageLabel, date, daysSince, inr, inrCompact, inrSigned, num, pct, tone } from "../lib/format";
-import { useOverview, usePaperBooks, usePortfolio, useStatus, useWatchlist } from "../lib/queries";
+import { useOverview, usePaperBooks, usePaperMine, usePortfolio, useStatus, useWatchlist } from "../lib/queries";
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -294,7 +294,12 @@ function LabInvite() {
 }
 
 function PaperMini() {
-  const books = usePaperBooks();
+  const status = useStatus();
+  const mine = usePaperMine(status.data?.index.ready ?? false);
+  const workspace = usePaperBooks();
+  const mineBooks = mine.data ?? [];
+  const workspaceBooks = workspace.data ?? [];
+  const pending = (mine.isPending && mine.fetchStatus !== "idle") || workspace.isPending;
   return (
     <Card className="h-full">
       <CardHeader
@@ -306,13 +311,31 @@ function PaperMini() {
           </Link>
         }
       />
-      {books.isPending ? (
+      {pending ? (
         <Skeleton className="h-20" />
-      ) : (books.data ?? []).length === 0 ? (
-        <p className="text-sm text-ink-3">No paper books are running on this computer.</p>
+      ) : mineBooks.length === 0 && workspaceBooks.length === 0 ? (
+        <div className="space-y-3">
+          <p className="text-sm text-ink-3">You have no paper books yet. Start one to follow a rule day by day without risking money.</p>
+          <Link to="/paper/new" className="inline-block text-[13px] font-medium text-brand hover:underline">
+            Start a paper book
+          </Link>
+        </div>
       ) : (
         <ul className="space-y-3">
-          {(books.data ?? []).map((b) => (
+          {mineBooks.slice(0, 4).map((b) => (
+            <li key={b.id}>
+              <Link to={`/paper/${b.id}`} className="flex items-center justify-between gap-3 hover:opacity-80">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-ink">{b.name}</div>
+                  <div className="text-[12.5px] text-ink-3">
+                    {b.error ? "Needs attention" : b.status === "WAITING" ? "Waiting for the next session" : `${b.sessions} sessions · NIFTY ${pct(b.benchmark_return, 2)}`}
+                  </div>
+                </div>
+                {b.error ? <Badge tone="warn">attention</Badge> : <Delta value={b.return} strong>{pct(b.return, 2)}</Delta>}
+              </Link>
+            </li>
+          ))}
+          {workspaceBooks.map((b) => (
             <li key={b.id} className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium text-ink">{b.name}</div>

@@ -8,6 +8,9 @@ import type {
   LabRunSummary,
   Overview,
   PaperBook,
+  PaperBookDetail,
+  PaperBookInput,
+  PaperBookSummary,
   PayoffResult,
   Portfolio,
   PositionSizeResult,
@@ -18,6 +21,7 @@ import type {
   Status,
   StockProfile,
   Templates,
+  UpdateInfo,
   WatchRow,
 } from "./types";
 
@@ -36,6 +40,8 @@ export const keys = {
   portfolio: ["portfolio"] as const,
   watchlist: ["watchlist"] as const,
   paper: ["paper"] as const,
+  paperMine: ["paper-mine"] as const,
+  paperBook: (id: string) => ["paper-book", id] as const,
   secrets: ["secrets"] as const,
   aiTools: ["ai-tools"] as const,
 };
@@ -109,6 +115,41 @@ export function usePaperBooks() {
   return useQuery({ queryKey: keys.paper, queryFn: () => api<PaperBook[]>("/api/v2/paper/books"), refetchInterval: 60_000 });
 }
 
+export function usePaperMine(enabled = true) {
+  return useQuery({
+    queryKey: keys.paperMine,
+    queryFn: () => api<PaperBookSummary[]>("/api/v2/paper/mine"),
+    enabled,
+    refetchInterval: 30_000,
+  });
+}
+
+export function usePaperBook(id: string) {
+  return useQuery({ queryKey: keys.paperBook(id), queryFn: () => api<PaperBookDetail>(`/api/v2/paper/mine/${id}`), refetchInterval: 30_000 });
+}
+
+export function useStartPaperBook() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: PaperBookInput) => api<PaperBookDetail>("/api/v2/paper/mine", "POST", input),
+    onSuccess: (book) => {
+      qc.setQueryData(keys.paperBook(book.id), book);
+      void qc.invalidateQueries({ queryKey: keys.paperMine });
+    },
+  });
+}
+
+export function useStopPaperBook() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<PaperBookDetail>(`/api/v2/paper/mine/${id}/stop`, "POST"),
+    onSuccess: (book) => {
+      qc.setQueryData(keys.paperBook(book.id), book);
+      void qc.invalidateQueries({ queryKey: keys.paperMine });
+    },
+  });
+}
+
 export function useSecrets() {
   return useQuery({ queryKey: keys.secrets, queryFn: () => api<{ available: boolean; secrets: Secret[] }>("/api/v2/credentials") });
 }
@@ -165,7 +206,7 @@ export function useScanForData() {
 export function useStartDownload() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api<{ started: boolean }>("/api/v2/data/download", "POST"),
+    mutationFn: (mode: "auto" | "full" | "update" = "auto") => api<{ started: boolean }>("/api/v2/data/download", "POST", { mode }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: keys.status }),
   });
 }
@@ -325,3 +366,24 @@ export const tools = {
   positionSize: (body: unknown) => api<PositionSizeResult>("/api/v2/tools/position-size", "POST", body),
   payoff: (body: unknown) => api<PayoffResult>("/api/v2/tools/options-payoff", "POST", body),
 };
+
+const SIX_HOURS = 6 * 60 * 60_000;
+
+/** Is a newer QuantOS release out? Quiet by design: a failed check is just "no". */
+export function useUpdate() {
+  return useQuery({
+    queryKey: ["update"],
+    queryFn: () => api<UpdateInfo>("/api/v2/update"),
+    staleTime: SIX_HOURS,
+    refetchInterval: SIX_HOURS,
+    retry: false,
+  });
+}
+
+export function useCheckUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<UpdateInfo>("/api/v2/update?refresh=true"),
+    onSuccess: (info) => qc.setQueryData(["update"], info),
+  });
+}

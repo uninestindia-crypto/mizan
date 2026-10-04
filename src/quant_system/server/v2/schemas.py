@@ -30,6 +30,21 @@ class LabRunRequest(BaseModel):
     slippage_bps: Decimal = Field(default=Decimal("5"), ge=0, le=200)
 
 
+class DownloadRequest(BaseModel):
+    mode: Literal["auto", "full", "update"] = "auto"
+
+
+class PaperBookRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    template_id: str = Field(min_length=1, max_length=40)
+    params: dict[str, Any] = Field(default_factory=dict)
+    scope: Literal["stocks", "universe"] = "stocks"
+    symbols: list[str] = Field(default_factory=list, max_length=20)
+    universe: str | None = None
+    capital: Decimal = Field(ge=Decimal("10000"), le=Decimal("1000000000"))
+    slippage_bps: Decimal = Field(default=Decimal("5"), ge=0, le=200)
+
+
 class WatchlistRequest(BaseModel):
     symbol: str = Field(min_length=1, max_length=30)
 
