@@ -27,12 +27,14 @@ import { MONEY_LIMITS, moneyProblems } from "../lib/rules";
 import { date, dateTime, inr, int } from "../lib/format";
 import {
   useAiModels,
+  useCheckUpdate,
   useBuildIndex,
   useSecretMutation,
   useSecrets,
   useSetDataFolder,
   useStatus,
   useTestCredential,
+  useUpdate,
   useUpdateSettings,
 } from "../lib/queries";
 import type { Style, Theme } from "../lib/types";
@@ -915,6 +917,31 @@ function ProviderModels({ provider, connected, refreshKey }: { provider: string;
   );
 }
 
+function UpdateLine() {
+  const update = useUpdate();
+  const check = useCheckUpdate();
+  const info = update.data;
+  let text = "Checking for updates…";
+  if (info) {
+    if (info.update_available && info.latest) text = `QuantOS ${info.latest} is available.`;
+    else if (info.checked) text = "You have the latest version.";
+    else text = "Could not check for updates right now.";
+  }
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-ink-2">
+      <span>{text}</span>
+      {info?.update_available && info.url && (
+        <a href={info.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium text-brand hover:underline">
+          See what is new and download <ExternalLink className="size-3.5" aria-hidden />
+        </a>
+      )}
+      <Button size="sm" variant="ghost" icon={<RefreshCw className="size-3.5" aria-hidden />} loading={check.isPending} onClick={() => check.mutate()}>
+        Check now
+      </Button>
+    </div>
+  );
+}
+
 function About() {
   const status = useStatus();
   const licences: [string, string][] = [
@@ -928,6 +955,7 @@ function About() {
     <>
       <Card>
         <CardHeader title="QuantOS" subtitle={`Version ${status.data?.version ?? ""}`} />
+        <UpdateLine />
         <p className="text-sm leading-relaxed text-ink-2">
           QuantOS is a research and practice tool for testing trading and investing ideas on real NSE data with exact costs. It is not investment advice,
           it is not registered with SEBI as an investment adviser or research analyst, and it does not place orders with any broker. Past results,

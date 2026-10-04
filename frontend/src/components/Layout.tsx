@@ -15,7 +15,7 @@ import {
 import { type ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
 import { ageLabel, date, daysSince } from "../lib/format";
-import { useSearch, useStatus, useUpdateSettings } from "../lib/queries";
+import { useSearch, useStatus, useUpdate, useUpdateSettings } from "../lib/queries";
 import type { Theme } from "../lib/types";
 import { Logo } from "./Logo";
 import { Badge, cx } from "./ui";
@@ -57,6 +57,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <Sidebar onSearch={() => setPaletteOpen(true)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileBar onSearch={() => setPaletteOpen(true)} />
+        <UpdateNotice />
         <main id="main" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto outline-none">
           <div className="q-fade-in mx-auto w-full max-w-[1320px] px-6 py-7 lg:px-10" key={location.pathname}>
             {children}
@@ -64,6 +65,45 @@ export function Layout({ children }: { children: ReactNode }) {
         </main>
       </div>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+    </div>
+  );
+}
+
+/** A new release exists. Says what it is and links to it; installing is the person's decision. */
+function UpdateNotice() {
+  const update = useUpdate();
+  const info = update.data;
+  const [dismissed, setDismissed] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem("quantos.update.dismissed");
+    } catch {
+      return null;
+    }
+  });
+  if (!info?.update_available || !info.latest || dismissed === info.latest) return null;
+  const hide = () => {
+    setDismissed(info.latest);
+    try {
+      localStorage.setItem("quantos.update.dismissed", info.latest ?? "");
+    } catch {
+      /* the notice just comes back next time */
+    }
+  };
+  return (
+    <div role="status" className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-brand/25 bg-brand-soft px-6 py-2.5 text-[13.5px] text-ink lg:px-10">
+      <span>
+        <strong className="font-semibold">QuantOS {info.latest} is available.</strong> You have {info.current}.
+      </span>
+      <span className="flex items-center gap-4">
+        {info.url && (
+          <a href={info.url} target="_blank" rel="noreferrer" className="font-medium text-brand hover:underline">
+            See what is new and download
+          </a>
+        )}
+        <button type="button" onClick={hide} className="text-ink-3 hover:text-ink">
+          Not now
+        </button>
+      </span>
     </div>
   );
 }
