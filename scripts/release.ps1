@@ -70,6 +70,7 @@ try {
     Write-Host ("Last release: {0}; user-visible changes since: {1}; due: {2}" -f $status.last_tag, $status.user_visible, $status.due)
     if (-not $status.due -and -not $Force) { Fail "No release is due yet. Use -Force to release anyway." }
     $problems = & $python scripts/bump_version.py --check
+    if ($LASTEXITCODE -eq 0) { $problems = $null }  # exit 0 means the files already agree
     if (-not $Version) {
         $kind = if ($Bump) { $Bump } else { $status.suggested_bump }
         $Version = (& $python scripts/bump_version.py --next $kind).Trim(); Native "bump_version --next"
