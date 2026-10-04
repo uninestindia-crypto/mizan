@@ -1,5 +1,5 @@
 import { ArrowLeft, FlaskConical, Play } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { DataGate, SymbolChips, SymbolSearch } from "../components/common";
 import { Button, Callout, Card, CardHeader, EmptyState, Field, HelpTip, Input, PageHeader, Segmented, Select, Skeleton, Switch } from "../components/ui";
@@ -36,6 +36,8 @@ function LabNewPage() {
   return <Configure template={template} universes={templates.data.universes} coveredFrom={templates.data.costs_covered_from} />;
 }
 
+const MIN_CAPITAL = 10_000;
+
 function Configure({ template, universes, coveredFrom }: { template: Template; universes: { id: string; label: string }[]; coveredFrom: string }) {
   const [search] = useSearchParams();
   const status = useStatus();
@@ -47,20 +49,44 @@ function Configure({ template, universes, coveredFrom }: { template: Template; u
   const [scope, setScope] = useState<"stocks" | "universe">(canUniverse && initialSymbols.length === 0 ? "universe" : "stocks");
   const [symbols, setSymbols] = useState<string[]>(initialSymbols);
   const [universe, setUniverse] = useState(universes[0]?.id ?? "liquid");
-  const [params, setParams] = useState<Record<string, number | boolean>>(() => Object.fromEntries(template.params.map((p) => [p.name, p.default])));
-  const [start, setStart] = useState(coveredFrom);
-  const [end, setEnd] = useState("");
-  const [capital, setCapital] = useState(status.data?.settings.money.capital ?? "1000000");
-  const [slippage, setSlippage] = useState("5");
+  const [params, setParams] = useState<Record<string, number | boolean>>(() => {
+    const defaults = Object.fromEntries(template.params.map((p) => [p.name, p.default])) as Record<string, number | boolean>;
+    try {
+      // "Test again with changes" passes the previous settings along.
+      const previous = JSON.parse(search.get("params") ?? "{}") as Record<string, number | boolean>;
+      for (const name of Object.keys(defaults)) {
+        const value = previous[name];
+        if (value !== undefined) defaults[name] = value;
+      }
+    } catch {
+      /* ignore a malformed link */
+    }
+    return defaults;
+  });
+  const [start, setStart] = useState(search.get("start") || coveredFrom);
+  const [end, setEnd] = useState(search.get("end") ?? "");
+  const [capital, setCapital] = useState(search.get("capital") ?? status.data?.settings.money.capital ?? "1000000");
+  const [slippage, setSlippage] = useState(search.get("slippage") ?? "5");
+  // A double-click lands before React re-renders the button as busy; without this each click saved a test,
+  // and every saved test makes the next verdict harder to pass.
+  const submitting = useRef(false);
 
   useEffect(() => {
-    if (status.data) setCapital(status.data.settings.money.capital);
+    if (status.data && !search.get("capital")) setCapital(status.data.settings.money.capital);
   }, [status.data?.settings.money.capital]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const blocking = scope === "stocks" && symbols.length === 0 ? "Add at least one stock." : null;
+  const capitalValue = Number(capital);
+  const blocking =
+    scope === "stocks" && symbols.length === 0
+      ? "Add at least one stock."
+      : !capital || capitalValue < MIN_CAPITAL
+        ? `Starting money must be at least ${inr(MIN_CAPITAL, 0)}.`
+        : null;
   const refusedSymbol = run.error instanceof ApiError && run.error.code === "LAB_REFUSED" ? /^([A-Z0-9&-]+)(?:'s)? /.exec(run.error.message)?.[1] : undefined;
 
-  const submit = (override?: string[]) =>
+  const submit = (override?: string[]) => {
+    if (submitting.current) return;
+    submitting.current = true;
     run.mutate(
       {
         template_id: template.id,
@@ -73,8 +99,14 @@ function Configure({ template, universes, coveredFrom }: { template: Template; u
         capital: capital || null,
         slippage_bps: slippage || "5",
       },
-      { onSuccess: (result) => void navigate(`/lab/runs/${result.id}`) },
+      {
+        onSuccess: (result) => void navigate(`/lab/runs/${result.id}`),
+        onSettled: () => {
+          submitting.current = false;
+        },
+      },
     );
+  };
 
   return (
     <div className="space-y-5">
@@ -146,13 +178,18 @@ function Configure({ template, universes, coveredFrom }: { template: Template; u
           <Card>
             <CardHeader title="Money and period" />
             <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="Starting capital" htmlFor="capital" hint={inr(Number(capital) || 0, 0)}>
+              <Field label="Starting capital" htmlFor="capital" hint={`${inr(Number(capital) || 0, 0)} · at least ${inr(MIN_CAPITAL, 0)}`}>
                 <Input id="capital" prefix="₹" inputMode="numeric" value={capital} onChange={(e) => setCapital(e.target.value.replace(/[^\d.]/g, ""))} />
               </Field>
               <Field label={<span className="inline-flex items-center gap-1">Slippage <HelpTip text="Extra price paid on every fill because you cannot always trade at the exact open. 5 basis points = 0.05%." /></span>} htmlFor="slippage">
                 <Input id="slippage" suffix="bps" inputMode="numeric" value={slippage} onChange={(e) => setSlippage(e.target.value.replace(/\D/g, ""))} />
               </Field>
-              <Field label="Start" htmlFor="start" hint={`Exact NSE charges are defined from ${date(coveredFrom)}.`}>
+              <Field
+                label="Start"
+                htmlFor="start"
+                hint={`Tests start no earlier than ${date(coveredFrom)}, when exact NSE charges begin.`}
+                error={start && start < coveredFrom ? `That is before ${date(coveredFrom)}, so the test will start on ${date(coveredFrom)}.` : undefined}
+              >
                 <Input id="start" type="date" min={coveredFrom} value={start} onChange={(e) => setStart(e.target.value)} />
               </Field>
               <Field label="End (optional)" htmlFor="end" hint="Defaults to the last day NIFTY data covers.">

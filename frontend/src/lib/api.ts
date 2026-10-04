@@ -1,3 +1,5 @@
+import { plainValidation } from "./rules";
+
 // Fetch wrapper for the local QuantOS engine: CSRF on writes, typed errors from the error envelope.
 
 export class ApiError extends Error {
@@ -63,7 +65,21 @@ async function request<T>(path: string, method: Method, body: unknown, retry: bo
 }
 
 export function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) return error.message;
+  if (error instanceof ApiError) {
+    // Engine validation errors carry field names and library wording; say it the way a person would.
+    if (error.code === "VALIDATION_ERROR") {
+      const first = (error.details as { errors?: { location?: string[]; message?: string }[] } | null)?.errors?.[0];
+      if (first?.message) {
+        const field = (first.location ?? []).filter((part) => part !== "body").join(".");
+        return plainValidation(field, first.message);
+      }
+    }
+    if (error.code === "INVALID_SETTINGS") {
+      const parts = /^([\w.]+): (.*)$/.exec(error.message);
+      if (parts?.[1] && parts[2]) return plainValidation(parts[1], parts[2]);
+    }
+    return error.message;
+  }
   if (error instanceof Error) return error.message;
   return "Something went wrong.";
 }

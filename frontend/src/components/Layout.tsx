@@ -127,13 +127,21 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
         <div className="rounded-[var(--radius-control)] bg-surface-2 px-3 py-2.5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11.5px] font-medium uppercase tracking-wide text-ink-3">Market data</span>
-            {status.data?.index.ready ? (
+            {status.data?.download.state === "RUNNING" ? (
+              <Badge tone="brand">Downloading</Badge>
+            ) : status.data?.index.job.state === "RUNNING" ? (
+              <Badge tone="brand">Preparing</Badge>
+            ) : status.data?.index.ready ? (
               <Badge tone={stale ? "warn" : "up"}>{stale && age !== null ? ageLabel(age) : "Up to date"}</Badge>
             ) : (
-              <Badge tone="warn">Not connected</Badge>
+              <Badge tone="warn">No data yet</Badge>
             )}
           </div>
-          <div className="num mt-1 text-[12.5px] text-ink-2">{latest ? `Last session ${date(latest)}` : "Connect data in Settings"}</div>
+          <div className="num mt-1 text-[12.5px] text-ink-2">{status.data?.download.state === "RUNNING"
+              ? `${status.data.download.done} of ${status.data.download.total} stocks`
+              : latest
+                ? `Last session ${date(latest)}`
+                : "Get data in Settings"}</div>
         </div>
         <ThemeToggle />
       </div>
@@ -211,6 +219,15 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
   const results = useSearch(query);
+  // The list for the latest keystroke may still be on its way; never offer an earlier query's answer.
+  const stocks = results.isPlaceholderData ? [] : (results.data ?? []);
+  const pages = [...NAV, { to: "/settings", label: "Settings", icon: SettingsIcon }].filter(
+    (n) => !query || n.label.toLowerCase().includes(query.toLowerCase()),
+  );
+  const [selected, setSelected] = useState("");
+  // Highlight the best match so Enter does something without arrowing down first.
+  const best = stocks[0] ? `stock-${stocks[0].symbol}` : pages[0] ? `page-${pages[0].to}` : "";
+  useEffect(() => setSelected(best), [best]);
   const go = (to: string) => {
     onOpenChange(false);
     setQuery("");
@@ -222,6 +239,8 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
       onOpenChange={onOpenChange}
       label="Search stocks and pages"
       shouldFilter={false}
+      value={selected}
+      onValueChange={setSelected}
       overlayClassName="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]"
       contentClassName="q-fade-in fixed left-1/2 top-[14vh] z-50 w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--shadow-pop)]"
     >
@@ -235,10 +254,10 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
         />
       </div>
       <Command.List className="max-h-[50vh] overflow-y-auto p-2">
-        <Command.Empty className="px-3 py-6 text-center text-sm text-ink-3">No matches.</Command.Empty>
-        {(results.data ?? []).length > 0 && (
+        <Command.Empty className="px-3 py-6 text-center text-sm text-ink-3">{results.isFetching && query.trim() ? "Searching…" : "No matches."}</Command.Empty>
+        {stocks.length > 0 && (
           <Command.Group heading="Stocks" className="px-1 text-[11.5px] font-medium uppercase tracking-wide text-ink-3 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5">
-            {(results.data ?? []).map((r) => (
+            {stocks.map((r) => (
               <Command.Item
                 key={r.symbol}
                 value={`stock-${r.symbol}`}
@@ -254,10 +273,9 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
             ))}
           </Command.Group>
         )}
+        {pages.length > 0 && (
         <Command.Group heading="Pages" className="px-1 text-[11.5px] font-medium uppercase tracking-wide text-ink-3 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5">
-          {[...NAV, { to: "/settings", label: "Settings", icon: SettingsIcon }]
-            .filter((n) => !query || n.label.toLowerCase().includes(query.toLowerCase()))
-            .map(({ to, label, icon: Icon }) => (
+          {pages.map(({ to, label, icon: Icon }) => (
               <Command.Item
                 key={to}
                 value={`page-${to}`}
@@ -269,6 +287,7 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
               </Command.Item>
             ))}
         </Command.Group>
+        )}
       </Command.List>
     </Command.Dialog>
   );

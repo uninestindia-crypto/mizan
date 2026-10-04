@@ -192,7 +192,7 @@ export function AgentCliBridge() {
       <Card>
         <CardHeader
           title="Coding agents"
-          subtitle="Install a coding agent and sign in with your browser. No commands to type: QuantOS runs the maker's own installer and opens the sign-in page for you."
+          subtitle="Optional, and nothing in QuantOS needs it. For people who use a coding assistant to build their own strategies on this computer. Install one and sign in with your browser: QuantOS runs the maker's own installer and opens the sign-in page for you."
           action={
             <Button size="sm" variant="ghost" icon={<RefreshCw className="size-3.5" aria-hidden />} loading={refresh.isPending} onClick={() => refresh.mutate()}>
               Check status

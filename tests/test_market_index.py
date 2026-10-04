@@ -368,3 +368,13 @@ def test_build_drops_prices_before_the_last_data_break_and_says_why(tmp_path: Pa
     assert index.flags_in_window(["GAPCO", "AAA"], "2020-01-01", "2030-01-01") == {
         "GAPCO": [index.flags("GAPCO")[0]]
     }
+
+
+def test_a_ten_year_refresh_only_symbol_is_not_called_a_recent_refresh() -> None:
+    """The first-run download writes one ten-year refresh cache; warning that only the 'recent
+    refresh' exists, directly above '2,474 sessions from 2016', contradicted itself."""
+    ten_years = _bars(["2016-10-05", "2021-10-05", "2026-10-01"], [1.0, 1.0, 1.0])
+    long_result = stitch(None, ten_years)
+    assert long_result.status == "REFRESH_ONLY" and long_result.note == ""
+    short = stitch(None, _bars(["2026-09-01", "2026-10-01"], [1.0, 1.0]))
+    assert short.note == "Only the recent refresh exists for this symbol."

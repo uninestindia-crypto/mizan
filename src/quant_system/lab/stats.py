@@ -160,6 +160,9 @@ def verdict(
     """
     tries = f"your {trials} test{'s' if trials != 1 else ''}"
     diff = strategy.total_return - comparison.total_return
+    # A gap between two total returns is in percentage points: 1,150% against 130% is 1,020 points
+    # ahead, not "1,020%" ahead, which people read as a return.
+    ahead = f"{diff * 100:,.1f} percentage points"
     if diff <= 0:
         return Verdict(
             "LOST",
@@ -179,7 +182,7 @@ def verdict(
             "TOO_SHORT",
             "Too little history to judge",
             (
-                f"It finished {diff:.1%} ahead of {against.phrase}, but with {sessions} sessions "
+                f"It finished {ahead} ahead of {against.phrase}, but with {sessions} sessions "
                 f"and {strategy.round_trips} completed trades there is not enough evidence to "
                 "tell skill from luck."
             ),
@@ -191,7 +194,7 @@ def verdict(
             "NO_EVIDENCE",
             f"No real evidence it beats {against.name}",
             (
-                f"It finished {diff:.1%} ahead, but the daily difference from {against.phrase} is "
+                f"It finished {ahead} ahead, but the daily difference from {against.phrase} is "
                 f"small and noisy enough to be luck once {tries} are taken into account."
             ),
             probability,
@@ -199,21 +202,22 @@ def verdict(
         )
     if probability < EVIDENCE_GATE or cap_reason is not None:
         body = (
-            f"It beat {against.phrase} by {diff:.1%}. Allowing for {tries}, the chance the edge is "
-            f"real is {probability:.0%}"
+            f"It beat {against.phrase} by {ahead}. Allowing for {tries}, the chance this is more "
+            f"than luck is {probability:.0%}"
         )
         if probability < EVIDENCE_GATE:
             body += f", below the {EVIDENCE_GATE:.0%} bar QuantOS requires."
         else:
             body += f". {cap_reason}"
+        body += " This describes the past. It is not a forecast of what happens next."
         return Verdict("PROMISING", "Promising, not proven", body, probability, trials)
     return Verdict(
         "EDGE",
         "Evidence of an edge — paper trade it next",
         (
-            f"It beat {against.phrase} by {diff:.1%}, and allowing for {tries} the chance the edge "
-            f"is real is {probability:.0%}. Past results can still fail: run it on paper before "
-            "real money."
+            f"It beat {against.phrase} by {ahead}, and allowing for {tries} the chance this is "
+            f"more than luck is {probability:.0%}. Past results can still fail: test it further "
+            "before any real money."
         ),
         probability,
         trials,

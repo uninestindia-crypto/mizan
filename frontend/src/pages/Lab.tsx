@@ -33,7 +33,7 @@ function LabHome() {
             <Principle
               icon={<TriangleAlert className="size-5" aria-hidden />}
               title="Luck counts"
-              body={`You have run ${int(templates.data?.runs_so_far ?? 0)} tests. Each one raises the bar for the next.`}
+              body={`You have run ${int(templates.data?.runs_so_far ?? 0)} ${templates.data?.runs_so_far === 1 ? "test" : "tests"}. Each one raises the bar the next result has to clear, because the more ideas you try, the likelier one wins by luck.`}
             />
           </div>
           <Illustration name="lab-hero" className="hidden size-36 shrink-0 md:block" />

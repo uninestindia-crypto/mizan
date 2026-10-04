@@ -38,7 +38,13 @@ function Result({ result }: { result: LabResult }) {
     if (result.comparison) out.push({ label: "Whole list", color: "violet", points: result.equity.map((r) => ({ time: r[0], value: r[3] ?? 0 })) });
     return out;
   }, [result]);
-  const rerun = `/lab/new/${result.template.id}${result.scope.kind === "stocks" ? `?symbols=${(result.scope.requested ?? []).join(",")}` : ""}`;
+  const again = new URLSearchParams({
+    params: JSON.stringify(result.params),
+    capital: String(result.capital),
+    start: result.period.start,
+  });
+  if (result.scope.kind === "stocks") again.set("symbols", (result.scope.requested ?? []).join(","));
+  const rerun = `/lab/new/${result.template.id}?${again.toString()}`;
 
   return (
     <div className="space-y-5">

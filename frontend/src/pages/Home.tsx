@@ -64,7 +64,7 @@ function MarketPulse() {
   const lag = bench && overview.data ? (daysSince(bench.asof) ?? 0) - (daysSince(overview.data.latest_session) ?? 0) : 0;
   return (
     <Card>
-      <CardHeader title="NIFTY 50" subtitle={bench ? `Tracked by ${bench.symbol} · to ${date(bench.asof)}` : "Benchmark"} />
+      <CardHeader title="NIFTY 50" subtitle={bench ? `Shown through the NIFTY BeES ETF: its price per unit, not the index level · to ${date(bench.asof)}` : "Benchmark"} />
       {lag > 3 && (
         <p className="-mt-2 mb-3 text-[12.5px] text-warn">NIFTY data is {ageLabel(lag).replace(" old", "")} behind the stock data, so comparisons with it end earlier.</p>
       )}

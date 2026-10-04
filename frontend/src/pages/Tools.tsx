@@ -14,7 +14,7 @@ const TOOLS = [
   { id: "costs", label: "Trade costs" },
   { id: "position-size", label: "Position size" },
   { id: "options", label: "Options payoff" },
-  { id: "agents", label: "Agent CLI Bridge" },
+  { id: "agents", label: "Coding agents" },
 ];
 
 function useDebounced<T>(value: T, ms = 300): T {
@@ -100,7 +100,8 @@ function Costs() {
       </Card>
       <div className="space-y-5 lg:col-span-3">
         {result.isError && <Callout tone="danger">{errorMessage(result.error)}</Callout>}
-        {!data && !result.isError && <Skeleton className="h-64" />}
+        {!valid && <Callout tone="info">Enter both prices and a quantity of at least 1.</Callout>}
+        {valid && !data && !result.isError && <Skeleton className="h-64" />}
         {data && (
           <>
             <Card>
@@ -199,6 +200,11 @@ function PositionSize() {
       <div className="space-y-5 lg:col-span-3">
         {result.isError && <Callout tone="danger">{errorMessage(result.error)}</Callout>}
         {!valid && <Callout tone="info">Enter a stop-loss that differs from the entry price.</Callout>}
+        {valid && Number(input.stop) > Number(input.entry) && (
+          <Callout tone="warn" title="Your stop-loss is above your entry price">
+            That means a short sale: you would make money if the price falls. If you meant to buy, put the stop-loss below the entry price.
+          </Callout>
+        )}
         {data && (
           <Card>
             <div className="text-[13px] text-ink-3">{data.direction === "long" ? "Buy" : "Sell short"}</div>

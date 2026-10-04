@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any, Literal
@@ -155,7 +155,9 @@ def run_lab(
             dates=raw.dates,
             equity=[value * scale for value in raw.equity],
             invested=[value * scale for value in raw.invested],
-            fills=raw.fills,
+            # Charges and slippage were paid on the notional money, so they scale with it too.
+            # Left unscaled they read as lakhs against a ₹50,000 test.
+            fills=[replace(f, fee=f.fee * scale, slippage=f.slippage * scale) for f in raw.fills],
         )
         comparison_equity = list_result.equity
         comparison_perf = performance(list_result)
@@ -204,6 +206,11 @@ def run_lab(
         "Prices exclude dividends for both the strategy and NIFTYBEES. Income tax on gains is not included.",
         "Benchmark: NIFTYBEES (a NIFTY 50 ETF) bought at the first open and held, with the same charges.",
     ]
+    if request.scope == "stocks":
+        assumptions.append(
+            "You chose these stocks knowing how they have done. That alone can make any stock look like a winner, "
+            "and no test can adjust for it."
+        )
     if request.scope == "universe":
         assumptions.append(
             "Survivorship: only companies listed today are in the data. Companies that failed or were "

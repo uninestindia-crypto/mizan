@@ -6,6 +6,7 @@ import { DataFolderPicker } from "../components/DataFolderPicker";
 import { Logo } from "../components/Logo";
 import { Button, Callout, cx, Field, Input, ProgressBar } from "../components/ui";
 import { errorMessage } from "../lib/api";
+import { MONEY_LIMITS, moneyProblems } from "../lib/rules";
 import { inr, int } from "../lib/format";
 import { useAcceptDisclaimer, useBuildIndex, useSetDataFolder, useStatus, useUpdateSettings } from "../lib/queries";
 import type { Style } from "../lib/types";
@@ -77,24 +78,27 @@ function StepWelcome({ onNext, accepted }: { onNext: () => void; accepted: boole
   const [agree, setAgree] = useState(accepted);
   const accept = useAcceptDisclaimer();
   const points = [
-    { icon: LineChart, title: "Real NSE prices", body: "Ten years of daily data for 3,000+ stocks and ETFs, checked for gaps and bad records." },
+    { icon: LineChart, title: "Real NSE prices", body: "Ten years of daily prices from the NSE, checked for gaps and bad records. QuantOS can download them for you." },
     { icon: Zap, title: "Every rupee of cost", body: "STT, exchange fees, stamp duty, GST and your broker's charges on every trade." },
     { icon: ShieldCheck, title: "Honest answers", body: "Each test is compared with simply holding NIFTY, and adjusted for how many ideas you have tried." },
   ];
   return (
     <StepShell
       title={<>Know before you risk real money.</>}
-      subtitle="QuantOS helps you test trading and investing ideas on real market history, see exactly what they cost, and practise with virtual money first."
+      subtitle="QuantOS helps you test trading and investing ideas on real market history, see exactly what they cost, and be told plainly whether an idea beat simply holding NIFTY."
       art={<Illustration name="welcome-hero" className="size-80" />}
       footer={
-        <Button
-          size="lg"
-          disabled={!agree}
-          loading={accept.isPending}
-          onClick={() => (accepted ? onNext() : accept.mutate(undefined, { onSuccess: onNext }))}
-        >
-          Get started
-        </Button>
+        <>
+          <Button
+            size="lg"
+            disabled={!agree}
+            loading={accept.isPending}
+            onClick={() => (accepted ? onNext() : accept.mutate(undefined, { onSuccess: onNext }))}
+          >
+            Get started
+          </Button>
+          {!agree && <span className="text-[12.5px] text-ink-3">Tick the box below to continue.</span>}
+        </>
       }
     >
       <ul className="space-y-4">
@@ -142,6 +146,7 @@ function StepStyle({ current, onNext, onBack }: { current: Style | null; onNext:
           <Button size="lg" disabled={!style} loading={update.isPending} onClick={() => update.mutate({ style }, { onSuccess: onNext })}>
             Continue
           </Button>
+          {!style && <span className="text-[12.5px] text-ink-3">Choose one to continue.</span>}
         </>
       }
     >
@@ -182,6 +187,8 @@ function StepMoney({ onNext, onBack }: { onNext: () => void; onBack: () => void 
   const capitalValue = Number(capital) || 0;
   const riskAmount = (capitalValue * (Number(risk) || 0)) / 100;
   const dailyAmount = (capitalValue * (Number(daily) || 0)) / 100;
+  const problems = moneyProblems(capital, risk, daily);
+  const invalid = Object.keys(problems).length > 0;
   return (
     <StepShell
       title="Set your money rules"
@@ -195,6 +202,7 @@ function StepMoney({ onNext, onBack }: { onNext: () => void; onBack: () => void 
           <Button
             size="lg"
             loading={update.isPending}
+            disabled={invalid}
             onClick={() => update.mutate({ money: { capital, risk_per_trade_pct: risk, daily_loss_limit_pct: daily } }, { onSuccess: onNext })}
           >
             Continue
@@ -203,21 +211,23 @@ function StepMoney({ onNext, onBack }: { onNext: () => void; onBack: () => void 
       }
     >
       <div className="grid gap-5 sm:grid-cols-3">
-        <Field label="Money you trade with" htmlFor="capital">
+        <Field label="Money you trade with" htmlFor="capital" hint={`At least ${inr(MONEY_LIMITS.capitalMin, 0)}`} error={problems.capital}>
           <Input id="capital" prefix="₹" inputMode="numeric" value={capital} onChange={(e) => setCapital(e.target.value.replace(/[^\d.]/g, ""))} />
         </Field>
-        <Field label="Risk per trade" htmlFor="risk">
+        <Field label="Risk per trade" htmlFor="risk" hint={`Up to ${MONEY_LIMITS.riskMax}%`} error={problems.risk}>
           <Input id="risk" suffix="%" inputMode="decimal" value={risk} onChange={(e) => setRisk(e.target.value.replace(/[^\d.]/g, ""))} />
         </Field>
-        <Field label="Daily loss limit" htmlFor="daily">
+        <Field label="Daily loss limit" htmlFor="daily" hint={`Up to ${MONEY_LIMITS.dailyMax}%`} error={problems.daily}>
           <Input id="daily" suffix="%" inputMode="decimal" value={daily} onChange={(e) => setDaily(e.target.value.replace(/[^\d.]/g, ""))} />
         </Field>
       </div>
       {update.isError && <Callout tone="danger" className="mt-4">{errorMessage(update.error)}</Callout>}
-      <Callout tone="info" className="mt-5" title="What this means">
-        With {inr(capitalValue, 0)}, you would risk at most <strong className="text-ink">{inr(riskAmount, 0)}</strong> if a trade hits its stop, and
-        stop for the day after losing <strong className="text-ink">{inr(dailyAmount, 0)}</strong>. Many professionals keep risk per trade at 1% or less.
-      </Callout>
+      {!invalid && (
+        <Callout tone="info" className="mt-5" title="What this means">
+          With {inr(capitalValue, 0)}, you would risk at most <strong className="text-ink">{inr(riskAmount, 0)}</strong> if a trade hits its stop, and
+          stop for the day after losing <strong className="text-ink">{inr(dailyAmount, 0)}</strong>. Many professionals keep risk per trade at 1% or less.
+        </Callout>
+      )}
     </StepShell>
   );
 }

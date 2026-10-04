@@ -235,9 +235,45 @@ def _commit(store: EvidenceStore, acquisition: HistoricalAcquisition, operation_
     store.commit(draft_from_historical_acquisition(acquisition), operation_id=operation_id)
 
 
+_QUALITY_TEXT = {
+    "INVALID_OHLC": (
+        "day where the high, low and close do not fit together",
+        "days where the high, low and close do not fit together",
+    ),
+    "INVALID_VOLUME": (
+        "day with an impossible trading volume",
+        "days with an impossible trading volume",
+    ),
+    "INVALID_TIMESTAMP": ("day with an unreadable date", "days with unreadable dates"),
+    "DUPLICATE_KEY": ("day listed twice", "days listed twice"),
+    "REVERSE_ORDER": ("day out of order", "days out of order"),
+    "NON_SESSION_DATE": (
+        "price on a day the market was closed",
+        "prices on days the market was closed",
+    ),
+    "OUT_OF_REQUEST_RANGE": ("day outside the dates asked for", "days outside the dates asked for"),
+    "PROVIDER_RANGE_UNAVAILABLE": ("missing stretch of history", "missing stretches of history"),
+}
+
+
 def _reason(failure: HistoricalAcquisitionFailure) -> str:
+    """Why a stock was left out, in words a person can read (and nothing was guessed or repaired)."""
     code = failure.code.value
-    return _FAILURE_TEXT.get(code, f"it did not pass the data checks ({code})")
+    if code in _FAILURE_TEXT:
+        return _FAILURE_TEXT[code]
+    findings = []
+    for finding in failure.quality_findings:
+        one, many = _QUALITY_TEXT.get(
+            finding.code.value, (finding.code.value.lower().replace("_", " "),) * 2
+        )
+        findings.append(f"{finding.count} {one if finding.count == 1 else many}")
+    if findings:
+        return (
+            "its price history has "
+            + " and ".join(findings)
+            + ", and QuantOS does not guess around bad data"
+        )
+    return "its price history failed the data checks"
 
 
 # ------------------------------------------------------------------------------------- job
@@ -430,10 +466,7 @@ class MarketDownload:
         _atomic_write(generated_path, "\n".join(sorted(generated)).encode("utf-8"))
         write_listings(actions_dir, members, targets.benchmark)
         write_liquid_universe(actions_dir, market_cache / members_name / "store", members_name, end)
-        suffix = f" {self.failed} were left out by the data checks." if self.failed else ""
-        self._set(
-            state="DONE", message=f"Downloaded {self.saved} stocks up to {end:%d %b %Y}.{suffix}"
-        )
+        self._set(state="DONE", message=f"Downloaded {self.saved} stocks up to {end:%d %b %Y}.")
         if self._on_done is not None:
             self._on_done(data_folder)
 

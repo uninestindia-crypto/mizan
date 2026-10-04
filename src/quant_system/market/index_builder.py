@@ -215,10 +215,16 @@ def stitch(history: list[RawBar] | None, refresh: list[RawBar] | None) -> Stitch
     if history and not refresh:
         return Stitched(history, "HISTORY_ONLY", "", {"HISTORY": _span(history)})
     if refresh and not history:
+        # One long download (ten years) is the whole history, not a "recent refresh"; only a short
+        # window deserves the warning.
+        try:
+            years = (date_from_iso(refresh[-1].d) - date_from_iso(refresh[0].d)).days / 365.25
+        except ValueError:
+            years = 0.0
         return Stitched(
             refresh,
             "REFRESH_ONLY",
-            "Only the recent refresh exists for this symbol.",
+            "" if years >= 8 else "Only the recent refresh exists for this symbol.",
             {"REFRESH": _span(refresh)},
         )
     if not history or not refresh:

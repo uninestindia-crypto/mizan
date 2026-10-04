@@ -23,6 +23,7 @@ import { AgentCliBridge } from "../components/AgentCliBridge";
 import { DataFolderPicker } from "../components/DataFolderPicker";
 import { Badge, Button, Callout, Card, CardHeader, cx, Field, Input, PageHeader, ProgressBar, Segmented, Skeleton } from "../components/ui";
 import { errorMessage } from "../lib/api";
+import { MONEY_LIMITS, moneyProblems } from "../lib/rules";
 import { date, dateTime, inr, int } from "../lib/format";
 import {
   useAiModels,
@@ -108,6 +109,8 @@ function Profile() {
   const [capital, setCapital] = useState(settings?.money.capital ?? "");
   const [risk, setRisk] = useState(settings?.money.risk_per_trade_pct ?? "");
   const [daily, setDaily] = useState(settings?.money.daily_loss_limit_pct ?? "");
+  const problems = moneyProblems(capital, risk, daily);
+  const invalid = Object.keys(problems).length > 0;
   useEffect(() => {
     if (!settings) return;
     setStyle(settings.style ?? "both");
@@ -136,18 +139,18 @@ function Profile() {
       <Card>
         <CardHeader title="Money rules" subtitle="Used for position sizing and as the default capital in the Strategy Lab." />
         <div className="grid gap-5 sm:grid-cols-3">
-          <Field label="Capital" htmlFor="st-cap">
+          <Field label="Capital" htmlFor="st-cap" hint={`At least ${inr(MONEY_LIMITS.capitalMin, 0)}`} error={problems.capital}>
             <Input id="st-cap" prefix="₹" inputMode="numeric" value={capital} onChange={(e) => setCapital(e.target.value.replace(/[^\d.]/g, ""))} />
           </Field>
-          <Field label="Risk per trade" htmlFor="st-risk" hint="Up to 10%">
+          <Field label="Risk per trade" htmlFor="st-risk" hint={`Up to ${MONEY_LIMITS.riskMax}%`} error={problems.risk}>
             <Input id="st-risk" suffix="%" inputMode="decimal" value={risk} onChange={(e) => setRisk(e.target.value.replace(/[^\d.]/g, ""))} />
           </Field>
-          <Field label="Daily loss limit" htmlFor="st-daily" hint="Up to 20%">
+          <Field label="Daily loss limit" htmlFor="st-daily" hint={`Up to ${MONEY_LIMITS.dailyMax}%`} error={problems.daily}>
             <Input id="st-daily" suffix="%" inputMode="decimal" value={daily} onChange={(e) => setDaily(e.target.value.replace(/[^\d.]/g, ""))} />
           </Field>
         </div>
         <SaveBar
-          dirty={dirty}
+          dirty={dirty && !invalid}
           saving={update.isPending}
           saved={update.isSuccess}
           error={update.error}
@@ -191,7 +194,7 @@ function Charges() {
     { key: "delivery_per_order", label: "Delivery brokerage per order", hint: "Many discount brokers charge ₹0 or ₹20." },
     { key: "intraday_per_order", label: "Intraday brokerage per order", hint: "Often ₹20 or 0.03%, whichever is lower." },
     { key: "fno_per_order", label: "F&O brokerage per order", hint: "Often a flat ₹20." },
-    { key: "dp_charge_per_sell", label: "DP charge per delivery sell", hint: "Charged by your depository participant each day you sell a stock." },
+    { key: "dp_charge_per_sell", label: "DP charge per delivery sell", hint: "Brokers charge about ₹13 to ₹20 (plus GST) each time you sell shares from your demat account. Check your broker's charges page: at ₹0, costs are understated." },
   ];
   return (
     <Card>
@@ -247,9 +250,15 @@ function DataSection() {
               <div className="num mt-1 font-semibold text-ink">{dateTime(data.index.built_at)}</div>
             </div>
           </div>
+        ) : data.download.state === "RUNNING" || job.state === "RUNNING" ? (
+          <Callout tone="info" title={data.download.state === "RUNNING" ? "Downloading market data" : "Preparing market data"}>
+            {data.download.state === "RUNNING"
+              ? "You can leave this page; the download keeps going in the background and connects itself when it finishes."
+              : "Building the fast local index. This takes a minute or two."}
+          </Callout>
         ) : (
-          <Callout tone="warn" title="No market data connected">
-            QuantOS is searching for it. Pick the folder below and build the index.
+          <Callout tone="warn" title="No market data yet">
+            Download it below (about five minutes, free), or choose a folder that already holds QuantOS market data.
           </Callout>
         )}
         {data.index.ready && data.index.matches_folder === false && (
@@ -438,6 +447,9 @@ function Accounts() {
           QuantOS can still read keys from your root .env file, but cannot store them encrypted in Windows Credential Manager.
         </Callout>
       )}
+      <Callout tone="info" title="Everything on this page is optional">
+        QuantOS works with the market data you downloaded and never places orders with any broker. Add a key only if you want the extra it unlocks, listed on each card.
+      </Callout>
       <Callout tone="info">
         Keys and tokens are stored encrypted in Windows Credential Manager for your Windows account. They are never written to a file, never leave this computer, and are sent only to the provider they belong to.
       </Callout>
@@ -570,7 +582,7 @@ function Accounts() {
       <Card>
         <CardHeader
           title="Indian Broker Integrations"
-          subtitle="One-click paste and test for Zerodha Kite, Angel One SmartAPI, Dhan, and Fyers."
+          subtitle="Optional, and not used by anything in QuantOS yet. You can save and test a Zerodha Kite, Angel One, Dhan or Fyers key here for future data connections. QuantOS does not place orders."
         />
         <div className="divide-y divide-line">
           {/* Zerodha Kite */}
@@ -788,7 +800,7 @@ function Accounts() {
       <Card>
         <CardHeader
           title="AI Cloud Providers"
-          subtitle="Paste a key and test it. QuantOS reads the newest models straight from each provider, so this list never goes out of date."
+          subtitle="Optional. These keys power the AI assistant in the classic research console (Settings, About). The newer screens do not use them yet. QuantOS reads the newest models straight from each provider, so this list never goes out of date."
         />
         <div className="grid grid-cols-1 gap-4 pt-2 md:grid-cols-2">
           {aiProviders.map((prov) => {
@@ -922,7 +934,7 @@ function About() {
           including backtests and paper trading, do not guarantee future returns.
         </p>
         <a href="/classic" className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-brand hover:underline">
-          Open the classic research console <ExternalLink className="size-3.5" aria-hidden />
+          Open the classic research console (advanced, for developers) <ExternalLink className="size-3.5" aria-hidden />
         </a>
       </Card>
       <Card>

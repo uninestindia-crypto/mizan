@@ -28,20 +28,6 @@ function StockPage({ symbol }: { symbol: string }) {
   const [averages, setAverages] = useState(true);
   const [adding, setAdding] = useState(false);
 
-  if (stock.isError) {
-    const missing = stock.error instanceof ApiError && stock.error.status === 404;
-    return (
-      <EmptyState
-        title={missing ? `${symbol} is not in the market data` : "Could not load this stock"}
-        body={missing ? "Check the symbol, or search for the company name." : String(stock.error)}
-        action={
-          <Link to="/markets">
-            <Button variant="secondary">Back to markets</Button>
-          </Link>
-        }
-      />
-    );
-  }
   const info = stock.data?.info;
   const snap = info?.snapshot;
   const stats = stock.data?.stats;
@@ -57,6 +43,21 @@ function StockPage({ symbol }: { symbol: string }) {
     [breaks, stock.data?.flags],
   );
 
+  // After every hook: returning earlier changed the hook count between renders and blanked the page.
+  if (stock.isError) {
+    const missing = stock.error instanceof ApiError && stock.error.status === 404;
+    return (
+      <EmptyState
+        title={missing ? `${symbol} is not in the market data` : "Could not load this stock"}
+        body={missing ? "Check the symbol, or search for the company name." : String(stock.error)}
+        action={
+          <Link to="/markets">
+            <Button variant="secondary">Back to markets</Button>
+          </Link>
+        }
+      />
+    );
+  }
   return (
     <div className="space-y-5">
       <Link to="/markets" className="inline-flex items-center gap-1 text-[13px] font-medium text-ink-3 hover:text-ink">

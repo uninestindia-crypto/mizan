@@ -1,10 +1,10 @@
 import { CircleSlash, FlaskConical, Scale, ShieldAlert, ShieldCheck, Sparkles, X } from "lucide-react";
-import { type ReactNode, useId, useState } from "react";
+import { type ReactNode, useEffect, useId, useState } from "react";
 import { Link } from "react-router";
 import { ageLabel, date, daysSince, pct } from "../lib/format";
 import { useSearch, useStatus } from "../lib/queries";
 import type { VerdictLevel } from "../lib/types";
-import { Badge, Button, Card, cx, EmptyState, Spinner } from "./ui";
+import { Badge, Button, Card, cx, EmptyState, ProgressBar, Spinner } from "./ui";
 
 const images = import.meta.glob<string>("../assets/illustrations/*.png", { eager: true, import: "default" });
 
@@ -20,19 +20,30 @@ export function DataGate({ children }: { children: ReactNode }) {
   if (status.isPending) return <Spinner />;
   if (status.data?.index.ready) return <>{children}</>;
   const building = status.data?.index.job.state === "RUNNING";
+  const download = status.data?.download;
+  const downloading = download?.state === "RUNNING";
   return (
     <Card className="mt-2">
       <EmptyState
         art={<Illustration name="empty-data" className="h-40 w-40" />}
-        title={building ? "Preparing market data…" : "Connect your market data"}
+        title={downloading ? "Downloading market data…" : building ? "Preparing market data…" : "Get your market data"}
         body={
-          building
-            ? "QuantOS is indexing ten years of NSE prices. This takes a minute or two."
-            : "QuantOS works from real NSE daily prices stored on this computer. Point it at your QuantOS data folder to begin."
+          downloading ? (
+            <div className="mx-auto mt-1 max-w-sm space-y-2 text-left">
+              <ProgressBar value={download.progress} label="Downloading market data" />
+              <p className="text-center">
+                {download.done} of {download.total} stocks so far. It keeps going in the background, so you can leave this page.
+              </p>
+            </div>
+          ) : building ? (
+            "QuantOS is indexing ten years of NSE prices. This takes a minute or two."
+          ) : (
+            "QuantOS needs real NSE daily prices on this computer. It can download them for you in about five minutes, free and with no account, or you can use data you already have."
+          )
         }
         action={
           <Link to="/settings/data">
-            <Button>{building ? "View progress" : "Connect market data"}</Button>
+            <Button>{downloading || building ? "View progress" : "Get market data"}</Button>
           </Link>
         }
       />
@@ -70,13 +81,26 @@ export function SymbolSearch({
   const [active, setActive] = useState(0);
   const results = useSearch(query);
   const listId = useId();
-  const options = (results.data ?? []).filter((r) => !exclude.includes(r.symbol)).slice(0, 8);
+  // While the answer for the latest keystroke is still on its way, the list on screen belongs to an
+  // earlier query ("reli" for "relia"); never offer or pick from it.
+  const fresh = results.isPlaceholderData ? [] : (results.data ?? []);
+  const options = fresh.filter((r) => !exclude.includes(r.symbol)).slice(0, 8);
+  const [enterPending, setEnterPending] = useState(false);
   const pick = (symbol: string) => {
     onPick(symbol);
     setQuery("");
     setOpen(false);
     setActive(0);
+    setEnterPending(false);
   };
+  useEffect(() => {
+    // Enter pressed before the answer arrived: take the best match as soon as it does.
+    if (enterPending && !results.isFetching) {
+      const first = options[0];
+      if (first) pick(first.symbol);
+      else setEnterPending(false);
+    }
+  }); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="relative">
       <input
@@ -99,6 +123,9 @@ export function SymbolSearch({
           } else if (e.key === "Enter" && options[active]) {
             e.preventDefault();
             pick(options[active].symbol);
+          } else if (e.key === "Enter" && query.trim()) {
+            e.preventDefault();
+            setEnterPending(true);
           } else if (e.key === "Escape") {
             setOpen(false);
           }
@@ -161,7 +188,7 @@ export const VERDICT_STYLE: Record<VerdictLevel, { tone: "up" | "down" | "warn" 
   PROMISING: { tone: "brand", icon: Sparkles, label: "Promising, not proven" },
   NO_EVIDENCE: { tone: "neutral", icon: Scale, label: "No real evidence" },
   TOO_SHORT: { tone: "warn", icon: FlaskConical, label: "Too little history" },
-  LOST: { tone: "down", icon: CircleSlash, label: "Lost to benchmark" },
+  LOST: { tone: "down", icon: CircleSlash, label: "Lost to the comparison" },
 };
 
 export function VerdictBadge({ level }: { level: VerdictLevel }) {
@@ -240,7 +267,7 @@ export function ProbabilityMeter({ probability, threshold }: { probability: numb
   return (
     <div>
       <div className="flex items-baseline justify-between text-[12.5px]">
-        <span className="text-ink-2">Chance the edge is real</span>
+        <span className="text-ink-2">Chance it is more than luck</span>
         <span className="num text-base font-semibold text-ink">{probability === null ? "—" : pct(value, 0, false)}</span>
       </div>
       <div className="relative mt-2 h-2 rounded-full bg-surface-3">

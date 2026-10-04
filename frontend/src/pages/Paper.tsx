@@ -1,7 +1,7 @@
 import { Info } from "lucide-react";
 import { Link } from "react-router";
 import { Illustration } from "../components/common";
-import { Badge, Callout, Card, CardHeader, Delta, EmptyState, PageHeader, Skeleton, Stat } from "../components/ui";
+import { Badge, Button, Callout, Card, CardHeader, Delta, EmptyState, PageHeader, Skeleton, Stat } from "../components/ui";
 import { date, dateTime, inr, inrCompact, inrSigned, int, pct, tone } from "../lib/format";
 import { usePaperBooks } from "../lib/queries";
 import type { PaperBook } from "../lib/types";
@@ -12,7 +12,7 @@ export default function Paper() {
     <>
       <PageHeader
         title="Paper trading"
-        subtitle="Strategies running with virtual money on real prices. It is the safest way to find out if an idea survives the real market."
+        subtitle="Strategies following real prices with virtual money, shown read-only. It is the safest way to find out if an idea survives the real market."
       />
       <Callout tone="info" className="mb-5" title="How to read these numbers">
         A paper book's profit or loss is mostly what the market did, minus charges. A few weeks of results cannot show that a model has skill. QuantOS shows
@@ -24,8 +24,13 @@ export default function Paper() {
         <Card>
           <EmptyState
             art={<Illustration name="paper-trading" className="size-44" />}
-            title="No paper books on this computer"
-            body="Paper books run on the QuantOS research workspace. Connect the data folder of that workspace in Settings to see them here."
+            title="No paper books yet"
+            body="A paper book follows a strategy day by day on real prices with virtual money. QuantOS cannot start one from this app yet: they are started in the research workspace and appear here once they exist. Until then, the Strategy Lab is where you can try an idea on past prices without risking anything."
+            action={
+              <Link to="/lab">
+                <Button variant="secondary">Open the Strategy Lab</Button>
+              </Link>
+            }
           />
         </Card>
       ) : (

@@ -331,6 +331,22 @@ def test_verdict_text_never_promises_profit() -> None:
         assert not banned.search(result.title + result.body)
 
 
+def test_a_gap_between_returns_is_written_in_percentage_points_and_is_not_a_forecast() -> None:
+    """1,150% against 130% is 1,020 percentage points ahead; '1,020%' reads as a return."""
+    promising = verdict(_perf(11.5), _perf(1.3), 0.94, 3, 1500, True)
+    assert promising.level == "PROMISING"
+    assert "1,020.0 percentage points" in promising.body
+    assert "1019" not in promising.body
+    assert "more than luck" in promising.body and "not a forecast" in promising.body
+    short = verdict(_perf(0.5), _perf(0.1), 0.99, 3, 10, True)
+    assert "40.0 percentage points" in short.body
+
+
+def test_hand_picked_stocks_carry_the_hindsight_warning(index: MarketIndex) -> None:
+    out = run_lab(index, LabRequest("buy_hold", {}, "stocks", ("aaa",)))
+    assert any("knowing how they have done" in text for text in out["assumptions"])
+
+
 def test_more_trials_lower_the_probability() -> None:
     rng = np.random.default_rng(3)
     bench = [Decimal("1000")]
@@ -382,6 +398,22 @@ def test_run_lab_universe_is_judged_against_the_whole_list(index: MarketIndex) -
     assert out["verdict"]["level"] != "EDGE"
     assert all(row[3] is not None for row in out["equity"])
     assert any("Survivorship" in text for text in out["assumptions"])
+
+
+def test_the_whole_list_comparison_reports_costs_on_the_users_money_not_the_notional_money(
+    index: MarketIndex,
+) -> None:
+    """The list is simulated with a huge notional sum and its equity is scaled down. Its charges and
+    slippage must be scaled too: unscaled, a 50,000 test showed 'charges paid 11.9 lakh'."""
+    out = run_lab(
+        index,
+        LabRequest(
+            "momentum", {"top_n": 3, "lookback": 63, "skip": 0}, "universe", universe="liquid"
+        ),
+    )
+    list_perf = out["comparison"]["performance"]
+    assert 0 < list_perf["charges"] < list_perf["final_equity"]
+    assert 0 <= list_perf["slippage"] < list_perf["final_equity"]
 
 
 def test_run_lab_refuses_a_test_across_a_demerger(index: MarketIndex) -> None:

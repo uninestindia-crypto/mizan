@@ -260,7 +260,7 @@ def test_one_bad_stock_never_stops_the_others_and_is_listed_with_a_reason(fakes:
     reasons = {f["symbol"]: f["reason"] for f in snapshot["failures"]}
     assert "data checks" in reasons["BETA"]
     assert reasons["CHARLIE"] == "something unexpected went wrong"
-    assert "left out by the data checks" in snapshot["message"]
+    assert snapshot["message"] == "Downloaded 2 stocks up to 03 Oct 2026."
 
 
 def test_missing_corporate_actions_are_counted_not_fatal(fakes: _Fakes) -> None:
@@ -373,3 +373,37 @@ def test_the_anonymous_history_option_is_off_by_default() -> None:
 
     assert UpstoxClient().allow_anonymous_history is False
     assert UpstoxClient(allow_anonymous_history=True).allow_anonymous_history is True
+
+
+def test_a_left_out_stock_is_explained_in_words_not_codes() -> None:
+    from quant_system.data.market_data import (
+        FindingDisposition,
+        FindingSeverity,
+        QualityCode,
+        QualityFinding,
+    )
+
+    def blocked(*findings: QualityFinding) -> HistoricalAcquisitionFailure:
+        return HistoricalAcquisitionFailure(
+            code=AcquisitionFailureCode.DATA_QUALITY_BLOCKED,
+            detected_at=datetime.now(UTC),
+            retryable=False,
+            recovery_action="x",
+            quality_findings=findings,
+        )
+
+    def finding(code: QualityCode, count: int) -> QualityFinding:
+        return QualityFinding(code, FindingSeverity.BLOCKING, count, FindingDisposition.REJECTED)
+
+    many = downloader._reason(blocked(finding(QualityCode.INVALID_OHLC, 8)))
+    assert many.startswith("its price history has 8 days where the high, low and close do not fit")
+    assert "does not guess around bad data" in many
+    assert "1 day with an impossible trading volume" in downloader._reason(
+        blocked(finding(QualityCode.INVALID_VOLUME, 1))
+    )
+    both = downloader._reason(
+        blocked(finding(QualityCode.INVALID_OHLC, 2), finding(QualityCode.DUPLICATE_KEY, 1))
+    )
+    assert "2 days where" in both and " and 1 day listed twice" in both
+    assert downloader._reason(blocked()) == "its price history failed the data checks"
+    assert "DATA_QUALITY" not in many
