@@ -23,6 +23,7 @@ class ProviderType(StrEnum):
     GEMINI = "GEMINI"
     DEEPSEEK = "DEEPSEEK"
     MISTRAL = "MISTRAL"
+    LIGHTNING = "LIGHTNING"
     CLAUDE_CLI = "CLAUDE_CLI"
     CODEX_CLI = "CODEX_CLI"
     ANTIGRAVITY_CLI = "ANTIGRAVITY_CLI"
@@ -128,6 +129,7 @@ class KeyPoolManager:
             ("GEMINI_API_KEY", "GEMINI_API_KEYS", ProviderType.GEMINI),
             ("DEEPSEEK_API_KEY", "DEEPSEEK_API_KEYS", ProviderType.DEEPSEEK),
             ("MISTRAL_API_KEY", "MISTRAL_API_KEYS", ProviderType.MISTRAL),
+            ("LIGHTNING_API_KEY", "LIGHTNING_API_KEYS", ProviderType.LIGHTNING),
         ]
         for single_var, multi_var, provider in env_mappings:
             raw_keys: list[str] = []

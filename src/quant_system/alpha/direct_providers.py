@@ -419,6 +419,21 @@ class GeminiClient(BaseDirectAPIClient):
         return ""
 
 
+class LightningClient(OpenAICompatibleClient):
+    """Direct REST client for Lightning AI Cloud (https://lightning.ai)."""
+
+    ENDPOINT = "https://lightning.ai/v1/chat/completions"
+    PROVIDER = "lightning"
+    PREFER = ("claude", "llama", "deepseek")
+
+    def build_request(
+        self, prompt: str, key: ManagedKey, model: str | None = None
+    ) -> urllib.request.Request:
+        req = super().build_request(prompt, key, model)
+        req.add_header("x-api-key", key.secret_value)
+        return req
+
+
 def get_direct_client_for_provider(provider: ProviderType) -> BaseDirectAPIClient | None:
     """Factory helper returning appropriate direct API client."""
     if provider == ProviderType.OPENROUTER:
@@ -435,4 +450,6 @@ def get_direct_client_for_provider(provider: ProviderType) -> BaseDirectAPIClien
         return DeepSeekClient()
     if provider == ProviderType.MISTRAL:
         return MistralClient()
+    if provider == ProviderType.LIGHTNING:
+        return LightningClient()
     return None

@@ -28,6 +28,7 @@ PROVIDERS: tuple[str, ...] = (
     "groq",
     "deepseek",
     "mistral",
+    "lightning",
 )
 
 _CACHE_SECONDS = 1800.0
@@ -165,12 +166,13 @@ def _fetch(provider: str, api_key: str | None) -> list[ModelEntry]:
             if model_id.startswith("gemini"):
                 out.append(ModelEntry(model_id, str(item.get("displayName") or model_id), None))
         return out
-    auth = {"Authorization": f"Bearer {key}"}
+    auth = {"Authorization": f"Bearer {key}", "x-api-key": key}
     urls = {
         "openai": "https://api.openai.com/v1/models",
         "groq": "https://api.groq.com/openai/v1/models",
         "deepseek": "https://api.deepseek.com/models",
         "mistral": "https://api.mistral.ai/v1/models",
+        "lightning": "https://lightning.ai/v1/models",
     }
     if provider not in urls:
         raise ModelCatalogError(f"{provider} has no model list.")

@@ -379,8 +379,12 @@ class PlatformAssistantService:
             ProviderType.GEMINI,
             ProviderType.DEEPSEEK,
             ProviderType.MISTRAL,
+            ProviderType.LIGHTNING,
         ]:
             key = self.key_pool.get_active_key(provider)
+            if not key:
+                self.key_pool.load_from_env()
+                key = self.key_pool.get_active_key(provider)
             if key:
                 client = get_direct_client_for_provider(provider)
                 if client is not None:

@@ -373,10 +373,20 @@ function Accounts() {
   };
 
   const upstoxToken = getSecret("UPSTOX_ACCESS_TOKEN");
+  const upstoxAnalytics = getSecret("UPSTOX_ANALYTICS_TOKEN");
   const upstoxKey = getSecret("UPSTOX_API_KEY");
   const upstoxSecret = getSecret("UPSTOX_API_SECRET");
 
   const aiProviders = [
+    {
+      id: "lightning",
+      secretName: "LIGHTNING_API_KEY",
+      name: "Lightning AI",
+      maker: "Lightning AI",
+      blurb: "Claude and open models hosted on Lightning AI Cloud",
+      placeholder: "sk-lit-...",
+      link: "https://lightning.ai",
+    },
     {
       id: "anthropic",
       secretName: "ANTHROPIC_API_KEY",
@@ -474,6 +484,11 @@ function Accounts() {
                 ) : (
                   <Badge>No Token</Badge>
                 )}
+                {upstoxAnalytics?.stored ? (
+                  <Badge tone="up">Analytics Active (~1y)</Badge>
+                ) : upstoxAnalytics?.active ? (
+                  <Badge tone="brand">Analytics (.env)</Badge>
+                ) : null}
               </div>
               <div className="text-[12.5px] text-ink-3">Daily market feeds, real-time quotes, and historical 1m/daily bars.</div>
             </div>
@@ -541,6 +556,62 @@ function Accounts() {
               >
                 {testResults["upstox"].valid ? <CheckCircle2 className="size-4 shrink-0" /> : <AlertCircle className="size-4 shrink-0" />}
                 <span>{testResults["upstox"].message}</span>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div className="mb-1 flex items-center justify-between text-[13px] font-medium text-ink">
+              <span>Upstox Analytics Token (Long-Lived ~1 Year)</span>
+              <span className="text-[11.5px] text-ink-3">Recommended: does not expire daily</span>
+            </div>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  type={showValues["upstox_analytics"] ? "text" : "password"}
+                  placeholder={upstoxAnalytics?.stored || upstoxAnalytics?.active ? "•••••••••••••••••••••••• (Active)" : "Paste Upstox analytics token here"}
+                  value={drafts["UPSTOX_ANALYTICS_TOKEN"] ?? ""}
+                  onChange={(e) => setDrafts((prev) => ({ ...prev, UPSTOX_ANALYTICS_TOKEN: e.target.value }))}
+                  className="pr-10 font-mono text-[12.5px]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowValues((prev) => ({ ...prev, upstox_analytics: !prev.upstox_analytics }))}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink"
+                >
+                  {showValues["upstox_analytics"] ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+              <Button
+                variant="secondary"
+                disabled={!(drafts["UPSTOX_ANALYTICS_TOKEN"] || upstoxAnalytics?.active || upstoxAnalytics?.stored)}
+                loading={testResults["upstox_analytics"]?.testing}
+                onClick={() => handleTest("upstox", { UPSTOX_ANALYTICS_TOKEN: drafts["UPSTOX_ANALYTICS_TOKEN"] || "" })}
+              >
+                Test Connection
+              </Button>
+              <Button
+                disabled={!(drafts["UPSTOX_ANALYTICS_TOKEN"] ?? "").trim()}
+                loading={mutation.isPending}
+                onClick={() => handleSave("UPSTOX_ANALYTICS_TOKEN", drafts["UPSTOX_ANALYTICS_TOKEN"] ?? "")}
+              >
+                Save
+              </Button>
+              {upstoxAnalytics?.stored && (
+                <Button variant="ghost" size="sm" onClick={() => handleRemove("UPSTOX_ANALYTICS_TOKEN")}>
+                  Remove
+                </Button>
+              )}
+            </div>
+            {testResults["upstox_analytics"] && !testResults["upstox_analytics"].testing && (
+              <div
+                className={cx(
+                  "mt-2 flex items-center gap-2 rounded-lg px-3 py-1.5 text-[12.5px]",
+                  testResults["upstox_analytics"].valid ? "bg-up/10 text-up" : "bg-down/10 text-down"
+                )}
+              >
+                {testResults["upstox_analytics"].valid ? <CheckCircle2 className="size-4 shrink-0" /> : <AlertCircle className="size-4 shrink-0" />}
+                <span>{testResults["upstox_analytics"].message}</span>
               </div>
             )}
           </div>

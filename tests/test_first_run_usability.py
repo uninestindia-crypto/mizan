@@ -808,7 +808,7 @@ def test_the_assistant_falls_back_to_the_new_providers() -> None:
     from quant_system.assistant import service
 
     source = inspect.getsource(service)
-    for name in ("GEMINI", "DEEPSEEK", "MISTRAL"):
+    for name in ("GEMINI", "DEEPSEEK", "MISTRAL", "LIGHTNING"):
         assert f"ProviderType.{name}" in source
 
 

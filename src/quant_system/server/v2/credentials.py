@@ -135,6 +135,12 @@ SECRETS: tuple[SecretSpec, ...] = (
         "MISTRAL_API_KEY", "Mistral AI API key", "AI Cloud Providers", "For Mistral models."
     ),
     SecretSpec(
+        "LIGHTNING_API_KEY",
+        "Lightning AI API key",
+        "AI Cloud Providers",
+        "For Claude and open models on Lightning AI Cloud.",
+    ),
+    SecretSpec(
         "CUSTOM_AI_BASE_URL",
         "Custom AI Base URL",
         "AI Cloud Providers",
@@ -483,13 +489,53 @@ def verify_credential_connection(provider: str, credentials: dict[str, str]) -> 
                 label = data.get("label", "Key active")
                 return {"valid": True, "provider": "OpenRouter", "message": f"Connected! ({label})"}
 
+        elif prov == "lightning":
+            key = credentials.get("LIGHTNING_API_KEY", "").strip()
+            if not key:
+                return {"valid": False, "message": "LIGHTNING_API_KEY is empty."}
+            headers = {
+                "Authorization": f"Bearer {key}",
+                "x-api-key": key,
+                "User-Agent": "QuantOS/2.0",
+            }
+            req = urllib.request.Request(
+                "https://lightning.ai/v1/models",
+                headers=headers,
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                count = len(data.get("data", []))
+                return {
+                    "valid": True,
+                    "provider": "Lightning AI",
+                    "message": f"Connected to Lightning AI! ({count} models available)",
+                }
+
         elif prov == "upstox":
-            token = credentials.get("UPSTOX_ACCESS_TOKEN", "").strip()
+            access_token = credentials.get("UPSTOX_ACCESS_TOKEN", "").strip()
+            analytics_token = credentials.get("UPSTOX_ANALYTICS_TOKEN", "").strip()
+            token = access_token or analytics_token
             if not token:
                 return {
                     "valid": False,
-                    "message": "UPSTOX_ACCESS_TOKEN is required to test connection.",
+                    "message": "UPSTOX_ACCESS_TOKEN or UPSTOX_ANALYTICS_TOKEN is required to test connection.",
                 }
+            if analytics_token and not access_token:
+                # Analytics token authenticates quote feeds
+                req = urllib.request.Request(
+                    "https://api.upstox.com/v2/market-quote/ltp?instrument_key=NSE_EQ|INE002A01018",
+                    headers={
+                        "Authorization": f"Bearer {analytics_token}",
+                        "Accept": "application/json",
+                        "User-Agent": "QuantOS/2.0",
+                    },
+                )
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    return {
+                        "valid": True,
+                        "provider": "Upstox Analytics",
+                        "message": "Connected! Analytics quote feed is active.",
+                    }
             req = urllib.request.Request(
                 "https://api.upstox.com/v2/user/profile",
                 headers={

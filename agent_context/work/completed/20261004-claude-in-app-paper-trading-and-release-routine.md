@@ -1,6 +1,6 @@
 # Active work: in-app paper trading, quick data updates, and a standing release routine
 
-STATUS: ACTIVE  
+STATUS: COMPLETED  
 OWNER: Claude Code session (founder instruction 2026-10-04: "build in-app paper trading and make sure after every few
 major updates a new release happens on GitHub, make it a rule so that every time I can update my software"; later: use the
 Antigravity CLI on Gemini 3.8 Flash (high) for the less demanding work)  
@@ -79,4 +79,32 @@ See the commits. New: `lab/paper.py`, `server/v2/{paper_books,updates}.py`, `fro
 
 ## Stop point / next safe action
 
-(updated at completion)
+**Completed 2026-10-04. v2.1.0 is released.** Commits on `main` ending at `de2e0595b` (`chore(release): v2.1.0`), tag `v2.1.0`,
+GitHub release https://github.com/uninestindia-crypto/quant-system/releases/tag/v2.1.0 with `QuantOS_v2.1.0_Setup.exe`,
+`quantos-v2.1.0-windows-x86_64.zip`, `quantos-sbom.json` and `SHA256SUMS-v2.1.0.txt`.
+
+Verified after release:
+
+| Check | Result |
+|---|---|
+| `release_status.py` | 0 of 3 user-visible changes since `v2.1.0` (no release due) |
+| `bump_version.py --check` | all version files agree: 2.1.0 |
+| Update check from an installed 2.0.1 | detects 2.1.0 and the installer asset (through the signed-in `gh` CLI, because the repository is private) |
+| Update check from 2.1.0 | no update offered |
+| The built 2.1.0 app (`dist/quantos/quantos.exe`) started on a scratch port | reports version 2.1.0, paper-books route answers, `/paper/new` page served, in-app update check works |
+
+Working tree: tracked files clean, `main` equals `origin/main`. Only another agent's three untracked moonshot files remain
+(not mine, not staged).
+
+**Not done, stated plainly**
+
+- The installer was built and its contents smoke-tested as the frozen app; the Setup.exe itself was not run (the founder tests
+  installs). It is not code-signed; that needs the founder's certificate.
+- The paper-book "add a stock" form interaction was verified by code and API, not by driving it in a browser.
+- Paper books move forward only when market data is updated ("Update market data", about 2-3 minutes). There is no background
+  scheduler.
+- Search does not know old company names; the NIFTY index level is not shown; the download covers NIFTY 500 only.
+- The repository is private, so a person needs GitHub access (or `gh` signed in) for the update notice to find a release.
+
+**Next safe action:** when `python scripts/release_status.py` says a release is due, run
+`powershell -ExecutionPolicy Bypass -File scripts/release.ps1`. No work remains under this record.
