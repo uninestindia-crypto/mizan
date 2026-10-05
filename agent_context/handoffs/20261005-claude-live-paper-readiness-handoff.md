@@ -4,7 +4,7 @@ STATUS: READY_FOR_ADOPTION
 FROM: Claude Code (cloud container)  
 TO: unassigned  
 DATE_UTC: 2026-10-05  
-ACTIVE_RECORD: `agent_context/work/active/20261005-claude-live-paper-readiness-audit.md`
+ACTIVE_RECORD: `agent_context/work/completed/20261005-claude-live-paper-readiness-audit.md`
 
 ## Objective and acceptance criteria
 
@@ -32,7 +32,7 @@ needs its own charter.
 
 ## Files and ownership
 
-Committed on `claude/dazzling-brown-yn5qu3`; pull request 1 is open. Source, test and frontend
+Merged to `main` as e5a8be82 (pull request 1). Source, test and frontend
 files are listed in the active record under "Owned paths". The frontend build output under
 `src/quant_system/server/static/app/` is gitignored and was rebuilt locally only.
 

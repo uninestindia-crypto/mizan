@@ -1,6 +1,6 @@
 # Active work: independent readiness audit of live-market paper trading and the product UI
 
-STATUS: HANDOFF_REQUIRED (audit and repairs done; open items need the founder; see the handoff)  
+STATUS: COMPLETED (PR #1 merged as e5a8be82; open items for the founder are in the handoff)  
 OWNER: Claude Code session (founder request 2026-10-05, text below)  
 TOOL: Claude Code  
 STARTED_UTC: 2026-10-05T00:00:00Z  
