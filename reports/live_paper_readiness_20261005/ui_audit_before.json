@@ -1,0 +1,611 @@
+[
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/",
+  "status": "ok",
+  "loadMs": 1965,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   }
+  ],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/markets",
+  "status": "ok",
+  "loadMs": 1030,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   }
+  ],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/stock/RELIANCE",
+  "status": "ok",
+  "loadMs": 1237,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   }
+  ],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/lab",
+  "status": "ok",
+  "loadMs": 957,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   }
+  ],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/lab/new/momentum",
+  "status": "ok",
+  "loadMs": 1008,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   }
+  ],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/portfolio",
+  "status": "ok",
+  "loadMs": 960,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   }
+  ],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/paper",
+  "status": "ok",
+  "loadMs": 971,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   }
+  ],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/paper/new",
+  "status": "ok",
+  "loadMs": 994,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   }
+  ],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/tools/costs",
+  "status": "ok",
+  "loadMs": 1002,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   }
+  ],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/tools/size",
+  "status": "ok",
+  "loadMs": 1031,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   }
+  ],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/settings/profile",
+  "status": "ok",
+  "loadMs": 965,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   }
+  ],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/shariah",
+  "status": "ok",
+  "loadMs": 978,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 2,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   }
+  ],
+  "problems": [
+   "HTTP 404: /api/v2/shariah/screening/compliance-summary",
+   "console: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/",
+  "status": "ok",
+  "loadMs": 734,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/markets",
+  "status": "ok",
+  "loadMs": 1005,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/stock/RELIANCE",
+  "status": "ok",
+  "loadMs": 1195,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/lab",
+  "status": "ok",
+  "loadMs": 948,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/lab/new/momentum",
+  "status": "ok",
+  "loadMs": 970,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/portfolio",
+  "status": "ok",
+  "loadMs": 961,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/paper",
+  "status": "ok",
+  "loadMs": 965,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/paper/new",
+  "status": "ok",
+  "loadMs": 960,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/tools/costs",
+  "status": "ok",
+  "loadMs": 1016,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/tools/size",
+  "status": "ok",
+  "loadMs": 977,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/settings/profile",
+  "status": "ok",
+  "loadMs": 995,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/shariah",
+  "status": "ok",
+  "loadMs": 985,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   },
+   {
+    "id": "scrollable-region-focusable",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Scrollable region must have keyboard access"
+   }
+  ],
+  "problems": [
+   "HTTP 404: /api/v2/shariah/screening/compliance-summary",
+   "console: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/",
+  "status": "ok",
+  "loadMs": 755,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/markets",
+  "status": "ok",
+  "loadMs": 991,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/stock/RELIANCE",
+  "status": "ok",
+  "loadMs": 1541,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/lab",
+  "status": "ok",
+  "loadMs": 963,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/lab/new/momentum",
+  "status": "ok",
+  "loadMs": 980,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/portfolio",
+  "status": "ok",
+  "loadMs": 964,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/paper",
+  "status": "ok",
+  "loadMs": 956,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/paper/new",
+  "status": "ok",
+  "loadMs": 996,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/tools/costs",
+  "status": "ok",
+  "loadMs": 996,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/tools/size",
+  "status": "ok",
+  "loadMs": 974,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/settings/profile",
+  "status": "ok",
+  "loadMs": 956,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/shariah",
+  "status": "ok",
+  "loadMs": 968,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 2,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   }
+  ],
+  "problems": [
+   "HTTP 404: /api/v2/shariah/screening/compliance-summary",
+   "console: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/",
+  "status": "ok",
+  "loadMs": 732,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/markets",
+  "status": "ok",
+  "loadMs": 1002,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/stock/RELIANCE",
+  "status": "ok",
+  "loadMs": 1177,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/lab",
+  "status": "ok",
+  "loadMs": 962,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/lab/new/momentum",
+  "status": "ok",
+  "loadMs": 997,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/portfolio",
+  "status": "ok",
+  "loadMs": 966,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/paper",
+  "status": "ok",
+  "loadMs": 982,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/paper/new",
+  "status": "ok",
+  "loadMs": 1001,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/tools/costs",
+  "status": "ok",
+  "loadMs": 965,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/tools/size",
+  "status": "ok",
+  "loadMs": 1007,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/settings/profile",
+  "status": "ok",
+  "loadMs": 962,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/shariah",
+  "status": "ok",
+  "loadMs": 959,
+  "overflowX": 0,
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+   },
+   {
+    "id": "scrollable-region-focusable",
+    "impact": "serious",
+    "nodes": 1,
+    "help": "Scrollable region must have keyboard access"
+   }
+  ],
+  "problems": [
+   "HTTP 404: /api/v2/shariah/screening/compliance-summary",
+   "console: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+ }
+]
