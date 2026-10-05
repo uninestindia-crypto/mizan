@@ -1,9 +1,11 @@
-import uuid
 import hashlib
 import logging
-import aiosqlite
+import uuid
 from datetime import datetime
-from typing import Dict, Any, Optional, Tuple, List
+from typing import Any
+
+import aiosqlite
+
 from quant_system.shariah.schemas.purification import (
     PurificationCalculateResponse,
     PurificationLedgerCreate,
@@ -64,7 +66,7 @@ def generate_sha256_ledger_hash(prev_hash: str, entry_uuid: str, purification_am
     SHA-256 cryptographic chaining function:
     Hash_n = SHA256(Hash_{n-1} | UUID_n | PurificationAmount_n)
     """
-    payload = f"{prev_hash}|{entry_uuid}|{purification_amount:.2f}".encode("utf-8")
+    payload = f"{prev_hash}|{entry_uuid}|{purification_amount:.2f}".encode()
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -77,7 +79,7 @@ async def ensure_ledger_table(db: aiosqlite.Connection) -> None:
 async def get_company_purification_info(
     ticker: str,
     db: aiosqlite.Connection,
-) -> Tuple[float, str]:
+) -> tuple[float, str]:
     """Retrieves company purification ratio and official name from database."""
     clean_ticker = ticker.strip().upper()
     variants = [clean_ticker]
@@ -85,13 +87,13 @@ async def get_company_purification_info(
         variants.append(clean_ticker[:-3])
     else:
         variants.append(f"{clean_ticker}.NS")
-        
+
     placeholders = ",".join("?" for _ in variants)
     sql = f"SELECT purification_ratio, company_name FROM companies WHERE ticker IN ({placeholders}) OR symbol IN ({placeholders}) LIMIT 1;"
     params = variants + variants
     cursor = await db.execute(sql, tuple(params))
     row = await cursor.fetchone()
-    
+
     if row:
         return float(row["purification_ratio"]), str(row["company_name"])
     # Default fallback: 0.0058 (TCS-level baseline) if company not in DB
@@ -109,9 +111,9 @@ async def calculate_dividend_purification(
         raise ValueError("Dividend amount must be strictly positive.")
     if shares_held <= 0:
         raise ValueError("Shares held must be at least 1.")
-        
+
     purification_ratio, _ = await get_company_purification_info(ticker, db)
-    
+
     # Check if dividend_amount is per-share (typical when shares > 1 and dividend_amount < 1000)
     # If dividend_amount is total, DPS is dividend_amount / shares_held
     # Standard convention: dividend_amount passed is DPS
@@ -119,7 +121,7 @@ async def calculate_dividend_purification(
     gross_dividend = round(dps * shares_held, 2)
     purification_payable = calculate_purification_amount(gross_dividend, purification_ratio)
     net_permissible = round(gross_dividend - purification_payable, 2)
-    
+
     return PurificationCalculateResponse(
         ticker=ticker.upper().strip(),
         shares_held=shares_held,
@@ -135,7 +137,9 @@ async def calculate_dividend_purification(
 async def get_latest_ledger_hash(db: aiosqlite.Connection) -> str:
     """Returns the latest cryptographic entry hash in the ledger, or GENESIS_HASH if empty."""
     await ensure_ledger_table(db)
-    cursor = await db.execute("SELECT entry_hash FROM purification_ledger ORDER BY id DESC LIMIT 1;")
+    cursor = await db.execute(
+        "SELECT entry_hash FROM purification_ledger ORDER BY id DESC LIMIT 1;"
+    )
     row = await cursor.fetchone()
     if row and row["entry_hash"]:
         return str(row["entry_hash"])
@@ -148,27 +152,27 @@ async def add_purification_ledger_entry(
 ) -> PurificationLedgerEntry:
     """Appends an immutable, SHA-256 cryptographically chained entry to purification_ledger."""
     await ensure_ledger_table(db)
-    
+
     purification_ratio, company_name = await get_company_purification_info(entry_data.ticker, db)
-    
+
     gross_dividend = entry_data.gross_dividend
     if gross_dividend is None or gross_dividend <= 0.0:
         gross_dividend = round(entry_data.dps * entry_data.shares_held, 2)
     else:
         gross_dividend = round(gross_dividend, 2)
-        
+
     purification_payable = calculate_purification_amount(gross_dividend, purification_ratio)
     net_permissible = round(gross_dividend - purification_payable, 2)
-    
+
     entry_uuid = f"pur-{uuid.uuid4().hex[:16]}"
     prev_hash = await get_latest_ledger_hash(db)
     entry_hash = generate_sha256_ledger_hash(prev_hash, entry_uuid, purification_payable)
-    
+
     today_str = datetime.utcnow().strftime("%Y-%m-%d")
     record_date = entry_data.record_date or today_str
     payment_date = entry_data.payment_date or today_str
     status = (entry_data.disbursement_status or "UNPURIFIED").upper().strip()
-    
+
     insert_sql = """
         INSERT INTO purification_ledger (
             entry_uuid, ticker, company_name, record_date, payment_date, shares_held,
@@ -200,11 +204,13 @@ async def add_purification_ledger_entry(
     )
     row_id = cursor.lastrowid
     await db.commit()
-    
+
     # Retrieve created record
     fetch_cursor = await db.execute("SELECT * FROM purification_ledger WHERE id = ?;", (row_id,))
     row = await fetch_cursor.fetchone()
-    
+    if row is None:
+        raise ValueError(f"Failed to retrieve newly created purification ledger row {row_id}")
+
     return PurificationLedgerEntry(
         id=row["id"],
         entry_uuid=row["entry_uuid"],
@@ -227,15 +233,15 @@ async def add_purification_ledger_entry(
     )
 
 
-async def verify_ledger_chain(db: aiosqlite.Connection) -> Dict[str, Any]:
+async def verify_ledger_chain(db: aiosqlite.Connection) -> dict[str, Any]:
     """
     Audits the entire purification ledger sequentially from genesis.
     Verifies that no entry has been altered, deleted, or inserted out of order.
     """
     await ensure_ledger_table(db)
     cursor = await db.execute("SELECT * FROM purification_ledger ORDER BY id ASC;")
-    rows = await cursor.fetchall()
-    
+    rows = list(await cursor.fetchall())
+
     if not rows:
         return {
             "is_valid": True,
@@ -243,14 +249,14 @@ async def verify_ledger_chain(db: aiosqlite.Connection) -> Dict[str, Any]:
             "tampered_entry_id": None,
             "message": "Ledger is empty; genesis state verified.",
         }
-        
+
     expected_prev = GENESIS_HASH
     for r in rows:
         stored_prev = r["prev_entry_hash"]
         stored_hash = r["entry_hash"]
         uuid_val = r["entry_uuid"]
         payable = float(r["purification_payable"])
-        
+
         # Verify previous hash link
         if stored_prev != expected_prev:
             return {
@@ -259,7 +265,7 @@ async def verify_ledger_chain(db: aiosqlite.Connection) -> Dict[str, Any]:
                 "tampered_entry_id": uuid_val,
                 "message": f"Broken chain link at entry {uuid_val}: stored prev_hash does not match preceding hash.",
             }
-            
+
         # Re-compute cryptographic hash
         computed_hash = generate_sha256_ledger_hash(stored_prev, uuid_val, payable)
         if computed_hash != stored_hash:
@@ -269,9 +275,9 @@ async def verify_ledger_chain(db: aiosqlite.Connection) -> Dict[str, Any]:
                 "tampered_entry_id": uuid_val,
                 "message": f"Tampered entry payload at {uuid_val}: computed hash does not match stored entry_hash.",
             }
-            
+
         expected_prev = stored_hash
-        
+
     return {
         "is_valid": True,
         "total_entries": len(rows),
@@ -280,7 +286,7 @@ async def verify_ledger_chain(db: aiosqlite.Connection) -> Dict[str, Any]:
     }
 
 
-def format_printable_receipt(entry: Dict[str, Any]) -> str:
+def format_printable_receipt(entry: dict[str, Any]) -> str:
     """Formats an exportable ASCII certificate for charitable purification."""
     uuid_short = str(entry.get("entry_uuid", "00000000"))[:8]
     ticker = entry.get("ticker", "N/A")
@@ -294,11 +300,11 @@ def format_printable_receipt(entry: Dict[str, Any]) -> str:
     hash_val = entry.get("entry_hash", "")
     prev_h = entry.get("prev_entry_hash", "")
     ts = entry.get("timestamp") or datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-    
+
     return f"""================================================================================
            HALAL WEALTH PURIFICATION & CHARITABLE DISBURSEMENT RECEIPT
 ================================================================================
-Certificate ID    : PUR-2026-{ticker.replace('.NS', '')}-{uuid_short}
+Certificate ID    : PUR-2026-{ticker.replace(".NS", "")}-{uuid_short}
 Timestamp         : {ts}
 Disbursement Stat : {status}
 
@@ -306,7 +312,7 @@ EQUITY & DIVIDEND DETAILS:
 --------------------------------------------------------------------------------
 Security Ticker   : {ticker}
 Enterprise Name   : {company}
-Shares Held       : {entry.get('shares_held', 0)}
+Shares Held       : {entry.get("shares_held", 0)}
 Gross Dividend    : INR {gross:,.2f}
 
 PURIFICATION COMPUTATION (AAOIFI Standard No. 21):
@@ -335,18 +341,18 @@ with AAOIFI Shariah Standard No. 21 (Clause 3/4) and Indian statutory tax filing
 async def get_purification_receipt_by_id(
     entry_id: str,
     db: aiosqlite.Connection,
-) -> Optional[PurificationReceipt]:
+) -> PurificationReceipt | None:
     """Retrieves ledger entry by UUID or integer ID and formats receipt."""
     await ensure_ledger_table(db)
-    
+
     sql = "SELECT * FROM purification_ledger WHERE entry_uuid = ? OR id = ? LIMIT 1;"
     id_as_int = int(entry_id) if entry_id.isdigit() else -1
     cursor = await db.execute(sql, (entry_id, id_as_int))
     row = await cursor.fetchone()
-    
+
     if not row:
         return None
-        
+
     row_dict = dict(row)
     uuid_val = row_dict["entry_uuid"]
     ticker = row_dict["ticker"]
@@ -360,10 +366,10 @@ async def get_purification_receipt_by_id(
     charity = row_dict["charity_name"]
     status = row_dict["disbursement_status"]
     ts = str(row_dict["timestamp"])
-    
+
     printable = format_printable_receipt(row_dict)
     cert_id = f"PUR-2026-{ticker.replace('.NS', '')}-{uuid_val[:8]}"
-    
+
     return PurificationReceipt(
         certificate_id=cert_id,
         ticker=ticker,

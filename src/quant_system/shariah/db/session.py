@@ -1,9 +1,10 @@
 import sqlite3
+from collections.abc import AsyncGenerator
+
 import aiosqlite
 import duckdb
-from typing import AsyncGenerator
-from quant_system.shariah.core.config import settings
 
+from quant_system.shariah.core.config import settings
 
 SQLITE_PRAGMAS = [
     "PRAGMA journal_mode = WAL;",
@@ -43,7 +44,9 @@ async def get_async_db(db_path: str | None = None) -> AsyncGenerator[aiosqlite.C
         yield conn
 
 
-def get_duckdb_connection(duckdb_path: str | None = None, attach_sqlite: bool = True) -> duckdb.DuckDBPyConnection:
+def get_duckdb_connection(
+    duckdb_path: str | None = None, attach_sqlite: bool = True
+) -> duckdb.DuckDBPyConnection:
     """DuckDB connection helper for fast vectorized in-process analytical aggregations."""
     path = duckdb_path if duckdb_path is not None else str(settings.DUCKDB_PATH)
     conn = duckdb.connect(path)

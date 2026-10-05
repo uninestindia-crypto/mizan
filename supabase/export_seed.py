@@ -17,7 +17,7 @@ sql_lines = [
     "-- =====================================================================",
     "-- NIFTY 500 PRE-AUDITED SHARIAH FINANCIAL FUNDAMENTALS (SUPABASE SEED)",
     "-- =====================================================================",
-    ""
+    "",
 ]
 
 for c in companies:
@@ -34,7 +34,7 @@ for c in companies:
     sec_comp = "true" if c["sector_compliant"] else "false"
     n50 = "true" if c["is_nifty_50"] else "false"
     n500 = "true" if c["is_nifty_500"] else "false"
-    
+
     sql = (
         f"INSERT INTO public.companies "
         f"(ticker, symbol, isin, bse_code, company_name, sector, industry, business_summary, "

@@ -61,12 +61,14 @@ def read_versions(root: Path) -> dict[str, str | None]:
         if m:
             results["src/quant_system/server/static/index.html"] = m.group(1)
 
-    # 6. uv.lock: version = "X.Y.Z" line immediately following name = "quant-system"
+    # 6. uv.lock: version = "X.Y.Z" line immediately following name = "mizan" or "quant-system"
     p = root / "uv.lock"
     if p.is_file():
         text = p.read_bytes().decode("utf-8")
         m = re.search(
-            r'(?m)^name\s*=\s*"quant-system"[ \t]*\r?\nversion\s*=\s*"(' + VERSION_RE + r')"',
+            r'(?m)^name\s*=\s*"(?:quant-system|mizan)"[ \t]*\r?\nversion\s*=\s*"('
+            + VERSION_RE
+            + r')"',
             text,
         )
         if m:
@@ -242,7 +244,11 @@ def bump(root: Path, new_version: str) -> list[str]:
     if p.is_file():
         raw = p.read_bytes()
         text = raw.decode("utf-8")
-        uv_pattern = r'(^name\s*=\s*"quant-system"[ \t]*\r?\nversion\s*=\s*")' + VERSION_RE + r'(")'
+        uv_pattern = (
+            r'(^name\s*=\s*"(?:quant-system|mizan)"[ \t]*\r?\nversion\s*=\s*")'
+            + VERSION_RE
+            + r'(")'
+        )
         new_text = re.sub(
             uv_pattern, rf"\g<1>{new_version}\g<2>", text, count=1, flags=re.MULTILINE
         )

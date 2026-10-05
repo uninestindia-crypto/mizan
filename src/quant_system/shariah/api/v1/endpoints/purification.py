@@ -1,6 +1,8 @@
+from typing import Any
+
 import aiosqlite
-from typing import Dict, Any, List
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
+
 from quant_system.shariah.db.session import get_async_db
 from quant_system.shariah.schemas.purification import (
     PurificationCalculateRequest,
@@ -11,12 +13,12 @@ from quant_system.shariah.schemas.purification import (
     PurificationReceipt,
 )
 from quant_system.shariah.services.purification_service import (
-    calculate_dividend_purification,
     add_purification_ledger_entry,
-    verify_ledger_chain,
-    get_purification_receipt_by_id,
+    calculate_dividend_purification,
     ensure_ledger_table,
     get_latest_ledger_hash,
+    get_purification_receipt_by_id,
+    verify_ledger_chain,
 )
 
 router = APIRouter(prefix="/purification", tags=["Dividend Purification & Cryptographic Ledger"])
@@ -31,7 +33,7 @@ router = APIRouter(prefix="/purification", tags=["Dividend Purification & Crypto
 async def calculate_purification(
     request: PurificationCalculateRequest,
     db: aiosqlite.Connection = Depends(get_async_db),
-):
+) -> PurificationCalculateResponse:
     try:
         return await calculate_dividend_purification(
             ticker=request.ticker,
@@ -40,7 +42,7 @@ async def calculate_purification(
             db=db,
         )
     except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
+        raise HTTPException(status_code=400, detail=str(ve)) from ve
 
 
 @router.get(
@@ -53,22 +55,22 @@ async def list_ledger(
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     db: aiosqlite.Connection = Depends(get_async_db),
-):
+) -> PurificationLedgerListResponse:
     await ensure_ledger_table(db)
-    
+
     # Check chain integrity
     audit = await verify_ledger_chain(db)
     latest_hash = await get_latest_ledger_hash(db)
-    
+
     # Query rows
     count_cursor = await db.execute("SELECT COUNT(*) as total FROM purification_ledger;")
     count_row = await count_cursor.fetchone()
     total = count_row["total"] if count_row else 0
-    
+
     sql = "SELECT * FROM purification_ledger ORDER BY id DESC LIMIT ? OFFSET ?;"
     cursor = await db.execute(sql, (limit, offset))
     rows = await cursor.fetchall()
-    
+
     items = []
     for r in rows:
         items.append(
@@ -93,7 +95,7 @@ async def list_ledger(
                 timestamp=str(r["timestamp"]),
             )
         )
-        
+
     return PurificationLedgerListResponse(
         total_entries=total,
         is_chain_valid=bool(audit["is_valid"]),
@@ -112,11 +114,11 @@ async def list_ledger(
 async def create_ledger_entry(
     entry_data: PurificationLedgerCreate,
     db: aiosqlite.Connection = Depends(get_async_db),
-):
+) -> PurificationLedgerEntry:
     try:
         return await add_purification_ledger_entry(entry_data, db)
     except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
+        raise HTTPException(status_code=400, detail=str(ve)) from ve
 
 
 @router.get(
@@ -126,7 +128,7 @@ async def create_ledger_entry(
 )
 async def verify_chain(
     db: aiosqlite.Connection = Depends(get_async_db),
-):
+) -> dict[str, Any]:
     return await verify_ledger_chain(db)
 
 
@@ -139,7 +141,7 @@ async def verify_chain(
 async def get_receipt(
     entry_id: str = Path(..., description="Ledger row ID or UUID string"),
     db: aiosqlite.Connection = Depends(get_async_db),
-):
+) -> PurificationReceipt:
     receipt = await get_purification_receipt_by_id(entry_id, db)
     if not receipt:
         raise HTTPException(

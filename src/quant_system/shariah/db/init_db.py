@@ -1,6 +1,5 @@
-import sqlite3
 import logging
-from quant_system.shariah.core.config import settings
+
 from quant_system.shariah.db.session import get_db_connection
 
 logger = logging.getLogger(__name__)
@@ -15,7 +14,7 @@ CREATE TABLE IF NOT EXISTS companies (
     sector TEXT NOT NULL,
     industry TEXT NOT NULL,
     business_summary TEXT,
-    
+
     current_price REAL NOT NULL,
     market_cap REAL NOT NULL,
     avg_36m_market_cap REAL NOT NULL,
@@ -24,7 +23,7 @@ CREATE TABLE IF NOT EXISTS companies (
     pb_ratio REAL,
     dividend_yield REAL,
     last_dividend_per_share REAL DEFAULT 0.0,
-    
+
     total_assets REAL NOT NULL,
     long_term_debt REAL NOT NULL DEFAULT 0.0,
     short_term_debt REAL NOT NULL DEFAULT 0.0,
@@ -36,32 +35,32 @@ CREATE TABLE IF NOT EXISTS companies (
     total_receivables REAL NOT NULL,
     total_inventories REAL NOT NULL DEFAULT 0.0,
     current_liabilities REAL NOT NULL,
-    
+
     operating_revenue REAL NOT NULL,
     other_income REAL NOT NULL DEFAULT 0.0,
     total_revenue REAL NOT NULL,
     interest_income REAL NOT NULL DEFAULT 0.0,
     prohibited_secondary_revenue REAL NOT NULL DEFAULT 0.0,
     total_impermissible_income REAL NOT NULL,
-    
+
     sector_compliant INTEGER NOT NULL,
     sector_failure_reason TEXT,
-    
+
     aaoifi_debt_ratio REAL NOT NULL,
     aaoifi_cash_ratio REAL NOT NULL,
     aaoifi_rec_ratio REAL NOT NULL,
     aaoifi_imp_ratio REAL NOT NULL,
     aaoifi_status TEXT NOT NULL,
-    
+
     tasis_debt_ratio REAL NOT NULL,
     tasis_cash_ratio REAL NOT NULL,
     tasis_rec_ratio REAL NOT NULL,
     tasis_imp_ratio REAL NOT NULL,
     tasis_status TEXT NOT NULL,
-    
+
     purification_ratio REAL NOT NULL,
     zakatable_assets_per_share REAL NOT NULL,
-    
+
     filing_date TEXT NOT NULL,
     reporting_period TEXT NOT NULL,
     source_document TEXT,
@@ -164,7 +163,9 @@ def init_db(db_path: str | None = None) -> None:
         # Rebuild FTS index to ensure consistency with existing records
         cursor.execute("INSERT INTO companies_fts(companies_fts) VALUES('rebuild');")
         conn.commit()
-        logger.info("Database initialized successfully with FTS5, indexes, and purification ledger.")
+        logger.info(
+            "Database initialized successfully with FTS5, indexes, and purification ledger."
+        )
     finally:
         conn.close()
 

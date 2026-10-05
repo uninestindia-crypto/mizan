@@ -1,12 +1,12 @@
-import hashlib
 import pytest
 from httpx import AsyncClient
-from tests.shariah.conftest import DomainOracle
 
+from tests.shariah.conftest import DomainOracle
 
 # ===========================================================================
 # Journey 1: "The First-Time Halal Investor Onboarding Journey"
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_scenario_1_first_time_investor_journey(client: AsyncClient, oracle: DomainOracle):
@@ -43,7 +43,13 @@ async def test_scenario_1_first_time_investor_journey(client: AsyncClient, oracl
 
     # Step 3: Capital Allocation (₹50,000 budget)
     budget = 50000.0
-    prices = {"TCS": 4210.50, "INFY": 1890.20, "HCLTECH": 1780.00, "TECHM": 1640.00, "LTIM": 5890.00}
+    prices = {
+        "TCS": 4210.50,
+        "INFY": 1890.20,
+        "HCLTECH": 1780.00,
+        "TECHM": 1640.00,
+        "LTIM": 5890.00,
+    }
     orders = []
 
     for constituent in tech_basket["constituents"]:
@@ -51,13 +57,15 @@ async def test_scenario_1_first_time_investor_journey(client: AsyncClient, oracl
         alloc_amt = budget * constituent["weight"]
         shares = int(alloc_amt // prices[sym])
         assert shares >= 1
-        orders.append({
-            "symbol": sym,
-            "shares": shares,
-            "order_type": "MARKET",
-            "product": "CNC",
-            "order_line": f"{sym},NSE,BUY,{shares},MARKET,CNC,0,0",
-        })
+        orders.append(
+            {
+                "symbol": sym,
+                "shares": shares,
+                "order_type": "MARKET",
+                "product": "CNC",
+                "order_line": f"{sym},NSE,BUY,{shares},MARKET,CNC,0,0",
+            }
+        )
 
     assert len(orders) == 5
     total_cost = sum(o["shares"] * prices[o["symbol"]] for o in orders)
@@ -68,6 +76,7 @@ async def test_scenario_1_first_time_investor_journey(client: AsyncClient, oracl
 # ===========================================================================
 # Journey 2: "The Active Shariah Stock Auditor Journey"
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_scenario_2_active_stock_auditor_journey(client: AsyncClient):
@@ -110,8 +119,11 @@ async def test_scenario_2_active_stock_auditor_journey(client: AsyncClient):
 # Journey 3: "The Dividend Purification & Charity Ledger Journey"
 # ===========================================================================
 
+
 @pytest.mark.asyncio
-async def test_scenario_3_dividend_purification_ledger_journey(client: AsyncClient, oracle: DomainOracle):
+async def test_scenario_3_dividend_purification_ledger_journey(
+    client: AsyncClient, oracle: DomainOracle
+):
     """
     Scenario 3: Tariq, a long-term shareholder holding 500 shares of TCS.
     1. Receives interim dividend of ₹28.00 per share (₹14,000 gross).
@@ -163,8 +175,11 @@ async def test_scenario_3_dividend_purification_ledger_journey(client: AsyncClie
 # Journey 4: "Annual Portfolio Zakat Reconciliation Journey"
 # ===========================================================================
 
+
 @pytest.mark.asyncio
-async def test_scenario_4_annual_zakat_reconciliation_journey(client: AsyncClient, oracle: DomainOracle):
+async def test_scenario_4_annual_zakat_reconciliation_journey(
+    client: AsyncClient, oracle: DomainOracle
+):
     """
     Scenario 4: Dr. Yasmin calculates annual Zakat on her portfolio at year-end.
     1. Compiles her equity holdings: 1,000 TCS and 2,000 INFY + ₹50,000 cash.
@@ -189,19 +204,33 @@ async def test_scenario_4_annual_zakat_reconciliation_journey(client: AsyncClien
 
     # Step 2: Holdings configuration
     holdings = [
-        {"ticker": "TCS.NS", "shares": 1000, "price": tcs_data["profile"]["current_price"], "znwa_per_share": tcs_znwa},
-        {"ticker": "INFY.NS", "shares": 2000, "price": infy_data["profile"]["current_price"], "znwa_per_share": infy_znwa},
+        {
+            "ticker": "TCS.NS",
+            "shares": 1000,
+            "price": tcs_data["profile"]["current_price"],
+            "znwa_per_share": tcs_znwa,
+        },
+        {
+            "ticker": "INFY.NS",
+            "shares": 2000,
+            "price": infy_data["profile"]["current_price"],
+            "znwa_per_share": infy_znwa,
+        },
     ]
     cash = 50000.00
 
     # Step 3: Active Trader calculation
     total_mkt_val = sum(h["shares"] * h["price"] for h in holdings)
-    active_calc = oracle.calculate_active_trader_zakat(portfolio_value=total_mkt_val, cash_balance=cash)
+    active_calc = oracle.calculate_active_trader_zakat(
+        portfolio_value=total_mkt_val, cash_balance=cash
+    )
     assert active_calc["is_obligatory"] is True
     assert active_calc["zakat_due"] > 0.0
 
     # Step 4: Long-Term Investor calculation
-    long_term_calc = oracle.calculate_long_term_zakat(holdings_with_znwa=holdings, cash_balance=cash)
+    long_term_calc = oracle.calculate_long_term_zakat(
+        holdings_with_znwa=holdings, cash_balance=cash
+    )
     assert long_term_calc["is_obligatory"] is True
     assert long_term_calc["zakat_due"] > 0.0
 
@@ -213,6 +242,7 @@ async def test_scenario_4_annual_zakat_reconciliation_journey(client: AsyncClien
 # ===========================================================================
 # Journey 5: "Offline Resiliency & Data Integrity Journey"
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_scenario_5_offline_resilience_and_data_integrity(client: AsyncClient, async_db):

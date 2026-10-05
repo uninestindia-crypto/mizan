@@ -1,11 +1,12 @@
 import pytest
 from httpx import AsyncClient
-from tests.shariah.conftest import DomainOracle
 
+from tests.shariah.conftest import DomainOracle
 
 # ===========================================================================
 # 1. Health Check & Storage Mode Verification (R2) — >=5 Tests
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_health_check_status_code_and_version(client: AsyncClient):
@@ -60,6 +61,7 @@ async def test_health_check_iso_timestamp_present(client: AsyncClient):
 # ===========================================================================
 # 2. Stock Lookup & Detailed Profile (R2) — >=5 Tests
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_stock_lookup_valid_ticker(client: AsyncClient):
@@ -117,6 +119,7 @@ async def test_stock_lookup_nonexistent_returns_404(client: AsyncClient):
 # ===========================================================================
 # 3. Stock Search, Filtering & Pagination (R1/R2) — >=5 Tests
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_stock_search_instant_autocomplete(client: AsyncClient):
@@ -177,6 +180,7 @@ async def test_stock_list_filter_by_status_tasis(client: AsyncClient):
 # ===========================================================================
 # 4. AAOIFI Shariah Screening (R3) — >=5 Tests
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_aaoifi_screening_debt_under_33_pass(client: AsyncClient):
@@ -241,6 +245,7 @@ async def test_aaoifi_screening_denominator_is_36m_mcap(client: AsyncClient):
 # 5. TASIS Shariah Screening (R3) — >=5 Tests
 # ===========================================================================
 
+
 @pytest.mark.asyncio
 async def test_tasis_screening_denominator_is_total_assets(client: AsyncClient):
     """Verifies TASIS denominator is explicitly the audited book value of Total Assets."""
@@ -300,6 +305,7 @@ async def test_tasis_screening_divergence_flag_detection(client: AsyncClient):
 # 6. Qualitative Sector Exclusions (R3) — >=5 Tests
 # ===========================================================================
 
+
 @pytest.mark.asyncio
 async def test_sector_exclusion_commercial_banking(client: AsyncClient):
     """Verifies conventional commercial banks fail sector screen regardless of ratios."""
@@ -328,7 +334,10 @@ async def test_sector_exclusion_alcohol(client: AsyncClient):
     assert response.status_code == 200
     data = response.json()
     assert data["overall_status"] == "NON_COMPLIANT"
-    assert "alcohol" in data["aaoifi_evaluation"]["summary"].lower() or "khamr" in data["aaoifi_evaluation"]["summary"].lower()
+    assert (
+        "alcohol" in data["aaoifi_evaluation"]["summary"].lower()
+        or "khamr" in data["aaoifi_evaluation"]["summary"].lower()
+    )
 
 
 @pytest.mark.asyncio
@@ -338,7 +347,10 @@ async def test_sector_exclusion_tobacco(client: AsyncClient):
     assert response.status_code == 200
     data = response.json()
     assert data["overall_status"] == "NON_COMPLIANT"
-    assert "tobacco" in data["aaoifi_evaluation"]["summary"].lower() or "dharar" in data["aaoifi_evaluation"]["summary"].lower()
+    assert (
+        "tobacco" in data["aaoifi_evaluation"]["summary"].lower()
+        or "dharar" in data["aaoifi_evaluation"]["summary"].lower()
+    )
 
 
 @pytest.mark.asyncio
@@ -356,6 +368,7 @@ async def test_sector_exclusion_gambling_and_media(client: AsyncClient):
 # ===========================================================================
 # 7. Line-Item Shariah Audit Evidence Breakdown (R3) — >=5 Tests
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_audit_breakdown_balance_sheet_lines(client: AsyncClient):
@@ -420,6 +433,7 @@ async def test_audit_breakdown_purification_ratio_reported(client: AsyncClient):
 # 8. Curated Thematic Baskets & Portfolio Models (R4) — >=5 Tests
 # ===========================================================================
 
+
 def test_baskets_inventory_count_and_ids(oracle: DomainOracle):
     """Verifies the platform specifies exactly 4 curated institutional baskets."""
     baskets = oracle.get_thematic_baskets()
@@ -454,6 +468,7 @@ def test_baskets_zerodha_cnc_order_format(oracle: DomainOracle):
     """Verifies broker order format conforms to Zerodha CNC requirement."""
     capital = 50000.0
     basket = oracle.get_thematic_baskets()[0]  # Halal Tech Giants
+    assert basket["id"] == "halal-tech-giants"
     tcs_weight = 0.25
     tcs_price = 4210.50
     tcs_alloc = capital * tcs_weight  # 12,500 INR
@@ -478,6 +493,7 @@ async def test_baskets_http_endpoint_or_progressive_skip(client: AsyncClient):
 # ===========================================================================
 # 9. Dividend Purification Engine & Ledger (R5) — >=5 Tests
 # ===========================================================================
+
 
 def test_purification_ratio_formula_precision(oracle: DomainOracle):
     """Verifies exact purification ratio formula: (Interest + Prohibited) / Total Revenue."""
@@ -530,7 +546,9 @@ async def test_purification_http_endpoint_or_progressive_skip(client: AsyncClien
     payload = {"ticker": "TCS.NS", "dividend_amount": 10.0, "shares_held": 500}
     response = await client.post("/api/v1/purification/calculate", json=payload)
     if response.status_code == 404:
-        pytest.skip("Dividend Purification HTTP endpoint is scheduled for Milestone 2 implementation.")
+        pytest.skip(
+            "Dividend Purification HTTP endpoint is scheduled for Milestone 2 implementation."
+        )
     assert response.status_code == 200
     data = response.json()
     assert "purification_payable" in data
@@ -540,10 +558,11 @@ async def test_purification_http_endpoint_or_progressive_skip(client: AsyncClien
 # 10. Equity Zakat Calculator (R6) — >=5 Tests
 # ===========================================================================
 
+
 def test_zakat_active_trader_lunar_rate(oracle: DomainOracle):
     """Verifies active trader zakat is strictly 2.500% on 100% Net Liquidation Value."""
     portfolio_value = 1000000.0  # 10 Lakhs
-    cash_balance = 200000.0     # 2 Lakhs
+    cash_balance = 200000.0  # 2 Lakhs
     result = oracle.calculate_active_trader_zakat(portfolio_value, cash_balance, calendar="lunar")
     assert result["zakatable_base"] == 1200000.0
     assert result["is_obligatory"] is True
@@ -600,6 +619,7 @@ async def test_zakat_http_endpoint_or_progressive_skip(client: AsyncClient):
 # ===========================================================================
 # 11. Wealth Academy & Demat Onboarding (R6) — >=5 Tests
 # ===========================================================================
+
 
 def test_academy_curriculum_4_core_modules():
     """Verifies the Halal Wealth Academy structure has 4 essential jurisprudential modules."""
@@ -690,13 +710,16 @@ async def test_notifications_endpoints(client: AsyncClient):
     assert read_res.json()["is_read"] is True
 
     # Dispatch webhook alert
-    wh_res = await client.post("/api/v1/notifications/webhook", json={
-        "channel": "whatsapp",
-        "recipient": "+919876543210",
-        "event_type": "COMPLIANCE_DRIFT",
-        "ticker": "TATAMOTORS.NS",
-        "message": "Drift alert test"
-    })
+    wh_res = await client.post(
+        "/api/v1/notifications/webhook",
+        json={
+            "channel": "whatsapp",
+            "recipient": "+919876543210",
+            "event_type": "COMPLIANCE_DRIFT",
+            "ticker": "TATAMOTORS.NS",
+            "message": "Drift alert test",
+        },
+    )
     assert wh_res.status_code == 200
     assert wh_res.json()["status"] == "dispatched"
 
@@ -727,11 +750,10 @@ async def test_shariah_ipo_radar_events(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_basket_tax_calculator(client: AsyncClient):
     """Verifies /api/v1/baskets/tax-calculator computes Indian statutory charges & brokerage."""
-    res = await client.post("/api/v1/baskets/tax-calculator", json={
-        "investment_amount": 50000.0,
-        "broker": "Zerodha",
-        "exchange": "NSE"
-    })
+    res = await client.post(
+        "/api/v1/baskets/tax-calculator",
+        json={"investment_amount": 50000.0, "broker": "Zerodha", "exchange": "NSE"},
+    )
     assert res.status_code == 200
     data = res.json()
     assert data["investment_amount"] == 50000.0
@@ -740,7 +762,3 @@ async def test_basket_tax_calculator(client: AsyncClient):
     assert data["stamp_duty"] == 7.5  # 0.015% of 50,000
     assert data["net_effective_cost"] > 50000.0
     assert "effective_tax_rate_pct" in data
-
-
-
-

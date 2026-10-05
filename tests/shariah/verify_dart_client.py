@@ -1,10 +1,9 @@
-import os
-import re
 from pathlib import Path
 
 CLIENT_DIR = Path("client")
 CLIENT_LIB = CLIENT_DIR / "lib"
 CLIENT_TEST = CLIENT_DIR / "test"
+
 
 def check_delimiter_balance(code: str):
     stack = []
@@ -18,7 +17,7 @@ def check_delimiter_balance(code: str):
     while i < n:
         ch = code[i]
         next_ch = code[i + 1] if i + 1 < n else ""
-        next_two = code[i + 1:i + 3] if i + 2 < n else ""
+        next_two = code[i + 1 : i + 3] if i + 2 < n else ""
 
         if not in_string:
             if in_single_line_comment:
@@ -47,7 +46,7 @@ def check_delimiter_balance(code: str):
                 i += 2
                 continue
             if in_string in ("'''", '"""'):
-                if code[i:i + 3] == in_string:
+                if code[i : i + 3] == in_string:
                     in_string = None
                     is_raw_string = False
                     i += 3
@@ -66,7 +65,7 @@ def check_delimiter_balance(code: str):
                 i += 1
                 ch = next_ch
                 next_ch = code[i + 1] if i + 1 < n else ""
-                next_two = code[i + 1:i + 3] if i + 2 < n else ""
+                next_two = code[i + 1 : i + 3] if i + 2 < n else ""
 
             if ch in ("'", '"') and next_two == ch * 2:
                 in_string = ch * 3
@@ -85,7 +84,10 @@ def check_delimiter_balance(code: str):
             opening, pos = stack.pop()
             expected = {"(": ")", "{": "}", "[": "]"}[opening]
             if ch != expected:
-                return False, f"Mismatched delimiter: expected '{expected}' for '{opening}', got '{ch}' at {i}"
+                return (
+                    False,
+                    f"Mismatched delimiter: expected '{expected}' for '{opening}', got '{ch}' at {i}",
+                )
         i += 1
 
     if in_string:
@@ -96,11 +98,12 @@ def check_delimiter_balance(code: str):
         return False, f"Unclosed delimiters: {[op for op, _ in stack]}"
     return True, "Balanced"
 
+
 def main():
     print("================================================================================")
     print("             CROSS-PLATFORM FLUTTER/DART CLIENT VERIFICATION                    ")
     print("================================================================================")
-    
+
     dart_files = sorted(list(CLIENT_LIB.rglob("*.dart")) + list(CLIENT_TEST.rglob("*.dart")))
     print(f"Total Dart files found: {len(dart_files)}")
     assert len(dart_files) == 29, f"Expected 29 files, found {len(dart_files)}"
@@ -118,7 +121,9 @@ def main():
     assert "constraints.maxWidth >= 600.0" in scaffold_code
     assert "NavigationRail" in scaffold_code
     assert "BottomNavigationBar" in scaffold_code
-    print("  [OK] AdaptiveScaffold: 600.0dp breakpoint validated (NavigationRail >= 600, BottomNavigationBar < 600)")
+    print(
+        "  [OK] AdaptiveScaffold: 600.0dp breakpoint validated (NavigationRail >= 600, BottomNavigationBar < 600)"
+    )
 
     # 2. Compliance toggle in ScreenerScreen
     screener_code = (CLIENT_LIB / "screens" / "screener_screen.dart").read_text(encoding="utf-8")
@@ -134,18 +139,23 @@ def main():
     assert "lunarRate = 0.025000" in zakat_code
     assert "solarRate = 0.025770" in zakat_code
     assert "clampedZnwa = znwaPerShare < 0.0 ? 0.0 : znwaPerShare" in zakat_code
-    print("  [OK] Zakat Calculator: Silver Nisab (INR 53,550), Lunar (2.500%), Solar (2.577%), and max(0, ZNWA) floor validated")
+    print(
+        "  [OK] Zakat Calculator: Silver Nisab (INR 53,550), Lunar (2.500%), Solar (2.577%), and max(0, ZNWA) floor validated"
+    )
 
     # 4. In-Memory Prefix Trie Search
     search_code = (CLIENT_LIB / "services" / "search_service.dart").read_text(encoding="utf-8")
     assert "class TrieNode" in search_code
     assert "searchLocal(String query)" in search_code
     assert "searchDebounced" in search_code
-    print("  [OK] SearchService: In-memory Prefix Trie with debounced query caching (<50ms SLA) validated")
+    print(
+        "  [OK] SearchService: In-memory Prefix Trie with debounced query caching (<50ms SLA) validated"
+    )
 
     print("================================================================================")
     print("             ALL 29 DART CLIENT FILES PASS SYNTAX & ARCHITECTURE AUDIT          ")
     print("================================================================================")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

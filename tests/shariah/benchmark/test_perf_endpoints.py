@@ -1,5 +1,6 @@
-import time
 import statistics
+import time
+
 import pytest
 from httpx import AsyncClient
 
@@ -7,7 +8,10 @@ BENCHMARK_TARGETS = [
     ("/api/v1/health", "System Health Check"),
     ("/api/v1/stocks/TCS.NS", "Full Stock Detail & Fundamentals"),
     ("/api/v1/stocks/search?q=tcs", "Instant FTS5 Search Autocomplete"),
-    ("/api/v1/stocks?sector=Information%20Technology&status=COMPLIANT", "Multi-Filter Screener Query"),
+    (
+        "/api/v1/stocks?sector=Information%20Technology&status=COMPLIANT",
+        "Multi-Filter Screener Query",
+    ),
     ("/api/v1/stocks/TCS.NS/screen?standard=both", "Dual-Standard Shariah Screen"),
     ("/api/v1/stocks/TCS.NS/audit", "Line-Item Audit Trail"),
 ]
@@ -15,7 +19,9 @@ BENCHMARK_TARGETS = [
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("endpoint,endpoint_name", BENCHMARK_TARGETS)
-async def test_endpoint_sub_50ms_p95_latency(client: AsyncClient, endpoint: str, endpoint_name: str):
+async def test_endpoint_sub_50ms_p95_latency(
+    client: AsyncClient, endpoint: str, endpoint_name: str
+):
     """
     Automated Latency Benchmark SLA:
     Runs 5 warm-up queries followed by 50 timed iterations using high-resolution perf_counter.

@@ -806,6 +806,7 @@ def register_api(app: FastAPI) -> None:
     app.include_router(router)
     try:
         from quant_system.shariah.api.v1.router import api_router as shariah_router
+
         app.include_router(shariah_router, prefix="/api/v2/shariah")
     except Exception:
         pass

@@ -1,4 +1,4 @@
-﻿# -*- mode: python ; coding: utf-8 -*-
+# -*- mode: python ; coding: utf-8 -*-
 """PyInstaller specification for QuantOS Standalone Desktop Studio Executable (quantos-studio.exe)."""
 
 import sys
@@ -14,6 +14,7 @@ root_dir = Path(__file__).parent.parent if '__file__' in globals() else Path.cwd
 added_files = [
     (str(root_dir / 'src' / 'quant_system' / 'server' / 'static'), 'quant_system/server/static'),
     (str(root_dir / 'configs'), 'configs'),
+    (str(root_dir / 'data' / 'shariah'), 'data/shariah'),
 ]
 
 hidden_imports = [

@@ -1,24 +1,23 @@
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
 class PurificationLedgerModel:
-    id: Optional[int]
+    id: int | None
     entry_uuid: str
     ticker: str
     company_name: str
-    record_date: Optional[str]
-    payment_date: Optional[str]
+    record_date: str | None
+    payment_date: str | None
     shares_held: int
     dps_inr: float
     gross_dividend: float
     purification_ratio: float
     purification_payable: float
     net_permissible_dividend: float
-    charity_name: Optional[str]
+    charity_name: str | None
     disbursement_status: str
-    notes: Optional[str]
+    notes: str | None
     prev_entry_hash: str
     entry_hash: str
-    timestamp: Optional[str] = None
+    timestamp: str | None = None

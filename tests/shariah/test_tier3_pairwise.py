@@ -1,12 +1,12 @@
-import hashlib
 import pytest
 from httpx import AsyncClient
-from tests.shariah.conftest import DomainOracle
 
+from tests.shariah.conftest import DomainOracle
 
 # ===========================================================================
 # 1. Shariah Standard Toggle Divergence on Active Equities
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_pairwise_shariah_toggle_divergence_cash_hoard(client: AsyncClient):
@@ -20,7 +20,10 @@ async def test_pairwise_shariah_toggle_divergence_cash_hoard(client: AsyncClient
     assert data["divergence"] is True
     assert data["aaoifi_evaluation"]["status"] == "COMPLIANT"
     assert data["tasis_evaluation"]["status"] == "NON_COMPLIANT"
-    assert "asset-light cash hoarding" in data["divergence_reason"].lower() or "divergence" in data["divergence_reason"].lower()
+    assert (
+        "asset-light cash hoarding" in data["divergence_reason"].lower()
+        or "divergence" in data["divergence_reason"].lower()
+    )
 
 
 @pytest.mark.asyncio
@@ -35,12 +38,16 @@ async def test_pairwise_shariah_toggle_divergence_infra_depressed_mcap(client: A
     assert data["divergence"] is True
     assert data["aaoifi_evaluation"]["status"] == "NON_COMPLIANT"
     assert data["tasis_evaluation"]["status"] == "COMPLIANT"
-    assert "depressed market capitalization" in data["divergence_reason"].lower() or "divergence" in data["divergence_reason"].lower()
+    assert (
+        "depressed market capitalization" in data["divergence_reason"].lower()
+        or "divergence" in data["divergence_reason"].lower()
+    )
 
 
 # ===========================================================================
 # 2. Dividend Purification Combined with Annual Zakat Calculation
 # ===========================================================================
+
 
 def test_pairwise_dividend_purification_deducted_before_zakat(oracle: DomainOracle):
     """
@@ -50,7 +57,9 @@ def test_pairwise_dividend_purification_deducted_before_zakat(oracle: DomainOrac
     """
     gross_dividend = 10000.00
     purification_ratio = 0.025  # 2.5%
-    purified_charity = oracle.calculate_purification_amount(gross_dividend, purification_ratio)  # 250.00 INR
+    purified_charity = oracle.calculate_purification_amount(
+        gross_dividend, purification_ratio
+    )  # 250.00 INR
     assert purified_charity == 250.00
 
     # Net permissible dividend deposited to cash account
@@ -76,6 +85,7 @@ def test_pairwise_dividend_purification_deducted_before_zakat(oracle: DomainOrac
 # 3. Rebalanced Basket x Broker Order Export Multi-Format
 # ===========================================================================
 
+
 def test_pairwise_basket_broker_export_across_all_brokers(oracle: DomainOracle):
     """
     Pairwise Interaction: Curated Thematic Basket x 1-Click Multi-Broker Export Formats.
@@ -87,7 +97,13 @@ def test_pairwise_basket_broker_export_across_all_brokers(oracle: DomainOracle):
 
     # Zerodha format: Instrument,Exchange,Transaction,Quantity,Order Type,Product,Price,Trigger Price
     zerodha_orders = []
-    prices = {"TCS": 4210.50, "INFY": 1890.20, "HCLTECH": 1780.00, "TECHM": 1640.00, "LTIM": 5890.00}
+    prices = {
+        "TCS": 4210.50,
+        "INFY": 1890.20,
+        "HCLTECH": 1780.00,
+        "TECHM": 1640.00,
+        "LTIM": 5890.00,
+    }
 
     for c in basket["constituents"]:
         sym = c["symbol"]
@@ -118,13 +134,16 @@ def test_pairwise_basket_broker_export_across_all_brokers(oracle: DomainOracle):
 # 4. Multi-Facet Screener Filtering (Sector + Status + Standard)
 # ===========================================================================
 
+
 @pytest.mark.asyncio
 async def test_pairwise_multi_facet_screener_filtering(client: AsyncClient):
     """
     Pairwise Interaction: Sector Filter x Compliance Status x Screening Standard.
     Filters specifically for: Sector = "Information Technology", Status = "COMPLIANT", Standard = "aaoifi".
     """
-    response = await client.get("/api/v1/stocks?sector=Information%20Technology&status=COMPLIANT&standard=aaoifi")
+    response = await client.get(
+        "/api/v1/stocks?sector=Information%20Technology&status=COMPLIANT&standard=aaoifi"
+    )
     assert response.status_code == 200
     data = response.json()
     items = data["items"]
@@ -137,6 +156,7 @@ async def test_pairwise_multi_facet_screener_filtering(client: AsyncClient):
 # ===========================================================================
 # 5. Immutable Ledger Cryptographic SHA-256 Chaining
 # ===========================================================================
+
 
 def test_pairwise_sequential_ledger_hash_chaining(oracle: DomainOracle):
     """
@@ -162,7 +182,9 @@ def test_pairwise_sequential_ledger_hash_chaining(oracle: DomainOracle):
     assert len(chain) == 6
 
     # Verify chain link 1 to 2
-    recalculated_2 = oracle.generate_sha256_ledger_hash(chain[1], dividends[1]["uuid"], dividends[1]["amount"])
+    recalculated_2 = oracle.generate_sha256_ledger_hash(
+        chain[1], dividends[1]["uuid"], dividends[1]["amount"]
+    )
     assert recalculated_2 == chain[2]
 
     # Tamper test: simulate an attacker altering transaction 2 amount from 18.50 to 8.50
@@ -173,6 +195,7 @@ def test_pairwise_sequential_ledger_hash_chaining(oracle: DomainOracle):
 # ===========================================================================
 # 6. Active Trader vs Long-Term Investor Zakat Comparison
 # ===========================================================================
+
 
 def test_pairwise_active_vs_long_term_zakat_comparison(oracle: DomainOracle):
     """
@@ -188,7 +211,9 @@ def test_pairwise_active_vs_long_term_zakat_comparison(oracle: DomainOracle):
 
     # Active Trader: Market Value = (1000 * 4210.50) + (2000 * 1890.20) = 4,210,500 + 3,780,400 = 7,990,900 INR
     active_mkt_val = (1000 * 4210.50) + (2000 * 1890.20)
-    active_res = oracle.calculate_active_trader_zakat(portfolio_value=active_mkt_val, cash_balance=cash)
+    active_res = oracle.calculate_active_trader_zakat(
+        portfolio_value=active_mkt_val, cash_balance=cash
+    )
 
     # Long-Term Investor: Base = (1000 * 88.14) + (2000 * 68.59) + 50,000 = 88,140 + 137,180 + 50,000 = 275,320 INR
     long_term_res = oracle.calculate_long_term_zakat(holdings_with_znwa=holdings, cash_balance=cash)
@@ -206,6 +231,7 @@ def test_pairwise_active_vs_long_term_zakat_comparison(oracle: DomainOracle):
 # ===========================================================================
 # 7. Hijri Lunar vs Gregorian Solar Calendar Calibration
 # ===========================================================================
+
 
 def test_pairwise_lunar_vs_solar_calendar_scaling(oracle: DomainOracle):
     """

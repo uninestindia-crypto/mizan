@@ -1,11 +1,12 @@
 import pytest
 from httpx import AsyncClient
-from tests.shariah.conftest import DomainOracle
 
+from tests.shariah.conftest import DomainOracle
 
 # ===========================================================================
 # 1. Strict Inequality Debt Thresholds (32.99% vs 33.00% vs 33.01%)
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_boundary_debt_32_99_pct_passes(client: AsyncClient):
@@ -44,8 +45,8 @@ async def test_boundary_debt_33_01_pct_fails(client: AsyncClient):
     Verifies company with debt ratio at 33.010% FAILS compliance test.
     """
     # Test via direct screener service evaluation logic
-    from quant_system.shariah.services.screener_service import evaluate_ratio
     from quant_system.shariah.core.config import settings
+    from quant_system.shariah.services.screener_service import evaluate_ratio
 
     meter = evaluate_ratio(
         metric_name="Debt Test",
@@ -63,6 +64,7 @@ async def test_boundary_debt_33_01_pct_fails(client: AsyncClient):
 # ===========================================================================
 # 2. Strict Inequality Impermissible Revenue (4.99% vs 5.00% vs 5.01%)
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_boundary_impermissible_revenue_4_99_pct_passes(client: AsyncClient):
@@ -99,6 +101,7 @@ async def test_boundary_impermissible_revenue_5_00_pct_fails(client: AsyncClient
 # 3. Zero-Division & Pre-Revenue Division Guards
 # ===========================================================================
 
+
 @pytest.mark.asyncio
 async def test_boundary_zero_debt_company(client: AsyncClient):
     """
@@ -133,8 +136,11 @@ async def test_boundary_pre_revenue_zero_revenue_guard(client: AsyncClient):
 # 4. Negative Working Capital Floor (max(0, ZNWA))
 # ===========================================================================
 
+
 @pytest.mark.asyncio
-async def test_boundary_negative_working_capital_clamped_to_zero(client: AsyncClient, oracle: DomainOracle):
+async def test_boundary_negative_working_capital_clamped_to_zero(
+    client: AsyncClient, oracle: DomainOracle
+):
     """
     Verifies company with Current Liabilities > Current Assets has ZNWA clamped to 0.0 INR.
     Prevents negative working capital from reducing an investor's Zakat base.
@@ -159,6 +165,7 @@ async def test_boundary_negative_working_capital_clamped_to_zero(client: AsyncCl
 # ===========================================================================
 # 5. Indian Silver Nisab Threshold Cutoff (₹53,550.00 Boundary)
 # ===========================================================================
+
 
 def test_boundary_silver_nisab_below_threshold_exempt(oracle: DomainOracle):
     """
@@ -195,6 +202,7 @@ def test_boundary_silver_nisab_one_cent_above_obligatory(oracle: DomainOracle):
 # 6. Micro-Cent Precision & Rounding in Purification
 # ===========================================================================
 
+
 def test_boundary_purification_rounding_half_up(oracle: DomainOracle):
     """
     Verifies micro-cent rounding precision for odd dividend amounts.
@@ -220,6 +228,7 @@ def test_boundary_purification_zero_declared_dividend(oracle: DomainOracle):
 # ===========================================================================
 # 7. Broker Allocation Capital Floor & Fractional Prevention
 # ===========================================================================
+
 
 def test_boundary_broker_allocation_sub_share_budget():
     """
@@ -250,6 +259,7 @@ def test_boundary_broker_allocation_non_fractional_shares():
 # ===========================================================================
 # 8. Search Injection, Whitespace & Special Character Sanitization
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_boundary_search_sql_injection_sanitization(client: AsyncClient):

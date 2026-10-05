@@ -142,19 +142,56 @@ function StepWelcome({ onNext, accepted }: { onNext: () => void; accepted: boole
   );
 }
 
+const PROFILES = [
+  {
+    id: "institutional",
+    title: "Institutional QuantOS",
+    subtitle: "Factor research, Strategy Lab, deterministic backtests & risk governor",
+    icon: LineChart,
+    shariah: false,
+    defaultStyle: "both" as Style,
+  },
+  {
+    id: "shariah",
+    title: "Mizan Shariah Wealth",
+    subtitle: "AAOIFI & TASIS ethical screening, halal baskets, purification & zakat",
+    icon: Scale,
+    shariah: true,
+    defaultStyle: "investor" as Style,
+  },
+  {
+    id: "unified",
+    title: "Unified Hybrid Suite",
+    subtitle: "Institutional alpha labs and Shariah ethical governance active side-by-side",
+    icon: ShieldCheck,
+    shariah: true,
+    defaultStyle: "both" as Style,
+  },
+];
+
 function StepStyle({ current, shariahCurrent, onNext, onBack }: { current: Style | null; shariahCurrent?: boolean; onNext: () => void; onBack: () => void }) {
-  const [style, setStyle] = useState<Style | null>(current);
+  const [style, setStyle] = useState<Style | null>(current ?? "both");
   const [shariah, setShariah] = useState<boolean>(Boolean(shariahCurrent));
+  const [profile, setProfile] = useState<string>(shariahCurrent ? "shariah" : "institutional");
   const update = useUpdateSettings();
+
+  const handleProfileSelect = (p: (typeof PROFILES)[number]) => {
+    setProfile(p.id);
+    setShariah(p.shariah);
+    if (!style || style === "both") {
+      setStyle(p.defaultStyle);
+    }
+  };
+
   const options: { value: Style; icon: typeof Sprout; title: string; body: string }[] = [
-    { value: "investor", icon: Sprout, title: "Investor", body: "I hold for months or years and want to know if my portfolio is beating the index." },
+    { value: "investor", icon: Sprout, title: "Investor", body: "I hold for months or years and want to know if my portfolio beat the index." },
     { value: "swing", icon: LineChart, title: "Swing trader", body: "I hold for days to weeks and want to test my rules before trading them." },
     { value: "both", icon: Database, title: "A bit of both", body: "I keep a long-term portfolio and trade a part of my money." },
   ];
   return (
     <StepShell
-      title="How do you invest?"
-      subtitle="This sets sensible defaults. You can change it any time in Settings."
+      title="Choose your workspace profile"
+      subtitle="Select your primary operational mode and trading style. You can switch between them at any time with 1 click."
       art={<Illustration name="lab-hero" className="size-72" />}
       footer={
         <>
@@ -173,58 +210,74 @@ function StepStyle({ current, shariahCurrent, onNext, onBack }: { current: Style
         </>
       }
     >
-      <div role="radiogroup" aria-label="Investing style" className="grid gap-3">
-        {options.map(({ value, icon: Icon, title, body }) => (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={style === value}
-            onClick={() => setStyle(value)}
-            className={cx(
-              "flex items-start gap-4 rounded-2xl border bg-surface p-4 text-left transition-colors",
-              style === value ? "border-brand ring-3 ring-brand/15" : "border-line hover:border-line-strong",
-            )}
-          >
-            <span className={cx("flex size-10 shrink-0 items-center justify-center rounded-xl", style === value ? "bg-brand text-on-brand" : "bg-surface-2 text-ink-2")}>
-              <Icon className="size-5" aria-hidden />
-            </span>
-            <span>
-              <span className="block font-semibold text-ink">{title}</span>
-              <span className="mt-0.5 block text-sm text-ink-2">{body}</span>
-            </span>
-          </button>
-        ))}
+      <div>
+        <div className="mb-2 text-[12.5px] font-semibold uppercase tracking-wider text-ink-3">Primary Profile</div>
+        <div role="radiogroup" aria-label="Workspace profile" className="grid gap-2.5 sm:grid-cols-3">
+          {PROFILES.map((p) => {
+            const Icon = p.icon;
+            const isSelected = profile === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                onClick={() => handleProfileSelect(p)}
+                className={cx(
+                  "flex flex-col items-start gap-2.5 rounded-xl border bg-surface p-3.5 text-left transition-all",
+                  isSelected
+                    ? p.shariah
+                      ? "border-emerald-600 ring-2 ring-emerald-600/20"
+                      : "border-brand ring-2 ring-brand/20"
+                    : "border-line hover:border-line-strong",
+                )}
+              >
+                <span
+                  className={cx(
+                    "flex size-8 shrink-0 items-center justify-center rounded-lg",
+                    isSelected
+                      ? p.shariah
+                        ? "bg-emerald-600 text-white"
+                        : "bg-brand text-on-brand"
+                      : "bg-surface-2 text-ink-2",
+                  )}
+                >
+                  <Icon className="size-4" aria-hidden />
+                </span>
+                <div>
+                  <span className="block text-[13.5px] font-semibold text-ink">{p.title}</span>
+                  <span className="mt-0.5 block text-[11.5px] leading-tight text-ink-3">{p.subtitle}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="mt-5 rounded-2xl border border-line bg-surface p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className={cx("flex size-10 shrink-0 items-center justify-center rounded-xl", shariah ? "bg-emerald-600 text-white" : "bg-surface-2 text-ink-3")}>
-              <Scale className="size-5" aria-hidden />
-            </span>
-            <div>
-              <span className="block font-semibold text-ink">Mizan Shariah Compliance Mode</span>
-              <span className="mt-0.5 block text-sm text-ink-2">Apply AAOIFI/TASIS screening, ethical baskets, and zakat tools.</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={shariah}
-            onClick={() => setShariah(!shariah)}
-            className={cx(
-              "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-              shariah ? "bg-emerald-600" : "bg-surface-3"
-            )}
-          >
-            <span
+      <div className="mt-6">
+        <div className="mb-2 text-[12.5px] font-semibold uppercase tracking-wider text-ink-3">Trading Style & Horizon</div>
+        <div role="radiogroup" aria-label="Investing style" className="grid gap-2.5">
+          {options.map(({ value, icon: Icon, title, body }) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={style === value}
+              onClick={() => setStyle(value)}
               className={cx(
-                "pointer-events-none inline-block size-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                shariah ? "translate-x-5" : "translate-x-0"
+                "flex items-start gap-3.5 rounded-xl border bg-surface p-3.5 text-left transition-colors",
+                style === value ? "border-brand ring-2 ring-brand/15" : "border-line hover:border-line-strong",
               )}
-            />
-          </button>
+            >
+              <span className={cx("flex size-9 shrink-0 items-center justify-center rounded-lg", style === value ? "bg-brand text-on-brand" : "bg-surface-2 text-ink-2")}>
+                <Icon className="size-4" aria-hidden />
+              </span>
+              <div>
+                <span className="block text-[13.5px] font-semibold text-ink">{title}</span>
+                <span className="mt-0.5 block text-[12px] text-ink-2">{body}</span>
+              </div>
+            </button>
+          ))}
         </div>
       </div>
     </StepShell>

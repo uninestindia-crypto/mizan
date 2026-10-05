@@ -1,7 +1,9 @@
 """Service implementing the Dual-Method Equity Zakat Engine (R6)."""
 
+from typing import Any
+
 import aiosqlite
-from typing import Dict, Any, List, Optional
+
 from quant_system.shariah.core.config import settings
 from quant_system.shariah.schemas.zakat import (
     ZakatCalculateRequest,
@@ -11,16 +13,16 @@ from quant_system.shariah.schemas.zakat import (
 
 # Authoritative Zakat Constants (DomainOracle calibration)
 SILVER_NISAB_DEFAULT = 53550.0  # 595 grams * 90 INR/g
-LUNAR_RATE = 0.025000           # 2.500%
-SOLAR_RATE = 0.025770           # 2.577% (2.5% * 365.25 / 354)
+LUNAR_RATE = 0.025000  # 2.500%
+SOLAR_RATE = 0.025770  # 2.577% (2.5% * 365.25 / 354)
 
-_ZAKAT_METRICS_CACHE: Dict[str, Optional[Dict[str, Any]]] = {}
+_ZAKAT_METRICS_CACHE: dict[str, dict[str, Any] | None] = {}
 
 
 async def lookup_company_zakat_metrics(
     ticker: str,
     db: aiosqlite.Connection,
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Look up zakatable assets per share and current price from database."""
     clean_ticker = ticker.strip().upper()
     if clean_ticker in _ZAKAT_METRICS_CACHE:
@@ -69,9 +71,11 @@ async def calculate_equity_zakat(
     calendar = request.calendar.lower().strip()
     rate = SOLAR_RATE if calendar == "solar" else LUNAR_RATE
     rate_pct = round(rate * 100.0, 4)
-    nisab_threshold = request.custom_nisab_inr or settings.DEFAULT_SILVER_NISAB_INR or SILVER_NISAB_DEFAULT
+    nisab_threshold = (
+        request.custom_nisab_inr or settings.DEFAULT_SILVER_NISAB_INR or SILVER_NISAB_DEFAULT
+    )
 
-    breakdown: List[ZakatHoldingBreakdown] = []
+    breakdown: list[ZakatHoldingBreakdown] = []
     portfolio_value = float(request.portfolio_value or 0.0)
     cash_balance = round(float(request.cash_balance or 0.0), 2)
 

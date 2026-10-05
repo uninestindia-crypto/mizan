@@ -52,11 +52,11 @@ addopts = "-ra -v --basetemp=tmp/pytest"
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-extend-exclude = [".agents", ".venv", ".pytest_cache", "build", "dist", "tmp"]
+extend-exclude = [".agents", ".venv", ".pytest_cache", "build", "dist", "tmp", "supabase"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP", "B", "C4"]
-ignore = ["E501"]
+ignore = ["E501", "B008"]
 
 
 [tool.mypy]

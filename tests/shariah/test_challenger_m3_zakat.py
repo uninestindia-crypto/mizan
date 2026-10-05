@@ -10,24 +10,11 @@ Authored by challenger_m3_1 to empirically probe:
 
 import pytest
 from httpx import AsyncClient
-import aiosqlite
-
-from quant_system.shariah.schemas.zakat import (
-    ZakatCalculateRequest,
-    ZakatHoldingItem,
-)
-from quant_system.shariah.services.zakat_service import (
-    calculate_equity_zakat,
-    SILVER_NISAB_DEFAULT,
-    LUNAR_RATE,
-    SOLAR_RATE,
-)
-from tests.shariah.conftest import DomainOracle
-
 
 # ===========================================================================
 # Vector 1: Nisab Boundary Threshold Tests
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_vector1_nisab_strictly_below_silver_threshold(client: AsyncClient):
@@ -137,6 +124,7 @@ async def test_vector1_custom_nisab_threshold_enforcement(client: AsyncClient):
 # Vector 2: Boundary Financial Inputs
 # ===========================================================================
 
+
 @pytest.mark.asyncio
 async def test_vector2_zero_cash_and_zero_portfolio(client: AsyncClient):
     """Zero cash, zero portfolio value. Must return 200 OK with zakatable_base=0.0, is_obligatory=False."""
@@ -201,16 +189,19 @@ async def test_vector2_extreme_hni_portfolio_precision(client: AsyncClient):
     Verify no float precision loss, overflow, or NaN.
     """
     portfolio_val = 1_000_000_000.00  # 100 Cr
-    cash_val = 50_000_000.00          # 5 Cr
+    cash_val = 50_000_000.00  # 5 Cr
     expected_base = 1_050_000_000.00  # 105 Cr
 
     # Test Lunar rate (2.500%)
-    res_lunar = await client.post("/api/v1/zakat/calculate", json={
-        "method": "active",
-        "portfolio_value": portfolio_val,
-        "cash_balance": cash_val,
-        "calendar": "lunar",
-    })
+    res_lunar = await client.post(
+        "/api/v1/zakat/calculate",
+        json={
+            "method": "active",
+            "portfolio_value": portfolio_val,
+            "cash_balance": cash_val,
+            "calendar": "lunar",
+        },
+    )
     assert res_lunar.status_code == 200
     data_l = res_lunar.json()
     assert data_l["zakatable_base"] == expected_base
@@ -219,12 +210,15 @@ async def test_vector2_extreme_hni_portfolio_precision(client: AsyncClient):
     assert data_l["zakat_due"] == 26250000.00
 
     # Test Solar rate (2.577%)
-    res_solar = await client.post("/api/v1/zakat/calculate", json={
-        "method": "active",
-        "portfolio_value": portfolio_val,
-        "cash_balance": cash_val,
-        "calendar": "solar",
-    })
+    res_solar = await client.post(
+        "/api/v1/zakat/calculate",
+        json={
+            "method": "active",
+            "portfolio_value": portfolio_val,
+            "cash_balance": cash_val,
+            "calendar": "solar",
+        },
+    )
     assert res_solar.status_code == 200
     data_s = res_solar.json()
     assert data_s["zakatable_base"] == expected_base
@@ -232,12 +226,15 @@ async def test_vector2_extreme_hni_portfolio_precision(client: AsyncClient):
     assert data_s["zakat_due"] == 27058500.00
 
     # Extreme boundary: ₹1,000 Crore (10,000,000,000 INR)
-    res_1000cr = await client.post("/api/v1/zakat/calculate", json={
-        "method": "active",
-        "portfolio_value": 10_000_000_000.00,
-        "cash_balance": 0.0,
-        "calendar": "lunar",
-    })
+    res_1000cr = await client.post(
+        "/api/v1/zakat/calculate",
+        json={
+            "method": "active",
+            "portfolio_value": 10_000_000_000.00,
+            "cash_balance": 0.0,
+            "calendar": "lunar",
+        },
+    )
     assert res_1000cr.status_code == 200
     assert res_1000cr.json()["zakat_due"] == 250000000.00
 
@@ -245,6 +242,7 @@ async def test_vector2_extreme_hni_portfolio_precision(client: AsyncClient):
 # ===========================================================================
 # Vector 3: Dual-Calendar Rate Accuracy
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_vector3_dual_calendar_exact_rates_and_scaling(client: AsyncClient):
@@ -255,22 +253,28 @@ async def test_vector3_dual_calendar_exact_rates_and_scaling(client: AsyncClient
     """
     base_amount = 10_000_000.00  # 1 Crore INR
 
-    res_lunar = await client.post("/api/v1/zakat/calculate", json={
-        "method": "active",
-        "portfolio_value": base_amount,
-        "calendar": "lunar",
-    })
+    res_lunar = await client.post(
+        "/api/v1/zakat/calculate",
+        json={
+            "method": "active",
+            "portfolio_value": base_amount,
+            "calendar": "lunar",
+        },
+    )
     assert res_lunar.status_code == 200
     data_l = res_lunar.json()
     assert data_l["rate"] == 0.025000
     assert data_l["rate_pct"] == 2.5
     assert data_l["zakat_due"] == 250000.00
 
-    res_solar = await client.post("/api/v1/zakat/calculate", json={
-        "method": "active",
-        "portfolio_value": base_amount,
-        "calendar": "solar",
-    })
+    res_solar = await client.post(
+        "/api/v1/zakat/calculate",
+        json={
+            "method": "active",
+            "portfolio_value": base_amount,
+            "calendar": "solar",
+        },
+    )
     assert res_solar.status_code == 200
     data_s = res_solar.json()
     assert data_s["rate"] == 0.025770
@@ -285,19 +289,25 @@ async def test_vector3_dual_calendar_exact_rates_and_scaling(client: AsyncClient
 @pytest.mark.asyncio
 async def test_vector3_calendar_case_and_whitespace_resilience(client: AsyncClient):
     """Calendar parameter must handle whitespace and mixed casing (' SOLAR ', 'Lunar')."""
-    res1 = await client.post("/api/v1/zakat/calculate", json={
-        "method": "active",
-        "portfolio_value": 100000.0,
-        "calendar": " SOLAR ",
-    })
+    res1 = await client.post(
+        "/api/v1/zakat/calculate",
+        json={
+            "method": "active",
+            "portfolio_value": 100000.0,
+            "calendar": " SOLAR ",
+        },
+    )
     assert res1.status_code == 200
     assert res1.json()["rate"] == 0.025770
 
-    res2 = await client.post("/api/v1/zakat/calculate", json={
-        "method": "active",
-        "portfolio_value": 100000.0,
-        "calendar": "LuNaR",
-    })
+    res2 = await client.post(
+        "/api/v1/zakat/calculate",
+        json={
+            "method": "active",
+            "portfolio_value": 100000.0,
+            "calendar": "LuNaR",
+        },
+    )
     assert res2.status_code == 200
     assert res2.json()["rate"] == 0.025000
 
@@ -305,6 +315,7 @@ async def test_vector3_calendar_case_and_whitespace_resilience(client: AsyncClie
 # ===========================================================================
 # Vector 4: Method Divergence Invariant
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_vector4_method_divergence_operating_companies_tcs_and_infy(client: AsyncClient):
@@ -320,22 +331,28 @@ async def test_vector4_method_divergence_operating_companies_tcs_and_infy(client
     cash = 100000.00
 
     # 1. Active Trader (100% Market Value)
-    res_active = await client.post("/api/v1/zakat/calculate", json={
-        "method": "active",
-        "holdings": holdings,
-        "cash_balance": cash,
-        "calendar": "lunar",
-    })
+    res_active = await client.post(
+        "/api/v1/zakat/calculate",
+        json={
+            "method": "active",
+            "holdings": holdings,
+            "cash_balance": cash,
+            "calendar": "lunar",
+        },
+    )
     assert res_active.status_code == 200
     active_data = res_active.json()
 
     # 2. Long-Term Investor (ZNWA per share)
-    res_lt = await client.post("/api/v1/zakat/calculate", json={
-        "method": "long_term",
-        "holdings": holdings,
-        "cash_balance": cash,
-        "calendar": "lunar",
-    })
+    res_lt = await client.post(
+        "/api/v1/zakat/calculate",
+        json={
+            "method": "long_term",
+            "holdings": holdings,
+            "cash_balance": cash,
+            "calendar": "lunar",
+        },
+    )
     assert res_lt.status_code == 200
     lt_data = res_lt.json()
 
@@ -372,12 +389,15 @@ async def test_vector4_negative_working_capital_company_floor(client: AsyncClien
     ]
     cash = 60000.00
 
-    res = await client.post("/api/v1/zakat/calculate", json={
-        "method": "long_term",
-        "holdings": holdings,
-        "cash_balance": cash,
-        "calendar": "lunar",
-    })
+    res = await client.post(
+        "/api/v1/zakat/calculate",
+        json={
+            "method": "long_term",
+            "holdings": holdings,
+            "cash_balance": cash,
+            "calendar": "lunar",
+        },
+    )
     assert res.status_code == 200
     data = res.json()
 
@@ -395,6 +415,7 @@ async def test_vector4_negative_working_capital_company_floor(client: AsyncClien
 # Vector 5: Unseeded Ticker Fallback
 # ===========================================================================
 
+
 @pytest.mark.asyncio
 async def test_vector5_unseeded_ticker_conservative_25_pct_proxy(client: AsyncClient):
     """When an unseeded ticker (e.g. UNKNOWN.NS) is provided with current_price
@@ -403,8 +424,8 @@ async def test_vector5_unseeded_ticker_conservative_25_pct_proxy(client: AsyncCl
     """
     price = 600.00
     shares = 200
-    expected_mkt_val = round(price * shares, 2)         # 120,000 INR
-    expected_znwa_ps = round(price * 0.25, 2)           # 150.00 INR
+    expected_mkt_val = round(price * shares, 2)  # 120,000 INR
+    expected_znwa_ps = round(price * 0.25, 2)  # 150.00 INR
     expected_zakatable = round(expected_znwa_ps * shares, 2)  # 30,000 INR
 
     payload = {
@@ -470,7 +491,9 @@ async def test_vector5_unseeded_ticker_with_explicit_znwa_override(client: Async
 
 
 @pytest.mark.asyncio
-async def test_vector5_unseeded_ticker_missing_both_price_and_znwa_does_not_crash(client: AsyncClient):
+async def test_vector5_unseeded_ticker_missing_both_price_and_znwa_does_not_crash(
+    client: AsyncClient,
+):
     """Unseeded ticker with neither price nor znwa in DB or request.
     System must handle gracefully without 500 error or crash.
     """
@@ -506,7 +529,7 @@ async def test_vector5_long_term_aggregate_portfolio_value_proxy(client: AsyncCl
     payload = {
         "method": "long_term",
         "portfolio_value": 400000.0,  # 4 Lakhs
-        "cash_balance": 20000.0,     # 20k
+        "cash_balance": 20000.0,  # 20k
         "calendar": "lunar",
     }
     response = await client.post("/api/v1/zakat/calculate", json=payload)
@@ -523,13 +546,14 @@ async def test_vector5_long_term_aggregate_portfolio_value_proxy(client: AsyncCl
 # Benchmark: Zakat Endpoints Sub-50ms p95 Latency SLA Verification
 # ===========================================================================
 
+
 @pytest.mark.asyncio
 async def test_zakat_endpoint_sub_50ms_latency_sla(client: AsyncClient):
     """Verifies that POST /api/v1/zakat/calculate strictly meets the sub-50ms p95 SLA
     for both Active Trader and Long-Term Investor (with DB lookups) methods.
     """
-    import time
     import statistics
+    import time
 
     payloads = [
         (
@@ -575,6 +599,7 @@ async def test_zakat_endpoint_sub_50ms_latency_sla(client: AsyncClient):
         min_lat = min(latencies_ms)
         max_lat = max(latencies_ms)
 
-        print(f"\n[BENCHMARK] {name} -> Avg: {avg:.2f}ms | Min: {min_lat:.2f}ms | Max: {max_lat:.2f}ms | p95: {p95:.2f}ms")
+        print(
+            f"\n[BENCHMARK] {name} -> Avg: {avg:.2f}ms | Min: {min_lat:.2f}ms | Max: {max_lat:.2f}ms | p95: {p95:.2f}ms"
+        )
         assert p95 < 50.0, f"p95 latency {p95:.2f}ms breached sub-50ms SLA for {name}"
-

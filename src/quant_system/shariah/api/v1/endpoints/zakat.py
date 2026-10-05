@@ -2,6 +2,7 @@
 
 import aiosqlite
 from fastapi import APIRouter, Depends, HTTPException
+
 from quant_system.shariah.db.session import get_async_db
 from quant_system.shariah.schemas.zakat import (
     ZakatCalculateRequest,
@@ -25,8 +26,8 @@ router = APIRouter(prefix="/zakat", tags=["Equity Zakat Calculator"])
 async def calculate_zakat(
     request: ZakatCalculateRequest,
     db: aiosqlite.Connection = Depends(get_async_db),
-):
+) -> ZakatCalculateResponse:
     try:
         return await calculate_equity_zakat(request, db)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e

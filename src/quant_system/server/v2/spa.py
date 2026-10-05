@@ -24,6 +24,8 @@ CLIENT_ROUTES = (
     "/tools/{rest:path}",
     "/settings",
     "/settings/{rest:path}",
+    "/shariah",
+    "/shariah/{rest:path}",
 )
 
 _NOT_BUILT = """<!doctype html>

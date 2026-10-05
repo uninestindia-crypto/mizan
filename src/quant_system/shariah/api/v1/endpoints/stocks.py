@@ -1,42 +1,55 @@
-from typing import List, Optional
+from typing import Any
+
 import aiosqlite
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+
 from quant_system.shariah.db.session import get_async_db
 from quant_system.shariah.schemas.company import (
-    CompanySummary,
+    BalanceSheetEvidence,
     CompanyDetail,
     CompanyProfile,
-    BalanceSheetEvidence,
+    CompanySummary,
+    ComplianceStatus,
     IncomeStatementEvidence,
     SearchSuggestion,
-    ComplianceStatus,
 )
-from quant_system.shariah.services.search_service import search_companies_fts, filter_companies
+from quant_system.shariah.services.search_service import filter_companies, search_companies_fts
 
 router = APIRouter()
 
 
-@router.get("/stocks/search", response_model=List[SearchSuggestion], summary="Instant Search Autocomplete (<50ms)")
+@router.get(
+    "/stocks/search",
+    response_model=list[SearchSuggestion],
+    summary="Instant Search Autocomplete (<50ms)",
+)
 async def search_stocks(
     q: str = Query(..., min_length=1, description="Search token (e.g. 'tcs', 'tata', 'pharma')"),
-    standard: str = Query("aaoifi", description="Standard for compliance status ('aaoifi' or 'tasis')"),
+    standard: str = Query(
+        "aaoifi", description="Standard for compliance status ('aaoifi' or 'tasis')"
+    ),
     limit: int = Query(15, ge=1, le=50),
     db: aiosqlite.Connection = Depends(get_async_db),
-):
+) -> list[SearchSuggestion]:
     """Sub-50ms instant stock search powered by SQLite FTS5 prefix matching."""
     return await search_companies_fts(db=db, query=q, standard=standard, limit=limit)
 
 
 @router.get("/stocks", summary="List and Filter Stocks Universe")
 async def list_stocks(
-    query: Optional[str] = Query(None, alias="q", description="Optional text search query"),
-    sector: Optional[str] = Query(None, description="Filter by sector"),
-    status: Optional[str] = Query(None, description="Filter by compliance status ('COMPLIANT', 'QUESTIONABLE', 'NON_COMPLIANT')"),
-    standard: str = Query("aaoifi", description="Compliance standard to filter by ('aaoifi' or 'tasis')"),
+    query: str | None = Query(None, alias="q", description="Optional text search query"),
+    sector: str | None = Query(None, description="Filter by sector"),
+    status: str | None = Query(
+        None,
+        description="Filter by compliance status ('COMPLIANT', 'QUESTIONABLE', 'NON_COMPLIANT')",
+    ),
+    standard: str = Query(
+        "aaoifi", description="Compliance standard to filter by ('aaoifi' or 'tasis')"
+    ),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: aiosqlite.Connection = Depends(get_async_db),
-):
+) -> dict[str, Any]:
     """List stocks with optional full-text search, sector filtering, and compliance classification."""
     rows, total = await filter_companies(
         db=db,
@@ -47,7 +60,7 @@ async def list_stocks(
         limit=limit,
         offset=offset,
     )
-    
+
     items = []
     for r in rows:
         items.append(
@@ -67,13 +80,21 @@ async def list_stocks(
                 purification_ratio=float(r["purification_ratio"]),
                 is_nifty_50=bool(r["is_nifty_50"]),
                 is_nifty_500=bool(r["is_nifty_500"]),
-                aaoifi_debt_ratio=float(r["aaoifi_debt_ratio"]) if r.get("aaoifi_debt_ratio") is not None else 0.0,
-                aaoifi_cash_ratio=float(r["aaoifi_cash_ratio"]) if r.get("aaoifi_cash_ratio") is not None else 0.0,
-                tasis_debt_ratio=float(r["tasis_debt_ratio"]) if r.get("tasis_debt_ratio") is not None else 0.0,
-                tasis_cash_ratio=float(r["tasis_cash_ratio"]) if r.get("tasis_cash_ratio") is not None else 0.0,
+                aaoifi_debt_ratio=float(r["aaoifi_debt_ratio"])
+                if r.get("aaoifi_debt_ratio") is not None
+                else 0.0,
+                aaoifi_cash_ratio=float(r["aaoifi_cash_ratio"])
+                if r.get("aaoifi_cash_ratio") is not None
+                else 0.0,
+                tasis_debt_ratio=float(r["tasis_debt_ratio"])
+                if r.get("tasis_debt_ratio") is not None
+                else 0.0,
+                tasis_cash_ratio=float(r["tasis_cash_ratio"])
+                if r.get("tasis_cash_ratio") is not None
+                else 0.0,
             )
         )
-        
+
     return {
         "total": total,
         "limit": limit,
@@ -83,33 +104,37 @@ async def list_stocks(
     }
 
 
-@router.get("/stocks/{ticker}", response_model=CompanyDetail, summary="Get Full Company Profile & Balance Sheet")
+@router.get(
+    "/stocks/{ticker}",
+    response_model=CompanyDetail,
+    summary="Get Full Company Profile & Balance Sheet",
+)
 async def get_stock_detail(
     ticker: str,
     db: aiosqlite.Connection = Depends(get_async_db),
-):
+) -> CompanyDetail:
     """Retrieve full company profile, balance sheet items, income statement lines, and compliance ratings."""
     clean_ticker = ticker.strip().upper()
     # Support ticker with or without .NS
     variations = [clean_ticker, f"{clean_ticker}.NS", clean_ticker.replace(".NS", "")]
     placeholders = ", ".join("?" for _ in variations)
-    
+
     sql = f"""
-        SELECT * FROM companies 
+        SELECT * FROM companies
         WHERE UPPER(ticker) IN ({placeholders}) OR UPPER(symbol) IN ({placeholders})
         LIMIT 1;
     """
     cursor = await db.execute(sql, (*variations, *variations))
     row = await cursor.fetchone()
-    
+
     if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Company with ticker or symbol '{ticker}' not found in universe.",
         )
-        
+
     r = dict(row)
-    
+
     profile = CompanyProfile(
         ticker=r["ticker"],
         symbol=r["symbol"],
@@ -126,14 +151,16 @@ async def get_stock_detail(
         pe_ratio=float(r["pe_ratio"]) if r["pe_ratio"] is not None else None,
         pb_ratio=float(r["pb_ratio"]) if r["pb_ratio"] is not None else None,
         dividend_yield=float(r["dividend_yield"]) if r["dividend_yield"] is not None else None,
-        last_dividend_per_share=float(r["last_dividend_per_share"]) if r["last_dividend_per_share"] is not None else 0.0,
+        last_dividend_per_share=float(r["last_dividend_per_share"])
+        if r["last_dividend_per_share"] is not None
+        else 0.0,
         filing_date=r["filing_date"],
         reporting_period=r["reporting_period"],
         source_document=r["source_document"],
         is_nifty_50=bool(r["is_nifty_50"]),
         is_nifty_500=bool(r["is_nifty_500"]),
     )
-    
+
     balance_sheet = BalanceSheetEvidence(
         total_assets=float(r["total_assets"]),
         long_term_debt=float(r["long_term_debt"]),
@@ -150,7 +177,7 @@ async def get_stock_detail(
         cash_note_ref=r["cash_note_ref"],
         rec_note_ref=r["rec_note_ref"],
     )
-    
+
     income_statement = IncomeStatementEvidence(
         operating_revenue=float(r["operating_revenue"]),
         other_income=float(r["other_income"]),
@@ -160,7 +187,7 @@ async def get_stock_detail(
         total_impermissible_income=float(r["total_impermissible_income"]),
         income_note_ref=r["income_note_ref"],
     )
-    
+
     return CompanyDetail(
         profile=profile,
         balance_sheet=balance_sheet,

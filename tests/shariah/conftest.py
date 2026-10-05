@@ -1,35 +1,34 @@
-import asyncio
+import hashlib
 import json
 import os
-import tempfile
 import sqlite3
-import hashlib
+import tempfile
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import AsyncGenerator, Dict, Any, List
+from typing import Any
 
+import aiosqlite
 import pytest
 import pytest_asyncio
-import aiosqlite
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
-from quant_system.shariah.main import app
-from quant_system.shariah.core.config import settings
-from quant_system.shariah.db.session import get_async_db, SQLITE_PRAGMAS
 from quant_system.shariah.db.init_db import (
     CREATE_COMPANIES_TABLE,
-    CREATE_INDEXES,
     CREATE_FTS_TABLE,
     CREATE_FTS_TRIGGERS,
+    CREATE_INDEXES,
 )
+from quant_system.shariah.db.session import SQLITE_PRAGMAS, get_async_db
+from quant_system.shariah.main import app
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 SAMPLE_NIFTY500_PATH = FIXTURES_DIR / "sample_nifty500.json"
 
 
 @pytest.fixture(scope="session")
-def sample_companies() -> List[Dict[str, Any]]:
+def sample_companies() -> list[dict[str, Any]]:
     """Load the authoritative 40-company deterministic fixture."""
-    with open(SAMPLE_NIFTY500_PATH, "r", encoding="utf-8") as f:
+    with open(SAMPLE_NIFTY500_PATH, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -120,6 +119,7 @@ async def client(test_db_path: str) -> AsyncGenerator[AsyncClient, None]:
     """
     Async HTTP client wrapping the FastAPI application with test database dependency override.
     """
+
     async def override_get_async_db():
         async with aiosqlite.connect(test_db_path, timeout=30.0) as conn:
             conn.row_factory = aiosqlite.Row
@@ -144,6 +144,7 @@ async def client(test_db_path: str) -> AsyncGenerator[AsyncClient, None]:
 # Derived from ORIGINAL_REQUEST.md & survey_explorer_2/report.md
 # ---------------------------------------------------------------------------
 
+
 class DomainOracle:
     """Deterministic mathematical reference oracle for Shariah rules and wealth formulas."""
 
@@ -152,7 +153,9 @@ class DomainOracle:
     SOLAR_ZAKAT_RATE = 0.025770  # 2.577% (2.5% * 365.25 / 354)
 
     @staticmethod
-    def calculate_purification_ratio(interest_income: float, prohibited_secondary_revenue: float, total_revenue: float) -> float:
+    def calculate_purification_ratio(
+        interest_income: float, prohibited_secondary_revenue: float, total_revenue: float
+    ) -> float:
         """rho = (Interest Income + Prohibited Secondary Revenue) / Total Revenue"""
         if total_revenue <= 0.0:
             return 1.0 if (interest_income + prohibited_secondary_revenue) > 0.0 else 0.0
@@ -164,7 +167,14 @@ class DomainOracle:
         return round(gross_dividend * purification_ratio, 2)
 
     @staticmethod
-    def calculate_znwa_per_share(cash: float, investments: float, receivables: float, inventories: float, current_liabilities: float, shares_outstanding: int) -> float:
+    def calculate_znwa_per_share(
+        cash: float,
+        investments: float,
+        receivables: float,
+        inventories: float,
+        current_liabilities: float,
+        shares_outstanding: int,
+    ) -> float:
         """
         Zakatable Net Working Assets per share:
         ZNWA = Cash + Investments + Receivables + Inventories - Current Liabilities
@@ -180,9 +190,15 @@ class DomainOracle:
         return round(znwa_inr / shares_outstanding, 2)
 
     @staticmethod
-    def calculate_active_trader_zakat(portfolio_value: float, cash_balance: float, calendar: str = "lunar") -> Dict[str, Any]:
+    def calculate_active_trader_zakat(
+        portfolio_value: float, cash_balance: float, calendar: str = "lunar"
+    ) -> dict[str, Any]:
         """Method 1: Active Trader (100% Net Liquidation Value)."""
-        rate = DomainOracle.SOLAR_ZAKAT_RATE if calendar.lower() == "solar" else DomainOracle.LUNAR_ZAKAT_RATE
+        rate = (
+            DomainOracle.SOLAR_ZAKAT_RATE
+            if calendar.lower() == "solar"
+            else DomainOracle.LUNAR_ZAKAT_RATE
+        )
         zakatable_base = round(portfolio_value + cash_balance, 2)
         is_obligatory = zakatable_base >= DomainOracle.SILVER_NISAB_INR
         zakat_due = round(zakatable_base * rate, 2) if is_obligatory else 0.0
@@ -197,9 +213,15 @@ class DomainOracle:
         }
 
     @staticmethod
-    def calculate_long_term_zakat(holdings_with_znwa: List[Dict[str, Any]], cash_balance: float, calendar: str = "lunar") -> Dict[str, Any]:
+    def calculate_long_term_zakat(
+        holdings_with_znwa: list[dict[str, Any]], cash_balance: float, calendar: str = "lunar"
+    ) -> dict[str, Any]:
         """Method 2: Long-Term Investor (Zakatable Net Working Assets per share)."""
-        rate = DomainOracle.SOLAR_ZAKAT_RATE if calendar.lower() == "solar" else DomainOracle.LUNAR_ZAKAT_RATE
+        rate = (
+            DomainOracle.SOLAR_ZAKAT_RATE
+            if calendar.lower() == "solar"
+            else DomainOracle.LUNAR_ZAKAT_RATE
+        )
         holdings_base = 0.0
         breakdown = []
         for h in holdings_with_znwa:
@@ -207,12 +229,14 @@ class DomainOracle:
             shares = int(h.get("shares", 0))
             holding_val = round(znwa_ps * shares, 2)
             holdings_base += holding_val
-            breakdown.append({
-                "ticker": h.get("ticker"),
-                "shares": shares,
-                "znwa_per_share": znwa_ps,
-                "zakatable_amount": holding_val,
-            })
+            breakdown.append(
+                {
+                    "ticker": h.get("ticker"),
+                    "shares": shares,
+                    "znwa_per_share": znwa_ps,
+                    "zakatable_amount": holding_val,
+                }
+            )
         zakatable_base = round(holdings_base + cash_balance, 2)
         is_obligatory = zakatable_base >= DomainOracle.SILVER_NISAB_INR
         zakat_due = round(zakatable_base * rate, 2) if is_obligatory else 0.0
@@ -228,13 +252,15 @@ class DomainOracle:
         }
 
     @staticmethod
-    def generate_sha256_ledger_hash(prev_hash: str, entry_uuid: str, purification_amount: float) -> str:
+    def generate_sha256_ledger_hash(
+        prev_hash: str, entry_uuid: str, purification_amount: float
+    ) -> str:
         """SHA-256 cryptographic chain link for immutable purification ledger."""
-        payload = f"{prev_hash}|{entry_uuid}|{purification_amount:.2f}".encode("utf-8")
+        payload = f"{prev_hash}|{entry_uuid}|{purification_amount:.2f}".encode()
         return hashlib.sha256(payload).hexdigest()
 
     @staticmethod
-    def get_thematic_baskets() -> List[Dict[str, Any]]:
+    def get_thematic_baskets() -> list[dict[str, Any]]:
         """The 4 Curated Baskets specification from PROJECT.md."""
         return [
             {

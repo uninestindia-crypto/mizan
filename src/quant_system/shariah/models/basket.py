@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
 
 
 @dataclass
@@ -7,8 +6,8 @@ class ConstituentModel:
     ticker: str
     symbol: str
     weight: float
-    company_name: Optional[str] = None
-    sector: Optional[str] = None
+    company_name: str | None = None
+    sector: str | None = None
     current_price: float = 0.0
 
 
@@ -25,4 +24,4 @@ class BasketModel:
     beta: float
     dividend_yield: float
     weighted_purification_ratio: float
-    constituents: List[ConstituentModel] = field(default_factory=list)
+    constituents: list[ConstituentModel] = field(default_factory=list)

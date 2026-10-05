@@ -1,20 +1,22 @@
 import logging
+from typing import Any
+
 import aiosqlite
-from typing import List, Dict, Any, Optional
+
 from quant_system.shariah.schemas.basket import (
-    BasketSummary,
-    BasketDetail,
     BasketConstituent,
-    TearSheetMetrics,
-    SectorAllocation,
+    BasketDetail,
+    BasketSummary,
     RebalanceLog,
+    SectorAllocation,
+    TearSheetMetrics,
 )
 
 logger = logging.getLogger(__name__)
 
 INDIAN_RISK_FREE_RATE = 0.0675  # 6.75% 91-day T-Bill rate
 
-BASKET_DEFINITIONS: List[Dict[str, Any]] = [
+BASKET_DEFINITIONS: list[dict[str, Any]] = [
     {
         "id": "halal-tech-giants",
         "name": "Halal Tech Giants",
@@ -62,10 +64,30 @@ BASKET_DEFINITIONS: List[Dict[str, Any]] = [
         "dividend_yield": 0.0095,
         "weighted_purification_ratio": 0.0072,
         "constituents": [
-            {"ticker": "PERSISTENT.NS", "symbol": "PERSISTENT", "weight": 0.20, "default_price": 4820.00},
-            {"ticker": "TATAELXSI.NS", "symbol": "TATAELXSI", "weight": 0.20, "default_price": 7650.00},
-            {"ticker": "DEEPAKNTR.NS", "symbol": "DEEPAKNTR", "weight": 0.20, "default_price": 2890.00},
-            {"ticker": "PIDILITIND.NS", "symbol": "PIDILITIND", "weight": 0.20, "default_price": 3120.00},
+            {
+                "ticker": "PERSISTENT.NS",
+                "symbol": "PERSISTENT",
+                "weight": 0.20,
+                "default_price": 4820.00,
+            },
+            {
+                "ticker": "TATAELXSI.NS",
+                "symbol": "TATAELXSI",
+                "weight": 0.20,
+                "default_price": 7650.00,
+            },
+            {
+                "ticker": "DEEPAKNTR.NS",
+                "symbol": "DEEPAKNTR",
+                "weight": 0.20,
+                "default_price": 2890.00,
+            },
+            {
+                "ticker": "PIDILITIND.NS",
+                "symbol": "PIDILITIND",
+                "weight": 0.20,
+                "default_price": 3120.00,
+            },
             {"ticker": "MARICO.NS", "symbol": "MARICO", "weight": 0.20, "default_price": 645.00},
         ],
         "rebalance_logs": [
@@ -96,7 +118,12 @@ BASKET_DEFINITIONS: List[Dict[str, Any]] = [
         "dividend_yield": 0.0085,
         "weighted_purification_ratio": 0.0125,
         "constituents": [
-            {"ticker": "TATAPOWER.NS", "symbol": "TATAPOWER", "weight": 0.25, "default_price": 435.50},
+            {
+                "ticker": "TATAPOWER.NS",
+                "symbol": "TATAPOWER",
+                "weight": 0.25,
+                "default_price": 435.50,
+            },
             {"ticker": "THERMAX.NS", "symbol": "THERMAX", "weight": 0.20, "default_price": 5120.00},
             {"ticker": "SIEMENS.NS", "symbol": "SIEMENS", "weight": 0.20, "default_price": 6890.00},
             {"ticker": "ABB.NS", "symbol": "ABB", "weight": 0.20, "default_price": 7950.00},
@@ -132,8 +159,18 @@ BASKET_DEFINITIONS: List[Dict[str, Any]] = [
         "constituents": [
             {"ticker": "TCS.NS", "symbol": "TCS", "weight": 0.08, "default_price": 4210.50},
             {"ticker": "INFY.NS", "symbol": "INFY", "weight": 0.08, "default_price": 1890.20},
-            {"ticker": "HINDUNILVR.NS", "symbol": "HINDUNILVR", "weight": 0.07, "default_price": 2850.00},
-            {"ticker": "SUNPHARMA.NS", "symbol": "SUNPHARMA", "weight": 0.06, "default_price": 1820.00},
+            {
+                "ticker": "HINDUNILVR.NS",
+                "symbol": "HINDUNILVR",
+                "weight": 0.07,
+                "default_price": 2850.00,
+            },
+            {
+                "ticker": "SUNPHARMA.NS",
+                "symbol": "SUNPHARMA",
+                "weight": 0.06,
+                "default_price": 1820.00,
+            },
             {"ticker": "CIPLA.NS", "symbol": "CIPLA", "weight": 0.05, "default_price": 1540.00},
             {"ticker": "DRREDDY.NS", "symbol": "DRREDDY", "weight": 0.04, "default_price": 6480.00},
         ],
@@ -155,7 +192,9 @@ BASKET_DEFINITIONS: List[Dict[str, Any]] = [
 ]
 
 
-def calculate_sharpe_ratio(cagr: float, volatility: float, risk_free_rate: float = INDIAN_RISK_FREE_RATE) -> float:
+def calculate_sharpe_ratio(
+    cagr: float, volatility: float, risk_free_rate: float = INDIAN_RISK_FREE_RATE
+) -> float:
     """Calculates Sharpe Ratio: (CAGR - Rf) / Annualized Volatility."""
     if volatility <= 0.0:
         return 0.0
@@ -163,14 +202,14 @@ def calculate_sharpe_ratio(cagr: float, volatility: float, risk_free_rate: float
 
 
 async def _enrich_constituents(
-    constituents_data: List[Dict[str, Any]],
-    db: Optional[aiosqlite.Connection] = None,
-) -> List[BasketConstituent]:
+    constituents_data: list[dict[str, Any]],
+    db: aiosqlite.Connection | None = None,
+) -> list[BasketConstituent]:
     """Enriches basket constituents with real-time market prices, company names, and sectors from database."""
-    enriched: List[BasketConstituent] = []
-    
+    enriched: list[BasketConstituent] = []
+
     # Map of ticker to DB row
-    price_map: Dict[str, Dict[str, Any]] = {}
+    price_map: dict[str, dict[str, Any]] = {}
     if db is not None:
         tickers = [c["ticker"] for c in constituents_data]
         placeholders = ",".join("?" for _ in tickers)
@@ -188,7 +227,7 @@ async def _enrich_constituents(
         sym = c.get("symbol", ticker.replace(".NS", ""))
         weight = float(c["weight"])
         db_info = price_map.get(ticker)
-        
+
         if db_info:
             price = float(db_info.get("current_price", c.get("default_price", 1000.0)))
             company_name = db_info.get("company_name", sym)
@@ -199,7 +238,7 @@ async def _enrich_constituents(
             company_name = sym
             sector = "Diversified"
             mcap = 0.0
-            
+
         enriched.append(
             BasketConstituent(
                 ticker=ticker,
@@ -214,13 +253,13 @@ async def _enrich_constituents(
     return enriched
 
 
-def _compute_sector_allocations(constituents: List[BasketConstituent]) -> List[SectorAllocation]:
+def _compute_sector_allocations(constituents: list[BasketConstituent]) -> list[SectorAllocation]:
     """Aggregates weights by sector for breakdown."""
-    sector_weights: Dict[str, float] = {}
+    sector_weights: dict[str, float] = {}
     for c in constituents:
         sec = c.sector or "Diversified"
         sector_weights[sec] = sector_weights.get(sec, 0.0) + c.weight
-        
+
     allocations = []
     for sec, w in sector_weights.items():
         allocations.append(
@@ -234,19 +273,19 @@ def _compute_sector_allocations(constituents: List[BasketConstituent]) -> List[S
     return allocations
 
 
-async def get_all_baskets(db: Optional[aiosqlite.Connection] = None) -> List[BasketSummary]:
+async def get_all_baskets(db: aiosqlite.Connection | None = None) -> list[BasketSummary]:
     """Returns all 4 curated institutional baskets with real-time valuation and constituent weights."""
-    results: List[BasketSummary] = []
-    
+    results: list[BasketSummary] = []
+
     for b in BASKET_DEFINITIONS:
         constituents = await _enrich_constituents(b["constituents"], db)
         min_invest = sum(c.current_price or 0.0 for c in constituents)
         total_val = sum((c.current_price or 0.0) * c.weight for c in constituents)
-        
+
         cagr = float(b["expected_cagr"])
         vol = float(b["annualized_volatility"])
         sharpe = float(b.get("expected_sharpe", calculate_sharpe_ratio(cagr, vol)))
-        
+
         results.append(
             BasketSummary(
                 id=b["id"],
@@ -270,16 +309,18 @@ async def get_all_baskets(db: Optional[aiosqlite.Connection] = None) -> List[Bas
     return results
 
 
-async def get_basket_by_id(basket_id: str, db: Optional[aiosqlite.Connection] = None) -> Optional[BasketDetail]:
+async def get_basket_by_id(
+    basket_id: str, db: aiosqlite.Connection | None = None
+) -> BasketDetail | None:
     """Returns detailed financial tear-sheet, constituents, and rebalancing logs for a basket."""
     basket_def = next((b for b in BASKET_DEFINITIONS if b["id"] == basket_id.lower().strip()), None)
     if not basket_def:
         return None
-        
+
     constituents = await _enrich_constituents(basket_def["constituents"], db)
     min_invest = sum(c.current_price or 0.0 for c in constituents)
     total_val = sum((c.current_price or 0.0) * c.weight for c in constituents)
-    
+
     cagr = float(basket_def["expected_cagr"])
     vol = float(basket_def["annualized_volatility"])
     sharpe = float(basket_def.get("expected_sharpe", calculate_sharpe_ratio(cagr, vol)))
@@ -287,7 +328,7 @@ async def get_basket_by_id(basket_id: str, db: Optional[aiosqlite.Connection] = 
     beta = float(basket_def["beta"])
     div_yield = float(basket_def["dividend_yield"])
     purification_ratio = float(basket_def["weighted_purification_ratio"])
-    
+
     tear_sheet = TearSheetMetrics(
         cagr=cagr,
         expected_cagr=cagr,
@@ -300,10 +341,10 @@ async def get_basket_by_id(basket_id: str, db: Optional[aiosqlite.Connection] = 
         dividend_yield=div_yield,
         weighted_purification_ratio=purification_ratio,
     )
-    
+
     sector_allocs = _compute_sector_allocations(constituents)
     rebalance_logs = [RebalanceLog(**log) for log in basket_def.get("rebalance_logs", [])]
-    
+
     return BasketDetail(
         id=basket_def["id"],
         name=basket_def["name"],

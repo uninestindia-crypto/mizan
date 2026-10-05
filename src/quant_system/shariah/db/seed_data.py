@@ -1,8 +1,8 @@
 import logging
-import sqlite3
-from typing import List, Dict, Any
-from quant_system.shariah.db.session import get_db_connection
+from typing import Any
+
 from quant_system.shariah.db.init_db import init_db
+from quant_system.shariah.db.session import get_db_connection
 from quant_system.shariah.services.screener_service import (
     check_sector_compliance,
     evaluate_company_shariah,
@@ -10,7 +10,7 @@ from quant_system.shariah.services.screener_service import (
 
 logger = logging.getLogger(__name__)
 
-RAW_COMPANIES_DATA: List[Dict[str, Any]] = [
+RAW_COMPANIES_DATA: list[dict[str, Any]] = [
     # -------------------------------------------------------------
     # 1. SHARIAH COMPLIANT - IT SERVICES & TECHNOLOGY
     # -------------------------------------------------------------
@@ -366,7 +366,6 @@ RAW_COMPANIES_DATA: List[Dict[str, Any]] = [
         "is_nifty_50": 0,
         "is_nifty_500": 1,
     },
-
     # -------------------------------------------------------------
     # 2. SHARIAH COMPLIANT - PHARMACEUTICALS & HEALTHCARE
     # -------------------------------------------------------------
@@ -546,7 +545,6 @@ RAW_COMPANIES_DATA: List[Dict[str, Any]] = [
         "is_nifty_50": 1,
         "is_nifty_500": 1,
     },
-
     # -------------------------------------------------------------
     # 3. SHARIAH COMPLIANT - CONSUMER & CHEMICALS
     # -------------------------------------------------------------
@@ -858,7 +856,6 @@ RAW_COMPANIES_DATA: List[Dict[str, Any]] = [
         "is_nifty_50": 0,
         "is_nifty_500": 1,
     },
-
     # -------------------------------------------------------------
     # 4. SHARIAH COMPLIANT - CAPITAL GOODS, POWER & INFRASTRUCTURE
     # -------------------------------------------------------------
@@ -1170,7 +1167,6 @@ RAW_COMPANIES_DATA: List[Dict[str, Any]] = [
         "is_nifty_50": 1,
         "is_nifty_500": 1,
     },
-
     # -------------------------------------------------------------
     # 5. DIVERGENT & BORDERLINE EQUITIES (Key for testing dual-standard)
     # -------------------------------------------------------------
@@ -1354,7 +1350,6 @@ RAW_COMPANIES_DATA: List[Dict[str, Any]] = [
         "is_nifty_50": 0,
         "is_nifty_500": 1,
     },
-
     # -------------------------------------------------------------
     # 6. NON-COMPLIANT - BANKING & CONVENTIONAL FINANCE (RIBA)
     # -------------------------------------------------------------
@@ -1578,7 +1573,6 @@ RAW_COMPANIES_DATA: List[Dict[str, Any]] = [
         "is_nifty_50": 1,
         "is_nifty_500": 1,
     },
-
     # -------------------------------------------------------------
     # 7. NON-COMPLIANT - ALCOHOL & INTOXICANTS (KHAMR)
     # -------------------------------------------------------------
@@ -1670,7 +1664,6 @@ RAW_COMPANIES_DATA: List[Dict[str, Any]] = [
         "is_nifty_50": 0,
         "is_nifty_500": 1,
     },
-
     # -------------------------------------------------------------
     # 8. NON-COMPLIANT - TOBACCO & NICOTINE (DHARAR)
     # -------------------------------------------------------------
@@ -1718,7 +1711,6 @@ RAW_COMPANIES_DATA: List[Dict[str, Any]] = [
         "is_nifty_50": 1,
         "is_nifty_500": 1,
     },
-
     # -------------------------------------------------------------
     # 9. NON-COMPLIANT - GAMBLING, CASINOS & REAL-MONEY GAMING (MAYSIR)
     # -------------------------------------------------------------
@@ -1769,10 +1761,10 @@ RAW_COMPANIES_DATA: List[Dict[str, Any]] = [
 ]
 
 
-def prepare_company_record(raw: Dict[str, Any]) -> Dict[str, Any]:
+def prepare_company_record(raw: dict[str, Any]) -> dict[str, Any]:
     """Calculate all financial ratios, screening statuses, purification, and zakatable assets."""
     record = dict(raw)
-    
+
     # 1. Sector Check
     is_sector_comp, sector_fail_reason = check_sector_compliance(
         sector=record["sector"],
@@ -1781,30 +1773,30 @@ def prepare_company_record(raw: Dict[str, Any]) -> Dict[str, Any]:
     )
     record["sector_compliant"] = 1 if is_sector_comp else 0
     record["sector_failure_reason"] = sector_fail_reason
-    
+
     # 2. Shariah Dual-Standard Evaluation
     aaoifi_eval, tasis_eval, divergence, div_reason = evaluate_company_shariah(record)
-    
+
     # AAOIFI Fields
     record["aaoifi_debt_ratio"] = aaoifi_eval.debt_ratio.actual_value
     record["aaoifi_cash_ratio"] = aaoifi_eval.cash_ratio.actual_value
     record["aaoifi_rec_ratio"] = aaoifi_eval.receivables_ratio.actual_value
     record["aaoifi_imp_ratio"] = aaoifi_eval.impermissible_income_ratio.actual_value
     record["aaoifi_status"] = aaoifi_eval.status.value
-    
+
     # TASIS Fields
     record["tasis_debt_ratio"] = tasis_eval.debt_ratio.actual_value
     record["tasis_cash_ratio"] = tasis_eval.cash_ratio.actual_value
     record["tasis_rec_ratio"] = tasis_eval.receivables_ratio.actual_value
     record["tasis_imp_ratio"] = tasis_eval.impermissible_income_ratio.actual_value
     record["tasis_status"] = tasis_eval.status.value
-    
+
     # 3. Derived Metrics: Purification & Zakat
     total_rev = float(record["total_revenue"])
     imp_inc = float(record["total_impermissible_income"])
     purif_ratio = round(imp_inc / total_rev, 6) if total_rev > 0 else 0.0
     record["purification_ratio"] = purif_ratio
-    
+
     # Zakatable Net Working Assets per share: (Cash + Rec + Inv - CL) in INR / shares
     znwa_cr = (
         float(record["total_cash_and_investments"])
@@ -1819,14 +1811,16 @@ def prepare_company_record(raw: Dict[str, Any]) -> Dict[str, Any]:
     else:
         znwa_per_share = 0.0
     record["zakatable_assets_per_share"] = znwa_per_share
-    
+
     # Audit note summary
     if div_reason:
         record["audit_notes"] = div_reason
     elif not is_sector_comp:
         record["audit_notes"] = f"Failed sector screening: {sector_fail_reason}"
     else:
-        record["audit_notes"] = "Screened against audited annual financial statements under AAOIFI & TASIS criteria."
+        record["audit_notes"] = (
+            "Screened against audited annual financial statements under AAOIFI & TASIS criteria."
+        )
 
     return record
 
@@ -1836,7 +1830,7 @@ def seed_database(db_path: str | None = None) -> int:
     init_db(db_path)
     conn = get_db_connection(db_path)
     inserted_count = 0
-    
+
     try:
         cursor = conn.cursor()
         for raw in RAW_COMPANIES_DATA:
@@ -1845,7 +1839,7 @@ def seed_database(db_path: str | None = None) -> int:
             placeholders = ", ".join("?" for _ in columns)
             cols_str = ", ".join(columns)
             update_str = ", ".join(f"{col}=excluded.{col}" for col in columns if col != "ticker")
-            
+
             sql = f"""
                 INSERT INTO companies ({cols_str})
                 VALUES ({placeholders})
@@ -1853,14 +1847,14 @@ def seed_database(db_path: str | None = None) -> int:
             """
             cursor.execute(sql, [rec[c] for c in columns])
             inserted_count += 1
-            
+
         # Rebuild FTS5 search index
         cursor.execute("INSERT INTO companies_fts(companies_fts) VALUES('rebuild');")
         conn.commit()
         logger.info(f"Successfully seeded {inserted_count} companies into database.")
     finally:
         conn.close()
-        
+
     return inserted_count
 
 

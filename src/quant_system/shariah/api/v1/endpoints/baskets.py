@@ -1,12 +1,13 @@
 import aiosqlite
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Body, Depends, HTTPException, Path
+from pydantic import BaseModel, Field
+
 from quant_system.shariah.db.session import get_async_db
 from quant_system.shariah.schemas.basket import (
-    BasketSummary,
     BasketDetail,
     BasketExportRequest,
     BasketExportResponse,
+    BasketSummary,
 )
 from quant_system.shariah.services.basket_service import get_all_baskets, get_basket_by_id
 from quant_system.shariah.services.broker_export_service import export_basket_orders
@@ -16,13 +17,13 @@ router = APIRouter(prefix="/baskets", tags=["Curated Thematic Baskets & Broker E
 
 @router.get(
     "",
-    response_model=List[BasketSummary],
+    response_model=list[BasketSummary],
     summary="List Curated Thematic Baskets",
     description="Returns high-level metadata, constituent weights, and financial tear-sheet metrics for all 4 institutional baskets.",
 )
 async def list_baskets(
     db: aiosqlite.Connection = Depends(get_async_db),
-):
+) -> list[BasketSummary]:
     return await get_all_baskets(db)
 
 
@@ -35,7 +36,7 @@ async def list_baskets(
 async def get_basket(
     basket_id: str = Path(..., description="Unique basket identifier (e.g. halal-tech-giants)"),
     db: aiosqlite.Connection = Depends(get_async_db),
-):
+) -> BasketDetail:
     basket = await get_basket_by_id(basket_id, db)
     if not basket:
         raise HTTPException(
@@ -53,9 +54,9 @@ async def get_basket(
 )
 async def export_basket(
     basket_id: str = Path(..., description="Unique basket identifier"),
-    request: BasketExportRequest = ...,
+    request: BasketExportRequest = Body(...),
     db: aiosqlite.Connection = Depends(get_async_db),
-):
+) -> BasketExportResponse:
     try:
         export_result = await export_basket_orders(basket_id, request, db)
         if not export_result:
@@ -65,15 +66,16 @@ async def export_basket(
             )
         return export_result
     except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
+        raise HTTPException(status_code=400, detail=str(ve)) from ve
 
-
-from pydantic import BaseModel, Field
 
 class TaxCalculationRequest(BaseModel):
     investment_amount: float = Field(..., gt=0, description="Gross investment capital in INR")
-    broker: str = Field("Zerodha", description="Indian discount broker (Zerodha, Groww, Upstox, AngelOne)")
+    broker: str = Field(
+        "Zerodha", description="Indian discount broker (Zerodha, Groww, Upstox, AngelOne)"
+    )
     exchange: str = Field("NSE", description="Stock exchange (NSE or BSE)")
+
 
 class TaxCalculationResponse(BaseModel):
     investment_amount: float
@@ -90,13 +92,14 @@ class TaxCalculationResponse(BaseModel):
     net_effective_cost: float
     effective_tax_rate_pct: float
 
+
 @router.post(
     "/tax-calculator",
     response_model=TaxCalculationResponse,
     summary="Indian Statutory Tax & Brokerage Calculator",
     description="Calculates exact SEBI turnover charges, STT, stamp duty, GST, and purification deductions for delivery CNC equity orders.",
 )
-async def calculate_statutory_taxes(payload: TaxCalculationRequest):
+async def calculate_statutory_taxes(payload: TaxCalculationRequest) -> TaxCalculationResponse:
     turnover = payload.investment_amount
     brokerage = 0.0  # Zero brokerage on delivery CNC across major discount brokers
     stt = round(turnover * 0.001, 2)  # 0.1% on delivery
@@ -124,4 +127,3 @@ async def calculate_statutory_taxes(payload: TaxCalculationRequest):
         net_effective_cost=net_cost,
         effective_tax_rate_pct=tax_rate,
     )
-

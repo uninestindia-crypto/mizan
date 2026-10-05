@@ -21,6 +21,7 @@ added_files = [
     (str(root_dir / 'src' / 'quant_system' / 'server' / 'static'), 'quant_system/server/static'),
     (str(root_dir / 'configs'), 'configs'),
     (str(root_dir / 'assets'), 'assets'),
+    (str(root_dir / 'data' / 'shariah'), 'data/shariah'),
 ]
 
 hidden_imports = [

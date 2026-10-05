@@ -1,38 +1,38 @@
 """Pydantic schemas for the Halal Investment platform."""
 
+from .academy import (
+    AcademyModuleDetail,
+    AcademyModuleSummary,
+    BrokerDematGuide,
+    DematGuideResponse,
+    DematMandatoryRule,
+    QuizQuestion,
+)
 from .company import (
-    ComplianceStatus,
-    ScreeningStandard,
-    MarketCapCategory,
     BalanceSheetEvidence,
-    IncomeStatementEvidence,
+    CompanyDetail,
     CompanyProfile,
     CompanySummary,
-    CompanyDetail,
+    ComplianceStatus,
+    IncomeStatementEvidence,
+    MarketCapCategory,
+    ScreeningStandard,
     SearchSuggestion,
 )
 from .screening import (
-    RatioMeter,
-    StandardEvaluation,
     AuditEvidenceLine,
-    ShariahAuditResponse,
+    RatioMeter,
     ScreeningResponse,
+    ShariahAuditResponse,
+    StandardEvaluation,
 )
 from .zakat import (
-    ZakatMethod,
-    ZakatCalendar,
-    ZakatHoldingItem,
-    ZakatHoldingBreakdown,
     ZakatCalculateRequest,
     ZakatCalculateResponse,
-)
-from .academy import (
-    QuizQuestion,
-    AcademyModuleSummary,
-    AcademyModuleDetail,
-    DematMandatoryRule,
-    BrokerDematGuide,
-    DematGuideResponse,
+    ZakatCalendar,
+    ZakatHoldingBreakdown,
+    ZakatHoldingItem,
+    ZakatMethod,
 )
 
 __all__ = [

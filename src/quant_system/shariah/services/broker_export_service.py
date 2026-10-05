@@ -1,19 +1,21 @@
-import io
 import csv
+import io
 import logging
+from typing import Any
+
 import aiosqlite
-from typing import List, Dict, Any, Optional, Tuple
+
 from quant_system.shariah.schemas.basket import (
+    BasketConstituent,
     BasketExportRequest,
     BasketExportResponse,
     BrokerOrder,
-    BasketConstituent,
 )
 from quant_system.shariah.services.basket_service import get_basket_by_id
 
 logger = logging.getLogger(__name__)
 
-ANGEL_ONE_TOKENS: Dict[str, str] = {
+ANGEL_ONE_TOKENS: dict[str, str] = {
     "TCS": "11536",
     "INFY": "1594",
     "HCLTECH": "7229",
@@ -38,10 +40,10 @@ ANGEL_ONE_TOKENS: Dict[str, str] = {
 
 
 def allocate_capital_to_basket(
-    constituents: List[BasketConstituent],
+    constituents: list[BasketConstituent],
     capital: float,
     enforce_min_one_share: bool = True,
-) -> Tuple[List[Dict[str, Any]], float, float, List[str]]:
+) -> tuple[list[dict[str, Any]], float, float, list[str]]:
     """
     Capital Allocation Engine:
     Converts target capital into constituent share quantities based on basket weights.
@@ -49,60 +51,73 @@ def allocate_capital_to_basket(
     """
     if capital <= 0.0:
         raise ValueError("Capital must be strictly positive (> 0).")
-        
-    orders_data: List[Dict[str, Any]] = []
-    warnings: List[str] = []
+
+    orders_data: list[dict[str, Any]] = []
+    warnings: list[str] = []
     total_cost = 0.0
-    
+
     for c in constituents:
         sym = c.symbol
         price = float(c.current_price or 1000.0)
         weight = float(c.weight)
         alloc_amt = capital * weight
         shares = int(alloc_amt // price)
-        
+
         if shares == 0 and enforce_min_one_share:
             shares = 1
             warnings.append(
                 f"Capital adjustment warning: Allocating minimum 1 share of {sym} (INR {price:.2f}) "
                 f"exceeds target allocation (INR {alloc_amt:.2f})."
             )
-            
+
         cost = shares * price
         total_cost += cost
-        orders_data.append({
-            "ticker": c.ticker,
-            "symbol": sym,
-            "shares": shares,
-            "price": price,
-            "weight": weight,
-            "allocation_amount": round(alloc_amt, 2),
-            "actual_cost": round(cost, 2),
-        })
-        
+        orders_data.append(
+            {
+                "ticker": c.ticker,
+                "symbol": sym,
+                "shares": shares,
+                "price": price,
+                "weight": weight,
+                "allocation_amount": round(alloc_amt, 2),
+                "actual_cost": round(cost, 2),
+            }
+        )
+
     residual_cash = max(0.0, round(capital - total_cost, 2))
     return orders_data, round(total_cost, 2), residual_cash, warnings
 
 
 def generate_zerodha_orders(
-    orders_data: List[Dict[str, Any]],
+    orders_data: list[dict[str, Any]],
     order_type: str = "MARKET",
-) -> Tuple[List[BrokerOrder], str, str]:
+) -> tuple[list[BrokerOrder], str, str]:
     """
     Zerodha Kite Multi-Order Format:
     Instrument,Exchange,Transaction,Quantity,Order Type,Product,Price,Trigger Price
     Product strictly CNC.
     """
-    orders: List[BrokerOrder] = []
-    csv_rows = [["Instrument", "Exchange", "Transaction", "Quantity", "Order Type", "Product", "Price", "Trigger Price"]]
+    orders: list[BrokerOrder] = []
+    csv_rows = [
+        [
+            "Instrument",
+            "Exchange",
+            "Transaction",
+            "Quantity",
+            "Order Type",
+            "Product",
+            "Price",
+            "Trigger Price",
+        ]
+    ]
     clipboard_lines = []
-    
+
     for o in orders_data:
         sym = o["symbol"]
         shares = o["shares"]
         price_val = 0 if order_type.upper() == "MARKET" else round(o["price"], 2)
         trigger_price = 0
-        
+
         row_str = f"{sym},NSE,BUY,{shares},{order_type.upper()},CNC,{price_val},{trigger_price}"
         orders.append(
             BrokerOrder(
@@ -117,9 +132,20 @@ def generate_zerodha_orders(
                 order_line=row_str,
             )
         )
-        csv_rows.append([sym, "NSE", "BUY", str(shares), order_type.upper(), "CNC", str(price_val), str(trigger_price)])
+        csv_rows.append(
+            [
+                sym,
+                "NSE",
+                "BUY",
+                str(shares),
+                order_type.upper(),
+                "CNC",
+                str(price_val),
+                str(trigger_price),
+            ]
+        )
         clipboard_lines.append(row_str)
-        
+
     output = io.StringIO()
     writer = csv.writer(output, lineterminator="\n")
     writer.writerows(csv_rows)
@@ -129,18 +155,20 @@ def generate_zerodha_orders(
 
 
 def generate_upstox_orders(
-    orders_data: List[Dict[str, Any]],
+    orders_data: list[dict[str, Any]],
     order_type: str = "MARKET",
-) -> Tuple[List[BrokerOrder], str, str]:
+) -> tuple[list[BrokerOrder], str, str]:
     """
     Upstox Pro Multi-Order Format:
     Trading Symbol,Exchange,Action,Quantity,Order Type,Validity,Product
     Trading Symbol: {symbol}-EQ, Product: DELIVERY.
     """
-    orders: List[BrokerOrder] = []
-    csv_rows = [["Trading Symbol", "Exchange", "Action", "Quantity", "Order Type", "Validity", "Product"]]
+    orders: list[BrokerOrder] = []
+    csv_rows = [
+        ["Trading Symbol", "Exchange", "Action", "Quantity", "Order Type", "Validity", "Product"]
+    ]
     clipboard_lines = []
-    
+
     for o in orders_data:
         sym = o["symbol"]
         trading_sym = f"{sym}-EQ"
@@ -159,9 +187,11 @@ def generate_upstox_orders(
                 order_line=row_str,
             )
         )
-        csv_rows.append([trading_sym, "NSE", "BUY", str(shares), order_type.upper(), "DAY", "DELIVERY"])
+        csv_rows.append(
+            [trading_sym, "NSE", "BUY", str(shares), order_type.upper(), "DAY", "DELIVERY"]
+        )
         clipboard_lines.append(row_str)
-        
+
     output = io.StringIO()
     writer = csv.writer(output, lineterminator="\n")
     writer.writerows(csv_rows)
@@ -171,18 +201,29 @@ def generate_upstox_orders(
 
 
 def generate_groww_orders(
-    orders_data: List[Dict[str, Any]],
+    orders_data: list[dict[str, Any]],
     order_type: str = "MARKET",
-) -> Tuple[List[BrokerOrder], str, str]:
+) -> tuple[list[BrokerOrder], str, str]:
     """
     Groww Order Export Format:
     Symbol,Exchange,Segment,TransactionType,Quantity,OrderType,ProductType,Price
     Segment: CASH, ProductType: CNC, TransactionType: BUY.
     """
-    orders: List[BrokerOrder] = []
-    csv_rows = [["Symbol", "Exchange", "Segment", "TransactionType", "Quantity", "OrderType", "ProductType", "Price"]]
+    orders: list[BrokerOrder] = []
+    csv_rows = [
+        [
+            "Symbol",
+            "Exchange",
+            "Segment",
+            "TransactionType",
+            "Quantity",
+            "OrderType",
+            "ProductType",
+            "Price",
+        ]
+    ]
     clipboard_lines = []
-    
+
     for o in orders_data:
         sym = o["symbol"]
         shares = o["shares"]
@@ -201,9 +242,11 @@ def generate_groww_orders(
                 order_line=row_str,
             )
         )
-        csv_rows.append([sym, "NSE", "CASH", "BUY", str(shares), order_type.upper(), "CNC", str(price_val)])
+        csv_rows.append(
+            [sym, "NSE", "CASH", "BUY", str(shares), order_type.upper(), "CNC", str(price_val)]
+        )
         clipboard_lines.append(row_str)
-        
+
     output = io.StringIO()
     writer = csv.writer(output, lineterminator="\n")
     writer.writerows(csv_rows)
@@ -213,18 +256,29 @@ def generate_groww_orders(
 
 
 def generate_angelone_orders(
-    orders_data: List[Dict[str, Any]],
+    orders_data: list[dict[str, Any]],
     order_type: str = "MARKET",
-) -> Tuple[List[BrokerOrder], str, str]:
+) -> tuple[list[BrokerOrder], str, str]:
     """
     AngelOne SmartAPI / SuperApp Format:
     Symbol,Token,Exchange,TransactionType,OrderType,ProductType,Quantity,Price
     Symbol: {symbol}-EQ, ProductType: DELIVERY.
     """
-    orders: List[BrokerOrder] = []
-    csv_rows = [["Symbol", "Token", "Exchange", "TransactionType", "OrderType", "ProductType", "Quantity", "Price"]]
+    orders: list[BrokerOrder] = []
+    csv_rows = [
+        [
+            "Symbol",
+            "Token",
+            "Exchange",
+            "TransactionType",
+            "OrderType",
+            "ProductType",
+            "Quantity",
+            "Price",
+        ]
+    ]
     clipboard_lines = []
-    
+
     for o in orders_data:
         sym = o["symbol"]
         symbol_eq = f"{sym}-EQ"
@@ -245,9 +299,20 @@ def generate_angelone_orders(
                 order_line=row_str,
             )
         )
-        csv_rows.append([symbol_eq, token, "NSE", "BUY", order_type.upper(), "DELIVERY", str(shares), str(price_val)])
+        csv_rows.append(
+            [
+                symbol_eq,
+                token,
+                "NSE",
+                "BUY",
+                order_type.upper(),
+                "DELIVERY",
+                str(shares),
+                str(price_val),
+            ]
+        )
         clipboard_lines.append(row_str)
-        
+
     output = io.StringIO()
     writer = csv.writer(output, lineterminator="\n")
     writer.writerows(csv_rows)
@@ -259,8 +324,8 @@ def generate_angelone_orders(
 async def export_basket_orders(
     basket_id: str,
     request: BasketExportRequest,
-    db: Optional[aiosqlite.Connection] = None,
-) -> Optional[BasketExportResponse]:
+    db: aiosqlite.Connection | None = None,
+) -> BasketExportResponse | None:
     """
     Main broker export orchestrator:
     1. Loads basket constituents with live market prices.
@@ -270,27 +335,37 @@ async def export_basket_orders(
     basket_detail = await get_basket_by_id(basket_id, db)
     if not basket_detail:
         return None
-        
+
     orders_data, total_allocated, residual_cash, warnings = allocate_capital_to_basket(
         constituents=basket_detail.constituents,
         capital=request.capital,
         enforce_min_one_share=True,
     )
-    
+
     broker_lower = request.broker.lower().strip()
     if broker_lower == "zerodha":
-        orders, csv_content, clipboard_payload = generate_zerodha_orders(orders_data, request.order_type)
+        orders, csv_content, clipboard_payload = generate_zerodha_orders(
+            orders_data, request.order_type
+        )
     elif broker_lower == "upstox":
-        orders, csv_content, clipboard_payload = generate_upstox_orders(orders_data, request.order_type)
+        orders, csv_content, clipboard_payload = generate_upstox_orders(
+            orders_data, request.order_type
+        )
     elif broker_lower == "groww":
-        orders, csv_content, clipboard_payload = generate_groww_orders(orders_data, request.order_type)
+        orders, csv_content, clipboard_payload = generate_groww_orders(
+            orders_data, request.order_type
+        )
     elif broker_lower in ("angelone", "angel", "angel_one"):
-        orders, csv_content, clipboard_payload = generate_angelone_orders(orders_data, request.order_type)
+        orders, csv_content, clipboard_payload = generate_angelone_orders(
+            orders_data, request.order_type
+        )
     else:
         # Default to Zerodha format
-        orders, csv_content, clipboard_payload = generate_zerodha_orders(orders_data, request.order_type)
+        orders, csv_content, clipboard_payload = generate_zerodha_orders(
+            orders_data, request.order_type
+        )
         warnings.append(f"Unrecognized broker '{request.broker}'. Defaulted to Zerodha CNC format.")
-        
+
     return BasketExportResponse(
         basket_id=basket_detail.id,
         basket_name=basket_detail.name,

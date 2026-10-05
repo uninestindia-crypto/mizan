@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Monitor,
   Moon,
+  Scale,
   Search,
   Settings as SettingsIcon,
   ShieldCheck,
@@ -58,6 +59,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <Sidebar onSearch={() => setPaletteOpen(true)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileBar onSearch={() => setPaletteOpen(true)} />
+        <TopHeader onSearch={() => setPaletteOpen(true)} />
         <UpdateNotice />
         <main id="main" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto outline-none">
           <div className="q-fade-in mx-auto w-full max-w-[1320px] px-6 py-7 lg:px-10" key={location.pathname}>
@@ -197,8 +199,139 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
   );
 }
 
+function TopHeader({ onSearch }: { onSearch: () => void }) {
+  const status = useStatus();
+  const updateSettings = useUpdateSettings();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const isShariahActive = location.pathname.startsWith("/shariah");
+  const shariahModeEnabled = Boolean(status.data?.settings?.shariah_mode);
+
+  const handleSwitchMode = (mode: "quant" | "shariah") => {
+    if (mode === "shariah") {
+      if (!shariahModeEnabled) {
+        updateSettings.mutate({ shariah_mode: true });
+      }
+      if (!isShariahActive) {
+        void navigate("/shariah");
+      }
+    } else {
+      if (isShariahActive) {
+        void navigate("/");
+      }
+    }
+  };
+
+  const latest = status.data?.index.latest_session;
+
+  return (
+    <header className="hidden h-14 shrink-0 items-center justify-between border-b border-line bg-surface/90 px-6 backdrop-blur-[6px] md:flex">
+      {/* 1-Click Executive Mode Switcher */}
+      <div className="flex items-center gap-3">
+        <div
+          role="radiogroup"
+          aria-label="Application Mode"
+          className="flex rounded-[var(--radius-control)] border border-line bg-surface-2 p-0.5"
+        >
+          <button
+            type="button"
+            role="radio"
+            aria-checked={!isShariahActive}
+            onClick={() => handleSwitchMode("quant")}
+            className={cx(
+              "flex h-8 items-center gap-2 rounded-[7px] px-3.5 text-[13px] font-medium transition-all",
+              !isShariahActive
+                ? "bg-surface text-ink shadow-sm"
+                : "text-ink-3 hover:text-ink",
+            )}
+          >
+            <LayoutDashboard className="size-4" aria-hidden />
+            <span>Institutional QuantOS</span>
+          </button>
+
+          <button
+            type="button"
+            role="radio"
+            aria-checked={isShariahActive}
+            onClick={() => handleSwitchMode("shariah")}
+            className={cx(
+              "flex h-8 items-center gap-2 rounded-[7px] px-3.5 text-[13px] font-medium transition-all",
+              isShariahActive
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "text-ink-3 hover:text-ink",
+            )}
+          >
+            <Scale className="size-4" aria-hidden />
+            <span>Mizan Shariah</span>
+            {!shariahModeEnabled && (
+              <span className="ml-1 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-300">
+                1-Click
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Right Controls: Market Status Badge + Search Trigger */}
+      <div className="flex items-center gap-3">
+        {status.data && (
+          <div className="flex items-center gap-2 rounded-lg border border-line/60 bg-surface-2/60 px-2.5 py-1 text-[12px] text-ink-3">
+            <span
+              className={cx(
+                "size-2 rounded-full",
+                status.data.download.state === "RUNNING" || status.data.index.job.state === "RUNNING"
+                  ? "bg-amber-500 animate-pulse"
+                  : status.data.index.ready
+                    ? "bg-emerald-500"
+                    : "bg-amber-500",
+              )}
+            />
+            <span>
+              {status.data.download.state === "RUNNING"
+                ? `Syncing (${status.data.download.done}/${status.data.download.total})`
+                : status.data.index.job.state === "RUNNING"
+                  ? "Indexing NSE..."
+                  : status.data.index.ready
+                    ? `NSE: ${latest ? date(latest) : "Ready"}`
+                    : "NSE: Local Cache"}
+            </span>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={onSearch}
+          className="flex h-8 items-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 text-[12.5px] text-ink-3 transition-colors hover:border-line-strong hover:text-ink"
+        >
+          <Search className="size-3.5" aria-hidden />
+          <span>Search stocks</span>
+          <kbd className="rounded border border-line bg-surface px-1.5 font-sans text-[10px] text-ink-3">
+            Ctrl K
+          </kbd>
+        </button>
+      </div>
+    </header>
+  );
+}
+
 function MobileBar({ onSearch }: { onSearch: () => void }) {
   const status = useStatus();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const updateSettings = useUpdateSettings();
+  const isShariah = location.pathname.startsWith("/shariah");
+  const shariahModeEnabled = Boolean(status.data?.settings?.shariah_mode);
+
+  const toggleMode = () => {
+    if (isShariah) {
+      void navigate("/");
+    } else {
+      if (!shariahModeEnabled) updateSettings.mutate({ shariah_mode: true });
+      void navigate("/shariah");
+    }
+  };
+
   const navItems = status.data?.settings?.shariah_mode
     ? [
         ...NAV.slice(0, 2),
@@ -215,9 +348,23 @@ function MobileBar({ onSearch }: { onSearch: () => void }) {
           <Logo className="size-7" />
           <span className="text-[15px] font-semibold">QuantOS</span>
         </div>
-        <button type="button" onClick={onSearch} aria-label="Search stocks" className="rounded-lg p-2 text-ink-2 hover:bg-surface-2">
-          <Search className="size-5" aria-hidden />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleMode}
+            aria-label="Switch Mode"
+            className={cx(
+              "flex h-7 items-center gap-1 rounded-full px-2.5 text-[11.5px] font-medium transition-colors",
+              isShariah ? "bg-emerald-600 text-white" : "border border-line bg-surface-2 text-ink-2",
+            )}
+          >
+            {isShariah ? <Scale className="size-3" /> : <LayoutDashboard className="size-3" />}
+            <span>{isShariah ? "Shariah" : "Quant"}</span>
+          </button>
+          <button type="button" onClick={onSearch} aria-label="Search stocks" className="rounded-lg p-2 text-ink-2 hover:bg-surface-2">
+            <Search className="size-5" aria-hidden />
+          </button>
+        </div>
       </div>
       <nav aria-label="Main" className="flex gap-1 overflow-x-auto px-3 pb-2">
         {navItems.map(({ to, label, icon: Icon, end }) => (

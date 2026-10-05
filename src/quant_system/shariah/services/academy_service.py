@@ -1,12 +1,11 @@
 """Service providing the Wealth Academy Curriculum & Non-Margin Demat Onboarding Guides (R6)."""
 
-from typing import List, Optional
 from quant_system.shariah.schemas.academy import (
     AcademyModuleDetail,
-    QuizQuestion,
     BrokerDematGuide,
-    DematMandatoryRule,
     DematGuideResponse,
+    DematMandatoryRule,
+    QuizQuestion,
 )
 
 # ---------------------------------------------------------------------------
@@ -332,7 +331,7 @@ Dedicate a percentage of long-term investment gains to establishing perpetual en
     ],
 )
 
-ALL_MODULES: List[AcademyModuleDetail] = [MODULE_1, MODULE_2, MODULE_3, MODULE_4]
+ALL_MODULES: list[AcademyModuleDetail] = [MODULE_1, MODULE_2, MODULE_3, MODULE_4]
 
 # Module lookup map for fast O(1) slug and alias resolution
 _MODULE_MAP = {
@@ -359,7 +358,7 @@ _MODULE_MAP = {
 # 2. Universal Demat Rules & 4-Broker Onboarding Guides
 # ---------------------------------------------------------------------------
 
-UNIVERSAL_DEMAT_RULES: List[DematMandatoryRule] = [
+UNIVERSAL_DEMAT_RULES: list[DematMandatoryRule] = [
     DematMandatoryRule(
         rule_id="RULE-1",
         rule_text="Open standard Equity Cash account only",
@@ -529,12 +528,13 @@ _BROKER_MAP = {
 # 3. Service Query Functions
 # ---------------------------------------------------------------------------
 
-def get_all_modules() -> List[AcademyModuleDetail]:
+
+def get_all_modules() -> list[AcademyModuleDetail]:
     """Return all 4 core interactive educational modules."""
     return ALL_MODULES
 
 
-def get_module_by_id(module_id: str) -> Optional[AcademyModuleDetail]:
+def get_module_by_id(module_id: str) -> AcademyModuleDetail | None:
     """Return a single educational module by unique slug ID or alias."""
     clean_id = module_id.lower().strip()
     if clean_id in _MODULE_MAP:
@@ -553,7 +553,7 @@ def get_demat_onboarding_guide() -> DematGuideResponse:
     )
 
 
-def get_broker_guide(broker_id: str) -> Optional[BrokerDematGuide]:
+def get_broker_guide(broker_id: str) -> BrokerDematGuide | None:
     """Return onboarding guide for a specific Indian broker."""
     clean_id = broker_id.lower().strip()
     if clean_id in _BROKER_MAP:

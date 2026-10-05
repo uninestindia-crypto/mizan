@@ -144,6 +144,15 @@ def run_prerequisite_checks() -> tuple[bool, list[str]]:
             f"{RuntimeDataSource.SYNTHETIC} generated data, not real market data"
         )
 
+    # 7. Shariah Compliance Engine & Knowledge Base Verification
+    shariah_db = app_root / "data" / "shariah" / "halal_stocks.db"
+    if not shariah_db.exists():
+        shariah_db = Path(__file__).parent / "data" / "shariah" / "halal_stocks.db"
+    if shariah_db.exists():
+        logs.append("[PASS] Mizan Shariah Compliance Database & Audited Equities Located OK")
+    else:
+        logs.append("[INFO] Mizan Shariah Database will initialize on first compliance scan")
+
     return all_passed, logs
 
 

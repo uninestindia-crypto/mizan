@@ -1,7 +1,7 @@
 """FastAPI endpoints for Halal Wealth Academy Curriculum & Demat Guides (R6)."""
 
-from typing import List
 from fastapi import APIRouter, HTTPException, Path
+
 from quant_system.shariah.schemas.academy import (
     AcademyModuleDetail,
     BrokerDematGuide,
@@ -9,9 +9,9 @@ from quant_system.shariah.schemas.academy import (
 )
 from quant_system.shariah.services.academy_service import (
     get_all_modules,
-    get_module_by_id,
-    get_demat_onboarding_guide,
     get_broker_guide,
+    get_demat_onboarding_guide,
+    get_module_by_id,
 )
 
 router = APIRouter(prefix="/academy", tags=["Halal Wealth Academy & Demat Guides"])
@@ -19,11 +19,11 @@ router = APIRouter(prefix="/academy", tags=["Halal Wealth Academy & Demat Guides
 
 @router.get(
     "/modules",
-    response_model=List[AcademyModuleDetail],
+    response_model=list[AcademyModuleDetail],
     summary="List Wealth Academy Curriculum Modules",
     description="Returns the 4 core interactive educational modules with full lesson markdown, takeaways, and quiz questions.",
 )
-async def list_modules():
+async def list_modules() -> list[AcademyModuleDetail]:
     return get_all_modules()
 
 
@@ -35,7 +35,7 @@ async def list_modules():
 )
 async def get_module(
     module_id: str = Path(..., description="Unique module slug (e.g. stewardship-and-inflation)"),
-):
+) -> AcademyModuleDetail:
     module = get_module_by_id(module_id)
     if not module:
         raise HTTPException(
@@ -51,7 +51,7 @@ async def get_module(
     summary="Get Non-Margin Demat Onboarding Guides",
     description="Returns universal Shariah Demat rules and dedicated setup walkthroughs for Zerodha, Groww, Upstox, and AngelOne.",
 )
-async def get_demat_guide():
+async def get_demat_guide() -> DematGuideResponse:
     return get_demat_onboarding_guide()
 
 
@@ -62,8 +62,10 @@ async def get_demat_guide():
     description="Returns step-by-step setup, MTF deactivation instructions, and SLBM checks for a specific broker.",
 )
 async def get_single_broker_guide(
-    broker_id: str = Path(..., description="Broker identifier: zerodha, groww, upstox, or angelone"),
-):
+    broker_id: str = Path(
+        ..., description="Broker identifier: zerodha, groww, upstox, or angelone"
+    ),
+) -> BrokerDematGuide:
     guide = get_broker_guide(broker_id)
     if not guide:
         raise HTTPException(

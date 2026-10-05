@@ -1,16 +1,16 @@
 """Pydantic schemas for the Equity Zakat Calculation Engine (R6)."""
 
-from typing import List, Optional
-from enum import Enum
+from enum import StrEnum
+
 from pydantic import BaseModel, Field
 
 
-class ZakatMethod(str, Enum):
+class ZakatMethod(StrEnum):
     ACTIVE = "active"
     LONG_TERM = "long_term"
 
 
-class ZakatCalendar(str, Enum):
+class ZakatCalendar(StrEnum):
     LUNAR = "lunar"
     SOLAR = "solar"
 
@@ -18,11 +18,11 @@ class ZakatCalendar(str, Enum):
 class ZakatHoldingItem(BaseModel):
     ticker: str = Field(..., description="Equity ticker (e.g. TCS.NS or TCS)")
     shares: int = Field(..., gt=0, description="Number of shares held")
-    znwa_per_share: Optional[float] = Field(
+    znwa_per_share: float | None = Field(
         default=None,
         description="Zakatable Net Working Assets per share (INR). If omitted, looked up from database.",
     )
-    current_price: Optional[float] = Field(
+    current_price: float | None = Field(
         default=None,
         description="Current price per share (INR). If omitted, looked up from database.",
     )
@@ -30,11 +30,11 @@ class ZakatHoldingItem(BaseModel):
 
 class ZakatHoldingBreakdown(BaseModel):
     ticker: str
-    symbol: Optional[str] = None
-    company_name: Optional[str] = None
+    symbol: str | None = None
+    company_name: str | None = None
     shares: int
-    current_price: Optional[float] = None
-    market_value: Optional[float] = None
+    current_price: float | None = None
+    market_value: float | None = None
     znwa_per_share: float
     zakatable_amount: float
     method_applied: str
@@ -45,7 +45,7 @@ class ZakatCalculateRequest(BaseModel):
         default="active",
         description="'active' (100% NLV) or 'long_term' (ZNWA per share)",
     )
-    portfolio_value: Optional[float] = Field(
+    portfolio_value: float | None = Field(
         default=0.0,
         ge=0.0,
         description="Total portfolio market value in INR (used for active method or computed from holdings)",
@@ -55,7 +55,7 @@ class ZakatCalculateRequest(BaseModel):
         ge=0.0,
         description="Uninvested cash / bank balance in INR",
     )
-    holdings: Optional[List[ZakatHoldingItem]] = Field(
+    holdings: list[ZakatHoldingItem] | None = Field(
         default_factory=list,
         description="List of portfolio stock holdings",
     )
@@ -63,7 +63,7 @@ class ZakatCalculateRequest(BaseModel):
         default="lunar",
         description="'lunar' (2.500%) or 'solar' (2.577%)",
     )
-    custom_nisab_inr: Optional[float] = Field(
+    custom_nisab_inr: float | None = Field(
         default=None,
         description="Optional custom Nisab threshold (defaults to Silver Nisab ₹53,550.00)",
     )
@@ -80,6 +80,6 @@ class ZakatCalculateResponse(BaseModel):
     nisab_threshold: float
     is_obligatory: bool
     zakat_due: float
-    breakdown: List[ZakatHoldingBreakdown] = Field(default_factory=list)
-    exemption_reason: Optional[str] = None
+    breakdown: list[ZakatHoldingBreakdown] = Field(default_factory=list)
+    exemption_reason: str | None = None
     method_notes: str

@@ -1,27 +1,25 @@
-import os
-import re
 import math
 import random
+import re
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import Any
 
 import pytest
-from tests.shariah.conftest import DomainOracle
+
 from quant_system.shariah.services.broker_export_service import (
-    generate_zerodha_orders,
-    generate_upstox_orders,
-    generate_groww_orders,
     generate_angelone_orders,
-    allocate_capital_to_basket,
+    generate_groww_orders,
+    generate_upstox_orders,
+    generate_zerodha_orders,
 )
-from quant_system.shariah.schemas.basket import BasketConstituent
+from tests.shariah.conftest import DomainOracle
 
 CLIENT_DIR = Path(__file__).resolve().parent.parent.parent / "client"
 CLIENT_LIB = CLIENT_DIR / "lib"
 CLIENT_TEST = CLIENT_DIR / "test"
 
 
-def get_all_dart_files() -> List[Path]:
+def get_all_dart_files() -> list[Path]:
     """Retrieve all .dart files across client/lib and client/test."""
     files = list(CLIENT_LIB.rglob("*.dart")) + list(CLIENT_TEST.rglob("*.dart"))
     return sorted(files)
@@ -31,7 +29,8 @@ def get_all_dart_files() -> List[Path]:
 # Vector 1: AST & Delimiter Balance
 # ---------------------------------------------------------------------------
 
-def check_delimiter_balance(code: str) -> Tuple[bool, str]:
+
+def check_delimiter_balance(code: str) -> tuple[bool, str]:
     """
     Robust tokenizer verifying delimiter balance (braces, brackets, parentheses, string literals)
     while properly handling comments (single-line // and multi-line /* */),
@@ -40,7 +39,7 @@ def check_delimiter_balance(code: str) -> Tuple[bool, str]:
     stack = []
     i = 0
     n = len(code)
-    
+
     in_single_line_comment = False
     in_multi_line_comment = False
     in_string = None  # "'", '"', "'''", '"""'
@@ -49,7 +48,7 @@ def check_delimiter_balance(code: str) -> Tuple[bool, str]:
     while i < n:
         ch = code[i]
         next_ch = code[i + 1] if i + 1 < n else ""
-        next_two = code[i + 1:i + 3] if i + 2 < n else ""
+        next_two = code[i + 1 : i + 3] if i + 2 < n else ""
 
         # Handle comments when not inside a string
         if not in_string:
@@ -80,9 +79,9 @@ def check_delimiter_balance(code: str) -> Tuple[bool, str]:
             if not is_raw_string and ch == "\\":
                 i += 2  # skip escaped character
                 continue
-                
+
             if in_string in ("'''", '"""'):
-                if code[i:i + 3] == in_string:
+                if code[i : i + 3] == in_string:
                     in_string = None
                     is_raw_string = False
                     i += 3
@@ -102,7 +101,7 @@ def check_delimiter_balance(code: str) -> Tuple[bool, str]:
                 i += 1
                 ch = next_ch
                 next_ch = code[i + 1] if i + 1 < n else ""
-                next_two = code[i + 1:i + 3] if i + 2 < n else ""
+                next_two = code[i + 1 : i + 3] if i + 2 < n else ""
 
             # Check for triple quotes
             if ch in ("'", '"') and next_two == ch * 2:
@@ -123,7 +122,10 @@ def check_delimiter_balance(code: str) -> Tuple[bool, str]:
             opening, pos = stack.pop()
             expected = {"(": ")", "{": "}", "[": "]"}[opening]
             if ch != expected:
-                return False, f"Mismatched delimiter: expected '{expected}' for '{opening}' at {pos}, got '{ch}' at {i}"
+                return (
+                    False,
+                    f"Mismatched delimiter: expected '{expected}' for '{opening}' at {pos}, got '{ch}' at {i}",
+                )
 
         i += 1
 
@@ -145,7 +147,9 @@ def test_vector1_all_dart_files_delimiter_balance():
 
     for file_path in files:
         assert file_path.exists()
-        assert file_path.stat().st_size > 50, f"File {file_path.name} is unexpectedly empty or tiny."
+        assert file_path.stat().st_size > 50, (
+            f"File {file_path.name} is unexpectedly empty or tiny."
+        )
 
         content = file_path.read_text(encoding="utf-8")
         balanced, message = check_delimiter_balance(content)
@@ -195,6 +199,7 @@ def test_vector1_file_inventory_completeness():
 # Vector 2: Symbol & Package Resolution
 # ---------------------------------------------------------------------------
 
+
 def test_vector2_package_imports_resolution():
     """Verify that all package:halal_investment_client/... imports resolve directly to valid Dart files."""
     files = get_all_dart_files()
@@ -217,22 +222,39 @@ def test_vector2_package_imports_resolution():
                 assert target_file.exists(), (
                     f"In {file_path.name}: relative import '{imp}' fails to resolve to '{target_file}'"
                 )
-            elif imp.startswith("package:flutter/") or imp.startswith("package:flutter_test/") or imp.startswith("package:http/") or imp.startswith("package:intl/"):
+            elif (
+                imp.startswith("package:flutter/")
+                or imp.startswith("package:flutter_test/")
+                or imp.startswith("package:http/")
+                or imp.startswith("package:intl/")
+            ):
                 # Standard authorized dependencies
                 pass
             elif imp.startswith("dart:"):
                 # Dart core
                 pass
             else:
-                pytest.fail(f"Unrecognized or unauthorized package import '{imp}' in {file_path.name}")
+                pytest.fail(
+                    f"Unrecognized or unauthorized package import '{imp}' in {file_path.name}"
+                )
 
 
 def test_vector2_model_class_definitions():
     """Verify that all core domain models and DTOs exist in client/lib/models/."""
     expected_classes = {
         "stock_model.dart": ["ComplianceStatus", "StockSummary"],
-        "screening_result.dart": ["RatioMeterData", "StandardEvaluationData", "AuditEvidenceLineData", "ShariahAuditDetail"],
-        "basket_model.dart": ["BasketConstituentModel", "BasketModel", "BrokerOrderModel", "BasketExportResult"],
+        "screening_result.dart": [
+            "RatioMeterData",
+            "StandardEvaluationData",
+            "AuditEvidenceLineData",
+            "ShariahAuditDetail",
+        ],
+        "basket_model.dart": [
+            "BasketConstituentModel",
+            "BasketModel",
+            "BrokerOrderModel",
+            "BasketExportResult",
+        ],
         "purification_item.dart": ["PurificationCalculateResult", "PurificationLedgerEntryModel"],
         "zakat_model.dart": ["ZakatHoldingBreakdownModel", "ZakatCalculationResult"],
     }
@@ -284,6 +306,7 @@ def test_vector2_search_service_trie_interface():
 # Vector 3: Responsive Layout & Zero RenderFlex Overflow Audit
 # ---------------------------------------------------------------------------
 
+
 def test_vector3_adaptive_scaffold_responsive_breakpoint():
     """Verify AdaptiveScaffold switches at 600dp breakpoint with 1440dp constraint."""
     scaffold_path = CLIENT_LIB / "widgets" / "adaptive_scaffold.dart"
@@ -313,7 +336,9 @@ def test_vector3_screens_overflow_prevention_guards():
         content = file_path.read_text(encoding="utf-8")
 
         # Must use BouncingScrollPhysics
-        assert "BouncingScrollPhysics" in content, f"{screen_file} does not use BouncingScrollPhysics"
+        assert "BouncingScrollPhysics" in content, (
+            f"{screen_file} does not use BouncingScrollPhysics"
+        )
 
         # Check for Scrollable wrappers
         has_scroll_view = "SingleChildScrollView" in content or "ListView" in content
@@ -346,6 +371,7 @@ def test_vector3_screen_matrix_test_viewports_coverage():
 # Vector 4: Mathematical & Domain Formula Parity
 # ---------------------------------------------------------------------------
 
+
 def dart_calculate_purification_ratio(interest: float, prohibited: float, total: float) -> float:
     """Python model of client/test/unit/purification_test.dart PurificationLogic.calculateRatio."""
     if total <= 0.0:
@@ -358,7 +384,9 @@ def dart_calculate_purification_payable(gross: float, ratio: float) -> float:
     return float(f"{(gross * ratio):.2f}")
 
 
-def dart_calculate_active_zakat(portfolio_value: float, cash_balance: float, calendar: str = "lunar") -> Dict[str, Any]:
+def dart_calculate_active_zakat(
+    portfolio_value: float, cash_balance: float, calendar: str = "lunar"
+) -> dict[str, Any]:
     """Python model of client/test/unit/zakat_calculator_test.dart ZakatCalculatorLogic.calculateActiveTrader."""
     rate = 0.025770 if calendar.lower() == "solar" else 0.025000
     zakatable_base = float(f"{(portfolio_value + cash_balance):.2f}")
@@ -372,7 +400,9 @@ def dart_calculate_active_zakat(portfolio_value: float, cash_balance: float, cal
     }
 
 
-def dart_calculate_long_term_zakat(holdings: List[Dict[str, Any]], cash_balance: float, calendar: str = "lunar") -> Dict[str, Any]:
+def dart_calculate_long_term_zakat(
+    holdings: list[dict[str, Any]], cash_balance: float, calendar: str = "lunar"
+) -> dict[str, Any]:
     """Python model of client/test/unit/zakat_calculator_test.dart ZakatCalculatorLogic.calculateLongTermInvestor."""
     rate = 0.025770 if calendar.lower() == "solar" else 0.025000
     holdings_base = 0.0
@@ -427,11 +457,13 @@ def test_vector4_long_term_zakat_monte_carlo_parity():
         for i in range(random.randint(1, 10)):
             znwa = round(random.uniform(-100.0, 500.0), 2)  # negative and positive
             shares = random.randint(10, 5000)
-            holdings.append({
-                "ticker": f"SYM_{i}.NS",
-                "shares": shares,
-                "znwa_per_share": znwa,
-            })
+            holdings.append(
+                {
+                    "ticker": f"SYM_{i}.NS",
+                    "shares": shares,
+                    "znwa_per_share": znwa,
+                }
+            )
         cash = round(random.uniform(0.0, 200000.0), 2)
         cal = random.choice(["lunar", "solar"])
 
@@ -467,7 +499,7 @@ def test_vector4_purification_ratio_and_payable_parity():
         (120.0, 30.0, 25000.0, 1000.0),
         (0.0, 0.0, 10000.0, 5000.0),
         (50.0, 0.0, 100000.0, 2500.0),
-        (10.0, 20.0, 0.0, 1000.0),      # zero revenue edge case
+        (10.0, 20.0, 0.0, 1000.0),  # zero revenue edge case
         (100.0, 200.0, 54000.0, 10000.0),
     ]
 
@@ -484,6 +516,7 @@ def test_vector4_purification_ratio_and_payable_parity():
 # ---------------------------------------------------------------------------
 # Vector 5: 1-Click Broker CSV Specifications
 # ---------------------------------------------------------------------------
+
 
 def test_vector5_client_baskets_screen_broker_options():
     """Verify BasketsScreen exposes exact choice chips for all 4 Indian discount brokers."""
@@ -523,7 +556,9 @@ def test_vector5_broker_export_formats_strictness():
 
     # 1. Zerodha Kite: Product strictly CNC
     _, z_csv, z_clip = generate_zerodha_orders(sample_orders, "MARKET")
-    assert "Instrument,Exchange,Transaction,Quantity,Order Type,Product,Price,Trigger Price" in z_csv
+    assert (
+        "Instrument,Exchange,Transaction,Quantity,Order Type,Product,Price,Trigger Price" in z_csv
+    )
     assert "TCS,NSE,BUY,10,MARKET,CNC,0,0" in z_clip
     assert "INFY,NSE,BUY,25,MARKET,CNC,0,0" in z_clip
 

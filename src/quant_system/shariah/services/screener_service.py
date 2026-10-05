@@ -1,12 +1,11 @@
-from typing import Dict, Any, Tuple, List, Optional
+from typing import Any
+
 from quant_system.shariah.core.config import settings
 from quant_system.shariah.schemas.company import ComplianceStatus, ScreeningStandard
 from quant_system.shariah.schemas.screening import (
+    AuditEvidenceLine,
     RatioMeter,
     StandardEvaluation,
-    AuditEvidenceLine,
-    ShariahAuditResponse,
-    ScreeningResponse,
 )
 
 PROHIBITED_SECTORS = {
@@ -22,33 +21,71 @@ PROHIBITED_SECTORS = {
 }
 
 
-def check_sector_compliance(sector: str, industry: str, business_summary: str = "") -> Tuple[bool, Optional[str]]:
+def check_sector_compliance(
+    sector: str, industry: str, business_summary: str = ""
+) -> tuple[bool, str | None]:
     """Determine whether a company's business activity is permissible under Islamic law."""
     sec_lower = sector.strip().lower()
     ind_lower = industry.strip().lower()
     sum_lower = business_summary.strip().lower()
     full_text = f"{sec_lower} {ind_lower} {sum_lower}"
-    
+
     # IT and software vendors providing enterprise tech are permissible
-    if sec_lower in ["information technology", "it"] and not any(k in full_text for k in ["casino", "gambling", "betting"]):
+    if sec_lower in ["information technology", "it"] and not any(
+        k in full_text for k in ["casino", "gambling", "betting"]
+    ):
         return True, None
 
     # Check conventional financial services exclusions (Commercial Banking, NBFCs, Insurance)
     if sec_lower in ["financial services", "banking", "insurance"]:
         return False, "Conventional banking and interest lending (Riba)"
-    if any(k in full_text for k in ["commercial bank", "retail lending", "housing finance", "nbfc - consumer lending", "life insurance", "general insurance"]):
+    if any(
+        k in full_text
+        for k in [
+            "commercial bank",
+            "retail lending",
+            "housing finance",
+            "nbfc - consumer lending",
+            "life insurance",
+            "general insurance",
+        ]
+    ):
         return False, "Conventional banking and interest lending (Riba)"
 
     # Check alcohol exclusions
-    if any(k in full_text for k in ["distilleries, breweries", "alcoholic beverages", "liquor", "spirits", "brewery", "distillery", "beer", "imfl"]):
+    if any(
+        k in full_text
+        for k in [
+            "distilleries, breweries",
+            "alcoholic beverages",
+            "liquor",
+            "spirits",
+            "brewery",
+            "distillery",
+            "beer",
+            "imfl",
+        ]
+    ):
         return False, "Commercial manufacturing and distribution of liquor and beer (Khamr)"
 
     # Check tobacco exclusions
-    if any(k in full_text for k in ["cigarettes, tobacco", "cigarette", "tobacco", "cigars", "gutkha"]):
+    if any(
+        k in full_text for k in ["cigarettes, tobacco", "cigarette", "tobacco", "cigars", "gutkha"]
+    ):
         return False, "Manufacturing or distribution of tobacco and nicotine products (Dharar)"
 
     # Check gambling / casino exclusions
-    if any(k in full_text for k in ["casinos, gaming", "casino", "gambling", "lottery", "real-money gaming", "real money gaming"]):
+    if any(
+        k in full_text
+        for k in [
+            "casinos, gaming",
+            "casino",
+            "gambling",
+            "lottery",
+            "real-money gaming",
+            "real money gaming",
+        ]
+    ):
         return False, "Operation of gambling or gaming ventures (Maysir/Qimar)"
 
     # Check prohibited media (unscreened commercial film exhibition)
@@ -66,22 +103,22 @@ def evaluate_ratio(
     warning_threshold: float,
     numerator_label: str,
     denominator_label: str,
-    note_reference: Optional[str] = None,
+    note_reference: str | None = None,
 ) -> RatioMeter:
     """Evaluate a single financial ratio against strict threshold and warning zone."""
     if denominator <= 0:
         actual_val = 1.0 if numerator > 0 else 0.0
     else:
         actual_val = round(numerator / denominator, 6)
-        
+
     actual_pct = round(actual_val * 100.0, 4)
     threshold_pct = round(threshold * 100.0, 2)
-    
+
     # Strict inequality check: strictly < threshold
     is_compliant = actual_val < threshold
     # Warning zone: [warning_threshold, threshold)
     is_warning = (actual_val >= warning_threshold) and (actual_val < threshold)
-    
+
     return RatioMeter(
         metric_name=metric_name,
         actual_value=actual_val,
@@ -97,26 +134,28 @@ def evaluate_ratio(
     )
 
 
-def evaluate_company_shariah(company: Dict[str, Any]) -> Tuple[StandardEvaluation, StandardEvaluation, bool, Optional[str]]:
+def evaluate_company_shariah(
+    company: dict[str, Any],
+) -> tuple[StandardEvaluation, StandardEvaluation, bool, str | None]:
     """Perform deterministic dual-standard (AAOIFI vs TASIS) screening evaluation."""
     sector_compliant = bool(company.get("sector_compliant", True))
     sector_failure_reason = company.get("sector_failure_reason")
-    
+
     # Balance sheet & P&L metrics
     total_debt = float(company.get("total_debt", 0.0))
     cash_inv = float(company.get("total_cash_and_investments", 0.0))
     receivables = float(company.get("total_receivables", 0.0))
     total_assets = float(company.get("total_assets", 0.0))
     avg_36m_mcap = float(company.get("avg_36m_market_cap", 0.0))
-    
+
     impermissible_inc = float(company.get("total_impermissible_income", 0.0))
     total_rev = float(company.get("total_revenue", 0.0))
-    
+
     debt_note = company.get("debt_note_ref", "Note 18 - Borrowings")
     cash_note = company.get("cash_note_ref", "Note 12 - Cash & Investments")
     rec_note = company.get("rec_note_ref", "Note 11 - Trade Receivables")
     inc_note = company.get("income_note_ref", "Note 24 - Other Income")
-    
+
     # ---------------- AAOIFI EVALUATION (Denominator: 36m Avg Mcap) ----------------
     aaoifi_debt = evaluate_ratio(
         metric_name="Debt to Market Capitalization",
@@ -158,30 +197,48 @@ def evaluate_company_shariah(company: Dict[str, Any]) -> Tuple[StandardEvaluatio
         denominator_label="Total Revenue (Operations + Other)",
         note_reference=inc_note,
     )
-    
+
     if not sector_compliant:
         aaoifi_status = ComplianceStatus.NON_COMPLIANT
         aaoifi_summary = f"Disqualified: Sector failure ({sector_failure_reason})"
-    elif not (aaoifi_debt.is_compliant and aaoifi_cash.is_compliant and aaoifi_rec.is_compliant and aaoifi_imp.is_compliant):
+    elif not (
+        aaoifi_debt.is_compliant
+        and aaoifi_cash.is_compliant
+        and aaoifi_rec.is_compliant
+        and aaoifi_imp.is_compliant
+    ):
         aaoifi_status = ComplianceStatus.NON_COMPLIANT
         failures = []
-        if not aaoifi_debt.is_compliant: failures.append(f"Debt ({aaoifi_debt.actual_pct}% >= 33%)")
-        if not aaoifi_cash.is_compliant: failures.append(f"Cash ({aaoifi_cash.actual_pct}% >= 33%)")
-        if not aaoifi_rec.is_compliant: failures.append(f"Receivables ({aaoifi_rec.actual_pct}% >= 33%)")
-        if not aaoifi_imp.is_compliant: failures.append(f"Impermissible Rev ({aaoifi_imp.actual_pct}% >= 5%)")
+        if not aaoifi_debt.is_compliant:
+            failures.append(f"Debt ({aaoifi_debt.actual_pct}% >= 33%)")
+        if not aaoifi_cash.is_compliant:
+            failures.append(f"Cash ({aaoifi_cash.actual_pct}% >= 33%)")
+        if not aaoifi_rec.is_compliant:
+            failures.append(f"Receivables ({aaoifi_rec.actual_pct}% >= 33%)")
+        if not aaoifi_imp.is_compliant:
+            failures.append(f"Impermissible Rev ({aaoifi_imp.actual_pct}% >= 5%)")
         aaoifi_summary = f"Non-Compliant: Breached threshold on {', '.join(failures)}"
-    elif aaoifi_debt.is_warning or aaoifi_cash.is_warning or aaoifi_rec.is_warning or aaoifi_imp.is_warning:
+    elif (
+        aaoifi_debt.is_warning
+        or aaoifi_cash.is_warning
+        or aaoifi_rec.is_warning
+        or aaoifi_imp.is_warning
+    ):
         aaoifi_status = ComplianceStatus.QUESTIONABLE
         warnings = []
-        if aaoifi_debt.is_warning: warnings.append(f"Debt in warning band ({aaoifi_debt.actual_pct}%)")
-        if aaoifi_cash.is_warning: warnings.append(f"Cash in warning band ({aaoifi_cash.actual_pct}%)")
-        if aaoifi_rec.is_warning: warnings.append(f"Receivables in warning band ({aaoifi_rec.actual_pct}%)")
-        if aaoifi_imp.is_warning: warnings.append(f"Impermissible Rev in warning band ({aaoifi_imp.actual_pct}%)")
+        if aaoifi_debt.is_warning:
+            warnings.append(f"Debt in warning band ({aaoifi_debt.actual_pct}%)")
+        if aaoifi_cash.is_warning:
+            warnings.append(f"Cash in warning band ({aaoifi_cash.actual_pct}%)")
+        if aaoifi_rec.is_warning:
+            warnings.append(f"Receivables in warning band ({aaoifi_rec.actual_pct}%)")
+        if aaoifi_imp.is_warning:
+            warnings.append(f"Impermissible Rev in warning band ({aaoifi_imp.actual_pct}%)")
         aaoifi_summary = f"Questionable / Mushbooh: Approaching threshold ({', '.join(warnings)})"
     else:
         aaoifi_status = ComplianceStatus.COMPLIANT
         aaoifi_summary = "Fully Compliant with AAOIFI Standard No. 21 criteria."
-        
+
     aaoifi_eval = StandardEvaluation(
         standard=ScreeningStandard.AAOIFI,
         status=aaoifi_status,
@@ -192,7 +249,7 @@ def evaluate_company_shariah(company: Dict[str, Any]) -> Tuple[StandardEvaluatio
         impermissible_income_ratio=aaoifi_imp,
         summary=aaoifi_summary,
     )
-    
+
     # ---------------- TASIS EVALUATION (Denominator: Total Assets) ----------------
     tasis_debt = evaluate_ratio(
         metric_name="Debt to Total Assets",
@@ -234,30 +291,48 @@ def evaluate_company_shariah(company: Dict[str, Any]) -> Tuple[StandardEvaluatio
         denominator_label="Total Revenue (Operations + Other)",
         note_reference=inc_note,
     )
-    
+
     if not sector_compliant:
         tasis_status = ComplianceStatus.NON_COMPLIANT
         tasis_summary = f"Disqualified: Sector failure ({sector_failure_reason})"
-    elif not (tasis_debt.is_compliant and tasis_cash.is_compliant and tasis_rec.is_compliant and tasis_imp.is_compliant):
+    elif not (
+        tasis_debt.is_compliant
+        and tasis_cash.is_compliant
+        and tasis_rec.is_compliant
+        and tasis_imp.is_compliant
+    ):
         tasis_status = ComplianceStatus.NON_COMPLIANT
         failures = []
-        if not tasis_debt.is_compliant: failures.append(f"Debt/Assets ({tasis_debt.actual_pct}% >= 33%)")
-        if not tasis_cash.is_compliant: failures.append(f"Cash/Assets ({tasis_cash.actual_pct}% >= 33%)")
-        if not tasis_rec.is_compliant: failures.append(f"Receivables/Assets ({tasis_rec.actual_pct}% >= 33%)")
-        if not tasis_imp.is_compliant: failures.append(f"Impermissible Rev ({tasis_imp.actual_pct}% >= 5%)")
+        if not tasis_debt.is_compliant:
+            failures.append(f"Debt/Assets ({tasis_debt.actual_pct}% >= 33%)")
+        if not tasis_cash.is_compliant:
+            failures.append(f"Cash/Assets ({tasis_cash.actual_pct}% >= 33%)")
+        if not tasis_rec.is_compliant:
+            failures.append(f"Receivables/Assets ({tasis_rec.actual_pct}% >= 33%)")
+        if not tasis_imp.is_compliant:
+            failures.append(f"Impermissible Rev ({tasis_imp.actual_pct}% >= 5%)")
         tasis_summary = f"Non-Compliant: Breached threshold on {', '.join(failures)}"
-    elif tasis_debt.is_warning or tasis_cash.is_warning or tasis_rec.is_warning or tasis_imp.is_warning:
+    elif (
+        tasis_debt.is_warning
+        or tasis_cash.is_warning
+        or tasis_rec.is_warning
+        or tasis_imp.is_warning
+    ):
         tasis_status = ComplianceStatus.QUESTIONABLE
         warnings = []
-        if tasis_debt.is_warning: warnings.append(f"Debt/Assets in warning band ({tasis_debt.actual_pct}%)")
-        if tasis_cash.is_warning: warnings.append(f"Cash/Assets in warning band ({tasis_cash.actual_pct}%)")
-        if tasis_rec.is_warning: warnings.append(f"Receivables/Assets in warning band ({tasis_rec.actual_pct}%)")
-        if tasis_imp.is_warning: warnings.append(f"Impermissible Rev in warning band ({tasis_imp.actual_pct}%)")
+        if tasis_debt.is_warning:
+            warnings.append(f"Debt/Assets in warning band ({tasis_debt.actual_pct}%)")
+        if tasis_cash.is_warning:
+            warnings.append(f"Cash/Assets in warning band ({tasis_cash.actual_pct}%)")
+        if tasis_rec.is_warning:
+            warnings.append(f"Receivables/Assets in warning band ({tasis_rec.actual_pct}%)")
+        if tasis_imp.is_warning:
+            warnings.append(f"Impermissible Rev in warning band ({tasis_imp.actual_pct}%)")
         tasis_summary = f"Questionable / Mushbooh: Approaching threshold ({', '.join(warnings)})"
     else:
         tasis_status = ComplianceStatus.COMPLIANT
         tasis_summary = "Fully Compliant with BSE-TASIS Shariah 50 methodology."
-        
+
     tasis_eval = StandardEvaluation(
         standard=ScreeningStandard.TASIS,
         status=tasis_status,
@@ -268,12 +343,15 @@ def evaluate_company_shariah(company: Dict[str, Any]) -> Tuple[StandardEvaluatio
         impermissible_income_ratio=tasis_imp,
         summary=tasis_summary,
     )
-    
+
     # ---------------- DIVERGENCE CHECK ----------------
-    divergence = (aaoifi_status != tasis_status)
+    divergence = aaoifi_status != tasis_status
     divergence_reason = None
     if divergence:
-        if aaoifi_status == ComplianceStatus.COMPLIANT and tasis_status == ComplianceStatus.NON_COMPLIANT:
+        if (
+            aaoifi_status == ComplianceStatus.COMPLIANT
+            and tasis_status == ComplianceStatus.NON_COMPLIANT
+        ):
             if not tasis_cash.is_compliant:
                 divergence_reason = (
                     f"Divergence: Passes AAOIFI (Cash/Mcap={aaoifi_cash.actual_pct}% < 33%), "
@@ -292,7 +370,10 @@ def evaluate_company_shariah(company: Dict[str, Any]) -> Tuple[StandardEvaluatio
                 )
             else:
                 divergence_reason = "Compliant on AAOIFI market-cap basis, but Non-Compliant on TASIS book-asset basis."
-        elif aaoifi_status == ComplianceStatus.NON_COMPLIANT and tasis_status == ComplianceStatus.COMPLIANT:
+        elif (
+            aaoifi_status == ComplianceStatus.NON_COMPLIANT
+            and tasis_status == ComplianceStatus.COMPLIANT
+        ):
             divergence_reason = (
                 f"Divergence: Passes TASIS on Total Assets (Debt/Assets={tasis_debt.actual_pct}%), "
                 f"but FAILS AAOIFI due to depressed market capitalization elevating Debt/Mcap to {aaoifi_debt.actual_pct}%."
@@ -303,7 +384,9 @@ def evaluate_company_shariah(company: Dict[str, Any]) -> Tuple[StandardEvaluatio
     return aaoifi_eval, tasis_eval, divergence, divergence_reason
 
 
-def build_audit_evidence_lines(company: Dict[str, Any]) -> Tuple[List[AuditEvidenceLine], List[AuditEvidenceLine]]:
+def build_audit_evidence_lines(
+    company: dict[str, Any],
+) -> tuple[list[AuditEvidenceLine], list[AuditEvidenceLine]]:
     """Build itemized line-item audit trail with notes and filing citations."""
     bs_lines = [
         AuditEvidenceLine(
@@ -377,7 +460,7 @@ def build_audit_evidence_lines(company: Dict[str, Any]) -> Tuple[List[AuditEvide
             verification_status="VERIFIED",
         ),
     ]
-    
+
     pl_lines = [
         AuditEvidenceLine(
             line_item="Revenue from Operations",
@@ -415,5 +498,5 @@ def build_audit_evidence_lines(company: Dict[str, Any]) -> Tuple[List[AuditEvide
             verification_status="VERIFIED",
         ),
     ]
-    
+
     return bs_lines, pl_lines

@@ -13,26 +13,19 @@ import math
 import random
 import re
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 from quant_system.shariah.main import app
-from tests.shariah.conftest import DomainOracle
 from quant_system.shariah.services.broker_export_service import (
-    generate_zerodha_orders,
-    generate_upstox_orders,
-    generate_groww_orders,
     generate_angelone_orders,
-    allocate_capital_to_basket,
+    generate_groww_orders,
+    generate_upstox_orders,
+    generate_zerodha_orders,
 )
-from quant_system.shariah.services.zakat_service import (
-    calculate_equity_zakat,
-    SILVER_NISAB_DEFAULT,
-    LUNAR_RATE,
-    SOLAR_RATE,
-)
+from tests.shariah.conftest import DomainOracle
 
 CLIENT_DIR = Path(__file__).resolve().parent.parent.parent / "client"
 CLIENT_LIB = CLIENT_DIR / "lib"
@@ -42,6 +35,7 @@ CLIENT_TEST = CLIENT_DIR / "test"
 # ===========================================================================
 # Vector 1: Finding C1 Resolution & Static Typing Rigor
 # ===========================================================================
+
 
 def test_vector1_finding_c1_model_property():
     """Verify PurificationCalculateResult declares companyName getter."""
@@ -72,9 +66,7 @@ def test_vector1_finding_c1_purification_screen_references():
     )
 
     # Verify _showVoucherDialog method signature permits nullable charityName with fallback
-    assert "String? charityName" in content, (
-        "_showVoucherDialog must accept 'String? charityName'"
-    )
+    assert "String? charityName" in content, "_showVoucherDialog must accept 'String? charityName'"
     assert "final effectiveCharity = charityName ?? 'Accredited Charity Trust';" in content, (
         "_showVoucherDialog must provide internal fallback for null charityName"
     )
@@ -92,7 +84,7 @@ def test_vector1_dialog_invocation_arguments_soundness():
 
     for idx, m in enumerate(call_sites):
         pos = m.start()
-        chunk = content[pos:pos + 1200]
+        chunk = content[pos : pos + 1200]
         assert "companyName:" in chunk, f"Invocation {idx} missing companyName"
         assert "ticker:" in chunk, f"Invocation {idx} missing ticker"
         assert "grossDividend:" in chunk, f"Invocation {idx} missing grossDividend"
@@ -107,7 +99,8 @@ def test_vector1_dialog_invocation_arguments_soundness():
 # Vector 2: Zakat Arithmetic & Negative Working Capital Floor
 # ===========================================================================
 
-def dart_sim_active_trader(pval: float, cash: float, calendar: str = "lunar") -> Dict[str, Any]:
+
+def dart_sim_active_trader(pval: float, cash: float, calendar: str = "lunar") -> dict[str, Any]:
     rate = 0.025770 if calendar.lower() == "solar" else 0.025000
     zakatable_base = round(pval + cash, 2)
     is_obligatory = zakatable_base >= 53550.0
@@ -120,7 +113,9 @@ def dart_sim_active_trader(pval: float, cash: float, calendar: str = "lunar") ->
     }
 
 
-def dart_sim_long_term(holdings: List[Dict[str, Any]], cash: float, calendar: str = "lunar") -> Dict[str, Any]:
+def dart_sim_long_term(
+    holdings: list[dict[str, Any]], cash: float, calendar: str = "lunar"
+) -> dict[str, Any]:
     rate = 0.025770 if calendar.lower() == "solar" else 0.025000
     holdings_base = 0.0
     for h in holdings:
@@ -180,8 +175,8 @@ def test_vector2_negative_working_capital_clamping_floor():
 
     # Scenario B: Mixed portfolio: one profitable asset, one negative asset
     mixed = [
-        {"ticker": "GOOD.NS", "shares": 1000, "znwa_per_share": 50.00},     # 50,000
-        {"ticker": "BAD.NS", "shares": 1000, "znwa_per_share": -80.00},     # clamped to 0
+        {"ticker": "GOOD.NS", "shares": 1000, "znwa_per_share": 50.00},  # 50,000
+        {"ticker": "BAD.NS", "shares": 1000, "znwa_per_share": -80.00},  # clamped to 0
     ]
     mixed_result = dart_sim_long_term(mixed, 10000.0, "lunar")
     # Base must be 50,000 + 10,000 = 60,000.0
@@ -209,6 +204,7 @@ def test_vector2_zakat_monte_carlo_stress_fuzzing():
 # ===========================================================================
 # Vector 3: Dividend Purification Precision & Extreme Edge Cases
 # ===========================================================================
+
 
 def dart_sim_purification_ratio(interest: float, prohibited: float, total: float) -> float:
     if total <= 0.0:
@@ -247,16 +243,33 @@ def test_vector3_dividend_purification_extreme_ratios():
 # Vector 4: Broker Export Formats Strictness
 # ===========================================================================
 
+
 def test_vector4_broker_export_order_fields_and_tokens():
     """Assert all 4 Indian broker CSV formats strictly comply with trading engine requirements."""
     orders = [
-        {"ticker": "TCS.NS", "symbol": "TCS", "shares": 15, "price": 3800.0, "weight": 0.5, "allocation_amount": 57000.0},
-        {"ticker": "INFY.NS", "symbol": "INFY", "shares": 35, "price": 1500.0, "weight": 0.5, "allocation_amount": 52500.0},
+        {
+            "ticker": "TCS.NS",
+            "symbol": "TCS",
+            "shares": 15,
+            "price": 3800.0,
+            "weight": 0.5,
+            "allocation_amount": 57000.0,
+        },
+        {
+            "ticker": "INFY.NS",
+            "symbol": "INFY",
+            "shares": 35,
+            "price": 1500.0,
+            "weight": 0.5,
+            "allocation_amount": 52500.0,
+        },
     ]
 
     # Zerodha: CNC product code is required for Halal cash equity
     _, z_csv, z_clip = generate_zerodha_orders(orders, "MARKET")
-    assert z_csv.startswith("Instrument,Exchange,Transaction,Quantity,Order Type,Product,Price,Trigger Price")
+    assert z_csv.startswith(
+        "Instrument,Exchange,Transaction,Quantity,Order Type,Product,Price,Trigger Price"
+    )
     for line in z_clip.splitlines():
         parts = line.split(",")
         assert parts[1] == "NSE"
@@ -278,7 +291,9 @@ def test_vector4_broker_export_order_fields_and_tokens():
 
     # Groww: Segment CASH, ProductType CNC, TransactionType BUY
     _, g_csv, g_clip = generate_groww_orders(orders, "MARKET")
-    assert g_csv.startswith("Symbol,Exchange,Segment,TransactionType,Quantity,OrderType,ProductType,Price")
+    assert g_csv.startswith(
+        "Symbol,Exchange,Segment,TransactionType,Quantity,OrderType,ProductType,Price"
+    )
     for line in g_clip.splitlines():
         parts = line.split(",")
         assert parts[1] == "NSE"
@@ -289,7 +304,9 @@ def test_vector4_broker_export_order_fields_and_tokens():
 
     # AngelOne: Token mapped, {sym}-EQ, ProductType DELIVERY
     _, a_csv, a_clip = generate_angelone_orders(orders, "MARKET")
-    assert a_csv.startswith("Symbol,Token,Exchange,TransactionType,OrderType,ProductType,Quantity,Price")
+    assert a_csv.startswith(
+        "Symbol,Token,Exchange,TransactionType,OrderType,ProductType,Quantity,Price"
+    )
     for line in a_clip.splitlines():
         parts = line.split(",")
         assert parts[0].endswith("-EQ")
@@ -304,6 +321,7 @@ def test_vector4_broker_export_order_fields_and_tokens():
 # Vector 5: Indian Statutory Tax Breakdown Verification
 # ===========================================================================
 
+
 @pytest.mark.asyncio
 async def test_vector5_statutory_tax_calculation_endpoint_parity():
     """Verify statutory tax calculation endpoint matches the Indian equity tax schedule."""
@@ -316,7 +334,7 @@ async def test_vector5_statutory_tax_calculation_endpoint_parity():
         assert res.status_code == 200
         data = res.json()
 
-        turnover = 100000.0
+        assert data["investment_amount"] == 100000.0
         # 1. Brokerage must be ₹0.00
         assert data["brokerage"] == 0.0
 

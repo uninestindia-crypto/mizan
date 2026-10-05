@@ -1,15 +1,14 @@
-from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 
 
 class BasketConstituent(BaseModel):
     ticker: str
     symbol: str
-    company_name: Optional[str] = None
-    sector: Optional[str] = None
+    company_name: str | None = None
+    sector: str | None = None
     weight: float = Field(..., ge=0.0, le=1.0, description="Target portfolio weight (0.0 to 1.0)")
-    current_price: Optional[float] = None
-    market_cap: Optional[float] = None
+    current_price: float | None = None
+    market_cap: float | None = None
 
 
 class TearSheetMetrics(BaseModel):
@@ -29,7 +28,7 @@ class RebalanceLog(BaseModel):
     date: str
     action: str
     notes: str
-    changes: Optional[List[str]] = None
+    changes: list[str] | None = None
 
 
 class SectorAllocation(BaseModel):
@@ -54,7 +53,7 @@ class BasketSummary(BaseModel):
     weighted_purification_ratio: float
     minimum_investment: float
     latest_valuation: float
-    constituents: List[BasketConstituent]
+    constituents: list[BasketConstituent]
 
 
 class BasketDetail(BaseModel):
@@ -74,13 +73,15 @@ class BasketDetail(BaseModel):
     minimum_investment: float
     latest_valuation: float
     tear_sheet: TearSheetMetrics
-    sector_allocations: List[SectorAllocation]
-    rebalance_logs: List[RebalanceLog]
-    constituents: List[BasketConstituent]
+    sector_allocations: list[SectorAllocation]
+    rebalance_logs: list[RebalanceLog]
+    constituents: list[BasketConstituent]
 
 
 class BasketExportRequest(BaseModel):
-    broker: str = Field(default="zerodha", description="Indian broker format: zerodha, upstox, groww, or angelone")
+    broker: str = Field(
+        default="zerodha", description="Indian broker format: zerodha, upstox, groww, or angelone"
+    )
     capital: float = Field(default=50000.0, gt=0.0, description="Target investment capital in INR")
     order_type: str = Field(default="MARKET", description="Order execution type: MARKET or LIMIT")
 
@@ -105,7 +106,7 @@ class BasketExportResponse(BaseModel):
     total_allocated_capital: float
     residual_cash: float
     order_count: int
-    orders: List[BrokerOrder]
+    orders: list[BrokerOrder]
     csv_content: str
     clipboard_payload: str
-    warnings: List[str]
+    warnings: list[str]

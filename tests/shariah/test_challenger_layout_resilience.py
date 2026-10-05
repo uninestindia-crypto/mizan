@@ -1,11 +1,8 @@
 import json
-import math
 import re
 import time
 from pathlib import Path
-from typing import Dict, List, Any
-
-import pytest
+from typing import Any
 
 CLIENT_DIR = Path(__file__).resolve().parent.parent.parent / "client"
 CLIENT_LIB = CLIENT_DIR / "lib"
@@ -16,6 +13,7 @@ ASSETS_DIR = CLIENT_DIR / "assets" / "data"
 # ===========================================================================
 # Vector 1: Responsive Breakpoint & Layout Stability Stress Tests
 # ===========================================================================
+
 
 def test_challenger_adaptive_scaffold_breakpoint_boundary():
     """
@@ -50,8 +48,8 @@ def test_challenger_adaptive_scaffold_breakpoint_boundary():
     assert is_desktop(767.9) is False  # Strict boundary below 768
 
     # Tablet & Desktop viewports: must be True (>= 768px)
-    assert is_desktop(768.0) is True   # Strict boundary at 768
-    assert is_desktop(820.0) is True   # iPad Air
+    assert is_desktop(768.0) is True  # Strict boundary at 768
+    assert is_desktop(820.0) is True  # iPad Air
     assert is_desktop(1024.0) is True  # iPad Pro
     assert is_desktop(1200.0) is True  # Compact desktop
     assert is_desktop(1440.0) is True  # Standard desktop
@@ -106,7 +104,7 @@ def test_challenger_bouncing_scroll_physics_encapsulation():
         assert "BouncingScrollPhysics" in code, (
             f"Screen {scr_file} lacks BouncingScrollPhysics scroll encapsulation"
         )
-        assert ("SingleChildScrollView" in code or "ListView" in code), (
+        assert "SingleChildScrollView" in code or "ListView" in code, (
             f"Screen {scr_file} lacks top-level scroll view"
         )
 
@@ -140,6 +138,7 @@ def test_challenger_text_truncation_and_horizontal_protection():
 # Vector 2: Offline Resilience & Asset Integration
 # ===========================================================================
 
+
 def test_challenger_sample_nifty500_asset_integration():
     """
     Verify that assets/data/sample_nifty500.json is properly configured
@@ -155,7 +154,7 @@ def test_challenger_sample_nifty500_asset_integration():
     assert asset_file.exists(), f"Asset file missing at {asset_file}"
     assert asset_file.stat().st_size > 1000, "sample_nifty500.json is empty or too small"
 
-    with open(asset_file, "r", encoding="utf-8") as f:
+    with open(asset_file, encoding="utf-8") as f:
         data = json.load(f)
 
     assert isinstance(data, list), "sample_nifty500.json root must be a list"
@@ -227,22 +226,24 @@ def test_challenger_api_service_offline_fallback_coverage():
 # Vector 3: Prefix Trie In-Memory Search Performance (<50ms SLA)
 # ===========================================================================
 
+
 class PythonTrieNode:
     def __init__(self):
-        self.children: Dict[str, PythonTrieNode] = {}
+        self.children: dict[str, PythonTrieNode] = {}
         self.matched_stocks: set = set()
         self.is_end_of_word: bool = False
 
 
 class PythonTrieSearchOracle:
     """Exact behavioral oracle of client/lib/services/search_service.dart."""
-    def __init__(self, stocks: List[Dict[str, Any]]):
+
+    def __init__(self, stocks: list[dict[str, Any]]):
         self.root = PythonTrieNode()
-        self.query_cache: Dict[str, List[str]] = {}
+        self.query_cache: dict[str, list[str]] = {}
         for stock in stocks:
             self.insert_stock(stock)
 
-    def insert_stock(self, stock: Dict[str, Any]):
+    def insert_stock(self, stock: dict[str, Any]):
         sym = stock["symbol"].lower()
         self._insert_token(sym, stock["ticker"])
         self._insert_token(stock["ticker"].lower(), stock["ticker"])
@@ -262,7 +263,7 @@ class PythonTrieSearchOracle:
             curr.matched_stocks.add(ticker)
         curr.is_end_of_word = True
 
-    def search_local(self, query: str) -> List[str]:
+    def search_local(self, query: str) -> list[str]:
         clean = query.strip().lower()
         if not clean:
             return []
@@ -276,7 +277,7 @@ class PythonTrieSearchOracle:
                 return []
             curr = curr.children[char]
 
-        res = sorted(list(curr.matched_stocks))
+        res = sorted(curr.matched_stocks)
         self.query_cache[clean] = res
         return res
 
@@ -289,7 +290,7 @@ def test_challenger_prefix_trie_search_performance_and_accuracy():
     2. Sub-50ms query response time SLA (assert < 5.0ms even under stress).
     3. Proper edge case handling: empty string, whitespace, non-matching queries.
     """
-    with open(ASSETS_DIR / "sample_nifty500.json", "r", encoding="utf-8") as f:
+    with open(ASSETS_DIR / "sample_nifty500.json", encoding="utf-8") as f:
         stocks = json.load(f)
 
     oracle = PythonTrieSearchOracle(stocks)
@@ -315,10 +316,35 @@ def test_challenger_prefix_trie_search_performance_and_accuracy():
 
     # 2. Latency benchmark across 500 query executions
     benchmark_queries = [
-        "t", "tc", "tcs", "i", "in", "inf", "infy", "w", "wi", "wip", "wipro",
-        "h", "hd", "hdfc", "r", "re", "rel", "relian", "reliance",
-        "tech", "software", "pharma", "bank", "financial",
-        "notfound1", "notfound2", "z", "za", "zak"
+        "t",
+        "tc",
+        "tcs",
+        "i",
+        "in",
+        "inf",
+        "infy",
+        "w",
+        "wi",
+        "wip",
+        "wipro",
+        "h",
+        "hd",
+        "hdfc",
+        "r",
+        "re",
+        "rel",
+        "relian",
+        "reliance",
+        "tech",
+        "software",
+        "pharma",
+        "bank",
+        "financial",
+        "notfound1",
+        "notfound2",
+        "z",
+        "za",
+        "zak",
     ]
 
     durations_ms = []
@@ -333,7 +359,9 @@ def test_challenger_prefix_trie_search_performance_and_accuracy():
     avg_latency = sum(durations_ms) / len(durations_ms)
     p99_latency = sorted(durations_ms)[int(len(durations_ms) * 0.99)]
 
-    print(f"\nTrie Search Benchmark: executions={len(durations_ms)}, avg={avg_latency:.4f}ms, p99={p99_latency:.4f}ms, max={max_latency:.4f}ms")
+    print(
+        f"\nTrie Search Benchmark: executions={len(durations_ms)}, avg={avg_latency:.4f}ms, p99={p99_latency:.4f}ms, max={max_latency:.4f}ms"
+    )
     # Strict SLA check: prompt requires < 50ms. Trie typically executes in < 0.1ms.
     assert max_latency < 50.0, f"Max search latency {max_latency:.4f}ms exceeded 50ms SLA"
     assert p99_latency < 1.0, f"P99 latency {p99_latency:.4f}ms unexpectedly slow"
@@ -343,12 +371,13 @@ def test_challenger_prefix_trie_search_performance_and_accuracy():
 # Vector 4: Delimiter Balance & File Invariant Verification
 # ===========================================================================
 
+
 def test_challenger_file_invariant_and_delimiters():
     """
     Verify that the client codebase satisfies the invariant of exactly 29 Dart files
     and all 29 files pass AST delimiter balancing.
     """
-    from tests.shariah.verify_dart_client import check_delimiter_balance, CLIENT_LIB, CLIENT_TEST
+    from tests.shariah.verify_dart_client import CLIENT_LIB, CLIENT_TEST, check_delimiter_balance
 
     dart_files = sorted(list(CLIENT_LIB.rglob("*.dart")) + list(CLIENT_TEST.rglob("*.dart")))
     assert len(dart_files) == 29, f"Expected strictly 29 Dart files, found {len(dart_files)}"

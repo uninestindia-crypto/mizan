@@ -1,7 +1,9 @@
 import re
+from typing import Any
+
 import aiosqlite
-from typing import List, Dict, Any, Optional, Tuple
-from quant_system.shariah.schemas.company import SearchSuggestion, ComplianceStatus
+
+from quant_system.shariah.schemas.company import ComplianceStatus, SearchSuggestion
 
 
 def sanitize_fts_query(query: str) -> str:
@@ -29,10 +31,10 @@ async def search_companies_fts(
     query: str,
     standard: str = "aaoifi",
     limit: int = 15,
-) -> List[SearchSuggestion]:
+) -> list[SearchSuggestion]:
     """Execute sub-50ms instant search using SQLite FTS5 index with prefix matching."""
     fts_match = sanitize_fts_query(query)
-    
+
     if not fts_match:
         # Fallback to top companies by market cap
         sql = """
@@ -92,50 +94,52 @@ async def search_companies_fts(
 
 async def filter_companies(
     db: aiosqlite.Connection,
-    query: Optional[str] = None,
-    sector: Optional[str] = None,
-    status: Optional[str] = None,
+    query: str | None = None,
+    sector: str | None = None,
+    status: str | None = None,
     standard: str = "aaoifi",
     limit: int = 50,
     offset: int = 0,
-) -> Tuple[List[Dict[str, Any]], int]:
+) -> tuple[list[dict[str, Any]], int]:
     """Filter, search, and paginate the company universe."""
     where_clauses = []
     params = []
-    
+
     use_fts = False
     fts_match = ""
     like_pat = ""
-    
+
     if query and query.strip():
         fts_match = sanitize_fts_query(query)
         like_pat = f"%{query.strip()}%"
         if fts_match:
             use_fts = True
-            where_clauses.append("c.rowid IN (SELECT rowid FROM companies_fts WHERE companies_fts MATCH ?)")
+            where_clauses.append(
+                "c.rowid IN (SELECT rowid FROM companies_fts WHERE companies_fts MATCH ?)"
+            )
             params.append(fts_match)
         else:
             where_clauses.append("(c.ticker LIKE ? OR c.symbol LIKE ? OR c.company_name LIKE ?)")
             params.extend([like_pat, like_pat, like_pat])
-            
+
     if sector and sector.strip() and sector.lower() != "all":
         where_clauses.append("LOWER(c.sector) = LOWER(?)")
         params.append(sector.strip())
-        
+
     status_col = "tasis_status" if standard.lower() == "tasis" else "aaoifi_status"
     if status and status.strip() and status.upper() != "ALL":
         where_clauses.append(f"c.{status_col} = ?")
         params.append(status.upper().strip())
-        
+
     where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
-    
+
     try:
         # Count total matching
         count_sql = f"SELECT COUNT(*) as total FROM companies c {where_sql};"
         cursor = await db.execute(count_sql, tuple(params))
         count_row = await cursor.fetchone()
         total = count_row["total"] if count_row else 0
-        
+
         # Fetch paginated rows
         fetch_sql = f"""
             SELECT c.*
@@ -153,7 +157,9 @@ async def filter_companies(
         if use_fts:
             fallback_where_clauses = []
             fallback_params = []
-            fallback_where_clauses.append("(c.ticker LIKE ? OR c.symbol LIKE ? OR c.company_name LIKE ?)")
+            fallback_where_clauses.append(
+                "(c.ticker LIKE ? OR c.symbol LIKE ? OR c.company_name LIKE ?)"
+            )
             fallback_params.extend([like_pat, like_pat, like_pat])
             if sector and sector.strip() and sector.lower() != "all":
                 fallback_where_clauses.append("LOWER(c.sector) = LOWER(?)")
@@ -161,7 +167,9 @@ async def filter_companies(
             if status and status.strip() and status.upper() != "ALL":
                 fallback_where_clauses.append(f"c.{status_col} = ?")
                 fallback_params.append(status.upper().strip())
-            fb_where_sql = f"WHERE {' AND '.join(fallback_where_clauses)}" if fallback_where_clauses else ""
+            fb_where_sql = (
+                f"WHERE {' AND '.join(fallback_where_clauses)}" if fallback_where_clauses else ""
+            )
             count_sql = f"SELECT COUNT(*) as total FROM companies c {fb_where_sql};"
             cursor = await db.execute(count_sql, tuple(fallback_params))
             count_row = await cursor.fetchone()
