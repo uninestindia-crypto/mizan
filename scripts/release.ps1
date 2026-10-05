@@ -88,8 +88,9 @@ try {
     if (-not $SkipTests) {
         Step "Gates: lint, types, tests (tracked files only, so another agent's unfinished file cannot block this)"
         $tracked = @(git ls-files "*.py")
-        & $python -m ruff check @tracked; Native "ruff check"
-        & $python -m ruff format --check @tracked; Native "ruff format"
+        # --force-exclude keeps pyproject's excludes (.agents, dist, ...) in force for an explicit file list, as in CI.
+        & $python -m ruff check --force-exclude @tracked; Native "ruff check"
+        & $python -m ruff format --check --force-exclude @tracked; Native "ruff format"
         $typed = @(git ls-files "src/*.py" "scripts/*.py" "launcher.py")
         & $python -m mypy @typed; Native "mypy"
         & $python -m pytest tests -q -p no:cacheprovider; Native "pytest"
