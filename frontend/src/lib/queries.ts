@@ -415,6 +415,22 @@ export function useTestCredential() {
   });
 }
 
+/** Read keys from uploaded .env files. A preview (`dryRun`) changes nothing; a save returns the refreshed key list. */
+export function useImportCredentials() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { files: { name: string; text: string }[]; dryRun: boolean; names?: string[] }) =>
+      api<import("./types").EnvImportReply>("/api/v2/credentials/import", "POST", {
+        files: body.files,
+        dry_run: body.dryRun,
+        names: body.names,
+      }),
+    onSuccess: (data) => {
+      if (!data.dry_run && data.secrets) qc.setQueryData(keys.secrets, { available: data.available, secrets: data.secrets });
+    },
+  });
+}
+
 export const tools = {
   costs: (body: unknown) => api<CostsResult>("/api/v2/tools/costs", "POST", body),
   positionSize: (body: unknown) => api<PositionSizeResult>("/api/v2/tools/position-size", "POST", body),

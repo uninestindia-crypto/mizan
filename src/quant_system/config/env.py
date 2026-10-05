@@ -30,13 +30,40 @@ __all__ = ["default_env_path", "load_env_file", "parse_env_text"]
 _MAX_SEARCH_DEPTH = 5
 
 
-def parse_env_text(text: str) -> dict[str, str]:
+def _strip_inline_comment(raw: str) -> str:
+    """Drop a trailing ``# comment`` from one raw value, the way dotenv files written by other tools carry it.
+
+    A quoted value ends at its closing quote, so ``"a # b" # note`` keeps ``a # b``. An unquoted value
+    ends at the first ``#`` that follows whitespace, so ``abc#def`` (a token or URL fragment) is kept
+    whole, while ``KEY= # paste it here`` is a blank rather than the value ``# paste it here``. A value
+    whose opening quote never closes is returned unchanged rather than guessed at.
+    """
+    body = raw.lstrip()
+    if body.startswith("#") and body != raw:
+        return ""
+    if body and body[0] in {'"', "'"}:
+        closing = body.find(body[0], 1)
+        if closing == -1:
+            return body
+        tail = body[closing + 1 :].strip()
+        return body[: closing + 1] if not tail or tail.startswith("#") else body
+    for index, char in enumerate(body):
+        if char == "#" and index > 0 and body[index - 1].isspace():
+            return body[:index].rstrip()
+    return body
+
+
+def parse_env_text(text: str, *, inline_comments: bool = False) -> dict[str, str]:
     """Parse dotenv text into name/value pairs.
 
     Accepts ``KEY=value``, tolerates a leading ``export``, ignores blank lines and ``#`` comments,
     and strips one layer of matching single or double quotes. A line without ``=`` is skipped rather
     than raising, because a malformed line in a local config file should not take down a run that
     may not even need the variable it was trying to set.
+
+    ``inline_comments`` additionally drops a trailing ``# comment`` after a value. It is off by
+    default because the startup loader documents "no trailing comment" in ``.env.example``; the
+    bulk importer turns it on for files written by other tools.
     """
     values: dict[str, str] = {}
     for raw_line in text.splitlines():
@@ -47,7 +74,7 @@ def parse_env_text(text: str) -> dict[str, str]:
         name = name.strip()
         if not name:
             continue
-        value = value.strip()
+        value = (_strip_inline_comment(value) if inline_comments else value).strip()
         if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
             value = value[1:-1]
         values[name] = value

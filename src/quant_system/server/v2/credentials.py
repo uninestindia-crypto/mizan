@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 TARGET_PREFIX = "QuantOS:"
-_MAX_BLOB = 5 * 512  # CRED_MAX_CREDENTIAL_BLOB_SIZE for generic credentials
+MAX_SECRET_BYTES = 5 * 512  # CRED_MAX_CREDENTIAL_BLOB_SIZE for generic credentials
 
 
 @dataclass(frozen=True, slots=True)
@@ -213,7 +213,7 @@ class CredentialStore:
         cleaned = value.strip()
         if not cleaned:
             raise CredentialError("The value is empty.")
-        if len(cleaned.encode("utf-8")) > _MAX_BLOB:
+        if len(cleaned.encode("utf-8")) > MAX_SECRET_BYTES:
             raise CredentialError("The value is too long for Windows Credential Manager.")
         if self._api is None:
             raise CredentialError("Windows Credential Manager is not available on this system.")

@@ -23,6 +23,7 @@ import { NavLink, useParams } from "react-router";
 import { AsOf } from "../components/common";
 import { AgentCliBridge } from "../components/AgentCliBridge";
 import { DataFolderPicker } from "../components/DataFolderPicker";
+import { EnvImport } from "../components/EnvImport";
 import { Badge, Button, Callout, Card, CardHeader, cx, Field, Input, PageHeader, ProgressBar, Segmented, Skeleton, Switch } from "../components/ui";
 import { errorMessage } from "../lib/api";
 import { MONEY_LIMITS, moneyProblems } from "../lib/rules";
@@ -533,6 +534,8 @@ function Accounts() {
       <Callout tone="info">
         Keys and tokens are stored encrypted in Windows Credential Manager for your Windows account. They are never written to a file, never leave this computer, and are sent only to the provider they belong to.
       </Callout>
+
+      <EnvImport />
 
       {/* 1. Upstox V3 Highlight Card */}
       <Card className="border-brand/40 bg-gradient-to-b from-brand/5 to-transparent">
@@ -1124,10 +1127,38 @@ function ChangelogCard() {
 
   const fallbackEntries: ChangelogEntry[] = [
     {
+      version: "2.4.0",
+      date: "2026-10-05",
+      title: "Import All Your Keys From a .env File, Paper-Book Order Inbox & Health Checks",
+      is_current: true,
+      whats_new: [
+        "Import all your keys at once: choose your .env or .env.local files in Settings, review what was found, and save them in one step",
+        "Paper books say when their orders are out of date and offer a copy-ready order ticket",
+        "Record what you did with each paper-book order, see what is waiting, and compare your fills",
+        "Optional Slack, Discord or ntfy message when a paper book has orders to place; it never carries a stock, quantity or price",
+        "Liveness and readiness checks, with an early warning before the NSE holiday list runs out",
+      ],
+      fixes: [
+        "The live trading dashboard now runs inside the desktop app",
+        "Honest log times and audit labels in paper-pilot sessions",
+        "Fits phone-sized screens and passes colour-contrast checks; Mizan Shariah sample data is labelled honestly",
+        "Desktop launch, single-instance lock and shortcut logo fixes",
+      ],
+      improvements: [
+        "Mizan Shariah screens follow the QuantOS design system",
+      ],
+      unchanged_protections: [
+        "Keys stay in Windows Credential Manager and are sent only to the provider they belong to",
+        "QuantOS still never places orders with any broker",
+        "Existing paper books, portfolios and evidence are kept when you update over an older install",
+        "Decimal-exact accounting and statutory NSE cost schedules are unchanged",
+      ],
+    },
+    {
       version: "2.3.0",
       date: "2026-10-05",
       title: "Unified Desktop Studio & Mizan Shariah Wealth Engine",
-      is_current: true,
+      is_current: false,
       whats_new: [
         "Unified desktop studio with instant 1-click mode switch between Institutional Quant and Mizan Shariah Wealth Engine",
         "Mizan Shariah screening engine with customizable screening rules (DJIM, AAOIFI)",
@@ -1244,7 +1275,7 @@ function ChangelogCard() {
     : fallbackEntries;
 
   const [expandedVersions, setExpandedVersions] = useState<Record<string, boolean>>({
-    "2.3.0": true,
+    "2.4.0": true,
   });
 
   const toggleVersion = (ver: string) => {
