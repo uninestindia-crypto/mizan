@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 import time
@@ -85,6 +86,8 @@ from quant_system.server.v2.tools import (
     trade_costs,
 )
 from quant_system.server.v2.updates import UpdateChecker
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v2", tags=["QuantOS 2.0"])
 
@@ -815,7 +818,9 @@ def register_api(app: FastAPI) -> None:
 
         app.include_router(shariah_router, prefix="/api/v2/shariah")
     except Exception:
-        pass
+        # The Quant mode must still start, but a missing Shariah mode must not be invisible: the
+        # page would otherwise fail with 404s and nothing in the log to explain them.
+        logger.exception("Mizan Shariah API could not be loaded; /api/v2/shariah is unavailable")
     _run_auto_update_with(app)
     try:
         services().credentials.apply_to_environment()
