@@ -110,6 +110,13 @@ At completion, move the record from `agent_context/work/active/` to
 - Preserve Decimal accounting, next-bar execution, risk-governor enforcement, immutable evidence,
   and fail-closed behavior.
 - Do not trade validation rigor for speed. Optimize implementation, not scientific safeguards.
+- **Unified Enterprise Application Law**: QuantOS/Mizan must always be delivered as a single unified
+  desktop application ("Microsoft App" style) with instant 1-click mode switching between Institutional
+  Quantitative Trading and Mizan Shariah Wealth Engine. Never fragment the product into separate apps.
+- **Factory-New Laptop Standard**: All desktop packaging and installers must be completely self-contained
+  (bundling audited SQLite/DuckDB seed data, pre-compiled UI assets, and WebView2/App Mode runner) so
+  that non-technical users can install and run the system out-of-the-box on a fresh laptop with zero
+  pre-installed Python, Node, or Git, zero black terminal popups, and complete drive isolation.
 
 ## Context safety
 
