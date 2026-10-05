@@ -149,6 +149,33 @@ class UpdateChecker:
 
 OFFLINE_CHANGELOG: list[dict[str, Any]] = [
     {
+        "version": "2.4.0",
+        "date": "2026-10-05",
+        "title": "Import All Your Keys From a .env File, Paper-Book Order Inbox & Health Checks",
+        "whats_new": [
+            "Import all your keys at once: choose your .env or .env.local files in Settings, review what was found, and save them in one step",
+            "Paper books say when their orders are out of date and offer a copy-ready order ticket",
+            "Record what you did with each paper-book order, see what is waiting, and compare your fills",
+            "Optional Slack, Discord or ntfy message when a paper book has orders to place; it never carries a stock, quantity or price",
+            "Liveness and readiness checks, with an early warning before the NSE holiday list runs out",
+        ],
+        "fixes": [
+            "The live trading dashboard now runs inside the desktop app",
+            "Honest log times and audit labels in paper-pilot sessions",
+            "Fits phone-sized screens and passes colour-contrast checks; Mizan Shariah sample data is labelled honestly",
+            "Desktop launch, single-instance lock and shortcut logo fixes",
+        ],
+        "improvements": [
+            "Mizan Shariah screens follow the QuantOS design system",
+        ],
+        "unchanged_protections": [
+            "Keys stay in Windows Credential Manager and are sent only to the provider they belong to",
+            "QuantOS still never places orders with any broker",
+            "Existing paper books, portfolios and evidence are kept when you update over an older install",
+            "Decimal-exact accounting and statutory NSE cost schedules are unchanged",
+        ],
+    },
+    {
         "version": "2.3.0",
         "date": "2026-10-05",
         "title": "Unified Desktop Studio & Mizan Shariah Wealth Engine",
