@@ -175,6 +175,7 @@ class _Fakes:
         self.fail_symbols: set[str] = set()
         self.explode_symbols: set[str] = set()
         self.no_actions: set[str] = set()
+        self.empty_actions: set[str] = set()
         self.committed: list[str] = []
         self.dates = sessions(date(2016, 10, 5), 2600)
 
@@ -206,6 +207,8 @@ class _Fakes:
     def actions(self, symbol: str, start: date, end: date) -> list[Any]:
         if symbol in self.no_actions:
             raise OSError("NSE did not answer")
+        if symbol in self.empty_actions:
+            return []
         return [{"symbol": symbol, "exDate": "01-Jan-2024", "subject": "Dividend - Rs 1"}]
 
 
@@ -475,3 +478,20 @@ def test_a_cache_this_download_did_not_make_is_never_removed(fakes: _Fakes) -> N
 
 def test_there_is_no_baseline_on_an_empty_folder(tmp_path: Path) -> None:
     assert baseline_exists(tmp_path) is False
+
+
+def test_an_empty_answer_never_replaces_corporate_actions_a_download_already_saved(
+    fakes: _Fakes,
+) -> None:
+    _run(MarketDownload(), fakes.data_folder, today=date(2026, 10, 3))
+    authorities = fakes.data_folder / "authorities"
+    alpha_actions = authorities / "nse-corporate-actions-ALPHA.json"
+    beta_actions = authorities / "nse-corporate-actions-BETA.json"
+    assert "Dividend" in alpha_actions.read_text(encoding="utf-8")
+    assert "Dividend" in beta_actions.read_text(encoding="utf-8")
+
+    fakes.empty_actions = {"ALPHA"}
+    snapshot = _run(MarketDownload(), fakes.data_folder, today=date(2026, 10, 4))
+    assert snapshot["state"] == "DONE"
+    assert "Dividend" in alpha_actions.read_text(encoding="utf-8")
+    assert "Dividend" in beta_actions.read_text(encoding="utf-8")

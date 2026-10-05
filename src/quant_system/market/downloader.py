@@ -526,11 +526,25 @@ class MarketDownload:
                         with self._lock:
                             writable = not path.exists() or target.symbol in generated
                         if writable:
-                            _atomic_write(
-                                path, json.dumps(records, separators=(",", ":")).encode("utf-8")
-                            )
-                            with self._lock:
-                                generated.add(target.symbol)
+                            skip_write = False
+                            if not records and path.is_file():
+                                try:
+                                    existing = json.loads(path.read_text(encoding="utf-8"))
+                                    if isinstance(existing, list) and len(existing) > 0:
+                                        skip_write = True
+                                except Exception:
+                                    skip_write = False
+                            if skip_write:
+                                logger.warning(
+                                    "Corporate actions fetch for %s returned empty list but non-empty file exists; keeping earlier file",
+                                    target.symbol,
+                                )
+                            else:
+                                _atomic_write(
+                                    path, json.dumps(records, separators=(",", ":")).encode("utf-8")
+                                )
+                                with self._lock:
+                                    generated.add(target.symbol)
                     except (OSError, ValueError):
                         with self._lock:
                             self.no_actions += 1

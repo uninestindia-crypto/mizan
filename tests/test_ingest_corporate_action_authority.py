@@ -255,3 +255,56 @@ def test_a_narrower_request_still_reuses_a_wider_cached_record(
 
     fetch_or_load_corporate_actions("HEG", date(2023, 9, 11), TO, tmp_path, now=NOW)
     assert calls["n"] == 1, "a record spanning more than asked for is still valid evidence"
+
+
+def test_an_empty_answer_never_replaces_a_known_non_empty_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_urlopen(monkeypatch, _payload(SAMPLE))
+    first = fetch_or_load_corporate_actions("HEG", FROM, date(2026, 8, 21), tmp_path, now=NOW)
+    assert first.status == "FETCHED"
+    ca_file = tmp_path / "nse-corporate-actions-HEG.json"
+    content_before = ca_file.read_bytes()
+
+    _patch_urlopen(monkeypatch, _payload([]))
+    second = fetch_or_load_corporate_actions("HEG", FROM, TO, tmp_path, now=NOW)
+
+    assert ca_file.read_bytes() == content_before
+    assert second.status == "STALE"
+    assert second.covers_requested_end is False
+    assert second.effective_to == date(2026, 8, 21)
+    assert second.count == len(SAMPLE)
+    assert build_corporate_action_authority(second, "HEG").effective_to < TO
+
+
+def test_an_empty_answer_over_a_legacy_non_empty_file_keeps_the_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    legacy = tmp_path / "nse-corporate-actions-HEG.json"
+    content_before = _payload(SAMPLE)
+    legacy.write_bytes(content_before)
+
+    _patch_urlopen(monkeypatch, _payload([]))
+    record = fetch_or_load_corporate_actions("HEG", FROM, TO, tmp_path, now=NOW)
+
+    assert legacy.read_bytes() == content_before
+    assert record.status == "UNAVAILABLE"
+    assert record.count == len(SAMPLE)
+    assert record.covers_requested_end is False
+
+
+def test_a_non_empty_answer_still_replaces_an_empty_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_urlopen(monkeypatch, _payload([]))
+    first = fetch_or_load_corporate_actions("HEG", FROM, TO, tmp_path, now=NOW)
+    assert first.status == "FETCHED"
+    assert first.count == 0
+
+    later = NOW.replace(day=12)
+    _patch_urlopen(monkeypatch, _payload(SAMPLE))
+    second = fetch_or_load_corporate_actions(
+        "HEG", FROM, TO, tmp_path, now=later, max_age_hours=24.0
+    )
+    assert second.status == "FETCHED"
+    assert second.count == len(SAMPLE)

@@ -6,6 +6,7 @@ import argparse
 import concurrent.futures
 import csv
 import json
+import logging
 import os
 import threading
 import time
@@ -41,6 +42,8 @@ USER_AGENT: Final = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 )
+
+logger: Final = logging.getLogger("quantos.scripts.ingest_all_market_data")
 
 
 @dataclass(frozen=True, slots=True)
@@ -326,6 +329,61 @@ def fetch_or_load_corporate_actions(
             publication_date=moment.date(),
             status="UNAVAILABLE",
         )
+
+    if not items and target.is_file():
+        existing_items: list[Any] | None = None
+        try:
+            parsed = json.loads(target.read_text(encoding="utf-8"))
+            if isinstance(parsed, list) and len(parsed) > 0:
+                existing_items = parsed
+        except Exception:
+            existing_items = None
+
+        if existing_items is not None:
+            logger.warning(
+                "Corporate actions fetch for %s returned empty list but non-empty file exists; keeping earlier file",
+                symbol,
+            )
+            if provenance is not None:
+                recorded_to = date.fromisoformat(str(provenance["effective_to"]))
+                fetched_at = datetime.fromisoformat(str(provenance["fetched_at"]))
+                count = int(provenance.get("count", 0))
+                _write_provenance(
+                    target,
+                    symbol=symbol,
+                    fetched_at=fetched_at,
+                    effective_from=start,
+                    effective_to=recorded_to,
+                    status="STALE",
+                    count=count,
+                )
+                return CorporateActionRecord(
+                    path=target,
+                    count=count,
+                    effective_from=start,
+                    effective_to=recorded_to,
+                    publication_date=fetched_at.date(),
+                    status="STALE",
+                )
+
+            count = len(existing_items)
+            _write_provenance(
+                target,
+                symbol=symbol,
+                fetched_at=moment,
+                effective_from=start,
+                effective_to=start,
+                status="UNAVAILABLE",
+                count=count,
+            )
+            return CorporateActionRecord(
+                path=target,
+                count=count,
+                effective_from=start,
+                effective_to=start,
+                publication_date=moment.date(),
+                status="UNAVAILABLE",
+            )
 
     atomic_write_json(target, items)
     _write_provenance(
