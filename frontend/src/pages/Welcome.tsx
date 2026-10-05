@@ -8,6 +8,7 @@ import { Button, Callout, cx, Field, Input, ProgressBar } from "../components/ui
 import { errorMessage } from "../lib/api";
 import { MONEY_LIMITS, moneyProblems } from "../lib/rules";
 import { inr, int } from "../lib/format";
+import { clearStep, readStep, writeStep } from "../lib/wizardStep";
 import { useAcceptDisclaimer, useBuildIndex, useSetDataFolder, useStatus, useUpdateSettings } from "../lib/queries";
 import type { Style } from "../lib/types";
 
@@ -15,14 +16,30 @@ const STEPS = ["Welcome", "Your style", "Money rules", "Market data"] as const;
 
 export default function Welcome() {
   const status = useStatus();
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => readStep());
   const navigate = useNavigate();
   const update = useUpdateSettings();
 
+  const goTo = (next: number) => {
+    setStep(next);
+    writeStep(next);
+  };
+
   const finish = () =>
-    update.mutate({ onboarding_complete: true }, { onSuccess: () => void navigate("/", { replace: true }) });
+    update.mutate(
+      { onboarding_complete: true },
+      {
+        onSuccess: () => {
+          clearStep();
+          void navigate("/", { replace: true });
+        },
+      },
+    );
 
   if (!status.data) return null;
+  const accepted = Boolean(status.data.settings.disclaimer_accepted_at);
+  const displayedStep = accepted ? step : 0;
+
   return (
     <div className="min-h-full bg-bg">
       <div className="mx-auto flex max-w-5xl flex-col px-6 py-8">
@@ -37,23 +54,23 @@ export default function Welcome() {
                 <span
                   className={cx(
                     "flex size-6 items-center justify-center rounded-full text-[12px] font-semibold",
-                    i < step ? "bg-up text-white" : i === step ? "bg-brand text-on-brand" : "bg-surface-3 text-ink-3",
+                    i < displayedStep ? "bg-up text-white" : i === displayedStep ? "bg-brand text-on-brand" : "bg-surface-3 text-ink-3",
                   )}
-                  aria-current={i === step ? "step" : undefined}
+                  aria-current={i === displayedStep ? "step" : undefined}
                 >
-                  {i < step ? <Check className="size-3.5" aria-hidden /> : i + 1}
+                  {i < displayedStep ? <Check className="size-3.5" aria-hidden /> : i + 1}
                 </span>
-                <span className={cx("text-[13px]", i === step ? "font-medium text-ink" : "text-ink-3")}>{label}</span>
+                <span className={cx("text-[13px]", i === displayedStep ? "font-medium text-ink" : "text-ink-3")}>{label}</span>
                 {i < STEPS.length - 1 && <span className="mx-1 h-px w-6 bg-line-strong" aria-hidden />}
               </li>
             ))}
           </ol>
         </header>
-        <main className="mt-10 q-fade-in" key={step}>
-          {step === 0 && <StepWelcome onNext={() => setStep(1)} accepted={Boolean(status.data.settings.disclaimer_accepted_at)} />}
-          {step === 1 && <StepStyle current={status.data.settings.style} onNext={() => setStep(2)} onBack={() => setStep(0)} />}
-          {step === 2 && <StepMoney onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-          {step === 3 && <StepData onBack={() => setStep(2)} onFinish={finish} finishing={update.isPending} />}
+        <main className="mt-10 q-fade-in" key={displayedStep}>
+          {displayedStep === 0 && <StepWelcome onNext={() => goTo(1)} accepted={accepted} />}
+          {displayedStep === 1 && <StepStyle current={status.data.settings.style} onNext={() => goTo(2)} onBack={() => goTo(0)} />}
+          {displayedStep === 2 && <StepMoney onNext={() => goTo(3)} onBack={() => goTo(1)} />}
+          {displayedStep === 3 && <StepData onBack={() => goTo(2)} onFinish={finish} finishing={update.isPending} />}
         </main>
       </div>
     </div>
