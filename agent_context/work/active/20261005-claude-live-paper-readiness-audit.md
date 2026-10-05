@@ -50,6 +50,25 @@ explicit founder instruction". No other record names any path below.
 - `frontend/src/lib/shariah.test.ts` (new)
 - `agent_context/handoffs/20261005-claude-live-paper-readiness-handoff.md` (new)
 
+Second pass, claimed 2026-10-05 on the founder's "complete all": see
+`20261005-NOTICE-live-paper-readiness-edits-under-other-claims.md` for every crossed claim.
+
+- `src/quant_system/server/static/live_dashboard.js` (new), `src/quant_system/server/ui/live_dashboard.py`,
+  `scripts/serve_live_dashboard.py`, `src/quant_system/server/app.py` (two read-only routes),
+  `tests/test_live_dashboard_csp.py` (new)
+- `src/quant_system/server/v2/state.py`, `schemas.py`, `paper_books.py`, `router.py`, `health.py` (new),
+  `tests/test_v2_paper_placements.py` (new), `tests/test_v2_health.py` (new)
+- `frontend/src/components/PlacementDialog.tsx`, `PlacementTrackingCard.tsx` (new), `OrderTicket.tsx`,
+  `Layout.tsx`, `frontend/src/pages/Home.tsx`, `PaperBook.tsx`, `frontend/src/lib/queries.ts`, `types.ts`,
+  `orderTicket.ts` (+ test)
+- `scripts/run_paper_pilot_session.py`, `scripts/run_scheduled_paper_session.py`,
+  `tests/test_paper_runner_log_clock.py` (new), `tests/test_paper_runner_wiring.py` (new),
+  `tests/test_scheduled_paper_session.py`
+- `src/quant_system/shariah/{schemas/screening.py,services/screener_service.py,api/v1/endpoints/screening.py}`,
+  `tests/shariah/test_tier1_features.py`, `tests/shariah/test_m3_stress_challenger.py`
+- `tests/test_release_packaging.py`, `tests/test_windows_installer.py`
+- `reports/live_paper_readiness_20261005/round7_mutation_check.py`, `round7_mutation_results.json`
+
 ## Non-goals
 
 - No live-money order routing. Mode B (direct broker access) is T4 money-movement work under
@@ -115,7 +134,15 @@ Complete. Committed and pushed to `claude/dazzling-brown-yn5qu3`. No pull reques
 | `detect-secrets scan` on changed files | 0 candidates | |
 | Mutation: `if missed == 0:` -> `if True:` | 4 tests failed, restored | |
 | Mutation: guard `if lag > MAX...` -> `if False:` | 1 test failed, restored | |
-| `scripts/audit-agent-claims.ps1`, `scripts/audit-disk-layout.ps1` | NOT RUN | no PowerShell in this container |
+| `scripts/audit-agent-claims.ps1`, `scripts/audit-disk-layout.ps1` | PASS in CI | the "Craft checkers and audits" job on PR 1 ran them on Windows and passed; not runnable in this container |
+| Live dashboard in Chromium (app-served and supervised), no session and with a session | PASS | no console errors, no axe violations, hostile symbol rendered as text |
+| Mode A flow in Chromium (inbox, record, skip, edit, clear, tracking, phone) | PASS | no console errors, no axe violations, 0 overflow |
+| Round 7 mutants on a scratch mirror | 7 of 13 survived, then 0 of 13 | `round7_mutation_results.json` |
+| `pytest tests` (full, Linux, final tree) | 2,578 passed, 0 failed, 17 skipped | |
+| `ruff check .`, `ruff format --check .` | PASS | 930 files |
+| `mypy --platform win32 src launcher.py scripts` | only the Windows-only `webview` import | 298 source files |
+| PR 1 Windows CI, first run | Tests (forward) failed on `test_stress_mixed_concurrency_under_load` (p95 62.6 ms) | cold-start in a wall-clock test; fixed by warming up in the measured shape |
+| PR 1 Windows CI, latest run | Static, Craft and audits, Tests (forward): PASS | reverse order see the PR |
 | `scripts/release.ps1` | NOT RUN | Windows-only; release is DUE per `release_status.py` |
 
 ## Files changed
@@ -144,4 +171,4 @@ Report written, gates run, committed and pushed. Working tree clean after the co
 
 ## Next safe action
 
-Read `agent_context/handoffs/20261005-claude-live-paper-readiness-handoff.md`.
+Read `agent_context/handoffs/20261005-claude-live-paper-readiness-handoff.md`, then merge PR 1 once CI is green and the founder has looked at it.

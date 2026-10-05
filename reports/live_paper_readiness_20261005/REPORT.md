@@ -50,16 +50,16 @@ that you place yourself, with a record of how well your copy tracked the paper b
 |---|---|
 | `uv sync --frozen --extra dev` (Python 3.12) | PASS. Project needs >=3.12; the container default is 3.11 |
 | Backend suite, before my changes (`--ignore=tests/test_windows_installer.py`) | 2,492 passed, **8 failed**, 9 skipped. All 8 are Linux-vs-Windows (below) |
-| Backend suite, after my changes | **2,513 passed, 1 failed, 15 skipped.** The 1 failure is `test_setup_gui_components` (needs `tkinter`), in a file another record claims. +21 tests are mine (20 freshness, 1 CLI repair) |
-| `ruff check .` / `ruff format --check .` | PASS, 920 files |
+| Backend suite, after both passes | **2,578 passed, 0 failed, 17 skipped** on Linux (after the first pass: 2,513 passed, 1 failed). About 90 tests are new |
+| `ruff check .` / `ruff format --check .` | PASS, 930 files |
 | `mypy src launcher.py scripts` (strict) | 17 errors on Linux, **all** Windows-only API attributes (`windll`, `winreg`, `CREATE_NO_WINDOW`) plus the Windows-only `webview` import. `--platform win32` leaves only the `webview` import |
-| Frontend `tsc --noEmit`, `vitest`, `vite build` | PASS. 44 unit tests (31 before) |
+| Frontend `tsc --noEmit`, `vitest`, `vite build` | PASS. 48 unit tests (31 before) |
 | Real data (the repo's tracked market cache, 3,268 symbols) loaded in the real app | PASS. Home, Markets, Stock, Lab, Portfolio, Paper, Tools, Settings, Shariah all render |
 | Browser audit: 13 routes × desktop/phone × light/dark, axe WCAG 2.0/2.1 A+AA, console, network, overflow | **Before** (48 pages): 15 with axe violations, 4 with console or network errors. **After** (52 pages, finished build): **0** axe violations, **0** console or network errors, **0** overflow, slowest page load 1.77 s |
 | Paper pilot with no broker token | **Fails closed**: `QuoteFeedError: no Upstox token`, no synthetic fallback, nothing written |
 | Egress from this container | Upstox public daily candles: **reachable without a token** (latest bar 2026-10-01 for RELIANCE). NSE: **blocked** (corporate actions cannot refresh here). Upstox authenticated API: 401 as expected |
 | Secret scan (`detect-secrets`) on every changed file | 0 candidates |
-| `audit-agent-claims.ps1`, `audit-disk-layout.ps1`, `release.ps1` | **NOT RUN**: no PowerShell in this container |
+| `audit-agent-claims.ps1`, `audit-disk-layout.ps1` | **PASS in CI** (the "Craft checkers and audits" job on PR 1, on Windows). `release.ps1`: **NOT RUN**, Windows-only |
 
 ## Findings
 

@@ -15,10 +15,15 @@ every open item named with an owner.
 
 ## Completed
 
-- Verdict and 14 numbered open findings: `reports/live_paper_readiness_20261005/REPORT.md`.
-- Stale "tomorrow's orders" guard, creation refusal, and the order ticket (Mode A).
-- Phone layout, contrast, touch-target, Shariah 404 and honesty fixes. `mizan_cli predict` Linux crash.
-- Six Windows-only tests marked so a Linux or cloud run is green.
+PR: https://github.com/uninestindia-crypto/mizan/pull/1
+
+- Verdict and 14 numbered open findings: `reports/live_paper_readiness_20261005/REPORT.md`, with a
+  follow-up table of what the second pass closed.
+- Mode A, end to end: stale-order guard, creation refusal, order ticket, "Orders to place" inbox and
+  sidebar count, a note per order (placed or skipped), tracking against the paper fills.
+- Live dashboard repaired inside the app; health and readiness probes; log clock; holiday-list
+  expiry warnings; Shariah labels; phone layout, contrast and touch targets; Linux-green test suite.
+- Eight end-to-end tests drive the real paper runner; all 13 Red Team Round 7 survivors are killed.
 
 ## In progress
 
@@ -27,7 +32,7 @@ needs its own charter.
 
 ## Files and ownership
 
-Committed on `claude/dazzling-brown-yn5qu3`; no pull request was opened. Source, test and frontend
+Committed on `claude/dazzling-brown-yn5qu3`; pull request 1 is open. Source, test and frontend
 files are listed in the active record under "Owned paths". The frontend build output under
 `src/quant_system/server/static/app/` is gitignored and was rebuilt locally only.
 
@@ -37,13 +42,13 @@ See the active record, "Commands and outcomes".
 
 ## Known failures and risks
 
-- `tests/test_release_packaging.py::test_setup_gui_components` (needs `tkinter`) and
-  `tests/test_windows_installer.py` (needs `pefile`) are red on Linux. Their files are claimed by
-  other active records, so they were left alone.
-- The live dashboard (`/live`) is broken under the app's CSP on this branch. The fix is commit
-  `b79351813` on `claude/amazing-lamport-e18bd1`, which is not in this checkout.
+- Nothing was run against a live broker feed; no token was available. Findings O3 and O4 remain.
+- The earlier live-dashboard fix (`b79351813` on `claude/amazing-lamport-e18bd1`) is not on the remote.
+  This branch re-implements it; expect conflicts if that branch is ever merged, and prefer this one.
+- Mode A still has no email or push at the close. Mode B is not built (T4, needs its own charter).
+- The 2027 NSE holiday list is not fetched (NSE is unreachable from the container). Both the app and
+  the scheduled runner warn from 90 days out; today it is 87.
 - A release is due (`release_status.py`) and cannot be cut from Linux.
-- Nothing here was run against a live broker feed; no token was available.
 
 ## Exact stop point
 
@@ -51,10 +56,9 @@ Report, tests and repairs written; gates run; changes committed and pushed to th
 
 ## Next safe action
 
-1. Push or merge `claude/amazing-lamport-e18bd1` so the live dashboard works.
-2. On the Windows install root: pull this branch, run `scripts/audit-agent-claims.ps1` and
-   `scripts/audit-disk-layout.ps1` (NOT RUN here, no PowerShell), then decide whether to cut the
-   release with `scripts/release.ps1 -DryRun` first.
+1. Review and merge PR 1 when CI is green.
+2. On the Windows install root: pull the merged branch, then decide whether to cut the release with
+   `scripts/release.ps1 -DryRun` first. (The claims and disk-layout audits already pass in CI.)
 3. Run one governed live paper session with `UPSTOX_ANALYTICS_TOKEN`, then commission an
    independent adjudication of the live paper path (`.launch/RED-TEAM-BRIEF-20260901-ROUND7.md` was
    author-run and says so).
