@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { EquityChart, type EquitySeries } from "../components/charts";
 import { DataGate } from "../components/common";
+import { OrderTicket } from "../components/OrderTicket";
 import {
   Badge,
   Button,
@@ -17,7 +18,7 @@ import {
   Stat,
 } from "../components/ui";
 import { errorMessage } from "../lib/api";
-import { DASH, date, inr, inrCompact, inrSigned, int, pct, tone } from "../lib/format";
+import { date, inr, inrCompact, inrSigned, int, pct, tone } from "../lib/format";
 import { usePaperBook, useStopPaperBook } from "../lib/queries";
 import type { PaperBookDetail, PaperStatus } from "../lib/types";
 
@@ -243,47 +244,15 @@ function PaperBookDetailView({
         )}
       </Card>
 
-      {/* Card: Tomorrow's orders */}
-      <Card>
-        <CardHeader
-          title="Tomorrow's orders"
-          subtitle="Decided at the last close using only prices up to it; they fill at the next session's open."
-        />
-        {book.queued.length === 0 ? (
-          <p className="text-sm text-ink-3">No orders are waiting. At the last close the rule had nothing to change.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[480px] text-sm">
-              <thead>
-                <tr className="border-y border-line bg-surface-2/60 text-[12px] font-semibold uppercase tracking-wide text-ink-3">
-                  <th className="px-3 py-2 text-left">Side</th>
-                  <th className="px-3 py-2 text-left">Stock</th>
-                  <th className="px-3 py-2 text-right">Shares</th>
-                  <th className="px-3 py-2 text-right">About price</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {book.queued.map((order, i) => (
-                  <tr key={`${order.symbol}-${order.side}-${i}`}>
-                    <td className="px-3 py-2">
-                      <Badge tone={order.side === "BUY" ? "up" : "down"}>{order.side}</Badge>
-                    </td>
-                    <td className="px-3 py-2 font-medium text-ink">
-                      <Link to={`/stock/${order.symbol}`} className="hover:underline">
-                        {order.symbol}
-                      </Link>
-                    </td>
-                    <td className="num px-3 py-2 text-right text-ink-2">{int(order.quantity)}</td>
-                    <td className="num px-3 py-2 text-right text-ink-2">
-                      {order.reference_price !== null ? inr(order.reference_price) : DASH}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+      {/* Card: Tomorrow's orders, made safe to copy by hand */}
+      <OrderTicket
+        orders={book.orders}
+        queued={book.queued}
+        bookName={book.name}
+        bookCapital={book.capital}
+        slippageBps={book.slippage_bps}
+        reading={book.reading}
+      />
 
       {/* Card: What it holds */}
       <Card>

@@ -10,7 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from quant_system.server.app import app
-from quant_system.server.v2 import paths, router
+from quant_system.server.v2 import paper_books, paths, router
 from quant_system.server.v2.paper_books import MAX_BOOKS
 from tests.market_fixtures import DATES, build_standard_store
 
@@ -34,7 +34,16 @@ def headers(client: TestClient) -> dict[str, str]:
 
 
 @pytest.fixture()
-def ready(client: TestClient, headers: dict[str, str], tmp_path: Path) -> TestClient:
+def ready(
+    client: TestClient,
+    headers: dict[str, str],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> TestClient:
+    # The standard store's benchmark ends 20 sessions before its stocks, which is irrelevant to
+    # what these tests replay. The refusal of such a store is pinned in
+    # tests/test_v2_paper_order_freshness.py.
+    monkeypatch.setattr(paper_books, "MAX_REFERENCE_LAG_SESSIONS", 10_000)
     folder = tmp_path / "workspace" / "data"
     build_standard_store(folder)
     assert (

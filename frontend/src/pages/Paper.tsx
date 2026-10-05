@@ -141,7 +141,12 @@ function MyBookRow({ book }: { book: PaperBookSummary }) {
                 <span className="text-ink-3"> · NIFTY {pct(book.benchmark_return, 2)}</span>
               </div>
             </div>
-            {book.queued > 0 && <Badge tone="brand">{book.queued} orders tomorrow</Badge>}
+            {book.queued > 0 &&
+              (book.orders_state === "CURRENT" ? (
+                <Badge tone="brand">{book.queued} orders tomorrow</Badge>
+              ) : book.orders_state === "STALE" ? (
+                <Badge tone="down">Orders out of date</Badge>
+              ) : null)}
           </div>
         )}
       </div>

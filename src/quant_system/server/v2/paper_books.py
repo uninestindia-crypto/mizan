@@ -8,8 +8,12 @@ rewrite a book's past.
 
 from __future__ import annotations
 
+import json
 import threading
+from collections.abc import Callable
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, Literal
 
 from quant_system.lab import BrokerCharges, LabError
@@ -17,6 +21,7 @@ from quant_system.lab.paper import PaperSpec, evaluate_book, latest_session
 from quant_system.lab.runner import MAX_STOCKS
 from quant_system.lab.templates import get_template
 from quant_system.market import MarketIndex
+from quant_system.server.v2.auto_update import expected_session
 from quant_system.server.v2.state import AppState
 
 MAX_BOOKS = 20
@@ -24,13 +29,154 @@ MAX_BOOKS = 20
 # re-adjustment, not by anything the book did.
 REVISION_TOLERANCE = 0.01
 _SPARK_POINTS = 60
+# A book is measured to the NIFTY reference series' last session. If that series ends more than
+# this many trading sessions before the newest prices, a new book would start in the past and its
+# "tomorrow's orders" would be orders for a session that has already happened.
+MAX_REFERENCE_LAG_SESSIONS = 2
+HOLIDAY_FILE = Path("authorities") / "nse-trading-holidays.json"
+
+
+def _human(day: date | str) -> str:
+    """``5 Oct 2026``: the way the rest of the app writes a date (``%-d`` is not portable)."""
+    d = day if isinstance(day, date) else date.fromisoformat(day[:10])
+    return f"{d.day} {d:%b} {d.year}"
+
+
+def trading_sessions_between(after: date, upto: date, holidays: frozenset[date]) -> int:
+    """Weekday, non-holiday sessions in the half-open range ``(after, upto]``."""
+    count = 0
+    day = after + timedelta(days=1)
+    while day <= upto:
+        if day.weekday() < 5 and day not in holidays:
+            count += 1
+        day += timedelta(days=1)
+    return count
+
+
+def load_holidays(index: MarketIndex) -> frozenset[date]:
+    """The NSE holiday list that ships beside the market data, or none when it is absent.
+
+    Without it a market holiday looks like a missing session, which is the safe direction for the
+    order check: it can only say "out of date" too early, never "current" too late.
+    """
+    try:
+        folder = index.meta().get("data_folder")
+        if not folder:
+            return frozenset()
+        raw = json.loads((Path(folder) / HOLIDAY_FILE).read_text(encoding="utf-8"))
+        return frozenset(date.fromisoformat(str(h["date"])) for h in raw["holidays"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return frozenset()
+
+
+def order_freshness(
+    *,
+    as_of: str | None,
+    expected: date,
+    newest_data: str | None,
+    holidays: frozenset[date],
+    stopped: bool = False,
+) -> dict[str, Any]:
+    """Whether a book's "tomorrow's orders" can still be acted on.
+
+    Orders are decided at a close and fill at the next open. They are current only when no trading
+    session has happened since that close. Anyone copying them into a real account needs this
+    answered before they see a quantity, so a stale answer must never look like a fresh one.
+    """
+    if stopped:
+        return {
+            "state": "STOPPED",
+            "as_of": as_of,
+            "expected_session": expected.isoformat(),
+            "sessions_missed": 0,
+            "message": "This book is stopped, so it places no more orders.",
+        }
+    if as_of is None:
+        return {
+            "state": "UNKNOWN",
+            "as_of": None,
+            "expected_session": expected.isoformat(),
+            "sessions_missed": 0,
+            "message": "This book could not be followed, so there are no orders to place.",
+        }
+    decided = date.fromisoformat(as_of)
+    missed = trading_sessions_between(decided, expected, holidays)
+    if missed == 0:
+        return {
+            "state": "CURRENT",
+            "as_of": as_of,
+            "expected_session": expected.isoformat(),
+            "sessions_missed": 0,
+            "message": f"Decided at the close of {_human(as_of)}. They fill at the next session's open.",
+        }
+    if newest_data is not None and date.fromisoformat(newest_data[:10]) < expected:
+        cause = (
+            f"Your market data ends on {_human(newest_data)}. Update it in Settings, then Data, "
+            "before acting on anything here."
+        )
+    elif newest_data is not None and decided < date.fromisoformat(newest_data[:10]):
+        cause = (
+            f"This book is measured only to {_human(as_of)} because its NIFTY reference series "
+            f"ends there while prices run to {_human(newest_data)}. Update the market data so the "
+            "reference series catches up."
+        )
+    else:
+        cause = "Update the market data before acting on anything here."
+    plural = "session has" if missed == 1 else "sessions have"
+    return {
+        "state": "STALE",
+        "as_of": as_of,
+        "expected_session": expected.isoformat(),
+        "sessions_missed": missed,
+        "message": (
+            f"These orders are out of date. They were decided at the close of {_human(as_of)}, and "
+            f"{missed} trading {plural} passed since. Do not place them. {cause}"
+        ),
+    }
 
 
 class PaperBooks:
-    def __init__(self, state: AppState) -> None:
+    def __init__(
+        self, state: AppState, clock: Callable[[], datetime] = lambda: datetime.now(UTC)
+    ) -> None:
         self._state = state
+        self._clock = clock
         self._lock = threading.Lock()
         self._cache: dict[tuple[str, str, str | None], dict[str, Any]] = {}
+
+    def _freshness(self, index: MarketIndex, state: dict[str, Any]) -> dict[str, Any]:
+        return order_freshness(
+            as_of=state["last_session"],
+            expected=expected_session(self._clock()),
+            newest_data=index.meta().get("latest_session"),
+            holidays=load_holidays(index),
+            stopped=state["status"] == "STOPPED",
+        )
+
+    def _unknown_orders(self) -> dict[str, Any]:
+        return order_freshness(
+            as_of=None,
+            expected=expected_session(self._clock()),
+            newest_data=None,
+            holidays=frozenset(),
+        )
+
+    def _refuse_lagging_reference(self, index: MarketIndex) -> None:
+        reference = latest_session(index)
+        newest = index.meta().get("latest_session")
+        if not newest:
+            return
+        lag = trading_sessions_between(
+            date.fromisoformat(reference), date.fromisoformat(newest[:10]), load_holidays(index)
+        )
+        if lag > MAX_REFERENCE_LAG_SESSIONS:
+            raise LabError(
+                f"The NIFTY reference series ends on {_human(reference)} but prices run to "
+                f"{_human(newest)}. "
+                "A book started now would begin in the past and its orders would be for a "
+                "session that has already happened. Update the market data in Settings, then "
+                "Data, and try again."
+            )
 
     # -------------------------------------------------------------------------- creating
 
@@ -53,6 +199,7 @@ class PaperBooks:
             raise LabError("Give the book a name of 1 to 60 characters.")
         if sum(1 for b in self._state.paper_books() if b["stopped_session"] is None) >= MAX_BOOKS:
             raise LabError(f"You already have {MAX_BOOKS} paper books running. Stop one first.")
+        self._refuse_lagging_reference(index)
         template = get_template(template_id)
         if scope not in template.scopes:
             raise LabError(f"{template.name} cannot be run on a {scope}.")
@@ -83,9 +230,9 @@ class PaperBooks:
             try:
                 state = self._replay(index, book)
             except LabError as err:
-                out.append(_broken(book, str(err)))
+                out.append(_broken(book, str(err), self._unknown_orders()))
                 continue
-            out.append(_summary(book, state))
+            out.append(_summary(book, state, self._freshness(index, state)))
         return out
 
     def detail(self, index: MarketIndex, book_id: str) -> dict[str, Any]:
@@ -95,14 +242,20 @@ class PaperBooks:
         try:
             state = self._replay(index, book)
         except LabError as err:
-            broken = _broken(book, str(err))
+            broken = _broken(book, str(err), self._unknown_orders())
             name = get_template(str(book["spec"]["template_id"])).name
             return {
                 **broken,
                 "template": {"id": book["spec"]["template_id"], "name": name, "summary": ""},
             }
         full = {k: v for k, v in state.items() if k != "session_equity"}
-        return {"id": book["id"], "name": book["name"], "created_at": book["created_at"], **full}
+        return {
+            "id": book["id"],
+            "name": book["name"],
+            "created_at": book["created_at"],
+            **full,
+            "orders": self._freshness(index, state),
+        }
 
     def stop(self, index: MarketIndex, book_id: str) -> dict[str, Any]:
         book = self._state.paper_book(book_id)
@@ -199,7 +352,7 @@ def _sparkline(curve: list[list[Any]]) -> list[float]:
     return [values[round(i * step)] for i in range(_SPARK_POINTS)]
 
 
-def _summary(book: dict[str, Any], state: dict[str, Any]) -> dict[str, Any]:
+def _summary(book: dict[str, Any], state: dict[str, Any], orders: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": book["id"],
         "name": book["name"],
@@ -216,6 +369,7 @@ def _summary(book: dict[str, Any], state: dict[str, Any]) -> dict[str, Any]:
         "benchmark_return": state["benchmark_return"],
         "excess": state["excess"],
         "queued": len(state["queued"]),
+        "orders_state": orders["state"],
         "positions": len(state["positions"]),
         "attention": len(state["attention"]),
         "spark": _sparkline(state["curve"]),
@@ -223,7 +377,7 @@ def _summary(book: dict[str, Any], state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _broken(book: dict[str, Any], reason: str) -> dict[str, Any]:
+def _broken(book: dict[str, Any], reason: str, orders: dict[str, Any]) -> dict[str, Any]:
     """A book whose replay is refused (for example its stock left the data) says why, in words."""
     spec = book["spec"]
     return {
@@ -242,6 +396,8 @@ def _broken(book: dict[str, Any], reason: str) -> dict[str, Any]:
         "benchmark_return": 0.0,
         "excess": 0.0,
         "queued": 0,
+        "orders_state": orders["state"],
+        "orders": orders,
         "positions": 0,
         "attention": 1,
         "spark": [],

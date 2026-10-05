@@ -29,9 +29,9 @@ export interface ShariahCompliance {
   tasis_compliant: boolean;
   debt_ratio: number;
   cash_ratio: number;
-  receivables_ratio: number;
-  impermissible_revenue_ratio: number;
   purification_ratio: number;
+  aaoifi_status: "COMPLIANT" | "NON_COMPLIANT" | "QUESTIONABLE";
+  tasis_status: "COMPLIANT" | "NON_COMPLIANT" | "QUESTIONABLE";
   compliance_status: "COMPLIANT" | "NON_COMPLIANT" | "QUESTIONABLE";
 }
 
@@ -577,6 +577,8 @@ export interface PaperBookSummary {
   benchmark_return: number;
   excess: number;
   queued: number;
+  /** Whether "tomorrow's orders" can still be acted on (see OrdersFreshness). */
+  orders_state: OrdersState;
   positions: number;
   attention: number;
   spark: number[];
@@ -592,6 +594,18 @@ export interface PaperPosition {
   market_value: number;
   unrealized_pnl: number;
   weight: number;
+}
+
+export type OrdersState = "CURRENT" | "STALE" | "STOPPED" | "UNKNOWN";
+
+/** Whether a book's queued orders are still worth placing, decided by the engine, not the page. */
+export interface OrdersFreshness {
+  state: OrdersState;
+  /** The close the orders were decided at. */
+  as_of: string | null;
+  expected_session: string;
+  sessions_missed: number;
+  message: string;
 }
 
 export interface PaperQueuedOrder {
@@ -635,6 +649,7 @@ export interface PaperBookDetail {
   slippage: number;
   positions: PaperPosition[];
   queued: PaperQueuedOrder[];
+  orders: OrdersFreshness;
   trades: PaperTrade[];
   /** [session, book equity, NIFTY equity], same starting money. */
   curve: [string, number, number][];
