@@ -11,7 +11,8 @@ verification evidence remain authoritative in `.launch/`.
 
 Every new agent must:
 
-1. Read [CURRENT.md](CURRENT.md) for the current snapshot and collision warnings.
+1. Read [GOAL.md](GOAL.md) for the final result we are building and the tripwires that say you have
+   missed it. Then read [CURRENT.md](CURRENT.md) for the current snapshot and collision warnings.
 2. Read [PROJECT.md](PROJECT.md) for product boundaries and invariants.
 3. Read [PROTOCOL.md](PROTOCOL.md) before editing.
 4. Read `.launch/STATE.md` and `.launch/SLICES.md` for formal release state.
@@ -22,6 +23,7 @@ Every new agent must:
 
 | Location | Purpose | Update rule |
 |---|---|---|
+| `GOAL.md` | The final result, goal lines G1-G7 and goalpost tripwires | Founder's instruction only; agents append dated proposals under its section 7 |
 | `CURRENT.md` | Reconciled repository snapshot | Coordinator updates after merges or handoffs |
 | `PROJECT.md` | Stable product intent, boundaries, and source hierarchy | Update when the product contract changes |
 | `PROTOCOL.md` | Cross-tool concurrent-work procedure | Change through a decision record |
