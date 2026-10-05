@@ -117,11 +117,34 @@ At completion, move the record from `agent_context/work/active/` to
   (bundling audited SQLite/DuckDB seed data, pre-compiled UI assets, and WebView2/App Mode runner) so
   that non-technical users can install and run the system out-of-the-box on a fresh laptop with zero
   pre-installed Python, Node, or Git, zero black terminal popups, and complete drive isolation.
+- **Cloud Development Completeness Law (Claude Code & Container Readiness)**: Every asset required
+  to build, run, test, and iterate on QuantOS/Mizan in a headless cloud container (e.g. Claude Code
+  Web/Cloud, GitHub Codespaces, CI runners) must be fully tracked and pushed to GitHub:
+  - Code, schema migrations, local model architectures, prompts, and catalog definitions.
+  - Curated seed databases (`data/shariah/*.db`, `*.duckdb`), test fixtures, and verified authorities.
+  - Production frontend build assets or reproducible build toolchains.
+  - Zero reliance on untracked local paths or developer machine absolute paths (e.g. `D:\quant_system_workspaces\...`).
+  - **Zero-Dependency Fallback**: The codebase must run 100% functionally in `SYNTHETIC_MODE` without
+    requiring live external broker or LLM API credentials, allowing full verification in isolated cloud environments.
 
-## Context safety
+## Context safety and secret leak prevention
 
-- Never store credentials, tokens, `.env` values, provider payloads containing secrets, private
-  device IDs, product IDs, or unnecessary personal data in repository context.
-- Store sanitized conversation summaries, not raw private chats.
-- Cite code, tests, commands, commits, and evidence for claims that another agent must trust.
+- **Zero Secrets in Repository Law**: The GitHub repository is strictly private and must remain 100% free
+  of any credentials, secrets, or confidential keys:
+  - Never commit, stage, or push credentials, API keys (Upstox, OpenAI, Anthropic, Gemini, Groq, Lightning AI,
+    OpenRouter, AWS Bedrock), tokens (OAuth, JWT, Bearer), passwords, private certificates (`.pem`, `.key`,
+    `.p12`, `.pfx`), or private machine/hardware identifiers.
+  - All sensitive keys must reside exclusively in process environment variables (`os.environ`) or machine-local,
+    strictly gitignored `.env` files.
+- **Git Staging Hygiene**:
+  - Never run blanket `git add -A` or `git add .` at repository root. Always stage explicitly claimed paths (`git add <path>`).
+  - Never bypass `.gitignore` (`git add -f` is strictly prohibited for any `.env*` or credential file).
+  - `.env.example` is the sole tracked environment template and must contain only empty placeholder values.
+- **Sanitized Artifacts and Context**:
+  - Never store credentials, tokens, `.env` values, provider payloads containing secrets, private
+    device IDs, product IDs, or unnecessary personal data in repository context.
+  - Store sanitized conversation summaries, not raw private chats.
+  - Cite code, tests, commands, commits, and evidence for claims that another agent must trust.
+- **Pre-Commit Secret Verification**: Run secret scanning (`detect-secrets`) before any commit to ensure zero
+  candidate credential leakage.
 

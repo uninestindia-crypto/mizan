@@ -3,14 +3,14 @@
   "configurations": [
     {
       "name": "quantos",
-      "runtimeExecutable": ".venv/Scripts/python.exe",
-      "runtimeArgs": ["-m", "uvicorn", "quant_system.server.app:app", "--host", "127.0.0.1", "--port", "8765"],
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "quant_system.server.app:app", "--host", "127.0.0.1", "--port", "8765", "--app-dir", "src"],
       "port": 8765
     },
     {
       "name": "quantos-v2",
-      "runtimeExecutable": ".venv/Scripts/python.exe",
-      "runtimeArgs": ["-m", "uvicorn", "quant_system.server.app:app", "--host", "127.0.0.1", "--port", "8766", "--app-dir", "D:/quant_system_workspaces/worktrees/feature-retail-redesign-e787ac4-20260928-000443/src"],
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "quant_system.server.app:app", "--host", "127.0.0.1", "--port", "8766", "--app-dir", "src"],
       "port": 8766
     }
   ]
