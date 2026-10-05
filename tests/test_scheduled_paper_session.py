@@ -221,3 +221,22 @@ def test_the_refresh_writes_corporate_actions_into_its_own_cache() -> None:
     assert "all-market-20160822-20260821" not in destination.parts, (
         f"corporate actions are written into the ten-year store at {destination}"
     )
+
+
+# ---------------------------------------------------------------- the calendar running out
+
+
+def test_the_calendar_warns_ninety_days_before_it_ends() -> None:
+    from run_scheduled_paper_session import calendar_expiry_warning
+
+    end = date(COVERED_YEAR, 12, 31)
+    assert calendar_expiry_warning(date.fromordinal(end.toordinal() - 91)) is None
+    soon = calendar_expiry_warning(date.fromordinal(end.toordinal() - 90))
+    assert soon is not None and f"{COVERED_YEAR}-12-31" in soon and "refuse to run" in soon
+
+
+def test_the_warning_never_goes_negative_once_the_list_has_ended() -> None:
+    from run_scheduled_paper_session import calendar_expiry_warning
+
+    after = calendar_expiry_warning(date(COVERED_YEAR + 1, 2, 1))
+    assert after is not None and "(0 days)" in after

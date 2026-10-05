@@ -461,6 +461,7 @@ def test_inno_setup_iss_configuration(project_root: Path) -> None:
 
 def test_setup_gui_components(project_root: Path, temp_workspace: Path) -> None:
     """Verifies that setup_gui.py helper functions operate safely."""
+    pytest.importorskip("tkinter", reason="the setup window needs Tk, which headless Linux lacks")
     from installer.setup_gui import get_available_drives, get_free_space_gb
 
     drives = get_available_drives()

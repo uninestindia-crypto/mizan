@@ -34,6 +34,13 @@ class StandardEvaluation(BaseModel):
     summary: str
 
 
+#: Every audit line in this app comes from a hand-entered sample, not from a filing that anyone
+#: checked, so none of them may claim to be verified. A line only earns another status when a real
+#: verification step exists to back it.
+UNVERIFIED_SAMPLE = "UNVERIFIED_SAMPLE"
+SAMPLE_DATA_NOTICE = "Illustrative sample entered by hand from FY24 reports; not read from audited filings and not live."
+
+
 class AuditEvidenceLine(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -41,7 +48,7 @@ class AuditEvidenceLine(BaseModel):
     value_inr_cr: float
     note_ref: str | None = None
     filing_schedule: str | None = None
-    verification_status: str = "VERIFIED"
+    verification_status: str = UNVERIFIED_SAMPLE
 
 
 class ShariahAuditResponse(BaseModel):
