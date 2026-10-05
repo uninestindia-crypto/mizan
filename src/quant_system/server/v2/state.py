@@ -61,6 +61,17 @@ CREATE TABLE IF NOT EXISTS paper_snapshots(
     recorded_at TEXT NOT NULL,
     PRIMARY KEY(book_id, session)
 );
+CREATE TABLE IF NOT EXISTS paper_placements(
+    book_id TEXT NOT NULL,
+    as_of TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    side TEXT NOT NULL,
+    status TEXT NOT NULL,
+    quantity INTEGER,
+    price TEXT,
+    recorded_at TEXT NOT NULL,
+    PRIMARY KEY(book_id, as_of, symbol, side)
+);
 """
 
 
@@ -333,6 +344,69 @@ class AppState:
                 "INSERT OR IGNORE INTO paper_snapshots VALUES (?,?,?,?)",
                 [(book_id, d, e, _now()) for d, e in sorted(equity_by_session.items())],
             )
+
+    # ------------------------------------------------------------------ owner's own record
+    #
+    # What the person actually did with an order a book decided: placed it (at what price) or
+    # skipped it. It is their own note, so unlike a recorded equity it can be corrected or cleared.
+    # QuantOS never learns this from a broker; the person types it.
+
+    def save_placement(
+        self,
+        book_id: str,
+        as_of: str,
+        symbol: str,
+        side: str,
+        status: Literal["PLACED", "SKIPPED"],
+        quantity: int | None,
+        price: Decimal | None,
+    ) -> None:
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                "INSERT INTO paper_placements VALUES (?,?,?,?,?,?,?,?) "
+                "ON CONFLICT(book_id, as_of, symbol, side) DO UPDATE SET "
+                "status = excluded.status, quantity = excluded.quantity, "
+                "price = excluded.price, recorded_at = excluded.recorded_at",
+                (
+                    book_id,
+                    as_of,
+                    symbol,
+                    side,
+                    status,
+                    quantity,
+                    None if price is None else str(price),
+                    _now(),
+                ),
+            )
+
+    def clear_placement(self, book_id: str, as_of: str, symbol: str, side: str) -> bool:
+        with self._lock, self._connect() as conn:
+            cursor = conn.execute(
+                "DELETE FROM paper_placements "
+                "WHERE book_id = ? AND as_of = ? AND symbol = ? AND side = ?",
+                (book_id, as_of, symbol, side),
+            )
+        return cursor.rowcount > 0
+
+    def placements(self, book_id: str) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM paper_placements WHERE book_id = ? "
+                "ORDER BY as_of DESC, symbol, side",
+                (book_id,),
+            ).fetchall()
+        return [
+            {
+                "as_of": r["as_of"],
+                "symbol": r["symbol"],
+                "side": r["side"],
+                "status": r["status"],
+                "quantity": r["quantity"],
+                "price": None if r["price"] is None else float(r["price"]),
+                "recorded_at": r["recorded_at"],
+            }
+            for r in rows
+        ]
 
 
 def _deep_merge(base: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:

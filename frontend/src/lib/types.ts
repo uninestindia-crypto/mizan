@@ -608,6 +608,67 @@ export interface OrdersFreshness {
   message: string;
 }
 
+export type PlacementStatus = "PLACED" | "SKIPPED";
+
+/** What you did with one of a book's orders. Typed by you; QuantOS never learns it from a broker. */
+export interface Placement {
+  as_of: string;
+  symbol: string;
+  side: "BUY" | "SELL";
+  status: PlacementStatus;
+  quantity: number | null;
+  price: number | null;
+  recorded_at: string;
+}
+
+export interface TrackingRow extends Placement {
+  paper_quantity: number | null;
+  paper_price: number | null;
+  state: "WAITING" | "FILLED" | "NO_FILL";
+  /** Basis points worse than the paper fill; negative means you did better. */
+  worse_bps: number | null;
+  /** Rupees the difference cost you (negative = saved). */
+  cost: number | null;
+}
+
+export interface PlacementTracking {
+  rows: TrackingRow[];
+  placed: number;
+  skipped: number;
+  waiting: number;
+  compared: number;
+  mean_worse_bps: number | null;
+  total_cost: number | null;
+  unrecorded: number;
+}
+
+export interface PlacementInput {
+  as_of: string;
+  symbol: string;
+  side: "BUY" | "SELL";
+  status: PlacementStatus;
+  quantity: number | null;
+  /** Decimal text, or null when you did not note a price. */
+  price: string | null;
+}
+
+export interface OrdersInboxBook {
+  id: string;
+  name: string;
+  state: "CURRENT" | "STALE";
+  as_of: string;
+  message: string;
+  orders: number;
+  dealt_with: number;
+  pending: number;
+}
+
+export interface OrdersInbox {
+  books: OrdersInboxBook[];
+  /** Orders waiting for you across every running book whose orders are current. */
+  pending: number;
+}
+
 export interface PaperQueuedOrder {
   side: "BUY" | "SELL";
   symbol: string;
@@ -650,6 +711,8 @@ export interface PaperBookDetail {
   positions: PaperPosition[];
   queued: PaperQueuedOrder[];
   orders: OrdersFreshness;
+  placements: Placement[];
+  tracking: PlacementTracking;
   trades: PaperTrade[];
   /** [session, book equity, NIFTY equity], same starting money. */
   curve: [string, number, number][];

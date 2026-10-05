@@ -3,7 +3,8 @@ import { useId, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { buildTicket, ticketToCsv, ticketToText } from "../lib/orderTicket";
 import { DASH, date, inr, int } from "../lib/format";
-import type { OrdersFreshness, PaperQueuedOrder } from "../lib/types";
+import type { OrdersFreshness, PaperQueuedOrder, Placement } from "../lib/types";
+import { PlacementDialog, type PlacementTarget } from "./PlacementDialog";
 import { Badge, Button, Callout, Card, CardHeader, Field, Input } from "./ui";
 
 /** Digits and one dot only: the money the person types is never trusted as a number until cleaned. */
@@ -35,7 +36,12 @@ export function OrderTicket({
   bookCapital,
   slippageBps,
   reading,
+  bookId,
+  placements,
 }: {
+  bookId: string;
+  /** What you have already noted for this book's orders. */
+  placements: Placement[];
   orders: OrdersFreshness;
   queued: PaperQueuedOrder[];
   bookName: string;
@@ -48,9 +54,12 @@ export function OrderTicket({
   const [mine, setMine] = useState(() => String(Math.round(bookCapital)));
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
+  const [recording, setRecording] = useState<PlacementTarget | null>(null);
   const yourCapital = Number(mine);
   const ticket = useMemo(() => buildTicket(queued, bookCapital, yourCapital), [queued, bookCapital, yourCapital]);
   const asOf = orders.as_of;
+  const noteFor = (symbol: string, side: "BUY" | "SELL") =>
+    placements.find((p) => p.as_of === asOf && p.symbol === symbol && p.side === side) ?? null;
 
   const subtitle =
     orders.state === "CURRENT" && asOf
@@ -168,6 +177,7 @@ export function OrderTicket({
                   <th scope="col" className="px-3 py-2 text-right">Book shares</th>
                   <th scope="col" className="px-3 py-2 text-right">About price</th>
                   <th scope="col" className="px-3 py-2 text-right">About value</th>
+                  <th scope="col" className="px-3 py-2 text-right">Your record</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -187,6 +197,35 @@ export function OrderTicket({
                       {row.reference_price !== null ? inr(row.reference_price) : DASH}
                     </td>
                     <td className="num px-3 py-2 text-right text-ink-2">{row.value !== null ? inr(row.value, 0) : DASH}</td>
+                    <td className="px-3 py-2 text-right">
+                      {(() => {
+                        const note = noteFor(row.symbol, row.side);
+                        return (
+                          <Button
+                            size="sm"
+                            variant={note ? "ghost" : "secondary"}
+                            aria-label={`${note ? "Edit" : "Record"} ${row.side.toLowerCase()} ${row.symbol}`}
+                            onClick={() =>
+                              asOf &&
+                              setRecording({
+                                bookId,
+                                asOf,
+                                symbol: row.symbol,
+                                side: row.side,
+                                suggestedShares: row.yourQuantity,
+                                existing: note,
+                              })
+                            }
+                          >
+                            {note
+                              ? note.status === "SKIPPED"
+                                ? "Skipped"
+                                : `Placed ${int(note.quantity)}${note.price != null ? ` @ ${inr(note.price)}` : ""}`
+                              : "Record"}
+                          </Button>
+                        );
+                      })()}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -199,6 +238,7 @@ export function OrderTicket({
                     {inr(ticket.buyValue, 0)}
                     {ticket.sellValue > 0 ? ` / ${inr(ticket.sellValue, 0)}` : ""}
                   </td>
+                  <td />
                 </tr>
               </tfoot>
             </table>
@@ -227,6 +267,8 @@ export function OrderTicket({
           </ul>
         </details>
       )}
+
+      <PlacementDialog target={recording} onClose={() => setRecording(null)} />
 
       <p className="mt-4 border-t border-line pt-3 text-[12.5px] leading-relaxed text-ink-3">
         QuantOS never connects to your broker and places nothing for you. The paper book fills at the next open

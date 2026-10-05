@@ -5,6 +5,7 @@ import { Link, useParams } from "react-router";
 import { EquityChart, type EquitySeries } from "../components/charts";
 import { DataGate } from "../components/common";
 import { OrderTicket } from "../components/OrderTicket";
+import { PlacementTrackingCard } from "../components/PlacementTrackingCard";
 import {
   Badge,
   Button,
@@ -252,7 +253,11 @@ function PaperBookDetailView({
         bookCapital={book.capital}
         slippageBps={book.slippage_bps}
         reading={book.reading}
+        bookId={book.id}
+        placements={book.placements}
       />
+
+      <PlacementTrackingCard tracking={book.tracking} />
 
       {/* Card: What it holds */}
       <Card>

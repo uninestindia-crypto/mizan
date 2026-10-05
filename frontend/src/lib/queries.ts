@@ -6,6 +6,7 @@ import type {
   CostsResult,
   LabResult,
   LabRunSummary,
+  OrdersInbox,
   Overview,
   PaperBook,
   PaperBookDetail,
@@ -13,6 +14,7 @@ import type {
   PaperBookSummary,
   PaperUpdates,
   PayoffResult,
+  PlacementInput,
   Portfolio,
   PositionSizeResult,
   Screener,
@@ -43,6 +45,7 @@ export const keys = {
   watchlist: ["watchlist"] as const,
   paper: ["paper"] as const,
   paperMine: ["paper-mine"] as const,
+  paperOrders: ["paper-orders"] as const,
   paperUpdates: ["paper-updates"] as const,
   paperBook: (id: string) => ["paper-book", id] as const,
   secrets: ["secrets"] as const,
@@ -159,6 +162,41 @@ export function useStopPaperBook() {
       qc.setQueryData(keys.paperBook(book.id), book);
       void qc.invalidateQueries({ queryKey: keys.paperMine });
     },
+  });
+}
+
+/** Orders waiting for you across every running paper book. Polled, because the answer changes by the clock. */
+export function usePaperOrders(enabled = true) {
+  return useQuery({
+    queryKey: keys.paperOrders,
+    queryFn: () => api<OrdersInbox>("/api/v2/paper/orders"),
+    enabled,
+    refetchInterval: 60_000,
+  });
+}
+
+function afterPlacement(qc: ReturnType<typeof useQueryClient>, book: PaperBookDetail) {
+  qc.setQueryData(keys.paperBook(book.id), book);
+  void qc.invalidateQueries({ queryKey: keys.paperOrders });
+}
+
+export function useRecordPlacement(bookId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: PlacementInput) => api<PaperBookDetail>(`/api/v2/paper/mine/${bookId}/placements`, "PUT", input),
+    onSuccess: (book) => afterPlacement(qc, book),
+  });
+}
+
+export function useClearPlacement(bookId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (p: { as_of: string; symbol: string; side: "BUY" | "SELL" }) =>
+      api<PaperBookDetail>(
+        `/api/v2/paper/mine/${bookId}/placements?as_of=${encodeURIComponent(p.as_of)}&symbol=${encodeURIComponent(p.symbol)}&side=${p.side}`,
+        "DELETE",
+      ),
+    onSuccess: (book) => afterPlacement(qc, book),
   });
 }
 

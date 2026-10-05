@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, FastAPI, Query, Request
 from fastapi.responses import JSONResponse
@@ -72,6 +72,7 @@ from quant_system.server.v2.schemas import (
     LabRunRequest,
     OptionsPayoffRequest,
     PaperBookRequest,
+    PlacementRequest,
     PositionSizeRequest,
     SecretRequest,
     WatchlistRequest,
@@ -645,6 +646,47 @@ def paper_book_detail(book_id: str) -> dict[str, Any]:
 def stop_paper_book(book_id: str) -> dict[str, Any]:
     try:
         return services().paper.stop(_index(), book_id)
+    except KeyError as err:
+        raise V2Error(404, "PAPER_BOOK_NOT_FOUND", "That paper book does not exist.") from err
+
+
+@router.get("/paper/orders")
+def paper_orders_inbox() -> dict[str, Any]:
+    """Orders waiting for you across every running paper book, and how many you have dealt with."""
+    return services().paper.inbox(_index())
+
+
+@router.put("/paper/mine/{book_id}/placements")
+def record_paper_placement(book_id: str, body: PlacementRequest) -> dict[str, Any]:
+    """Note what you did with one of a book's orders. QuantOS never places or checks anything."""
+    try:
+        return services().paper.record_placement(
+            _index(),
+            book_id,
+            as_of=body.as_of.isoformat(),
+            symbol=body.symbol,
+            side=body.side,
+            status=body.status,
+            quantity=body.quantity,
+            price=body.price,
+        )
+    except KeyError as err:
+        raise V2Error(404, "PAPER_BOOK_NOT_FOUND", "That paper book does not exist.") from err
+    except LabError as err:
+        raise V2Error(400, "PLACEMENT_REFUSED", str(err)) from err
+
+
+@router.delete("/paper/mine/{book_id}/placements")
+def clear_paper_placement(
+    book_id: str,
+    as_of: date = Query(...),
+    symbol: str = Query(..., min_length=1, max_length=30),
+    side: Literal["BUY", "SELL"] = Query(...),
+) -> dict[str, Any]:
+    try:
+        return services().paper.clear_placement(
+            _index(), book_id, as_of=as_of.isoformat(), symbol=symbol, side=side
+        )
     except KeyError as err:
         raise V2Error(404, "PAPER_BOOK_NOT_FOUND", "That paper book does not exist.") from err
 

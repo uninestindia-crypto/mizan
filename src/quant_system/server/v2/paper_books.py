@@ -135,6 +135,83 @@ def order_freshness(
     }
 
 
+def orders_decided_at(state: dict[str, Any], as_of: str) -> list[dict[str, Any]]:
+    """The orders a book decided at the close of ``as_of``.
+
+    At the book's latest close they are the queue. At an earlier close they are the fills on the
+    next session, which is what those orders became.
+    """
+    if as_of == state["last_session"]:
+        return list(state["queued"])
+    following = next((row[0] for row in state["curve"] if row[0] > as_of), None)
+    if following is None:
+        return []
+    return [
+        {
+            "side": t["side"],
+            "symbol": t["symbol"],
+            "quantity": t["quantity"],
+            "reference_price": t["price"],
+        }
+        for t in state["trades"]
+        if t["date"] == following
+    ]
+
+
+def _worse_bps(side: str, yours: float, paper: float) -> float:
+    """How much worse your price was than the paper fill, in basis points (negative = better)."""
+    sign = 1.0 if side == "BUY" else -1.0
+    return sign * (yours - paper) / paper * 10_000.0
+
+
+def placement_tracking(state: dict[str, Any], placements: list[dict[str, Any]]) -> dict[str, Any]:
+    """Your recorded orders against what the paper book did with the same orders.
+
+    Only a price you typed is compared; nothing is guessed for an order you did not record.
+    """
+    rows: list[dict[str, Any]] = []
+    for p in placements:
+        decided = {(o["symbol"], o["side"]): o for o in orders_decided_at(state, p["as_of"])}
+        paper = decided.get((p["symbol"], p["side"]))
+        waiting = p["as_of"] == state["last_session"]
+        paper_price = None if waiting or paper is None else paper["reference_price"]
+        row: dict[str, Any] = {
+            **p,
+            "paper_quantity": None if paper is None else paper["quantity"],
+            "paper_price": paper_price,
+            "state": "WAITING" if waiting else ("FILLED" if paper_price is not None else "NO_FILL"),
+            "worse_bps": None,
+            "cost": None,
+        }
+        if p["status"] == "PLACED" and p["price"] is not None and paper_price:
+            row["worse_bps"] = _worse_bps(p["side"], p["price"], paper_price)
+            sign = 1.0 if p["side"] == "BUY" else -1.0
+            row["cost"] = sign * (p["price"] - paper_price) * (p["quantity"] or 0)
+        rows.append(row)
+    compared = [r for r in rows if r["worse_bps"] is not None]
+    engaged = {p["as_of"] for p in placements}
+    unrecorded = 0
+    for as_of in engaged:
+        if as_of == state["last_session"]:
+            continue
+        recorded = {(p["symbol"], p["side"]) for p in placements if p["as_of"] == as_of}
+        unrecorded += sum(
+            1 for o in orders_decided_at(state, as_of) if (o["symbol"], o["side"]) not in recorded
+        )
+    return {
+        "rows": rows,
+        "placed": sum(1 for r in rows if r["status"] == "PLACED"),
+        "skipped": sum(1 for r in rows if r["status"] == "SKIPPED"),
+        "waiting": sum(1 for r in rows if r["state"] == "WAITING"),
+        "compared": len(compared),
+        "mean_worse_bps": (sum(r["worse_bps"] for r in compared) / len(compared))
+        if compared
+        else None,
+        "total_cost": sum(r["cost"] for r in compared) if compared else None,
+        "unrecorded": unrecorded,
+    }
+
+
 class PaperBooks:
     def __init__(
         self, state: AppState, clock: Callable[[], datetime] = lambda: datetime.now(UTC)
@@ -255,7 +332,90 @@ class PaperBooks:
             "created_at": book["created_at"],
             **full,
             "orders": self._freshness(index, state),
+            "placements": self._state.placements(str(book["id"])),
+            "tracking": placement_tracking(state, self._state.placements(str(book["id"]))),
         }
+
+    def record_placement(
+        self,
+        index: MarketIndex,
+        book_id: str,
+        *,
+        as_of: str,
+        symbol: str,
+        side: str,
+        status: Literal["PLACED", "SKIPPED"],
+        quantity: int | None,
+        price: Decimal | None,
+    ) -> dict[str, Any]:
+        """Note what you did with one of this book's orders. Refused unless the book decided it."""
+        book = self._state.paper_book(book_id)
+        if book is None:
+            raise KeyError(book_id)
+        state = self._replay(index, book)
+        symbol = symbol.strip().upper()
+        if (symbol, side) not in {
+            (o["symbol"], o["side"]) for o in orders_decided_at(state, as_of)
+        }:
+            raise LabError(
+                f"This book did not decide to {side.lower()} {symbol} at the close of "
+                f"{_human(as_of)}, so there is no order to record."
+            )
+        if status == "PLACED" and quantity is None:
+            raise LabError("Say how many shares you placed.")
+        self._state.save_placement(
+            book_id, as_of, symbol, side, status, quantity if status == "PLACED" else None, price
+        )
+        return self.detail(index, book_id)
+
+    def clear_placement(
+        self, index: MarketIndex, book_id: str, *, as_of: str, symbol: str, side: str
+    ) -> dict[str, Any]:
+        if self._state.paper_book(book_id) is None:
+            raise KeyError(book_id)
+        self._state.clear_placement(book_id, as_of, symbol.strip().upper(), side)
+        return self.detail(index, book_id)
+
+    def inbox(self, index: MarketIndex) -> dict[str, Any]:
+        """Every running book's orders that are waiting for you, with how many you have dealt with."""
+        books: list[dict[str, Any]] = []
+        pending_total = 0
+        for book in self._state.paper_books():
+            if book["stopped_session"] is not None:
+                continue
+            try:
+                state = self._replay(index, book)
+            except LabError:
+                continue
+            orders = self._freshness(index, state)
+            if orders["state"] not in ("CURRENT", "STALE") or not state["queued"]:
+                continue
+            done = {
+                (p["symbol"], p["side"])
+                for p in self._state.placements(str(book["id"]))
+                if p["as_of"] == orders["as_of"]
+            }
+            pending = (
+                sum(1 for o in state["queued"] if (o["symbol"], o["side"]) not in done)
+                if orders["state"] == "CURRENT"
+                else 0
+            )
+            pending_total += pending
+            books.append(
+                {
+                    "id": book["id"],
+                    "name": book["name"],
+                    "state": orders["state"],
+                    "as_of": orders["as_of"],
+                    "message": orders["message"],
+                    "orders": len(state["queued"]),
+                    "dealt_with": len(state["queued"]) - pending
+                    if orders["state"] == "CURRENT"
+                    else 0,
+                    "pending": pending,
+                }
+            )
+        return {"books": books, "pending": pending_total}
 
     def stop(self, index: MarketIndex, book_id: str) -> dict[str, Any]:
         book = self._state.paper_book(book_id)

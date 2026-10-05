@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTicket, ticketToCsv, ticketToText } from "./orderTicket";
+import { buildTicket, parsePlacementFields, ticketToCsv, ticketToText } from "./orderTicket";
 import type { PaperQueuedOrder } from "./types";
 
 const orders: PaperQueuedOrder[] = [
@@ -88,5 +88,29 @@ describe("exporting the orders", () => {
       "BUY 436 HFCL NSE @ ~228.01",
       "SELL 43 WELCORP NSE @ ~2311.90",
     ]);
+  });
+});
+
+describe("what you type when you record an order", () => {
+  it("takes whole shares and an optional price", () => {
+    expect(parsePlacementFields("PLACED", "922", "134.90")).toEqual({ ok: true, quantity: 922, price: "134.90" });
+    expect(parsePlacementFields("PLACED", " 5 ", "")).toEqual({ ok: true, quantity: 5, price: null });
+    expect(parsePlacementFields("PLACED", "5", "1,541.90")).toEqual({ ok: true, quantity: 5, price: "1541.90" });
+  });
+
+  it("refuses a missing, zero, fractional or negative share count", () => {
+    for (const bad of ["", "0", "1.5", "-2", "abc", "1e3"]) {
+      expect(parsePlacementFields("PLACED", bad, "")).toMatchObject({ ok: false });
+    }
+  });
+
+  it("refuses a price that is not a positive amount", () => {
+    for (const bad of ["0", "-3", "abc", "12.12345", "1e2"]) {
+      expect(parsePlacementFields("PLACED", "1", bad)).toMatchObject({ ok: false });
+    }
+  });
+
+  it("sends neither shares nor price for a skipped order", () => {
+    expect(parsePlacementFields("SKIPPED", "922", "134.90")).toEqual({ ok: true, quantity: null, price: null });
   });
 });

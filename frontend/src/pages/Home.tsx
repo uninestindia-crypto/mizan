@@ -5,7 +5,7 @@ import { Sparkline } from "../components/charts";
 import { AsOf, DataGate, Illustration } from "../components/common";
 import { Badge, Button, Card, CardHeader, Delta, EmptyState, PageHeader, Segmented, Skeleton, Stat } from "../components/ui";
 import { ageLabel, date, daysSince, inr, inrCompact, inrSigned, num, pct, tone } from "../lib/format";
-import { useOverview, usePaperBooks, usePaperMine, usePortfolio, useStatus, useWatchlist } from "../lib/queries";
+import { useOverview, usePaperBooks, usePaperMine, usePaperOrders, usePortfolio, useStatus, useWatchlist } from "../lib/queries";
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -33,6 +33,7 @@ export function Home() {
 function HomeContent() {
   return (
     <div className="space-y-5">
+      <OrdersToPlace />
       <div className="grid gap-5 lg:grid-cols-3">
         <MarketPulse />
         <Breadth />
@@ -289,6 +290,47 @@ function LabInvite() {
         </div>
         <Illustration name="lab-hero" className="hidden size-40 shrink-0 sm:block" />
       </div>
+    </Card>
+  );
+}
+
+/** Orders your paper books decided, waiting for you to place by hand. Absent when there are none. */
+function OrdersToPlace() {
+  const status = useStatus();
+  const inbox = usePaperOrders(status.data?.index.ready ?? false);
+  const books = inbox.data?.books ?? [];
+  if (books.length === 0) return null;
+  const waiting = inbox.data?.pending ?? 0;
+  return (
+    <Card>
+      <CardHeader
+        title="Orders to place"
+        subtitle="What your paper books decided at the last close. You place them yourself; QuantOS never touches your broker."
+        action={waiting > 0 ? <Badge tone="brand">{waiting} waiting</Badge> : <Badge tone="up">All dealt with</Badge>}
+      />
+      <ul className="divide-y divide-line">
+        {books.map((b) => (
+          <li key={b.id}>
+            <Link to={`/paper/${b.id}`} className="flex items-center justify-between gap-3 py-3 hover:opacity-80">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium text-ink">{b.name}</div>
+                <div className="text-[12.5px] text-ink-3">
+                  {b.state === "CURRENT"
+                    ? `Decided at the close of ${date(b.as_of)} · ${b.dealt_with} of ${b.orders} noted`
+                    : "Out of date. Update your market data before acting on these."}
+                </div>
+              </div>
+              {b.state === "STALE" ? (
+                <Badge tone="down">Out of date</Badge>
+              ) : b.pending > 0 ? (
+                <Badge tone="brand">{b.pending} to place</Badge>
+              ) : (
+                <Badge tone="up">Done</Badge>
+              )}
+            </Link>
+          </li>
+        ))}
+      </ul>
     </Card>
   );
 }
