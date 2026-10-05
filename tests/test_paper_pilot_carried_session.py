@@ -1637,9 +1637,39 @@ def test_missing_state_file_fails_closed_when_past_sessions_exist(tmp_path, monk
         )
 
 
-def test_halted_portfolio_refuses_trading_at_startup(tmp_path, monkeypatch) -> None:
-    """Kills M6: if portfolio.risk_halted is True, runner must exit 8."""
+def test_halted_portfolio_refuses_trading_at_startup(tmp_path, monkeypatch, caplog) -> None:
+    """Kills M6: if portfolio.risk_halted is True, runner must exit 8.
+
+    Hermetic: stubs load_mizan_cross_section with a minimal valid cross-section so the
+    rebalance branch exercises the startup halt check without reading real evidence caches.
+    Guards EvidenceStore.list_verified so any accidental call to real evidence fails fast.
+    """
+    import logging
+
     runner = _runner_module()
+    caplog.set_level(logging.ERROR, logger=runner.logger.name)
+
+    def _fail_on_real_evidence(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("this test must not read real evidence")
+
+    monkeypatch.setattr(runner.EvidenceStore, "list_verified", _fail_on_real_evidence)
+
+    features_by_symbol: dict[str, dict[str, str]] = {"INFY": {}}
+    stub_cross_section = (
+        features_by_symbol,
+        runner.CrossSectionCoverage(
+            requested=("INFY",),
+            scored=("INFY",),
+            skipped_short_history=(),
+            skipped_not_computable=(),
+        ),
+    )
+
+    def _stub_load_mizan_cross_section(*_args: object, **_kwargs: object) -> object:
+        return stub_cross_section
+
+    monkeypatch.setattr(runner, "load_mizan_cross_section", _stub_load_mizan_cross_section)
+
     runs_dir = tmp_path / "paper_runs"
     runs_dir.mkdir(parents=True, exist_ok=True)
     state_path = runs_dir / "portfolio_state.json"
@@ -1675,6 +1705,7 @@ def test_halted_portfolio_refuses_trading_at_startup(tmp_path, monkeypatch) -> N
             upstox_token="valid_token",
         )
     assert exc.value.code == 8
+    assert "REFUSING TO TRADE" in caplog.text
 
 
 def test_concurrent_portfolio_write_during_session_detected_at_save(tmp_path) -> None:
