@@ -25,6 +25,10 @@ from typing import Any
 from quant_system.server.ui.live_dashboard import HTML_DASHBOARD
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+#: The dashboard's script is a static asset of the app (the page's CSP forbids inline scripts).
+LIVE_DASHBOARD_JS = (
+    PROJECT_ROOT / "src" / "quant_system" / "server" / "static" / "live_dashboard.js"
+)
 STATUS_FILE = PROJECT_ROOT / "logs" / "paper_runs" / "live_paper_status.json"
 PID_FILE = PROJECT_ROOT / "logs" / "paper_runs" / "runner.pid"
 XS_STATE_FILE = PROJECT_ROOT / "logs" / "xs_monthly_new" / "paper_watch" / "state.json"
@@ -68,7 +72,18 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
             self.end_headers()
             self.wfile.write(HTML_DASHBOARD.encode("utf-8"))
-        elif self.path == "/api/status":
+        elif self.path == "/api/control/available":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"available": True}).encode("utf-8"))
+        elif self.path == "/static/live_dashboard.js":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/javascript; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(LIVE_DASHBOARD_JS.read_bytes())
+        elif self.path in ("/api/status", "/api/paper-pilot/live-status"):
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
