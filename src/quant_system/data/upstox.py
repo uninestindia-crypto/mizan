@@ -31,6 +31,7 @@ from quant_system.data.upstox_failures import (
     malformed_failure,
     map_http_failure,
     quality_failure,
+    quote_unavailable_failure,
     require_aware_utc,
     schema_drift_failure,
     unauthorized_failure,
@@ -46,6 +47,7 @@ from quant_system.data.upstox_http import (
 )
 from quant_system.data.upstox_parsing import (
     ProviderMalformedBody,
+    ProviderQuoteUnavailable,
     ProviderSchemaDrift,
     QualityBlockedError,
     decode_historical_candles,
@@ -206,6 +208,8 @@ class UpstoxClient:
             raise UpstoxDataError(map_http_failure(response, detected_at))
         try:
             return parse_quote_payload(response.body, instrument_key=instrument_key, symbol=symbol)
+        except ProviderQuoteUnavailable as error:
+            raise UpstoxDataError(quote_unavailable_failure(detected_at)) from error
         except ProviderSchemaDrift as error:
             raise UpstoxDataError(schema_drift_failure(detected_at)) from error
 

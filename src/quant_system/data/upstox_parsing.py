@@ -34,6 +34,16 @@ class ProviderSchemaDrift(ValueError):
     pass
 
 
+class ProviderQuoteUnavailable(Exception):
+    """A well-formed quote reply that carries no priced two-sided market.
+
+    Deliberately not a `ValueError`: `parse_quote_payload` converts every `ValueError` raised while
+    reading a reply into `ProviderSchemaDrift`, and an empty side of the book after hours is not a
+    change in the provider's contract. Keeping the two apart stops a closed market from looking like
+    drift, which would send someone to "update the provider contract" every evening.
+    """
+
+
 @dataclass(frozen=True, slots=True)
 class QualityBlockedError(Exception):
     findings: tuple[QualityFinding, ...]
@@ -192,27 +202,46 @@ def get_authority_findings(request: HistoricalDailyRequest) -> tuple[QualityFind
 
 
 def parse_quote_payload(body: bytes, *, instrument_key: str, symbol: str) -> Quote:
-    """Parse the existing V2 snapshot without manufacturing bid/ask values."""
+    """Parse the V2 snapshot for one instrument without manufacturing bid/ask values.
+
+    The request carries the instrument key (`NSE_EQ|INE009A01021`) but the provider keys `data` by
+    the symbol form (`NSE_EQ:INFY`) and repeats the instrument key inside the entry as
+    `instrument_token`; see `_select_quote_entry` for how an entry is chosen and bound to the request.
+
+    Raises `ProviderSchemaDrift` for a malformed or mismatched reply and `ProviderQuoteUnavailable`
+    for a well-formed one with no priced two-sided market, such as the `{price: 0.0, quantity: 0}`
+    best bid the provider returns after hours. `Quote` cannot represent a missing side, and passing
+    the zero through would give a mid of half the ask and a 200% spread, so it is refused.
+    """
     try:
         payload = json.loads(body.decode("utf-8"))
-        quote_data = payload["data"][instrument_key]
-        buy_depth = quote_data["depth"]["buy"]
-        sell_depth = quote_data["depth"]["sell"]
-        timestamp = datetime.fromisoformat(quote_data["timestamp"]).astimezone(UTC)
-        bid = Decimal(str(buy_depth[0]["price"]))
-        ask = Decimal(str(sell_depth[0]["price"]))
-        bid_size = int(buy_depth[0]["quantity"])
-        ask_size = int(sell_depth[0]["quantity"])
-        last_price = Decimal(str(quote_data["last_price"]))
+        quote_data = _select_quote_entry(
+            payload["data"], instrument_key=instrument_key, symbol=symbol
+        )
+        buy_level = quote_data["depth"]["buy"][0]
+        sell_level = quote_data["depth"]["sell"][0]
+        timestamp = _parse_timestamp(quote_data["timestamp"]).astimezone(UTC)
+        bid = _parse_decimal(buy_level["price"], "bid")
+        ask = _parse_decimal(sell_level["price"], "ask")
+        bid_size = _parse_nonnegative_integer(buy_level["quantity"], "bid_size")
+        ask_size = _parse_nonnegative_integer(sell_level["quantity"], "ask_size")
+        last_price = _parse_decimal(quote_data["last_price"], "last_price")
+    except ProviderSchemaDrift:
+        raise
     except (
         KeyError,
         IndexError,
         TypeError,
         ValueError,
-        InvalidOperation,
-        json.JSONDecodeError,
+        RecursionError,
     ) as error:
         raise ProviderSchemaDrift("provider quote shape changed") from error
+    if min(bid, ask, last_price) < 0:
+        raise ProviderSchemaDrift("provider quote carries a negative price")
+    if min(bid, ask, last_price) == 0:
+        raise ProviderQuoteUnavailable("provider quote has no priced two-sided market")
+    if ask < bid:
+        raise ProviderSchemaDrift("provider quote is crossed")
     return Quote(
         symbol=symbol,
         timestamp=timestamp,
@@ -222,6 +251,43 @@ def parse_quote_payload(body: bytes, *, instrument_key: str, symbol: str) -> Quo
         ask_size=ask_size,
         last_price=last_price,
     )
+
+
+def _select_quote_entry(
+    provider_data: Any,
+    *,
+    instrument_key: str,
+    symbol: str,
+) -> dict[str, Any]:
+    """Pick the `data` entry for `instrument_key` and refuse one that is not provably that instrument.
+
+    Looked up by the instrument key, then by `<segment>:<symbol>` (the segment is the key's prefix,
+    so `NSE_EQ|INE009A01021` + `INFY` finds `NSE_EQ:INFY`), then by the one entry whose
+    `instrument_token` equals the key. The entry's own `instrument_token` is what binds it to the
+    request: when present it must equal `instrument_key`, and an entry found any way other than by the
+    instrument key must carry it. A symbol string alone is a label rather than an identity, since a
+    symbol can be reused for another ISIN after a corporate event, and the quote would then price the
+    wrong security.
+    """
+    if not isinstance(provider_data, dict):
+        raise ProviderSchemaDrift("provider quote data object is absent")
+    keyed_by_instrument = provider_data.get(instrument_key)
+    entry = keyed_by_instrument
+    if entry is None:
+        entry = provider_data.get(f"{instrument_key.partition('|')[0]}:{symbol}")
+    if entry is None:
+        by_token = [
+            candidate
+            for candidate in provider_data.values()
+            if isinstance(candidate, dict) and candidate.get("instrument_token") == instrument_key
+        ]
+        entry = by_token[0] if len(by_token) == 1 else None
+    if not isinstance(entry, dict):
+        raise ProviderSchemaDrift("provider quote entry for the requested instrument is absent")
+    token = entry.get("instrument_token")
+    if token != instrument_key and not (token is None and keyed_by_instrument is not None):
+        raise ProviderSchemaDrift("provider quote entry is not for the requested instrument")
+    return entry
 
 
 def _parse_candle_row(
