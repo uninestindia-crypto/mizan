@@ -1,6 +1,6 @@
-# Active work: bulk-import keys and secrets from .env / .env.local files
+# Completed work: bulk-import keys and secrets from .env / .env.local files
 
-STATUS: HANDOFF_REQUIRED  
+STATUS: COMPLETED  
 OWNER: Claude Code (cloud session)  
 TOOL: Claude Code  
 STARTED_UTC: 2026-10-05T19:33:00Z  
@@ -40,11 +40,11 @@ keys go into Windows Credential Manager through the same store the paste boxes u
 ## Plan
 
 1. Claim paths; file notice for the `frontend/**` / `server/v2/**` claim. DONE
-2. Backend: `env_import.py` + routes + schemas, test-first. 
-3. Frontend: decoder util + component + wiring, vitest for the util.
-4. Gates: ruff, ruff format, mypy strict on touched src, pytest, tsc, vitest, vite build.
-5. `python scripts/release_status.py`; report whether a release is due.
-6. Commit explicit paths only; detect-secrets on the diff; push to the designated branch.
+2. Backend: `env_import.py` + route + schemas, test-first. DONE
+3. Frontend: decoder util + component + wiring, vitest for the util. DONE
+4. Gates: ruff, ruff format, mypy strict, pytest, tsc, vitest, vite build. DONE
+5. Release: version bump with `scripts/bump_version.py`, in-app changelog entry, PR, merge, publish. DONE
+6. Commit explicit paths only; detect-secrets on the diff; push to the designated branch. DONE
 
 ## Decision rationale
 
@@ -95,7 +95,33 @@ container, so they cannot run here. NOT RUN, stated rather than skipped silently
 
 ## Stop point
 
-Feature implemented and verified (see above). Committed to the designated branch, not merged, no PR opened (none requested).
+Merged and released. Nothing is pending from this record.
+
+- Feature commit `9f2bdf4f`, release commit `e2297c51` (`chore(release): v2.4.0`: six version files via
+  `bump_version.py`, `OFFLINE_CHANGELOG` 2.4.0 entry, the UI's fallback copy, and the three assertions in
+  `tests/test_updates.py` that pinned 2.3.0).
+- PR https://github.com/uninestindia-crypto/mizan/pull/3 merged with a merge commit, `0191abcf`, after the four
+  Windows gates passed on head `e2297c51`: Static gates, Tests forward, Tests reverse, and Craft checkers and
+  audits (that one on its single re-run, see below). Local full suite on the release commit: 2,634 passed, 17
+  skipped.
+- Release: `.github/workflows/release.yml` dispatched on `main` with `bump_type=current` (run 37373335222, every step
+  green including "Verify Clean Release Gates"). Published https://github.com/uninestindia-crypto/mizan/releases/tag/v2.4.0
+  : `QuantOS_v2.4.0_Setup.exe` (57.87 MB), `quantos-v2.4.0-windows-x86_64.zip`, `quantos-sbom.json`. Tag `v2.4.0`
+  -> `0191abcf`. `python scripts/release_status.py` afterwards: last release v2.4.0, none due.
+- Path chosen: the established CI release path that produced v2.3.0, not `scripts/release.ps1` (a Windows
+  script; this session ran on Linux). Its release notes are the workflow's generic text, not the
+  commit-derived notes `release.ps1` would write.
+
+## CI observations, stated rather than smoothed over
+
+- The roll-up job `gates` (ubuntu) was **cancelled, never assigned a runner**, on the PR's final attempt: queued
+  ~15 minutes, zero steps. It checks nothing the four real jobs had not already reported green, so the PR was merged
+  on those four. This is not "all checks green" and should not be quoted as such.
+- On attempt 1 `Craft checkers and audits` was cancelled the same way (no runner for 15 minutes) and passed on the
+  one allowed re-run. The same starvation cancelled windows jobs on `main` run 23.
+- `main` at the base commit `eaba6da9` failed once on `tests/shariah/test_m3_stress_challenger.py::
+  test_stress_mixed_concurrency_under_load` (p95 57.64 ms against a 50 ms assertion on a shared runner, 2,649 other
+  tests passed). It passed on the PR's forward and reverse runs. A timing-sensitive test, not changed here.
 
 ## Known limits, stated
 
@@ -110,6 +136,5 @@ Feature implemented and verified (see above). Committed to the designated branch
 
 ## Next safe action
 
-Founder decision: merge, then cut the release. The installed app only gets this through a release built on
-Windows (`scripts/release.ps1`), which cannot run in a Linux container. Release is already DUE independent of this
-change (10 user-visible commits since v2.3.0).
+None required. If the founder wants the stale `.env` caveat above closed, that is a separate change to
+`CredentialStore.apply_to_environment` and the launcher's load order, claimed by no record.
