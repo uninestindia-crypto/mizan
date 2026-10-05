@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from unittest.mock import MagicMock
 
 import pytest
@@ -63,6 +64,10 @@ def test_auth_detection_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     cli_bridge.invalidate_cache()
 
 
+@pytest.mark.skipif(
+    sys.platform != "win32",
+    reason="opens Windows terminal windows; the app is a Windows desktop app",
+)
 def test_launch_agent_session_run_mocked(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_popen = MagicMock()
     monkeypatch.setattr(subprocess, "Popen", mock_popen)
@@ -88,6 +93,10 @@ def test_cli_status_api_endpoint(client: TestClient) -> None:
     assert "claude" in agent_ids
 
 
+@pytest.mark.skipif(
+    sys.platform != "win32",
+    reason="opens Windows terminal windows; the app is a Windows desktop app",
+)
 def test_cli_launch_api_endpoint(
     client: TestClient, headers: dict[str, str], monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -227,9 +227,14 @@ def handle_verify(args: argparse.Namespace) -> int:
 def handle_predict(args: argparse.Namespace) -> int:
     model = MizanHub.load_package(args.model) if args.model else MizanModel.default_model()
 
-    feat_path = Path(args.features)
-    if feat_path.exists():
-        raw_input = json.loads(feat_path.read_text(encoding="utf-8"))
+    try:
+        is_file = Path(args.features).is_file()
+    except OSError:
+        # An inline JSON object is longer than a file name may be: Linux raises "File name too
+        # long" here where Windows says the path does not exist. Either way it is not a file.
+        is_file = False
+    if is_file:
+        raw_input = json.loads(Path(args.features).read_text(encoding="utf-8"))
     else:
         raw_input = json.loads(args.features)
 
