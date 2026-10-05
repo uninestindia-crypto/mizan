@@ -81,7 +81,13 @@ else {
     if ($LASTEXITCODE -ne 0) {
         throw "'git clone' failed with exit code $LASTEXITCODE"
     }
-    & git -C $destination checkout --detach $shortRevision
+    # A fresh clone does not inherit core.longpaths and this repository has
+    # evidence paths longer than 260 characters.
+    & git -C $destination config core.longpaths true
+    if ($LASTEXITCODE -ne 0) {
+        throw "'git config core.longpaths' failed with exit code $LASTEXITCODE"
+    }
+    & git -C $destination -c core.longpaths=true checkout --detach $shortRevision
     if ($LASTEXITCODE -ne 0) {
         throw "'git checkout --detach' failed with exit code $LASTEXITCODE"
     }
