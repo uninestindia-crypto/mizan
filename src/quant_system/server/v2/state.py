@@ -86,6 +86,7 @@ class Settings(BaseModel):
     theme: Literal["system", "light", "dark"] = "system"
     data_folder: str | None = None
     onboarding_complete: bool = False
+    auto_update_paper_books: bool = True
     disclaimer_accepted_at: str | None = None
 
 

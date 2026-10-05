@@ -11,6 +11,7 @@ import type {
   PaperBookDetail,
   PaperBookInput,
   PaperBookSummary,
+  PaperUpdates,
   PayoffResult,
   Portfolio,
   PositionSizeResult,
@@ -41,6 +42,7 @@ export const keys = {
   watchlist: ["watchlist"] as const,
   paper: ["paper"] as const,
   paperMine: ["paper-mine"] as const,
+  paperUpdates: ["paper-updates"] as const,
   paperBook: (id: string) => ["paper-book", id] as const,
   secrets: ["secrets"] as const,
   aiTools: ["ai-tools"] as const,
@@ -124,6 +126,15 @@ export function usePaperMine(enabled = true) {
   });
 }
 
+export function usePaperUpdates(enabled = true) {
+  return useQuery({
+    queryKey: keys.paperUpdates,
+    queryFn: () => api<PaperUpdates>("/api/v2/paper/updates"),
+    enabled,
+    refetchInterval: 30_000,
+  });
+}
+
 export function usePaperBook(id: string) {
   return useQuery({ queryKey: keys.paperBook(id), queryFn: () => api<PaperBookDetail>(`/api/v2/paper/mine/${id}`), refetchInterval: 30_000 });
 }
@@ -167,7 +178,11 @@ export function useUpdateSettings() {
     // Returning the promise makes callers' own onSuccess run only after fresh settings have loaded,
     // so navigation that depends on them (leaving onboarding) never sees the old values.
     onSuccess: async () => {
-      await Promise.all([qc.invalidateQueries({ queryKey: keys.status }), qc.invalidateQueries({ queryKey: keys.portfolio })]);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: keys.status }),
+        qc.invalidateQueries({ queryKey: keys.portfolio }),
+        qc.invalidateQueries({ queryKey: keys.paperUpdates }),
+      ]);
     },
   });
 }

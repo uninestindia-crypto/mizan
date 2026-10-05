@@ -21,13 +21,14 @@ import { NavLink, useParams } from "react-router";
 import { AsOf } from "../components/common";
 import { AgentCliBridge } from "../components/AgentCliBridge";
 import { DataFolderPicker } from "../components/DataFolderPicker";
-import { Badge, Button, Callout, Card, CardHeader, cx, Field, Input, PageHeader, ProgressBar, Segmented, Skeleton } from "../components/ui";
+import { Badge, Button, Callout, Card, CardHeader, cx, Field, Input, PageHeader, ProgressBar, Segmented, Skeleton, Switch } from "../components/ui";
 import { errorMessage } from "../lib/api";
 import { MONEY_LIMITS, moneyProblems } from "../lib/rules";
 import { date, dateTime, inr, int } from "../lib/format";
 import {
   useAiModels,
   useCheckUpdate,
+  usePaperUpdates,
   useBuildIndex,
   useSecretMutation,
   useSecrets,
@@ -217,6 +218,23 @@ function Charges() {
   );
 }
 
+function AutoUpdateCard({ enabled }: { enabled: boolean }) {
+  const update = useUpdateSettings();
+  const updates = usePaperUpdates();
+  return (
+    <Card>
+      <CardHeader title="Paper books" subtitle="Paper books follow the market on real prices, so they need fresh prices each day." />
+      <Switch
+        checked={enabled}
+        onChange={(value) => update.mutate({ auto_update_paper_books: value })}
+        label="Update prices automatically after each market close"
+      />
+      <p className="mt-3 text-[13px] text-ink-3">{updates.data?.message ?? "QuantOS fetches a recent window of prices once a day, only while a paper book is running."}</p>
+      {update.isError && <p className="mt-2 text-[13px] text-down">{errorMessage(update.error)}</p>}
+    </Card>
+  );
+}
+
 function DataSection() {
   const status = useStatus();
   const setFolder = useSetDataFolder();
@@ -322,6 +340,7 @@ function DataSection() {
         )}
         {job.state === "DONE" && <p className="mt-4 text-[13px] text-up">{job.message}</p>}
       </Card>
+      <AutoUpdateCard enabled={data.settings.auto_update_paper_books} />
     </>
   );
 }

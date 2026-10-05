@@ -385,7 +385,7 @@ function PaperNewForm({ templates, prefillRun }: { templates: Templates; prefill
               </li>
               <li className="flex gap-2">
                 <span className="text-ink-3">•</span>
-                <span>It moves forward each time you update your market data.</span>
+                <span>It moves forward as new prices arrive. QuantOS fetches them itself after each market close (you can turn that off in Settings).</span>
               </li>
               <li className="flex gap-2">
                 <span className="text-ink-3">•</span>

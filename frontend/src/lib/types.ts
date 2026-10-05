@@ -16,6 +16,17 @@ export interface Settings {
   data_folder: string | null;
   onboarding_complete: boolean;
   disclaimer_accepted_at: string | null;
+  auto_update_paper_books: boolean;
+}
+
+export interface PaperUpdates {
+  enabled: boolean;
+  state: "OFF" | "IDLE" | "CANNOT" | "UPDATING" | "CURRENT" | "BEHIND";
+  message: string;
+  latest_session: string | null;
+  expected_session: string;
+  attempts: number;
+  next_try: string | null;
 }
 
 export interface IndexJob {

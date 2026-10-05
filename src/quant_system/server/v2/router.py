@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 import threading
 import time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -39,6 +41,7 @@ from quant_system.market.sources import discover_caches, store_fingerprint
 from quant_system.server.security import format_error_response
 from quant_system.server.v2 import paths
 from quant_system.server.v2.aitools import detect_cli_tools
+from quant_system.server.v2.auto_update import AutoUpdater
 from quant_system.server.v2.cli_bridge import (
     launch_agent_session,
     list_cli_status,
@@ -116,6 +119,7 @@ class Services:
     download: MarketDownload
     paper: PaperBooks
     updates: UpdateChecker
+    auto: AutoUpdater
 
 
 _services: Services | None = None
@@ -141,14 +145,24 @@ def services() -> Services:
         if _services is None:
             state_dir = paths.state_dir()
             state = AppState(state_dir / "app.sqlite")
+            index = MarketIndex(paths.index_dir())
+            job = IndexJob()
+            download = MarketDownload(on_done=_connect_downloaded_data)
             _services = Services(
                 state=state,
-                index=MarketIndex(paths.index_dir()),
-                job=IndexJob(),
+                index=index,
+                job=job,
                 credentials=CredentialStore(),
-                download=MarketDownload(on_done=_connect_downloaded_data),
+                download=download,
                 paper=PaperBooks(state),
                 updates=UpdateChecker(__version__),
+                auto=AutoUpdater(
+                    state=state,
+                    index=index,
+                    job=job,
+                    download=download,
+                    data_dir=lambda: paths.app_root() / "data",
+                ),
             )
         return _services
 
@@ -156,6 +170,8 @@ def services() -> Services:
 def reset_services() -> None:
     global _services
     with _services_lock:
+        if _services is not None:
+            _services.auto.stop()
         _services = None
     _fingerprint_cache.clear()
 
@@ -574,6 +590,12 @@ def update_status(refresh: bool = False) -> dict[str, Any]:
     return services().updates.check(force=refresh)
 
 
+@router.get("/paper/updates")
+def paper_updates() -> dict[str, Any]:
+    """Whether paper books are being kept up to date automatically, and if not, why not."""
+    return services().auto.snapshot()
+
+
 @router.get("/paper/mine")
 def my_paper_books() -> list[dict[str, Any]]:
     """The paper books started in this app, each replayed against the latest market data."""
@@ -782,7 +804,27 @@ def ai_tools(refresh: bool = False) -> list[dict[str, Any]]:
 def register_api(app: FastAPI) -> None:
     app.add_exception_handler(V2Error, v2_error_handler)
     app.include_router(router)
+    _run_auto_update_with(app)
     try:
         services().credentials.apply_to_environment()
     except CredentialError:
         pass
+
+
+def _run_auto_update_with(app: FastAPI) -> None:
+    """Start the paper-book updater when the server starts and stop it when the server stops.
+
+    Wraps the app's existing lifespan, so ``server/app.py`` does not change.
+    """
+    inner = app.router.lifespan_context
+
+    @asynccontextmanager
+    async def lifespan(scope: FastAPI) -> AsyncIterator[Any]:
+        services().auto.start()
+        try:
+            async with inner(scope) as state:
+                yield state
+        finally:
+            services().auto.stop()
+
+    app.router.lifespan_context = lifespan

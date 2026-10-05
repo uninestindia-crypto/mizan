@@ -390,11 +390,11 @@ function PaperBookDetailView({
           <li className="flex gap-2">
             <span className="text-ink-3">•</span>
             <span>
-              Prices move forward when you update your market data (
+              Prices move forward as new market data arrives. QuantOS updates it after each close, or you can{" "}
               <Link to="/settings/data" className="font-medium text-brand hover:underline">
-                Update market data
+                update it now
               </Link>
-              ).
+              .
             </span>
           </li>
           <li className="flex gap-2">

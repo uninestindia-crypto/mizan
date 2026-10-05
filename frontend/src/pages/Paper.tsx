@@ -5,7 +5,7 @@ import { Illustration } from "../components/common";
 import { DownloadData } from "../components/DataFolderPicker";
 import { Badge, Button, Callout, Card, CardHeader, Delta, EmptyState, PageHeader, Skeleton, Stat } from "../components/ui";
 import { date, dateTime, inr, inrCompact, inrSigned, int, pct, tone } from "../lib/format";
-import { usePaperBooks, usePaperMine, useStatus } from "../lib/queries";
+import { usePaperBooks, usePaperMine, usePaperUpdates, useStatus } from "../lib/queries";
 import type { PaperBook, PaperBookSummary, PaperStatus } from "../lib/types";
 
 const STATUS_LABEL: Record<PaperStatus, string> = {
@@ -42,9 +42,10 @@ export default function Paper() {
         }
       />
       <Callout tone="info" className="mb-5" title="How to read these numbers">
-        A paper book's profit or loss is mostly what the market did, minus charges. A few weeks of results cannot show that a rule has skill. Books move
-        forward when you update your market data: they use prices up to {latest ? date(latest) : "the latest session"}.
+        A paper book's profit or loss is mostly what the market did, minus charges. A few weeks of results cannot show that a rule has skill. Books use
+        prices up to {latest ? date(latest) : "the latest session"}.
       </Callout>
+      {ready && <AutoUpdateLine />}
       {ready && <DownloadData prominent={false} />}
 
       <h2 className="mb-3 mt-6 text-[15px] font-semibold text-ink">Your paper books</h2>
@@ -96,6 +97,20 @@ export default function Paper() {
         </>
       )}
     </>
+  );
+}
+
+function AutoUpdateLine() {
+  const updates = usePaperUpdates();
+  const info = updates.data;
+  if (!info || info.state === "IDLE") return null;
+  const tone = info.state === "CURRENT" ? "up" : info.state === "UPDATING" ? "brand" : "warn";
+  const label = { OFF: "Automatic updates off", CANNOT: "Update by hand", UPDATING: "Updating", CURRENT: "Up to date", BEHIND: "Behind", IDLE: "" }[info.state];
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-2 text-[13px] text-ink-2" role="status">
+      <Badge tone={tone}>{label}</Badge>
+      <span>{info.message}</span>
+    </div>
   );
 }
 
