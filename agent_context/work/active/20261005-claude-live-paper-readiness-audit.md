@@ -138,11 +138,13 @@ Complete. Committed and pushed to `claude/dazzling-brown-yn5qu3`. No pull reques
 | Live dashboard in Chromium (app-served and supervised), no session and with a session | PASS | no console errors, no axe violations, hostile symbol rendered as text |
 | Mode A flow in Chromium (inbox, record, skip, edit, clear, tracking, phone) | PASS | no console errors, no axe violations, 0 overflow |
 | Round 7 mutants on a scratch mirror | 7 of 13 survived, then 0 of 13 | `round7_mutation_results.json` |
-| `pytest tests` (full, Linux, final tree) | 2,578 passed, 0 failed, 17 skipped | |
-| `ruff check .`, `ruff format --check .` | PASS | 930 files |
+| `pytest tests` (full, Linux, final tree) | 2,614 passed, 0 failed, 17 skipped | measured after the last code change |
+| `ruff check .`, `ruff format --check .` | PASS | 932 files |
 | `mypy --platform win32 src launcher.py scripts` | only the Windows-only `webview` import | 298 source files |
 | PR 1 Windows CI, first run | Tests (forward) failed on `test_stress_mixed_concurrency_under_load` (p95 62.6 ms) | cold-start in a wall-clock test; fixed by warming up in the measured shape |
-| PR 1 Windows CI, latest run | Static, Craft and audits, Tests (forward): PASS | reverse order see the PR |
+| PR 1 Windows CI, run on `603318f3` | Static, Craft and audits, Tests (forward), Tests (reverse), `gates`: all PASS | |
+| Clean clone of the pushed branch | frontend builds from the lockfile, 48 frontend tests, 102 new backend tests pass | |
+| Orders reminder end to end against a local webhook | one message with counts only, then none | no external service available |
 | `scripts/release.ps1` | NOT RUN | Windows-only; release is DUE per `release_status.py` |
 
 ## Files changed

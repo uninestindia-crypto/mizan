@@ -50,8 +50,8 @@ that you place yourself, with a record of how well your copy tracked the paper b
 |---|---|
 | `uv sync --frozen --extra dev` (Python 3.12) | PASS. Project needs >=3.12; the container default is 3.11 |
 | Backend suite, before my changes (`--ignore=tests/test_windows_installer.py`) | 2,492 passed, **8 failed**, 9 skipped. All 8 are Linux-vs-Windows (below) |
-| Backend suite, after both passes | **2,578 passed, 0 failed, 17 skipped** on Linux (after the first pass: 2,513 passed, 1 failed). About 90 tests are new |
-| `ruff check .` / `ruff format --check .` | PASS, 930 files |
+| Backend suite, after both passes | **2,614 passed, 0 failed, 17 skipped** on Linux (after the first pass: 2,513 passed, 1 failed). About 125 tests are new |
+| `ruff check .` / `ruff format --check .` | PASS, 932 files |
 | `mypy src launcher.py scripts` (strict) | 17 errors on Linux, **all** Windows-only API attributes (`windll`, `winreg`, `CREATE_NO_WINDOW`) plus the Windows-only `webview` import. `--platform win32` leaves only the `webview` import |
 | Frontend `tsc --noEmit`, `vitest`, `vite build` | PASS. 48 unit tests (31 before) |
 | Real data (the repo's tracked market cache, 3,268 symbols) loaded in the real app | PASS. Home, Markets, Stock, Lab, Portfolio, Paper, Tools, Settings, Shariah all render |
@@ -135,7 +135,7 @@ What an enterprise or bank buyer would ask for and this does not have: sign-in a
 
 | Gate | Result |
 |---|---|
-| `pytest tests` (minus the Windows-installer file) | 2,513 passed, 1 failed (`tkinter`, claimed file), 15 skipped |
+| `pytest tests` (first pass, minus the Windows-installer file) | 2,513 passed, 1 failed (`tkinter`, claimed file), 15 skipped |
 | `ruff check .`, `ruff format --check .` | clean |
 | `mypy` strict | no new error; the 17 Linux-only errors are unchanged and none is in a file I changed |
 | `tsc --noEmit`, `vitest run`, `vite build` | clean; 44 tests |
@@ -144,6 +144,10 @@ What an enterprise or bank buyer would ask for and this does not have: sign-in a
 | Mutation checks on the freshness guards | both mutants killed (4 and 1 failing tests), then restored |
 
 Raw per-page results: `ui_audit_before.json`, `ui_audit_after.json`. Screenshots: `shots/`.
+
+## Windows CI on the pull request
+
+Run 15 of `gates` on commit `603318f3`: **Static gates, Craft checkers and audits (including the PowerShell claims and disk-layout audits), Tests (forward order), Tests (reverse order) and the aggregate `gates` all passed.** Two earlier runs were red and are explained in the follow-up table: the first on a wall-clock latency test in forward order (fixed by warming up in the measured shape), and one commit that added a harness script ruff rejected (fixed before the run above).
 
 ## Limits of this audit
 
