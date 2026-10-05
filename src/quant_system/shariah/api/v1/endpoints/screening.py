@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from quant_system.shariah.db.session import get_async_db
 from quant_system.shariah.schemas.company import ComplianceStatus
 from quant_system.shariah.schemas.screening import (
+    SAMPLE_DATA_NOTICE,
     ScreeningResponse,
     ShariahAuditResponse,
 )
@@ -126,5 +127,5 @@ async def get_shariah_audit(
         zakatable_assets_per_share_inr=float(company["zakatable_assets_per_share"]),
         balance_sheet_lines=bs_lines,
         income_statement_lines=pl_lines,
-        audit_notes=company.get("audit_notes"),
+        audit_notes=f"{SAMPLE_DATA_NOTICE} {company.get('audit_notes') or ''}".strip(),
     )

@@ -1,0 +1,54 @@
+[
+ [
+  "M1  CAS expected-hash re-bound just before the save",
+  "killed"
+ ],
+ [
+  "M2  anchor never persisted",
+  "killed"
+ ],
+ [
+  "M10b anchor never reused on restart",
+  "killed"
+ ],
+ [
+  "M17 daily baseline never anchored",
+  "killed"
+ ],
+ [
+  "M3  rebalance coverage threshold 0.8 -> 0.26",
+  "killed"
+ ],
+ [
+  "M4  exit loop never sells",
+  "killed"
+ ],
+ [
+  "M5  entry loop never buys",
+  "killed"
+ ],
+ [
+  "M6  tripped kill switch no longer refuses next session",
+  "killed"
+ ],
+ [
+  "M7  aborted session still spends a held session",
+  "killed"
+ ],
+ [
+  "M9  opening quote fetch has one attempt",
+  "killed"
+ ],
+ [
+  "M12 names ending on different sessions ranked together",
+  "killed"
+ ],
+ [
+  "M14 operator not told which carried names are unquoted",
+  "killed"
+ ],
+ [
+  "M16 a failed chunk is not a failed poll when others succeeded",
+  "killed"
+ ]
+]

@@ -62,11 +62,30 @@ from quant_system.risk.governor import PreTradeRiskGovernor  # noqa: E402
 # Indian Standard Time (UTC+05:30)
 _IST = timezone(timedelta(hours=5, minutes=30), name="IST")
 
+
+def ist_time(timestamp: float | None = None) -> time.struct_time:
+    """``time.localtime`` for ``logging.Formatter.converter``, but in Indian Standard Time.
+
+    The format string below prints the word IST. The formatter's default converter reports the
+    *machine's* local time, so on any host not set to IST (a cloud container, a laptop travelling
+    abroad) every line carried the right label on the wrong clock: 16:53 stamped IST when it was
+    22:23 in India. An audit log that is wrong by the host's offset is worse than no label.
+    """
+    when = datetime.fromtimestamp(time.time() if timestamp is None else timestamp, _IST)
+    return when.timetuple()
+
+
+_handlers_before = list(logging.getLogger().handlers)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s IST [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+# Only the handler this call created: when something else already configured logging (a test
+# runner, an embedding process), its formatters are not ours to change.
+for _handler in logging.getLogger().handlers:
+    if _handler not in _handlers_before and _handler.formatter is not None:
+        _handler.formatter.converter = ist_time
 logger = logging.getLogger("quant_system.paper_runner")
 
 _PAISA = Decimal("0.01")
@@ -2831,6 +2850,12 @@ def main() -> int:
             return 1
 
     out_p = Path(args.output_dir) if args.output_dir else None
+
+    if args.upstox_token:
+        logger.warning(
+            "--upstox-token puts the token where other processes and shell history can read it. "
+            "Set UPSTOX_ANALYTICS_TOKEN or UPSTOX_ACCESS_TOKEN in the environment or .env instead."
+        )
 
     try:
         res = run_paper_session(

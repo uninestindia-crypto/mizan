@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 import time
@@ -10,7 +11,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, FastAPI, Query, Request
 from fastapi.responses import JSONResponse
@@ -39,7 +40,7 @@ from quant_system.market.downloader import MarketDownload, baseline_exists
 from quant_system.market.index import BENCHMARK_SYMBOL
 from quant_system.market.sources import discover_caches, store_fingerprint
 from quant_system.server.security import format_error_response
-from quant_system.server.v2 import paths
+from quant_system.server.v2 import health, paths
 from quant_system.server.v2.aitools import detect_cli_tools
 from quant_system.server.v2.auto_update import AutoUpdater
 from quant_system.server.v2.cli_bridge import (
@@ -57,6 +58,7 @@ from quant_system.server.v2.credentials import (
     with_saved_credentials,
 )
 from quant_system.server.v2.jobs import IndexJob
+from quant_system.server.v2.notify import OrdersNotifier
 from quant_system.server.v2.paper_books import PaperBooks
 from quant_system.server.v2.portfolio import paper_books, portfolio_summary
 from quant_system.server.v2.schemas import (
@@ -71,6 +73,7 @@ from quant_system.server.v2.schemas import (
     LabRunRequest,
     OptionsPayoffRequest,
     PaperBookRequest,
+    PlacementRequest,
     PositionSizeRequest,
     SecretRequest,
     WatchlistRequest,
@@ -85,6 +88,8 @@ from quant_system.server.v2.tools import (
     trade_costs,
 )
 from quant_system.server.v2.updates import UpdateChecker
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v2", tags=["QuantOS 2.0"])
 
@@ -120,6 +125,7 @@ class Services:
     paper: PaperBooks
     updates: UpdateChecker
     auto: AutoUpdater
+    notifier: OrdersNotifier
 
 
 _services: Services | None = None
@@ -148,13 +154,15 @@ def services() -> Services:
             index = MarketIndex(paths.index_dir())
             job = IndexJob()
             download = MarketDownload(on_done=_connect_downloaded_data)
+            paper = PaperBooks(state)
             _services = Services(
                 state=state,
                 index=index,
                 job=job,
                 credentials=CredentialStore(),
                 download=download,
-                paper=PaperBooks(state),
+                paper=paper,
+                notifier=OrdersNotifier(state, paper, index),
                 updates=UpdateChecker(__version__),
                 auto=AutoUpdater(
                     state=state,
@@ -229,6 +237,47 @@ def _today() -> date:
 # ----------------------------------------------------------------------------- status
 
 
+@router.get("/health/live")
+def health_live() -> dict[str, Any]:
+    """Liveness: the process is up. Takes no lock and reads nothing."""
+    return health.liveness()
+
+
+@router.get("/health/ready")
+def health_ready() -> JSONResponse:
+    """Readiness: what works and what does not. 503 only if the app's own state cannot be read."""
+    svc = services()
+    today = datetime.now(UTC).astimezone().date()
+    checks: list[health.Check] = []
+    try:
+        svc.state.settings()
+        checks.append(
+            health.Check("state_store", "ok", "The app's settings and paper books can be read.")
+        )
+    except Exception as err:  # any failure to read local state means this app cannot serve
+        checks.append(
+            health.Check("state_store", "fail", f"The app's state store cannot be read: {err}")
+        )
+    latest: str | None = None
+    folder: Path | None = None
+    if svc.index.is_ready():
+        meta = svc.index.meta()
+        latest = meta.get("latest_session") or None
+        folder = Path(meta["data_folder"]) if meta.get("data_folder") else None
+        checks.append(
+            health.Check("market_index", "ok", f"Indexed {meta.get('symbols', '?')} symbols.")
+        )
+    else:
+        checks.append(
+            health.Check("market_index", "degraded", "The market index is not built yet.")
+        )
+    checks.append(health.market_data_check(latest, today))
+    checks.append(health.holiday_calendar_check(folder, today))
+    overall = health.rollup(checks)
+    body = {**health.liveness(), "status": overall, "checks": [c.as_dict() for c in checks]}
+    return JSONResponse(body, status_code=503 if overall == "fail" else 200)
+
+
 @router.get("/status")
 def status() -> dict[str, Any]:
     svc = services()
@@ -266,6 +315,7 @@ def status() -> dict[str, Any]:
             "scan": scan["state"],
         },
         "download": _download_snapshot(svc),
+        "orders_reminder": svc.notifier.settings(),
         "index": index_info,
         "credentials_available": svc.credentials.available,
         "costs_covered_from": COSTS_COVERED_FROM.isoformat(),
@@ -646,6 +696,47 @@ def stop_paper_book(book_id: str) -> dict[str, Any]:
         raise V2Error(404, "PAPER_BOOK_NOT_FOUND", "That paper book does not exist.") from err
 
 
+@router.get("/paper/orders")
+def paper_orders_inbox() -> dict[str, Any]:
+    """Orders waiting for you across every running paper book, and how many you have dealt with."""
+    return services().paper.inbox(_index())
+
+
+@router.put("/paper/mine/{book_id}/placements")
+def record_paper_placement(book_id: str, body: PlacementRequest) -> dict[str, Any]:
+    """Note what you did with one of a book's orders. QuantOS never places or checks anything."""
+    try:
+        return services().paper.record_placement(
+            _index(),
+            book_id,
+            as_of=body.as_of.isoformat(),
+            symbol=body.symbol,
+            side=body.side,
+            status=body.status,
+            quantity=body.quantity,
+            price=body.price,
+        )
+    except KeyError as err:
+        raise V2Error(404, "PAPER_BOOK_NOT_FOUND", "That paper book does not exist.") from err
+    except LabError as err:
+        raise V2Error(400, "PLACEMENT_REFUSED", str(err)) from err
+
+
+@router.delete("/paper/mine/{book_id}/placements")
+def clear_paper_placement(
+    book_id: str,
+    as_of: date = Query(...),
+    symbol: str = Query(..., min_length=1, max_length=30),
+    side: Literal["BUY", "SELL"] = Query(...),
+) -> dict[str, Any]:
+    try:
+        return services().paper.clear_placement(
+            _index(), book_id, as_of=as_of.isoformat(), symbol=symbol, side=side
+        )
+    except KeyError as err:
+        raise V2Error(404, "PAPER_BOOK_NOT_FOUND", "That paper book does not exist.") from err
+
+
 @router.get("/paper/books")
 def get_paper_books() -> list[dict[str, Any]]:
     svc = services()
@@ -815,7 +906,9 @@ def register_api(app: FastAPI) -> None:
 
         app.include_router(shariah_router, prefix="/api/v2/shariah")
     except Exception:
-        pass
+        # The Quant mode must still start, but a missing Shariah mode must not be invisible: the
+        # page would otherwise fail with 404s and nothing in the log to explain them.
+        logger.exception("Mizan Shariah API could not be loaded; /api/v2/shariah is unavailable")
     _run_auto_update_with(app)
     try:
         services().credentials.apply_to_environment()
@@ -824,7 +917,7 @@ def register_api(app: FastAPI) -> None:
 
 
 def _run_auto_update_with(app: FastAPI) -> None:
-    """Start the paper-book updater when the server starts and stop it when the server stops.
+    """Start the paper-book updater and the orders reminder with the server, and stop them with it.
 
     Wraps the app's existing lifespan, so ``server/app.py`` does not change.
     """
@@ -833,10 +926,12 @@ def _run_auto_update_with(app: FastAPI) -> None:
     @asynccontextmanager
     async def lifespan(scope: FastAPI) -> AsyncIterator[Any]:
         services().auto.start()
+        services().notifier.start()
         try:
             async with inner(scope) as state:
                 yield state
         finally:
+            services().notifier.stop()
             services().auto.stop()
 
     app.router.lifespan_context = lifespan

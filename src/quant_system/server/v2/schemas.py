@@ -45,6 +45,17 @@ class PaperBookRequest(BaseModel):
     slippage_bps: Decimal = Field(default=Decimal("5"), ge=0, le=200)
 
 
+class PlacementRequest(BaseModel):
+    """What the person did with one order a paper book decided. Typed by them, never read from a broker."""
+
+    as_of: date
+    symbol: str = Field(min_length=1, max_length=30)
+    side: Literal["BUY", "SELL"]
+    status: Literal["PLACED", "SKIPPED"]
+    quantity: int | None = Field(default=None, ge=1, le=100_000_000)
+    price: Decimal | None = Field(default=None, gt=0, le=Decimal("100000000"))
+
+
 class WatchlistRequest(BaseModel):
     symbol: str = Field(min_length=1, max_length=30)
 

@@ -1,0 +1,522 @@
+[
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/",
+  "status": "ok",
+  "loadMs": 1539,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/markets",
+  "status": "ok",
+  "loadMs": 993,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/stock/RELIANCE",
+  "status": "ok",
+  "loadMs": 1298,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/lab",
+  "status": "ok",
+  "loadMs": 987,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/lab/new/momentum",
+  "status": "ok",
+  "loadMs": 985,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/portfolio",
+  "status": "ok",
+  "loadMs": 966,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/paper",
+  "status": "ok",
+  "loadMs": 983,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/paper/12674f5da90d",
+  "status": "ok",
+  "loadMs": 1023,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/paper/new",
+  "status": "ok",
+  "loadMs": 1017,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/tools/costs",
+  "status": "ok",
+  "loadMs": 1024,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/tools/size",
+  "status": "ok",
+  "loadMs": 1009,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/settings/profile",
+  "status": "ok",
+  "loadMs": 999,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "desktop",
+  "route": "/shariah",
+  "status": "ok",
+  "loadMs": 1059,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/",
+  "status": "ok",
+  "loadMs": 793,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/markets",
+  "status": "ok",
+  "loadMs": 1044,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/stock/RELIANCE",
+  "status": "ok",
+  "loadMs": 1275,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/lab",
+  "status": "ok",
+  "loadMs": 977,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/lab/new/momentum",
+  "status": "ok",
+  "loadMs": 983,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/portfolio",
+  "status": "ok",
+  "loadMs": 1009,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/paper",
+  "status": "ok",
+  "loadMs": 983,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/paper/12674f5da90d",
+  "status": "ok",
+  "loadMs": 1015,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/paper/new",
+  "status": "ok",
+  "loadMs": 1005,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/tools/costs",
+  "status": "ok",
+  "loadMs": 968,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/tools/size",
+  "status": "ok",
+  "loadMs": 987,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/settings/profile",
+  "status": "ok",
+  "loadMs": 981,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "light",
+  "vp": "phone",
+  "route": "/shariah",
+  "status": "ok",
+  "loadMs": 1771,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/",
+  "status": "ok",
+  "loadMs": 794,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/markets",
+  "status": "ok",
+  "loadMs": 1082,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/stock/RELIANCE",
+  "status": "ok",
+  "loadMs": 1234,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/lab",
+  "status": "ok",
+  "loadMs": 973,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/lab/new/momentum",
+  "status": "ok",
+  "loadMs": 1042,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/portfolio",
+  "status": "ok",
+  "loadMs": 964,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/paper",
+  "status": "ok",
+  "loadMs": 1009,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/paper/12674f5da90d",
+  "status": "ok",
+  "loadMs": 1024,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/paper/new",
+  "status": "ok",
+  "loadMs": 997,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/tools/costs",
+  "status": "ok",
+  "loadMs": 1004,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/tools/size",
+  "status": "ok",
+  "loadMs": 1024,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/settings/profile",
+  "status": "ok",
+  "loadMs": 960,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "desktop",
+  "route": "/shariah",
+  "status": "ok",
+  "loadMs": 1040,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/",
+  "status": "ok",
+  "loadMs": 807,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/markets",
+  "status": "ok",
+  "loadMs": 1031,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/stock/RELIANCE",
+  "status": "ok",
+  "loadMs": 1218,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/lab",
+  "status": "ok",
+  "loadMs": 1012,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/lab/new/momentum",
+  "status": "ok",
+  "loadMs": 1001,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/portfolio",
+  "status": "ok",
+  "loadMs": 971,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/paper",
+  "status": "ok",
+  "loadMs": 974,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/paper/12674f5da90d",
+  "status": "ok",
+  "loadMs": 1003,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/paper/new",
+  "status": "ok",
+  "loadMs": 989,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/tools/costs",
+  "status": "ok",
+  "loadMs": 958,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/tools/size",
+  "status": "ok",
+  "loadMs": 996,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/settings/profile",
+  "status": "ok",
+  "loadMs": 1626,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ },
+ {
+  "scheme": "dark",
+  "vp": "phone",
+  "route": "/shariah",
+  "status": "ok",
+  "loadMs": 1076,
+  "overflowX": 0,
+  "axe": [],
+  "problems": []
+ }
+]

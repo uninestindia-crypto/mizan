@@ -29,9 +29,9 @@ export interface ShariahCompliance {
   tasis_compliant: boolean;
   debt_ratio: number;
   cash_ratio: number;
-  receivables_ratio: number;
-  impermissible_revenue_ratio: number;
   purification_ratio: number;
+  aaoifi_status: "COMPLIANT" | "NON_COMPLIANT" | "QUESTIONABLE";
+  tasis_status: "COMPLIANT" | "NON_COMPLIANT" | "QUESTIONABLE";
   compliance_status: "COMPLIANT" | "NON_COMPLIANT" | "QUESTIONABLE";
 }
 
@@ -124,6 +124,13 @@ export interface Status {
     job: IndexJob;
   };
   credentials_available: boolean;
+  /** The opt-in reminder when a paper book has orders waiting. Never carries the address itself. */
+  orders_reminder: {
+    enabled: boolean;
+    host: string | null;
+    problem: string | null;
+    last_error: string | null;
+  };
   costs_covered_from: string;
   lab_runs: number;
 }
@@ -577,6 +584,8 @@ export interface PaperBookSummary {
   benchmark_return: number;
   excess: number;
   queued: number;
+  /** Whether "tomorrow's orders" can still be acted on (see OrdersFreshness). */
+  orders_state: OrdersState;
   positions: number;
   attention: number;
   spark: number[];
@@ -592,6 +601,79 @@ export interface PaperPosition {
   market_value: number;
   unrealized_pnl: number;
   weight: number;
+}
+
+export type OrdersState = "CURRENT" | "STALE" | "STOPPED" | "UNKNOWN";
+
+/** Whether a book's queued orders are still worth placing, decided by the engine, not the page. */
+export interface OrdersFreshness {
+  state: OrdersState;
+  /** The close the orders were decided at. */
+  as_of: string | null;
+  expected_session: string;
+  sessions_missed: number;
+  message: string;
+}
+
+export type PlacementStatus = "PLACED" | "SKIPPED";
+
+/** What you did with one of a book's orders. Typed by you; QuantOS never learns it from a broker. */
+export interface Placement {
+  as_of: string;
+  symbol: string;
+  side: "BUY" | "SELL";
+  status: PlacementStatus;
+  quantity: number | null;
+  price: number | null;
+  recorded_at: string;
+}
+
+export interface TrackingRow extends Placement {
+  paper_quantity: number | null;
+  paper_price: number | null;
+  state: "WAITING" | "FILLED" | "NO_FILL";
+  /** Basis points worse than the paper fill; negative means you did better. */
+  worse_bps: number | null;
+  /** Rupees the difference cost you (negative = saved). */
+  cost: number | null;
+}
+
+export interface PlacementTracking {
+  rows: TrackingRow[];
+  placed: number;
+  skipped: number;
+  waiting: number;
+  compared: number;
+  mean_worse_bps: number | null;
+  total_cost: number | null;
+  unrecorded: number;
+}
+
+export interface PlacementInput {
+  as_of: string;
+  symbol: string;
+  side: "BUY" | "SELL";
+  status: PlacementStatus;
+  quantity: number | null;
+  /** Decimal text, or null when you did not note a price. */
+  price: string | null;
+}
+
+export interface OrdersInboxBook {
+  id: string;
+  name: string;
+  state: "CURRENT" | "STALE";
+  as_of: string;
+  message: string;
+  orders: number;
+  dealt_with: number;
+  pending: number;
+}
+
+export interface OrdersInbox {
+  books: OrdersInboxBook[];
+  /** Orders waiting for you across every running book whose orders are current. */
+  pending: number;
 }
 
 export interface PaperQueuedOrder {
@@ -635,6 +717,9 @@ export interface PaperBookDetail {
   slippage: number;
   positions: PaperPosition[];
   queued: PaperQueuedOrder[];
+  orders: OrdersFreshness;
+  placements: Placement[];
+  tracking: PlacementTracking;
   trades: PaperTrade[];
   /** [session, book equity, NIFTY equity], same starting money. */
   curve: [string, number, number][];

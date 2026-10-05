@@ -1350,6 +1350,29 @@ def get_paper_pilot_live_status() -> dict[str, Any]:
     return {"status": "NOT_RUNNING", "message": "No active live paper trading session found."}
 
 
+@app.get("/api/control/available")
+def get_live_controls_available() -> dict[str, bool]:
+    """The live dashboard asks whether it may offer Start and Halt. Here it may not.
+
+    Sessions are started by the scheduled task or from the supervised dashboard
+    (``scripts/serve_live_dashboard.py``), which answers this probe with ``true``.
+    """
+    return {"available": False}
+
+
+@app.get("/api/xs-monthly/status")
+def get_xs_monthly_status() -> dict[str, Any]:
+    """The XS-Monthly paper watch's state, read-only, for the live dashboard's second tab."""
+    state_file = PROJECT_ROOT / "logs" / "xs_monthly_new" / "paper_watch" / "state.json"
+    if not state_file.exists():
+        return {"status": "NOT_RUNNING", "message": "No XS-Monthly paper watch state found."}
+    try:
+        state: dict[str, Any] = json.loads(state_file.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as err:
+        return {"status": "ERROR", "error": str(err)}
+    return state
+
+
 # =====================================================================
 # UI Views & Static Asset Delivery
 # =====================================================================

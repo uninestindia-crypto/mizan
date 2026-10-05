@@ -762,3 +762,14 @@ async def test_basket_tax_calculator(client: AsyncClient):
     assert data["stamp_duty"] == 7.5  # 0.015% of 50,000
     assert data["net_effective_cost"] > 50000.0
     assert "effective_tax_rate_pct" in data
+
+
+@pytest.mark.asyncio
+async def test_no_audit_line_claims_to_be_verified(client: AsyncClient):
+    """The figures are a hand-entered sample, so no line may claim a verification nobody did."""
+    response = await client.get("/api/v1/stocks/TCS.NS/audit")
+    assert response.status_code == 200
+    data = response.json()
+    lines = data["balance_sheet_lines"] + data["income_statement_lines"]
+    assert lines and {line["verification_status"] for line in lines} == {"UNVERIFIED_SAMPLE"}
+    assert "not read from audited filings" in data["audit_notes"]

@@ -2,6 +2,7 @@ import {
   BookOpen,
   CheckCircle2,
   Coins,
+  HelpCircle,
   Download,
   Layers,
   Scale,
@@ -36,6 +37,28 @@ type ShariahTab = "screener" | "baskets" | "purification" | "zakat" | "academy";
 
 const clean = (value: string) => value.replace(/[^\d.]/g, "");
 
+type ScreenStatus = ShariahCompliance["compliance_status"];
+const STATUS_TONE: Record<ScreenStatus, "up" | "warn" | "down"> = {
+  COMPLIANT: "up",
+  QUESTIONABLE: "warn",
+  NON_COMPLIANT: "down",
+};
+const STATUS_LABEL: Record<ScreenStatus, string> = {
+  COMPLIANT: "Compliant",
+  QUESTIONABLE: "Questionable",
+  NON_COMPLIANT: "Non-Compliant",
+};
+const STANDARD_TONE: Record<ScreenStatus, "up" | "warn" | "neutral"> = {
+  COMPLIANT: "up",
+  QUESTIONABLE: "warn",
+  NON_COMPLIANT: "neutral",
+};
+const STANDARD_LABEL: Record<ScreenStatus, string> = {
+  COMPLIANT: "Passed",
+  QUESTIONABLE: "Questionable",
+  NON_COMPLIANT: "Failed",
+};
+
 export default function Shariah() {
   const [tab, setTab] = useState<ShariahTab>("screener");
   const status = useShariahStatus();
@@ -53,13 +76,20 @@ export default function Shariah() {
             <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-[13px] shadow-sm">
               <span className="size-2 rounded-full bg-up animate-pulse" />
               <span className="num font-medium text-ink-2">
-                {int(status.data.companies_seeded)} Audited Equities
+                {int(status.data.companies_seeded)} sample equities
               </span>
-              <Badge tone="up">Live WAL + DuckDB</Badge>
+              <Badge tone="warn">Illustrative data</Badge>
             </div>
           ) : undefined
         }
       />
+
+      <Callout tone="warn" title="Sample data, not live and not audited">
+        The companies, prices, financial ratios and basket figures on this page are an illustrative sample
+        entered by hand from FY24 reports. They are not read from audited filings and the prices are not live
+        (the prices in Markets are the real ones). Do not buy, sell or avoid a share on the strength of a verdict
+        shown here.
+      </Callout>
 
       {/* Unified sub-navigation tab bar */}
       <nav aria-label="Shariah modules" className="flex gap-1 border-b border-line overflow-x-auto">
@@ -109,8 +139,8 @@ function ScreenerTab({ summary }: { summary: ShariahCompliance[] }) {
     const matchesQ =
       item.symbol.toLowerCase().includes(query.toLowerCase()) ||
       item.company_name.toLowerCase().includes(query.toLowerCase());
-    if (filter === "COMPLIANT") return matchesQ && item.is_compliant;
-    if (filter === "NON_COMPLIANT") return matchesQ && !item.is_compliant;
+    if (filter === "COMPLIANT") return matchesQ && item.compliance_status === "COMPLIANT";
+    if (filter === "NON_COMPLIANT") return matchesQ && item.compliance_status === "NON_COMPLIANT";
     return matchesQ;
   });
 
@@ -144,7 +174,7 @@ function ScreenerTab({ summary }: { summary: ShariahCompliance[] }) {
       </div>
 
       <Card padded={false} className="overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" role="region" aria-label="Equities screener table" tabIndex={0}>
           <table className="w-full text-left text-sm">
             <thead className="border-b border-line bg-surface-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
               <tr>
@@ -176,41 +206,36 @@ function ScreenerTab({ summary }: { summary: ShariahCompliance[] }) {
                       <div className="text-xs text-ink-3 truncate max-w-xs">{item.company_name}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge tone={item.is_compliant ? "up" : "down"}>
-                        {item.is_compliant ? (
-                          <>
-                            <CheckCircle2 className="size-3" /> Compliant
-                          </>
+                      <Badge tone={STATUS_TONE[item.compliance_status]}>
+                        {item.compliance_status === "COMPLIANT" ? (
+                          <CheckCircle2 className="size-3" aria-hidden />
+                        ) : item.compliance_status === "QUESTIONABLE" ? (
+                          <HelpCircle className="size-3" aria-hidden />
                         ) : (
-                          <>
-                            <XCircle className="size-3" /> Non-Compliant
-                          </>
-                        )}
+                          <XCircle className="size-3" aria-hidden />
+                        )}{" "}
+                        {STATUS_LABEL[item.compliance_status]}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <Badge tone={item.aaoifi_compliant ? "up" : "neutral"}>
-                        {item.aaoifi_compliant ? "Passed" : "Failed"}
-                      </Badge>
+                      <Badge tone={STANDARD_TONE[item.aaoifi_status]}>{STANDARD_LABEL[item.aaoifi_status]}</Badge>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <Badge tone={item.tasis_compliant ? "up" : "neutral"}>
-                        {item.tasis_compliant ? "Passed" : "Failed"}
-                      </Badge>
+                      <Badge tone={STANDARD_TONE[item.tasis_status]}>{STANDARD_LABEL[item.tasis_status]}</Badge>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className={cx("num font-medium", item.debt_ratio > 0.33 ? "text-down font-semibold" : "text-ink-2")}>
-                        {pct(item.debt_ratio, 1)}
+                        {pct(item.debt_ratio, 1, false)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className={cx("num font-medium", item.cash_ratio > 0.33 ? "text-down font-semibold" : "text-ink-2")}>
-                        {pct(item.cash_ratio, 1)}
+                        {pct(item.cash_ratio, 1, false)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className="num font-mono text-ink-2">
-                        {pct(item.purification_ratio, 2)}
+                        {pct(item.purification_ratio, 2, false)}
                       </span>
                     </td>
                   </tr>
@@ -221,7 +246,8 @@ function ScreenerTab({ summary }: { summary: ShariahCompliance[] }) {
         </div>
       </Card>
       <p className="text-[12.5px] text-ink-3">
-        {int(filtered.length)} of {int(summary.length)} equities shown. Audited daily per AAOIFI Standard No. 21 and TASIS benchmark thresholds.
+        {int(filtered.length)} of {int(summary.length)} sample equities shown, screened against AAOIFI Standard No. 21
+        and TASIS thresholds using the sample figures above.
       </p>
     </div>
   );
@@ -242,16 +268,16 @@ function BasketsTab({ baskets }: { baskets: ShariahBasket[] }) {
 
             <div className="mt-4 grid grid-cols-3 gap-2 rounded-[var(--radius-control)] border border-line bg-surface-2 p-3 text-center">
               <div>
-                <div className="text-[11.5px] font-medium text-ink-3">Exp. CAGR</div>
-                <div className="num mt-0.5 text-base font-bold text-up">{pct(b.expected_cagr, 1)}</div>
+                <div className="text-[11.5px] font-medium text-ink-3">Assumed CAGR</div>
+                <div className="num mt-0.5 text-base font-bold text-ink">{pct(b.expected_cagr, 1, false)}</div>
               </div>
               <div>
-                <div className="text-[11.5px] font-medium text-ink-3">Sharpe</div>
+                <div className="text-[11.5px] font-medium text-ink-3">Assumed Sharpe</div>
                 <div className="num mt-0.5 text-base font-bold text-ink">{b.expected_sharpe.toFixed(2)}</div>
               </div>
               <div>
                 <div className="text-[11.5px] font-medium text-ink-3">Div. Yield</div>
-                <div className="num mt-0.5 text-base font-bold text-ink">{pct(b.dividend_yield, 2)}</div>
+                <div className="num mt-0.5 text-base font-bold text-ink">{pct(b.dividend_yield, 2, false)}</div>
               </div>
             </div>
 
@@ -264,7 +290,7 @@ function BasketsTab({ baskets }: { baskets: ShariahBasket[] }) {
                     className="inline-flex items-center gap-1 rounded-[var(--radius-control)] border border-line bg-surface px-2.5 py-1 text-xs"
                   >
                     <span className="font-semibold text-ink">{c.symbol}</span>
-                    <span className="num text-ink-3">({pct(c.weight, 0)})</span>
+                    <span className="num text-ink-3">({pct(c.weight, 0, false)})</span>
                   </span>
                 ))}
               </div>
@@ -272,9 +298,12 @@ function BasketsTab({ baskets }: { baskets: ShariahBasket[] }) {
           </div>
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-            <span className="text-xs text-ink-3">Export order sheet for Zerodha, Upstox, Groww</span>
-            <Button size="sm" variant="secondary" icon={<Download className="size-3.5" />}>
-              1-Click Export
+            <span className="text-xs text-ink-3">
+              Order sheets stay off until these sample prices are replaced by live ones. Quantities from stale
+              prices would be wrong.
+            </span>
+            <Button size="sm" variant="secondary" icon={<Download className="size-3.5" />} disabled>
+              Order sheet unavailable
             </Button>
           </div>
         </Card>

@@ -19,6 +19,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 INSTALLER_DIR = PROJECT_ROOT / "installer"
 ISS_PATH = INSTALLER_DIR / "quant_os_setup.iss"
 
+# The version resource is built with PyInstaller's Windows helper, which needs `pefile`, a
+# dependency that only installs on Windows. Without it this module cannot even be collected.
+pytest.importorskip("pefile", reason="exe version resources are a Windows build step")
 sys.path.insert(0, str(INSTALLER_DIR))
 from quantos_version_resource import (  # noqa: E402
     COMPANY_NAME,

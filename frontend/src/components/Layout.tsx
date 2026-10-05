@@ -17,7 +17,7 @@ import {
 import { type ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
 import { ageLabel, date, daysSince } from "../lib/format";
-import { useSearch, useStatus, useUpdate, useUpdateSettings } from "../lib/queries";
+import { usePaperOrders, useSearch, useStatus, useUpdate, useUpdateSettings } from "../lib/queries";
 import type { Theme } from "../lib/types";
 import { Logo } from "./Logo";
 import { Badge, cx } from "./ui";
@@ -111,7 +111,27 @@ function UpdateNotice() {
   );
 }
 
+/** How many paper-book orders are waiting for you, shown beside "Paper trading". Nothing when none. */
+function useOrdersWaiting(): number {
+  const status = useStatus();
+  const inbox = usePaperOrders(status.data?.index.ready ?? false);
+  return inbox.data?.pending ?? 0;
+}
+
+function OrdersPill({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-semibold leading-5 text-on-brand"
+      aria-label={`${count} orders waiting`}
+    >
+      {count}
+    </span>
+  );
+}
+
 function Sidebar({ onSearch }: { onSearch: () => void }) {
+  const waiting = useOrdersWaiting();
   const status = useStatus();
   const latest = status.data?.index.latest_session;
   const age = daysSince(latest);
@@ -158,6 +178,7 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
           >
             <Icon className="size-[18px] shrink-0" aria-hidden />
             {label}
+            {to === "/paper" && <OrdersPill count={waiting} />}
           </NavLink>
         ))}
       </nav>
@@ -258,14 +279,14 @@ function TopHeader({ onSearch }: { onSearch: () => void }) {
             className={cx(
               "flex h-8 items-center gap-2 rounded-[7px] px-3.5 text-[13px] font-medium transition-all",
               isShariahActive
-                ? "bg-emerald-600 text-white shadow-sm"
+                ? "bg-emerald-700 text-white shadow-sm"
                 : "text-ink-3 hover:text-ink",
             )}
           >
             <Scale className="size-4" aria-hidden />
             <span>Mizan Shariah</span>
-            {!shariahModeEnabled && (
-              <span className="ml-1 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-300">
+            {!shariahModeEnabled && !isShariahActive && (
+              <span className="ml-1 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 dark:text-emerald-200">
                 1-Click
               </span>
             )}
@@ -316,6 +337,7 @@ function TopHeader({ onSearch }: { onSearch: () => void }) {
 }
 
 function MobileBar({ onSearch }: { onSearch: () => void }) {
+  const waiting = useOrdersWaiting();
   const status = useStatus();
   const location = useLocation();
   const navigate = useNavigate();
@@ -355,7 +377,7 @@ function MobileBar({ onSearch }: { onSearch: () => void }) {
             aria-label="Switch Mode"
             className={cx(
               "flex h-7 items-center gap-1 rounded-full px-2.5 text-[11.5px] font-medium transition-colors",
-              isShariah ? "bg-emerald-600 text-white" : "border border-line bg-surface-2 text-ink-2",
+              isShariah ? "bg-emerald-700 text-white" : "border border-line bg-surface-2 text-ink-2",
             )}
           >
             {isShariah ? <Scale className="size-3" /> : <LayoutDashboard className="size-3" />}
@@ -381,6 +403,7 @@ function MobileBar({ onSearch }: { onSearch: () => void }) {
           >
             <Icon className="size-4" aria-hidden />
             {label}
+            {to === "/paper" && <OrdersPill count={waiting} />}
           </NavLink>
         ))}
       </nav>

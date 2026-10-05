@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import time
 import urllib.error
 from collections.abc import Callable, Iterator
@@ -389,6 +390,7 @@ def test_the_commands_match_each_vendors_documentation() -> None:
     assert all(a.signin_mode == "browser" for a in agents.values() if a.id != "gemini")
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="reads the Windows PATH and terminal launchers")
 def test_a_cli_installed_a_moment_ago_is_found_without_restarting(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -577,6 +579,7 @@ def test_the_launch_endpoint_starts_a_job_for_install_and_signin(
     assert started == [("codex", "install"), ("codex", "signin")]
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="reads the Windows PATH and terminal launchers")
 def test_gemini_sign_in_is_the_one_that_needs_a_terminal(
     client: TestClient, headers: dict[str, str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -666,6 +669,7 @@ def credential_client(
     monkeypatch.delenv("HF_TOKEN", raising=False)
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="needs the Windows Credential Manager")
 def test_saving_a_key_writes_nothing_to_a_dot_env_file(
     credential_client: TestClient, headers: dict[str, str], tmp_path: Path
 ) -> None:
@@ -676,6 +680,7 @@ def test_saving_a_key_writes_nothing_to_a_dot_env_file(
     assert not (tmp_path / "app" / ".env").exists()
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="needs the Windows Credential Manager")
 def test_removing_a_key_clears_only_its_own_leftover_line(
     credential_client: TestClient, headers: dict[str, str], tmp_path: Path
 ) -> None:

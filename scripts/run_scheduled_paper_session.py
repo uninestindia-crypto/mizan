@@ -187,6 +187,39 @@ def require_trading_day(day: date) -> None:
             )
 
 
+#: Warn this many days before the last covered year of the holiday list ends.
+CALENDAR_WARN_DAYS = 90
+
+
+def calendar_expiry_warning(today: date) -> str | None:
+    """A sentence when the holiday list is about to stop covering the days ahead, else None.
+
+    `require_trading_day` already refuses a date the list does not cover, and that is correct: it
+    never assumes the market is open. But it refuses on the morning the list runs out, with nobody
+    watching. This says so while there is still time to fetch the next year.
+    """
+    if not HOLIDAY_AUTHORITY.is_file():
+        return None  # require_trading_day refuses this case on its own, loudly
+    import json
+
+    try:
+        years = sorted(
+            int(y)
+            for y in json.loads(HOLIDAY_AUTHORITY.read_text(encoding="utf-8"))["covers_years"]
+        )
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if not years:
+        return None
+    left = (date(years[-1], 12, 31) - today).days
+    if left > CALENDAR_WARN_DAYS:
+        return None
+    return (
+        f"the trading-holiday authority covers only to {years[-1]}-12-31 ({max(left, 0)} days). "
+        "Fetch the next year's list before then or unattended sessions will refuse to run."
+    )
+
+
 def trading_sessions_between(start: date, end: date) -> int:
     """Trading sessions strictly after `start` and strictly before `end`.
 
@@ -401,6 +434,9 @@ def main() -> int:
 def _run(args: argparse.Namespace) -> int:
     today = datetime.now(IST).date()
     log(f"scheduled paper session for {today:%Y-%m-%d %A}")
+    warning = calendar_expiry_warning(today)
+    if warning:
+        log(f"WARNING: {warning}")
     try:
         require_trading_day(today)
     except NotATradingDay as refusal:
