@@ -1,6 +1,6 @@
 # Active work: paper books keep themselves up to date
 
-STATUS: ACTIVE  
+STATUS: COMPLETED  
 OWNER: Claude Code session (founder instruction 2026-10-05: "yes" to the plan: automatic daily update of paper books, a real-browser
 check of the new-paper-book page, then a v2.2.0 release under the standing release rule)  
 TOOL: Claude Code (mechanical UI pieces may go to `agy --model gemini-3.8-flash-high`; reviewed and verified here, told not to run git)  
@@ -91,4 +91,29 @@ the in-app download on that local build is affected; v2.1.0 was the first publis
 
 ## Stop point / next safe action
 
-(updated at completion)
+**Completed 2026-10-05. v2.2.0 is released.** Release commit `dd7c8e200`, tag `v2.2.0`,
+https://github.com/uninestindia-crypto/quant-system/releases/tag/v2.2.0 (installer, portable zip, SBOM, SHA256SUMS). The release was
+founder-approved in this session's plan (item 4) and made with `-Force` because only 2 of 3 user-visible commits existed; the other
+commit in the notes is Antigravity's `8c16bb488` (Lightning AI provider).
+
+Verified after release: `bump_version.py --check` agrees on 2.2.0; `release_status.py` reports 0 of 3 since the new tag; the built
+app (`dist/quantos/quantos.exe`, run on a scratch app root) reports 2.2.0, serves `/paper`, answers `/api/v2/paper/updates` and its
+own update check; an installed 2.1.0 sees 2.2.0 and `QuantOS_v2.2.0_Setup.exe`. Working tree: tracked files clean, `main` equals
+`origin/main`.
+
+My verification clone was retired (it was mine). The manager session's clone `verify-gate-baseline-8c16bb4-...` was not touched.
+
+**Not done, stated plainly**
+
+- `Setup.exe` was not run (founder tests installs; it shares an AppId with the founder's install) and is not code-signed.
+- The automatic update works only on data QuantOS downloaded itself. A person who connected their own research folder is told so on
+  the Paper page and updates that folder themselves (a deliberate guard, tested).
+- Exchange holidays are not known; they are detected after the fact (two clean updates that find nothing newer).
+- The browser-pane synthetic click on the Settings switch needs the window on screen; the switch was exercised through the page's
+  own control instead.
+- Legacy v2.0.1 download folders lack the marker (see Files changed).
+- In the dev checkout the full suite cannot finish because one paper-pilot test reads the real evidence store; the gate must be
+  measured in a clean clone or CI. A follow-up worth filing: make that test not touch real data.
+
+**Next safe action:** none required under this record. When `python scripts/release_status.py` says a release is due, run
+`powershell -ExecutionPolicy Bypass -File scripts/release.ps1`.
