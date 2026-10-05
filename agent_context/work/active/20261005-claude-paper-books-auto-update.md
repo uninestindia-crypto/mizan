@@ -17,6 +17,16 @@ WORKTREE_OR_BRANCH: the install root, branch `main` (shared checkout, no worktre
    orders); defects found are fixed.
 3. Release v2.2.0 through `scripts/release.ps1` if the release rule says due.
 
+## Workspaces
+
+- One detached **verification clone** at `51f0860ed` (my two local commits), created with
+  `scripts/new-workspace-clone.ps1 -Purpose verify -Label auto-update-gate`, below
+  `D:\Quant OS Project\quant_system_workspaces\verification_clones\verify-auto-update-gate-51f0860-20261005-074145`. The script's own checkout failed on a Windows long path (`core.longpaths` is not inherited by a fresh clone), so I finished that checkout myself with `core.longpaths=true` and `reset --hard 51f0860`; only my clone was touched. Why:
+  the full suite cannot be measured in this checkout, because `tests/test_paper_pilot_carried_session.py::test_halted_portfolio_refuses_trading_at_startup`
+  reads the dev tree's real ten-year evidence store through `load_mizan_cross_section` and does not finish in 20+ minutes here
+  (stack: `evidence/store.py:_verify_blobs`), while it is instant on a tree with no market data. I own this clone and will retire it
+  when the run is certified.
+
 ## Non-goals
 
 - No live order routing, no change to accounting, risk governor, evidence or modelling code.
@@ -64,10 +74,20 @@ Settings toggle. 5. Drive `/paper/new` in a real browser. 6. Gates, release v2.2
 | Real network, scratch data folder | with a running book and the data a session behind (1 Oct vs 2 Oct), the worker started a quick update by itself 30 s after launch: 495 stocks, mode `update`, shown on the Paper page as "Updating" with progress |
 | Defects found by driving it | two stale sentences ("moves forward when you update your market data") on `/paper/new` and the book page; the pre-start status said "Updating" before anything had started. Both fixed |
 | Defect in my own v2.1.0 tooling | `release.ps1` passed explicit file lists to ruff, which bypasses pyproject's `extend-exclude`, so its gate would fail on `.agents/` files that CI ignores. Fixed with `--force-exclude`; verified the tracked set then passes |
+| Holiday handling found by the real run | 2 Oct 2026 was a market holiday, so a clean update ended with data still at 1 Oct and the first design reported "the latest session is 2 Oct" and would retry. Now two clean updates that find nothing newer settle as "no newer trading session, usually a market holiday"; failed runs keep the three-try path. Verified on the real network (status after the first clean run: "found nothing newer, which is normal on a market holiday. Next automatic try at 13:48") and by 3 added tests (35 total in the file) |
+| Settings switch in a real browser | turned off: setting saved false, Paper page status OFF with its explanation; turned on again: updater resumed (clicked through the page's own control, because the browser pane's synthetic click needs the window on screen) |
+| Gate in this dev checkout | not measurable: `test_halted_portfolio_refuses_trading_at_startup` reads the dev tree's real evidence store (`evidence/store.py:_verify_blobs`) and ran 20+ minutes. Not caused by this work (it imports nothing from `server/v2`) and instant on a clean tree |
+| Gate in a clean clone at `51f0860ed` (CI-equivalent commands) | `ruff check .` clean; `ruff format --check .` 854 files clean; `mypy src launcher.py scripts` clean, 258 source files; `pytest tests` **2333 passed, 1 skipped** in 19m55s (skip: `test_windows_installer.py:140`, frontend not built in that clone). Frontend `npm test` 18 passed, `tsc --noEmit` clean |
 
 ## Files changed
 
-(updated as work proceeds)
+New: `src/quant_system/server/v2/auto_update.py`, `tests/test_auto_update.py`. Edited: `server/v2/{router,state}.py`,
+`frontend/src/lib/{queries,types}.ts`, `frontend/src/pages/{Paper,PaperNew,PaperBook,Settings}.tsx`, `scripts/release.ps1`.
+Commits: `2354a80ae` (feature), `51f0860ed` (release gate fix).
+
+Known limitation, not fixed here: a data folder downloaded by the pre-release v2.0.1 build has no `.quantos-download` marker, so
+the app treats it as "not downloaded by QuantOS" (updates by hand, and a full download would sit beside it). Only a person who ran
+the in-app download on that local build is affected; v2.1.0 was the first published release.
 
 ## Stop point / next safe action
 
