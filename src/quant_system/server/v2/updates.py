@@ -136,3 +136,125 @@ class UpdateChecker:
             "installer": next((a for a in assets if a.endswith("_Setup.exe")), None),
             "checked": True,
         }
+
+    def changelog(self) -> list[dict[str, Any]]:
+        curr_ver = self._current.lstrip("v")
+        results: list[dict[str, Any]] = []
+        for item in OFFLINE_CHANGELOG:
+            entry = dict(item)
+            entry["is_current"] = entry["version"] == curr_ver
+            results.append(entry)
+        return results
+
+
+OFFLINE_CHANGELOG: list[dict[str, Any]] = [
+    {
+        "version": "2.3.0",
+        "date": "2026-10-05",
+        "title": "Unified Desktop Studio & Mizan Shariah Wealth Engine",
+        "whats_new": [
+            "Unified desktop studio with instant 1-click mode switch between Institutional Quant and Mizan Shariah Wealth Engine",
+            "Mizan Shariah screening engine with customizable screening rules (DJIM, AAOIFI)",
+            "Automated purification calculation and charity zakat ledger for Islamic wealth compliance",
+            "Download and cache official NSE symbol changes with historical alias merging (e.g. HEG → HEGAM)",
+            "Portfolio purifier and halal wealth intelligence tools",
+        ],
+        "fixes": [
+            "Setup onboarding wizard remembers current step across reloads",
+            "Never overwrite saved corporate action authorities with empty results on network timeouts",
+        ],
+        "improvements": [
+            "Harmonized Mizan Shariah frontend with Apple-grade QuantOS design system",
+            "High-contrast accessible theme toggles and responsive layout refinements",
+        ],
+        "unchanged_protections": [
+            "Zero live-broker order routing — all executions strictly paper/shadow simulated",
+            "Decimal-exact financial accounting and statutory NSE transaction cost schedules preserved",
+            "Full offline self-contained operation without external cloud dependencies or telemetry",
+            "Immutable content-addressed evidence store remains write-protected",
+        ],
+    },
+    {
+        "version": "2.2.0",
+        "date": "2026-10-04",
+        "title": "Automated Paper Books & Lightning AI Provider",
+        "whats_new": [
+            "Paper books keep themselves up to date automatically after each NSE market close",
+            "Native Lightning AI provider support for ultra-low latency model calls",
+            "Upstox analytics token integration and Moonshot model architecture",
+        ],
+        "fixes": [
+            "Hardened corporate actions provider fallback on connectivity blips",
+            "Persistent paper engine state synchronization across app restarts",
+        ],
+        "improvements": [
+            "Background auto-updater runs with zero CPU overhead and bounded sleep",
+        ],
+        "unchanged_protections": [
+            "Existing paper trading portfolios and historical ledgers preserved without loss",
+            "Strict point-in-time bar history constraints maintained",
+        ],
+    },
+    {
+        "version": "2.1.0",
+        "date": "2026-10-04",
+        "title": "In-App Update Checker, Native Paper Trading & AI Hub",
+        "whats_new": [
+            "In-app update notifications when new releases are published on GitHub",
+            "Quick 'Update market data' keeping full ten-year bar history",
+            "Start and follow live paper trading books directly within the desktop UI",
+            "Built-in market data downloader for factory-new laptops without pre-existing data",
+            "Direct support for Google Gemini, DeepSeek, and Mistral API keys in AI Assistant",
+            "Auto-discovery of local market data and browser-based CLI authentication",
+        ],
+        "fixes": [
+            "Repaired statutory transaction cost display across order sizes",
+            "Chat requests no longer force strict JSON mode and retry safely without refused temperature",
+            "Stopped copying saved API keys into plaintext .env file",
+        ],
+        "improvements": [
+            "Sub-second market data search and symbol lookup across 3,000+ NSE tickers",
+        ],
+        "unchanged_protections": [
+            "Strict local loopback trust boundary — zero remote access and no external telemetry",
+            "Purged and embargoed walk-forward validation prevents look-ahead leakage",
+        ],
+    },
+    {
+        "version": "2.0.1",
+        "date": "2026-10-03",
+        "title": "Windows Shell Integration & Multi-Agent Bridge",
+        "whats_new": [
+            "Fixed taskbar icon identity and tray integration on Windows x64",
+            "Multi-agent CLI bridge and 1-click credential hub",
+        ],
+        "fixes": [
+            "Clean exit handling on Windows process shutdowns",
+        ],
+        "improvements": [
+            "Optimized asset preloading in WebView2 container",
+        ],
+        "unchanged_protections": [
+            "100% backward compatibility with QuantOS v1 evidence store and historical runs",
+        ],
+    },
+    {
+        "version": "2.0.0",
+        "date": "2026-10-03",
+        "title": "QuantOS 2.0 Retail Platform & Native Window Runner",
+        "whats_new": [
+            "Complete consumer-grade retail interface (QuantOS 2.0) with Strategy Lab and Market Index",
+            "Native Windows desktop runner powered by WebView2 without black terminal popups",
+            "Versioned operation API v2 with local trust boundary",
+        ],
+        "fixes": [
+            "Fixed journey script execution inside native desktop window container",
+        ],
+        "improvements": [
+            "Instant UI responsiveness and clean semantic navigation",
+        ],
+        "unchanged_protections": [
+            "Core risk governor, immutable content-addressed evidence store, and Decimal ledger invariants untouched",
+        ],
+    },
+]

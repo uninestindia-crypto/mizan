@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from quant_system.shell.native_window import (
     acquire_single_instance,
+    cleanup_zombie_instances,
     focus_existing_window,
     run_native_window,
     system_prefers_dark,
@@ -12,6 +13,7 @@ from quant_system.shell.native_window import (
 
 __all__ = [
     "acquire_single_instance",
+    "cleanup_zombie_instances",
     "focus_existing_window",
     "run_native_window",
     "system_prefers_dark",

@@ -24,6 +24,7 @@ import type {
   Templates,
   UpdateInfo,
   WatchRow,
+  ChangelogEntry,
 } from "./types";
 
 const MARKET = 5 * 60_000;
@@ -400,5 +401,15 @@ export function useCheckUpdate() {
   return useMutation({
     mutationFn: () => api<UpdateInfo>("/api/v2/update?refresh=true"),
     onSuccess: (info) => qc.setQueryData(["update"], info),
+  });
+}
+
+/** Full release history and changelog showing what was updated and what was preserved across versions. */
+export function useChangelog() {
+  return useQuery({
+    queryKey: ["changelog"],
+    queryFn: () => api<ChangelogEntry[]>("/api/v2/changelog"),
+    staleTime: SIX_HOURS,
+    retry: false,
   });
 }

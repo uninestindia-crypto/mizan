@@ -590,6 +590,12 @@ def update_status(refresh: bool = False) -> dict[str, Any]:
     return services().updates.check(force=refresh)
 
 
+@router.get("/changelog")
+def get_changelog() -> list[dict[str, Any]]:
+    """Release changelog showing everything that was updated and what was preserved across versions."""
+    return services().updates.changelog()
+
+
 @router.get("/paper/updates")
 def paper_updates() -> dict[str, Any]:
     """Whether paper books are being kept up to date automatically, and if not, why not."""

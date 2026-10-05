@@ -668,3 +668,14 @@ export interface UpdateInfo {
   /** false when GitHub could not be reached; the app then says nothing. */
   checked: boolean;
 }
+
+export interface ChangelogEntry {
+  version: string;
+  date: string;
+  title: string;
+  is_current?: boolean;
+  whats_new: string[];
+  fixes: string[];
+  improvements: string[];
+  unchanged_protections: string[];
+}

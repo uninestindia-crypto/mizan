@@ -4,6 +4,46 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, field_validator
 
 
+def ensure_shariah_database(target_path: Path) -> None:
+    """Ensures target_path is a valid populated Shariah SQLite database."""
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    if target_path.is_file() and target_path.stat().st_size > 10000:
+        return
+
+    import shutil
+    import sys
+
+    # Candidates for pre-bundled seed database
+    candidates: list[Path] = []
+    if getattr(sys, "frozen", False):
+        exe_dir = Path(sys.executable).parent
+        candidates.append(exe_dir / "_internal" / "data" / "shariah" / "halal_stocks.db")
+        candidates.append(exe_dir / "data" / "shariah" / "halal_stocks.db")
+    if hasattr(sys, "_MEIPASS"):
+        candidates.append(Path(sys._MEIPASS) / "data" / "shariah" / "halal_stocks.db")
+
+    # Relative to this file's repository root
+    repo_root = Path(__file__).resolve().parents[4]
+    candidates.append(repo_root / "data" / "shariah" / "halal_stocks.db")
+    candidates.append(repo_root / "_internal" / "data" / "shariah" / "halal_stocks.db")
+
+    for candidate in candidates:
+        if candidate.is_file() and candidate.stat().st_size > 10000:
+            try:
+                shutil.copy2(candidate, target_path)
+                return
+            except Exception:
+                pass
+
+    # Fallback: initialize database schema if no seed file could be copied
+    try:
+        from quant_system.shariah.db.init_db import init_db
+
+        init_db(str(target_path))
+    except Exception:
+        pass
+
+
 class Settings(BaseModel):
     PROJECT_NAME: str = "Halal Investment & Wealth-Building Platform"
     VERSION: str = "1.0.0"
@@ -26,7 +66,9 @@ class Settings(BaseModel):
 
     @property
     def SQLITE_DB_PATH(self) -> Path:
-        return self.DATA_DIR / self.SQLITE_DB_FILE
+        path = self.DATA_DIR / self.SQLITE_DB_FILE
+        ensure_shariah_database(path)
+        return path
 
     # DuckDB configuration
     DUCKDB_FILE: str = "analytics.duckdb"

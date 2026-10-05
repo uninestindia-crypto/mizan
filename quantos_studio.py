@@ -129,6 +129,7 @@ def configure_drive_isolation() -> Path:
     os.environ["MPLCONFIGDIR"] = str(app_root / "tmp" / "matplotlib")
     os.environ["PYTHONPYCACHEPREFIX"] = str(app_root / "tmp" / "pycache")
     os.environ["WEBVIEW2_USER_DATA_FOLDER"] = str(app_root / "tmp" / "webview2_data")
+    os.environ["QUANTOS_APP_ROOT"] = str(app_root)
     return app_root
 
 
@@ -249,12 +250,35 @@ def run_studio() -> None:
     logger.info("Starting QuantOS Studio %s", __version__)
 
     # One QuantOS at a time: a second launch brings the first window to the front and exits.
-    from quant_system.shell import acquire_single_instance, focus_existing_window, run_native_window
+    from quant_system.shell import (
+        acquire_single_instance,
+        cleanup_zombie_instances,
+        focus_existing_window,
+        run_native_window,
+    )
 
     if not acquire_single_instance():
-        logger.info("QuantOS is already running; focusing the existing window.")
-        focus_existing_window()
-        sys.exit(0)
+        logger.info("QuantOS instance detected; focusing the existing window.")
+        if focus_existing_window():
+            sys.exit(0)
+
+        # Mutex was held, but no window titled 'QuantOS' could be focused.
+        # Wait briefly in case a newly launched instance is still initializing.
+        logger.warning(
+            "Single-instance lock held, but no visible window found. Checking again in 1.5s..."
+        )
+        time.sleep(1.5)
+        if focus_existing_window():
+            sys.exit(0)
+
+        # If still no window, the process holding the mutex is an orphaned headless zombie.
+        logger.warning("Orphaned instance detected. Terminating headless zombie processes...")
+        cleanup_zombie_instances(("quantos-studio.exe",))
+        time.sleep(0.5)
+        if not acquire_single_instance():
+            logger.error("Could not acquire single-instance lock after zombie cleanup; exiting.")
+            sys.exit(1)
+        logger.info("Successfully acquired single-instance lock after cleaning orphaned process.")
 
     # Load environment variables
     load_env_file()
@@ -340,10 +364,20 @@ def run_studio() -> None:
 
     # Clean Graceful Shutdown on Window Close
     logger.info("Initiating graceful server shutdown...")
-    server.should_exit = True
-    server_thread.join(timeout=4.0)
-    logger.info("QuantOS Studio shutdown complete. Exiting.")
-    sys.exit(0)
+    try:
+        server.should_exit = True
+        server_thread.join(timeout=1.5)
+    except Exception as err:
+        logger.warning("Error waiting for server shutdown: %s", err)
+    finally:
+        logger.info("QuantOS Studio shutdown complete. Exiting process.")
+        for handler in logging.root.handlers + logger.handlers:
+            try:
+                handler.flush()
+            except Exception:
+                pass
+        # Hard OS-level exit to guarantee zero lingering zombie threads or held mutexes
+        os._exit(0)
 
 
 if __name__ == "__main__":

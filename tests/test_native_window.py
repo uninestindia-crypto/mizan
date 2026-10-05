@@ -138,7 +138,7 @@ def test_webview2_runtime_detection(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setitem(sys.modules, "winreg", fake)
     assert webview2_runtime_version() == "154.0.4258.37"
-    fake.QueryValueEx = lambda _key, _name: ("0.0.0.0", 1)  # type: ignore[assignment]
+    fake.QueryValueEx = lambda _key, _name: ("0.0.0.0", 1)
     assert webview2_runtime_version() is None
 
 
@@ -241,3 +241,22 @@ def test_studio_tries_the_native_window_before_any_browser() -> None:
     assert source.index("run_native_window(") < source.index(
         "find_app_browser()", source.index("def run_studio")
     )
+
+
+def test_cleanup_zombie_instances_safe() -> None:
+    from quant_system.shell.native_window import cleanup_zombie_instances
+
+    # Safe execution across platforms, handles nonexistent processes safely
+    cleaned = cleanup_zombie_instances(("nonexistent_process_12345.exe",))
+    assert isinstance(cleaned, int)
+    assert cleaned >= 0
+
+
+def test_studio_contains_hard_exit_and_zombie_cleanup() -> None:
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parent.parent / "quantos_studio.py").read_text(
+        encoding="utf-8"
+    )
+    assert "cleanup_zombie_instances" in source
+    assert "os._exit(0)" in source

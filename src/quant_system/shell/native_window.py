@@ -16,6 +16,8 @@ import ctypes
 import logging
 import os
 import sys
+import threading
+import time
 from collections.abc import Callable
 from pathlib import Path
 
@@ -126,6 +128,45 @@ def focus_existing_window(title: str = DEFAULT_TITLE) -> bool:
     return True
 
 
+def cleanup_zombie_instances(process_names: tuple[str, ...] = ("quantos-studio.exe",)) -> int:
+    """Terminates orphaned headless instances of QuantOS Studio.
+
+    Only targets processes with matching names whose PID differs from the current process.
+    Returns the number of processes terminated.
+    """
+    if sys.platform != "win32":
+        return 0
+    import subprocess
+
+    current_pid = os.getpid()
+    cleaned = 0
+    for name in process_names:
+        try:
+            cmd = f'tasklist /FI "IMAGENAME eq {name}" /FO CSV /NH'
+            out = subprocess.check_output(cmd, shell=True, text=True, stderr=subprocess.DEVNULL)
+            for line in out.strip().splitlines():
+                line = line.strip()
+                if not line or "INFO: No tasks" in line:
+                    continue
+                parts = [p.strip('"') for p in line.split('","')]
+                if len(parts) >= 2 and parts[0].lower() == name.lower():
+                    try:
+                        pid = int(parts[1])
+                        if pid != current_pid:
+                            subprocess.run(
+                                f"taskkill /F /PID {pid}",
+                                shell=True,
+                                stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL,
+                            )
+                            cleaned += 1
+                    except (ValueError, OSError):
+                        pass
+        except Exception:
+            pass
+    return cleaned
+
+
 def diagnostics_port(environ: dict[str, str] | None = None) -> int | None:
     """The WebView2 remote-debugging port requested through ``QUANTOS_DEBUG_PORT``, if valid.
 
@@ -215,7 +256,7 @@ def run_native_window(
         except Exception:
             screen_size = None
         (width, height), min_size = fit_to_screen(screen_size, (width, height), min_size)
-        webview.create_window(
+        win = webview.create_window(
             title=title,
             url=url,
             width=width,
@@ -225,6 +266,25 @@ def run_native_window(
             text_select=True,
             confirm_close=False,
         )
+
+        if win is not None and hasattr(win, "events") and hasattr(win.events, "closed"):
+
+            def _on_window_closed() -> None:
+                log.info("Native window closed event received.")
+
+                def _watchdog() -> None:
+                    time.sleep(2.5)
+                    log.warning(
+                        "GUI loop did not exit within 2.5s after window close; forcing process exit."
+                    )
+                    os._exit(0)
+
+                threading.Thread(
+                    target=_watchdog, name="QuantOS-CloseWatchdog", daemon=True
+                ).start()
+
+            win.events.closed += _on_window_closed
+
         launcher = start or webview.start
         resolved_icon = icon or default_icon_path()
         storage = storage_path or os.environ.get("WEBVIEW2_USER_DATA_FOLDER")

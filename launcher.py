@@ -43,6 +43,7 @@ def configure_drive_isolation() -> Path:
     os.environ["TMPDIR"] = local_tmp
     os.environ["MPLCONFIGDIR"] = str(app_root / "tmp" / "matplotlib")
     os.environ["PYTHONPYCACHEPREFIX"] = str(app_root / "tmp" / "pycache")
+    os.environ["QUANTOS_APP_ROOT"] = str(app_root)
     return app_root
 
 

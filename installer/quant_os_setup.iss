@@ -76,7 +76,7 @@ WizardStyle=modern dynamic windows11
 SetupIconFile=assets\quantos.ico
 WizardImageFile=assets\wizard-large-164.png,assets\wizard-large-410.png
 WizardSmallImageFile=assets\wizard-small-55.png,assets\wizard-small-69.png,assets\wizard-small-83.png,assets\wizard-small-110.png
-UninstallDisplayIcon={app}\{#MyAppExeName}
+UninstallDisplayIcon={app}\assets\quantos.ico
 UninstallDisplayName={#MyAppName}
 
 ; Behaviour
@@ -111,14 +111,16 @@ Type: files; Name: "{%USERPROFILE}\Desktop\QuantOS Studio.lnk"
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\data\shariah\*"; DestDir: "{app}\data\shariah"; Flags: ignoreversion onlyifdoesntexist recursesubdirs createallsubdirs
 
 [Dirs]
 Name: "{app}\data"; Flags: uninsneveruninstall
 Name: "{app}\logs"; Flags: uninsneveruninstall
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\assets\quantos.ico"; AppUserModelID: "QuantOS.Desktop.Studio.2.0"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon; IconFilename: "{app}\assets\quantos.ico"; AppUserModelID: "QuantOS.Desktop.Studio.2.0"
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\assets\quantos.ico"; IconIndex: 0; AppUserModelID: "QuantOS.Desktop.Studio.2.0"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon; IconFilename: "{app}\assets\quantos.ico"; IconIndex: 0; AppUserModelID: "QuantOS.Desktop.Studio.2.0"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

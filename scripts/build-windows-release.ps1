@@ -77,6 +77,26 @@ try {
         Write-Host "`n[STEP 2] Skipping PyInstaller compilation (--SkipPyInstaller)." -ForegroundColor DarkGray
     }
 
+    # 2b. Stage visual assets and seed data into dist\quantos for portable distribution
+    $distDir = Join-Path $projectRoot "dist\quantos"
+    if (Test-Path $distDir) {
+        $distAssets = Join-Path $distDir "assets"
+        $srcAssets = Join-Path $projectRoot "installer\assets"
+        if (-not (Test-Path $srcAssets)) { $srcAssets = Join-Path $projectRoot "assets" }
+        if (Test-Path $srcAssets) {
+            if (-not (Test-Path $distAssets)) { New-Item -ItemType Directory -Path $distAssets -Force | Out-Null }
+            Copy-Item -Path (Join-Path $srcAssets "*") -Destination $distAssets -Recurse -Force
+            Write-Host "  -> Staged visual assets into dist\quantos\assets." -ForegroundColor Green
+        }
+        $distShariah = Join-Path $distDir "data\shariah"
+        $srcShariah = Join-Path $projectRoot "data\shariah"
+        if (Test-Path $srcShariah) {
+            if (-not (Test-Path $distShariah)) { New-Item -ItemType Directory -Path $distShariah -Force | Out-Null }
+            Copy-Item -Path (Join-Path $srcShariah "*") -Destination $distShariah -Recurse -Force
+            Write-Host "  -> Staged shariah seed data into dist\quantos\data\shariah." -ForegroundColor Green
+        }
+    }
+
     # 3. Generate SBOM and Cryptographic Release Manifest
     Write-Host "`n[STEP 3] Generating Software Bill of Materials (SBOM) and Release Manifest..." -ForegroundColor Yellow
     $buildScript = @"

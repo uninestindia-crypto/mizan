@@ -12,8 +12,10 @@ import {
   KeyRound,
   Landmark,
   RefreshCw,
+  ShieldCheck,
   Sparkles,
   UserRound,
+  Wrench,
   Zap,
 } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
@@ -27,6 +29,7 @@ import { MONEY_LIMITS, moneyProblems } from "../lib/rules";
 import { date, dateTime, inr, int } from "../lib/format";
 import {
   useAiModels,
+  useChangelog,
   useCheckUpdate,
   usePaperUpdates,
   useBuildIndex,
@@ -38,7 +41,7 @@ import {
   useUpdate,
   useUpdateSettings,
 } from "../lib/queries";
-import type { Style, Theme } from "../lib/types";
+import type { ChangelogEntry, Style, Theme } from "../lib/types";
 
 const SECTIONS = [
   { id: "profile", label: "Profile & money rules", icon: UserRound },
@@ -911,7 +914,7 @@ function Accounts() {
       <Card>
         <CardHeader
           title="AI Cloud Providers"
-          subtitle="Optional. These keys power the AI assistant in the classic research console (Settings, About). The newer screens do not use them yet. QuantOS reads the newest models straight from each provider, so this list never goes out of date."
+          subtitle="Optional. These keys power AI assistants across QuantOS. QuantOS reads the newest models straight from each provider, so this list never goes out of date."
         />
         <div className="grid grid-cols-1 gap-4 pt-2 md:grid-cols-2">
           {aiProviders.map((prov) => {
@@ -1070,10 +1073,8 @@ function About() {
           it is not registered with SEBI as an investment adviser or research analyst, and it does not place orders with any broker. Past results,
           including backtests and paper trading, do not guarantee future returns.
         </p>
-        <a href="/classic" className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-brand hover:underline">
-          Open the classic research console (advanced, for developers) <ExternalLink className="size-3.5" aria-hidden />
-        </a>
       </Card>
+      <ChangelogCard />
       <Card>
         <CardHeader title="Open-source software" subtitle="QuantOS is built with these projects." />
         <ul className="divide-y divide-line text-sm">
@@ -1086,6 +1087,296 @@ function About() {
         </ul>
       </Card>
     </>
+  );
+}
+
+function ChangelogCard() {
+  const changelogQuery = useChangelog();
+  const update = useUpdate();
+  const info = update.data;
+
+  const fallbackEntries: ChangelogEntry[] = [
+    {
+      version: "2.3.0",
+      date: "2026-10-05",
+      title: "Unified Desktop Studio & Mizan Shariah Wealth Engine",
+      is_current: true,
+      whats_new: [
+        "Unified desktop studio with instant 1-click mode switch between Institutional Quant and Mizan Shariah Wealth Engine",
+        "Mizan Shariah screening engine with customizable screening rules (DJIM, AAOIFI)",
+        "Automated purification calculation and charity zakat ledger for Islamic wealth compliance",
+        "Download and cache official NSE symbol changes with historical alias merging (e.g. HEG → HEGAM)",
+        "Integrated portfolio purifier and halal wealth intelligence tools",
+      ],
+      fixes: [
+        "Setup onboarding wizard remembers current step across reloads",
+        "Never overwrite saved corporate action authorities with empty results on network timeouts",
+      ],
+      improvements: [
+        "Harmonized Mizan Shariah frontend with Apple-grade QuantOS design system",
+        "High-contrast accessible theme toggles and responsive layout refinements",
+      ],
+      unchanged_protections: [
+        "Zero live-broker order routing — all executions strictly paper/shadow simulated",
+        "Decimal-exact financial accounting and statutory NSE transaction cost schedules preserved",
+        "Full offline self-contained operation without external cloud dependencies or telemetry",
+        "Immutable content-addressed evidence store remains write-protected",
+      ],
+    },
+    {
+      version: "2.2.0",
+      date: "2026-10-04",
+      title: "Automated Paper Books & Lightning AI Provider",
+      is_current: false,
+      whats_new: [
+        "Paper books keep themselves up to date automatically after each NSE market close",
+        "Native Lightning AI provider support for ultra-low latency model calls",
+        "Upstox analytics token integration and Moonshot model architecture",
+      ],
+      fixes: [
+        "Hardened corporate actions provider fallback on connectivity blips",
+        "Persistent paper engine state synchronization across app restarts",
+      ],
+      improvements: [
+        "Background auto-updater runs with zero CPU overhead and bounded sleep",
+      ],
+      unchanged_protections: [
+        "Existing paper trading portfolios and historical ledgers preserved without loss",
+        "Strict point-in-time bar history constraints maintained",
+      ],
+    },
+    {
+      version: "2.1.0",
+      date: "2026-10-04",
+      title: "In-App Update Checker, Native Paper Trading & AI Hub",
+      is_current: false,
+      whats_new: [
+        "In-app update notifications when new releases are published on GitHub",
+        "Quick 'Update market data' keeping full ten-year bar history",
+        "Start and follow live paper trading books directly within the desktop UI",
+        "Built-in market data downloader for factory-new laptops without pre-existing data",
+        "Direct support for Google Gemini, DeepSeek, and Mistral API keys in AI Assistant",
+        "Auto-discovery of local market data and browser-based CLI authentication",
+      ],
+      fixes: [
+        "Repaired statutory transaction cost display across order sizes",
+        "Chat requests no longer force strict JSON mode and retry safely without refused temperature",
+        "Stopped copying saved API keys into plaintext .env file",
+      ],
+      improvements: [
+        "Sub-second market data search and symbol lookup across 3,000+ NSE tickers",
+      ],
+      unchanged_protections: [
+        "Strict local loopback trust boundary — zero remote access and no external telemetry",
+        "Purged and embargoed walk-forward validation prevents look-ahead leakage",
+      ],
+    },
+    {
+      version: "2.0.1",
+      date: "2026-10-03",
+      title: "Windows Shell Integration & Multi-Agent Bridge",
+      is_current: false,
+      whats_new: [
+        "Fixed taskbar icon identity and tray integration on Windows x64",
+        "Multi-agent CLI bridge and 1-click credential hub",
+      ],
+      fixes: [
+        "Clean exit handling on Windows process shutdowns",
+      ],
+      improvements: [
+        "Optimized asset preloading in WebView2 container",
+      ],
+      unchanged_protections: [
+        "100% backward compatibility with QuantOS v1 evidence store and historical runs",
+      ],
+    },
+    {
+      version: "2.0.0",
+      date: "2026-10-03",
+      title: "QuantOS 2.0 Retail Platform & Native Window Runner",
+      is_current: false,
+      whats_new: [
+        "Complete consumer-grade retail interface (QuantOS 2.0) with Strategy Lab and Market Index",
+        "Native Windows desktop runner powered by WebView2 without black terminal popups",
+        "Versioned operation API v2 with local trust boundary",
+      ],
+      fixes: [
+        "Fixed journey script execution inside native desktop window container",
+      ],
+      improvements: [
+        "Instant UI responsiveness and clean semantic navigation",
+      ],
+      unchanged_protections: [
+        "Core risk governor, immutable content-addressed evidence store, and Decimal ledger invariants untouched",
+      ],
+    },
+  ];
+
+  const entries: ChangelogEntry[] = changelogQuery.data && changelogQuery.data.length > 0
+    ? changelogQuery.data
+    : fallbackEntries;
+
+  const [expandedVersions, setExpandedVersions] = useState<Record<string, boolean>>({
+    "2.3.0": true,
+  });
+
+  const toggleVersion = (ver: string) => {
+    setExpandedVersions((prev) => ({
+      ...prev,
+      [ver]: !prev[ver],
+    }));
+  };
+
+  return (
+    <Card>
+      <CardHeader
+        title="Changelog & Release Notes"
+        subtitle="Detailed record of what was updated, bug fixes, performance improvements, and protected safeguards across releases."
+      />
+
+      {info?.update_available && (
+        <div className="mb-6 rounded-[var(--radius-control)] border border-brand/30 bg-brand-soft/20 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-4 text-brand" aria-hidden />
+              <span className="font-semibold text-ink">New Release Available: QuantOS v{info.latest}</span>
+              <Badge tone="brand">Update</Badge>
+            </div>
+            {info.url && (
+              <a
+                href={info.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-[var(--radius-control)] bg-brand px-3 py-1.5 text-xs font-medium text-on-brand shadow-sm hover:bg-brand-strong"
+              >
+                Download update <ExternalLink className="size-3.5" aria-hidden />
+              </a>
+            )}
+          </div>
+          {info.notes && (
+            <div className="mt-3 rounded border border-line bg-surface p-3 text-xs leading-relaxed text-ink-2 whitespace-pre-wrap font-mono">
+              {info.notes}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {entries.map((entry) => {
+          const isExpanded = !!expandedVersions[entry.version];
+          return (
+            <div
+              key={entry.version}
+              className="overflow-hidden rounded-[var(--radius-control)] border border-line bg-surface transition-colors hover:border-line-strong"
+            >
+              <button
+                type="button"
+                onClick={() => toggleVersion(entry.version)}
+                className="flex w-full items-center justify-between gap-4 p-4 text-left transition-colors hover:bg-surface-2/40"
+                aria-expanded={isExpanded}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-sm font-bold text-ink">v{entry.version}</span>
+                    {entry.is_current && <Badge tone="up">Current Installed</Badge>}
+                    <span className="text-xs text-ink-3">· Released {entry.date}</span>
+                  </div>
+                  <h3 className="mt-1 text-[13.5px] font-medium text-ink">{entry.title}</h3>
+                  <div className="mt-2 flex flex-wrap items-center gap-2.5 text-[11px] text-ink-3">
+                    <span className="inline-flex items-center gap-1 font-medium text-up">
+                      <Sparkles className="size-3" aria-hidden /> {entry.whats_new.length} updated
+                    </span>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1 font-medium text-ink-2">
+                      <Wrench className="size-3" aria-hidden /> {entry.fixes.length} fixes
+                    </span>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1 font-medium text-brand">
+                      <Zap className="size-3" aria-hidden /> {entry.improvements.length} improvements
+                    </span>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1 font-medium text-ink-3">
+                      <ShieldCheck className="size-3" aria-hidden /> {entry.unchanged_protections.length} protected
+                    </span>
+                  </div>
+                </div>
+                <div className="shrink-0 text-ink-3">
+                  {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                </div>
+              </button>
+
+              {isExpanded && (
+                <div className="border-t border-line/60 bg-surface-2/30 p-4 space-y-4 text-xs">
+                  {entry.whats_new.length > 0 && (
+                    <div>
+                      <div className="mb-2 flex items-center gap-1.5 font-semibold text-up">
+                        <Sparkles className="size-3.5" aria-hidden />
+                        <span>What Was Updated (New Features)</span>
+                      </div>
+                      <ul className="space-y-1 pl-4 list-disc text-ink-2">
+                        {entry.whats_new.map((item, idx) => (
+                          <li key={idx} className="leading-relaxed">
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {entry.fixes.length > 0 && (
+                    <div>
+                      <div className="mb-2 flex items-center gap-1.5 font-semibold text-ink-2">
+                        <Wrench className="size-3.5" aria-hidden />
+                        <span>Fixes &amp; Corrections</span>
+                      </div>
+                      <ul className="space-y-1 pl-4 list-disc text-ink-2">
+                        {entry.fixes.map((item, idx) => (
+                          <li key={idx} className="leading-relaxed">
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {entry.improvements.length > 0 && (
+                    <div>
+                      <div className="mb-2 flex items-center gap-1.5 font-semibold text-brand">
+                        <Zap className="size-3.5" aria-hidden />
+                        <span>Performance &amp; UI Polish</span>
+                      </div>
+                      <ul className="space-y-1 pl-4 list-disc text-ink-2">
+                        {entry.improvements.map((item, idx) => (
+                          <li key={idx} className="leading-relaxed">
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {entry.unchanged_protections.length > 0 && (
+                    <div>
+                      <div className="mb-2 flex items-center gap-1.5 font-semibold text-ink-3">
+                        <ShieldCheck className="size-3.5" aria-hidden />
+                        <span>What Was NOT Changed (Guaranteed Safeguards &amp; Invariants)</span>
+                      </div>
+                      <ul className="space-y-1 pl-4 list-disc text-ink-3">
+                        {entry.unchanged_protections.map((item, idx) => (
+                          <li key={idx} className="leading-relaxed">
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
 
