@@ -57,6 +57,7 @@ from quant_system.server.v2.credentials import (
     verify_credential_connection,
     with_saved_credentials,
 )
+from quant_system.server.v2.env_import import EnvFile, apply_plan, build_plan
 from quant_system.server.v2.jobs import IndexJob
 from quant_system.server.v2.notify import OrdersNotifier
 from quant_system.server.v2.paper_books import PaperBooks
@@ -65,6 +66,7 @@ from quant_system.server.v2.schemas import (
     CliCodeRequest,
     CliLaunchRequest,
     CostsRequest,
+    CredentialImportRequest,
     CredentialTestRequest,
     DataFolderRequest,
     DownloadRequest,
@@ -805,6 +807,34 @@ def get_credentials() -> dict[str, Any]:
 @router.post("/credentials/test")
 def test_credential(body: CredentialTestRequest) -> dict[str, Any]:
     return verify_credential_connection(body.provider, with_saved_credentials(body.credentials))
+
+
+@router.post("/credentials/import")
+def import_credentials(body: CredentialImportRequest) -> dict[str, Any]:
+    """Read keys from uploaded ``.env`` files. Previews by default; ``dry_run=false`` saves.
+
+    No response carries a secret value.
+    """
+    store = services().credentials
+    try:
+        plan = build_plan([EnvFile(f.name, f.text) for f in body.files], store)
+    except CredentialError as err:
+        raise V2Error(400, "CREDENTIAL_REFUSED", str(err)) from err
+    reply: dict[str, Any] = {
+        "available": store.available,
+        "dry_run": body.dry_run,
+        **plan.as_dict(),
+    }
+    if body.dry_run:
+        return reply
+    if not store.available:
+        raise V2Error(
+            400, "CREDENTIAL_REFUSED", "Windows Credential Manager is not available on this system."
+        )
+    outcomes = apply_plan(plan, store, None if body.names is None else set(body.names))
+    reply["results"] = [outcome.as_dict() for outcome in outcomes]
+    reply["secrets"] = store.status()
+    return reply
 
 
 @router.put("/credentials/{name}")

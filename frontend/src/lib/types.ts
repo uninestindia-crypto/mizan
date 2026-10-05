@@ -555,6 +555,32 @@ export interface CredentialTestResult {
   message: string;
 }
 
+/** What the engine made of one name in an uploaded .env file. Values are never part of any reply. */
+export type EnvImportStatus = "new" | "replace" | "same" | "empty" | "too_long" | "unmanaged";
+
+export interface EnvImportRow {
+  name: string;
+  label: string | null;
+  group: string | null;
+  status: EnvImportStatus;
+  /** The file the winning value came from. */
+  source: string | null;
+  /** Other files that set this name to a different value and lost. */
+  shadowed: string[];
+}
+
+export interface EnvImportReply {
+  available: boolean;
+  dry_run: boolean;
+  files: { name: string; keys: number }[];
+  rows: EnvImportRow[];
+  summary: Record<EnvImportStatus, number>;
+  unrecognised_lines: number;
+  /** Present only after a save. */
+  results?: { name: string; outcome: "saved" | "refused" | "not_selected"; message: string | null }[];
+  secrets?: Secret[];
+}
+
 
 // ------------------------------------------------------------------------- paper books (started in this app)
 

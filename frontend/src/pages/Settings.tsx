@@ -23,6 +23,7 @@ import { NavLink, useParams } from "react-router";
 import { AsOf } from "../components/common";
 import { AgentCliBridge } from "../components/AgentCliBridge";
 import { DataFolderPicker } from "../components/DataFolderPicker";
+import { EnvImport } from "../components/EnvImport";
 import { Badge, Button, Callout, Card, CardHeader, cx, Field, Input, PageHeader, ProgressBar, Segmented, Skeleton, Switch } from "../components/ui";
 import { errorMessage } from "../lib/api";
 import { MONEY_LIMITS, moneyProblems } from "../lib/rules";
@@ -533,6 +534,8 @@ function Accounts() {
       <Callout tone="info">
         Keys and tokens are stored encrypted in Windows Credential Manager for your Windows account. They are never written to a file, never leave this computer, and are sent only to the provider they belong to.
       </Callout>
+
+      <EnvImport />
 
       {/* 1. Upstox V3 Highlight Card */}
       <Card className="border-brand/40 bg-gradient-to-b from-brand/5 to-transparent">
