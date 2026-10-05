@@ -13,9 +13,11 @@ from datetime import datetime
 from pathlib import Path
 
 from quant_system.data.corporate_actions import parse_subject_factor
+from quant_system.market.symbol_changes import SymbolHistory, parse_symbol_changes
 
 LISTINGS_FILE = "nse-all-listed-equities.csv"
 LIQUID_UNIVERSE_FILE = "nse-research-universe-liquid-10y.csv"
+SYMBOL_CHANGES_FILE = "nse-symbol-changes.csv"
 
 # Structural actions whose price effect QuantOS cannot size from public data. Returns computed
 # across one are not comparable, so screens and the lab must refuse them (fail closed). Splits and
@@ -95,6 +97,20 @@ def load_liquid_universe(data_folder: Path) -> list[str]:
         if symbol:
             symbols.append(symbol)
     return symbols
+
+
+def load_symbol_history(data_folder: Path) -> SymbolHistory | None:
+    path = authorities_dir(data_folder) / SYMBOL_CHANGES_FILE
+    if not path.is_file():
+        return None
+    try:
+        text = path.read_text(encoding="utf-8")
+        changes = parse_symbol_changes(text)
+        if not changes:
+            return None
+        return SymbolHistory(changes)
+    except Exception:
+        return None
 
 
 def corporate_action_file(data_folder: Path, symbol: str, cache_names: list[str]) -> Path | None:

@@ -84,25 +84,111 @@ class MarketIndex:
                 str(r["key"]): str(r["value"]) for r in conn.execute("SELECT key, value FROM meta")
             }
 
-    # ---------------------------------------------------------------------------- symbols
+    def resolve(self, symbol: str) -> str:
+        sym = symbol.strip().upper()
+        if not sym:
+            return ""
+        try:
+            with self._connect() as conn:
+                if (
+                    conn.execute("SELECT 1 FROM symbols WHERE symbol = ?", (sym,)).fetchone()
+                    is not None
+                ):
+                    return sym
+                rows = conn.execute(
+                    "SELECT symbol, kind FROM aliases WHERE alias = ?", (sym,)
+                ).fetchall()
+                if rows:
+                    best = sorted(
+                        rows,
+                        key=lambda r: (0 if str(r["kind"]) == "FORMER" else 1, str(r["symbol"])),
+                    )[0]
+                    return str(best["symbol"])
+                return sym
+        except sqlite3.OperationalError:
+            return sym
 
     def search(self, query: str, limit: int = 20) -> list[dict[str, Any]]:
         text = query.strip().upper()
         if not text:
             return []
         like = f"%{text}%"
-        sql = """
+        sql_direct = """
             SELECT symbol, name, is_etf, last_date FROM symbols
             WHERE symbol LIKE ? OR UPPER(name) LIKE ?
-            ORDER BY CASE WHEN symbol = ? THEN 0 WHEN symbol LIKE ? THEN 1 ELSE 2 END, symbol
-            LIMIT ?
+        """
+        sql_alias = """
+            SELECT y.symbol, y.name, y.is_etf, y.last_date, a.alias
+            FROM aliases a
+            JOIN symbols y ON y.symbol = a.symbol
+            WHERE a.alias LIKE ?
         """
         with self._connect() as conn:
-            rows = conn.execute(sql, (like, like, text, f"{text}%", limit)).fetchall()
-        return [dict(r) for r in rows]
+            direct_rows = conn.execute(sql_direct, (like, like)).fetchall()
+            try:
+                alias_rows = conn.execute(sql_alias, (like,)).fetchall()
+            except sqlite3.OperationalError:
+                alias_rows = []
+
+        candidates: list[tuple[int, str, dict[str, Any]]] = []
+        for r in direct_rows:
+            sym = str(r["symbol"])
+            if sym == text:
+                rank = 1
+            elif sym.startswith(text):
+                rank = 3
+            else:
+                rank = 5
+            candidates.append(
+                (
+                    rank,
+                    sym,
+                    {
+                        "symbol": sym,
+                        "name": str(r["name"]),
+                        "is_etf": int(r["is_etf"]),
+                        "last_date": str(r["last_date"]),
+                        "matched_alias": None,
+                    },
+                )
+            )
+
+        for r in alias_rows:
+            sym = str(r["symbol"])
+            alias = str(r["alias"])
+            if alias == text:
+                rank = 2
+            elif alias.startswith(text):
+                rank = 4
+            else:
+                rank = 6
+            candidates.append(
+                (
+                    rank,
+                    sym,
+                    {
+                        "symbol": sym,
+                        "name": str(r["name"]),
+                        "is_etf": int(r["is_etf"]),
+                        "last_date": str(r["last_date"]),
+                        "matched_alias": alias,
+                    },
+                )
+            )
+
+        best_by_symbol: dict[str, tuple[int, str, dict[str, Any]]] = {}
+        for rank, sym, item in candidates:
+            if sym not in best_by_symbol:
+                best_by_symbol[sym] = (rank, sym, item)
+            else:
+                if rank < best_by_symbol[sym][0]:
+                    best_by_symbol[sym] = (rank, sym, item)
+
+        sorted_candidates = sorted(best_by_symbol.values(), key=lambda t: (t[0], t[1]))
+        return [t[2] for t in sorted_candidates[:limit]]
 
     def symbol_info(self, symbol: str) -> dict[str, Any]:
-        sym = symbol.strip().upper()
+        sym = self.resolve(symbol)
         with self._connect() as conn:
             row = conn.execute("SELECT * FROM symbols WHERE symbol = ?", (sym,)).fetchone()
             if row is None:
@@ -133,7 +219,7 @@ class MarketIndex:
     # ------------------------------------------------------------------------------ bars
 
     def bars(self, symbol: str, start: str | None = None, end: str | None = None) -> BarSeries:
-        sym = symbol.strip().upper()
+        sym = self.resolve(symbol)
         sql = "SELECT d, o, h, l, c, v FROM bars WHERE symbol = ?"
         params: list[Any] = [sym]
         if start:
@@ -156,11 +242,16 @@ class MarketIndex:
     def bars_many(
         self, symbols: Sequence[str], start: str | None = None, end: str | None = None
     ) -> dict[str, BarSeries]:
-        wanted = sorted({s.strip().upper() for s in symbols})
-        out: dict[str, list[sqlite3.Row]] = {s: [] for s in wanted}
+        raw_wanted = sorted({s.strip().upper() for s in symbols if s.strip()})
+        if not raw_wanted:
+            return {}
+        req_to_canon = {s: self.resolve(s) for s in raw_wanted}
+        canonical_symbols = sorted(set(req_to_canon.values()))
+
+        out: dict[str, list[sqlite3.Row]] = {s: [] for s in canonical_symbols}
         with self._connect() as conn:
-            for chunk_start in range(0, len(wanted), 400):
-                chunk = wanted[chunk_start : chunk_start + 400]
+            for chunk_start in range(0, len(canonical_symbols), 400):
+                chunk = canonical_symbols[chunk_start : chunk_start + 400]
                 marks = ",".join("?" for _ in chunk)
                 sql = f"SELECT symbol, d, o, h, l, c, v FROM bars WHERE symbol IN ({marks})"
                 params: list[Any] = list(chunk)
@@ -173,7 +264,12 @@ class MarketIndex:
                 sql += " ORDER BY symbol, d"
                 for row in conn.execute(sql, params):
                     out[str(row["symbol"])].append(row)
-        return {sym: _series(sym, rows) for sym, rows in out.items() if rows}
+        canonical_series = {sym: _series(sym, rows) for sym, rows in out.items() if rows}
+        return {
+            req: canonical_series[canon]
+            for req, canon in req_to_canon.items()
+            if canon in canonical_series
+        }
 
     # --------------------------------------------------------------------------- screens
 
@@ -189,10 +285,11 @@ class MarketIndex:
             return [dict(r) for r in conn.execute(sql, (universe,))]
 
     def actions(self, symbol: str) -> list[dict[str, Any]]:
+        sym = self.resolve(symbol)
         with self._connect() as conn:
             rows = conn.execute(
                 "SELECT ex_date, subject, kinds, breaks_history FROM actions WHERE symbol = ? ORDER BY ex_date",
-                (symbol.strip().upper(),),
+                (sym,),
             ).fetchall()
         return [
             {
@@ -206,10 +303,11 @@ class MarketIndex:
 
     def flags(self, symbol: str) -> list[dict[str, Any]]:
         """Data breaks (unexplained or unadjusted overnight gaps) for one symbol."""
+        sym = self.resolve(symbol)
         with self._connect() as conn:
             rows = conn.execute(
                 "SELECT d, kind, change, note FROM flags WHERE symbol = ? ORDER BY d",
-                (symbol.strip().upper(),),
+                (sym,),
             ).fetchall()
         return [dict(r) for r in rows]
 
@@ -303,7 +401,8 @@ class MarketIndex:
 
     def stock_stats(self, symbol: str) -> dict[str, Any]:
         """Stock-page statistics, including beta against the benchmark on shared sessions."""
-        series = self.bars(symbol)
+        sym = self.resolve(symbol)
+        series = self.bars(sym)
         close = series.close
         stats: dict[str, Any] = {
             "ret_1m": metrics.period_return(close, metrics.SESSIONS_1M),

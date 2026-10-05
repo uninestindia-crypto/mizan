@@ -33,6 +33,7 @@ from quant_system.market.reference import (
     load_corporate_actions,
     load_liquid_universe,
     load_listings,
+    load_symbol_history,
 )
 from quant_system.market.sources import (
     CacheRef,
@@ -45,6 +46,7 @@ from quant_system.market.sources import (
     scan_datasets,
     store_fingerprint,
 )
+from quant_system.market.symbol_changes import SymbolHistory
 
 SCHEMA_VERSION = "2"
 STITCH_TOLERANCE = 0.001
@@ -128,6 +130,12 @@ CREATE TABLE flags(
     note TEXT NOT NULL
 );
 CREATE INDEX flags_by_symbol ON flags(symbol, d);
+CREATE TABLE aliases(
+    alias TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    PRIMARY KEY(alias, symbol)
+) WITHOUT ROWID;
 """
 
 # An overnight gap this large, not explained by a recorded demerger or rights issue, is treated as
@@ -200,6 +208,8 @@ class BuildReport:
     invalid_rows: int = 0
     duplicate_rows: int = 0
     flags: int = 0
+    renames_merged: int = 0
+    aliases: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -277,6 +287,29 @@ def _span(bars: list[RawBar]) -> tuple[int, str, str]:
     return (len(bars), bars[0].d, bars[-1].d)
 
 
+def merge_renames(
+    history: dict[str, DatasetRef],
+    refresh: dict[str, DatasetRef],
+    names: SymbolHistory | None,
+) -> tuple[dict[str, DatasetRef], dict[str, DatasetRef], dict[str, tuple[str, ...]]]:
+    """Join history and refresh across symbol renames under the current label."""
+    out_history = dict(history)
+    out_refresh = dict(refresh)
+    merged: dict[str, tuple[str, ...]] = {}
+    if names is None:
+        return out_history, out_refresh, merged
+
+    for n in sorted(out_refresh):
+        if n in out_history:
+            continue
+        for p in names.predecessors(n):
+            if p in out_history and p not in out_refresh:
+                out_history[n] = out_history.pop(p)
+                merged[n] = (p,)
+                break
+    return out_history, out_refresh, merged
+
+
 def build_market_index(
     data_folder: Path,
     index_dir: Path,
@@ -297,6 +330,8 @@ def build_market_index(
     refresh = newest_per_symbol(
         ref for cache in caches if cache.role == "REFRESH" for ref in scan_datasets(cache)
     )
+    names = load_symbol_history(data_folder)
+    history, refresh, merged = merge_renames(history, refresh, names)
     symbols = sorted(set(history) | set(refresh))
     if not symbols:
         raise IndexBuildError(f"The caches under {market_cache} hold no committed daily datasets.")
@@ -325,7 +360,8 @@ def build_market_index(
         for position, symbol in enumerate(symbols):
             if position % 25 == 0:
                 report_progress(0.02 + 0.96 * position / len(symbols), f"Indexing {symbol}")
-            actions = _index_actions(conn, data_folder, symbol, history_caches)
+            former = merged.get(symbol, ())
+            actions = _index_actions(conn, data_folder, symbol, history_caches, former=former)
             flags = _index_symbol(
                 conn,
                 symbol,
@@ -336,12 +372,31 @@ def build_market_index(
                 actions,
                 stats,
                 report,
+                former=former,
             )
             report.flags += len(flags)
             conn.executemany(
                 "INSERT INTO flags VALUES (?,?,?,?,?)",
                 ((f.symbol, f.d, f.kind, f.change, f.note) for f in flags),
             )
+        report.renames_merged = len(merged)
+        if names is not None:
+            indexed_symbols = {
+                str(r[0]) for r in conn.execute("SELECT symbol FROM symbols").fetchall()
+            }
+            alias_rows: list[tuple[str, str, str]] = []
+            seen_pairs: set[tuple[str, str]] = set()
+            for x in sorted(indexed_symbols):
+                for a in names.predecessors(x):
+                    if a not in indexed_symbols and (a, x) not in seen_pairs:
+                        seen_pairs.add((a, x))
+                        alias_rows.append((a, x, "FORMER"))
+                for a in names.successors(x):
+                    if a not in indexed_symbols and (a, x) not in seen_pairs:
+                        seen_pairs.add((a, x))
+                        alias_rows.append((a, x, "NEW"))
+            conn.executemany("INSERT INTO aliases VALUES (?,?,?)", alias_rows)
+            report.aliases = len(alias_rows)
         report.invalid_rows = stats.invalid
         report.duplicate_rows = stats.duplicate_dates
         latest = conn.execute("SELECT MAX(last_date) FROM symbols").fetchone()[0]
@@ -369,6 +424,7 @@ def _index_symbol(
     actions: list[CorporateAction],
     stats: ReadStats,
     report: BuildReport,
+    former: tuple[str, ...] = (),
 ) -> list[GapFlag]:
     """Index one symbol. Bars before its last data break are dropped; returns the breaks found."""
     history = read_bars(history_ref, stats) if history_ref else None
@@ -381,6 +437,10 @@ def _index_symbol(
     flags = detect_gap_flags(symbol, result.bars, actions)
     bars = result.bars
     note = result.note
+    if former:
+        former_str = ", ".join(former)
+        sentence = f"History continues from the former symbol(s) {former_str}."
+        note = " ".join(part for part in (note, sentence) if part)
     if flags:
         last_break = flags[-1]
         bars = [bar for bar in result.bars if bar.d >= last_break.d]
@@ -488,12 +548,28 @@ def _insert_snapshot(conn: sqlite3.Connection, symbol: str, bars: list[RawBar]) 
 
 
 def _index_actions(
-    conn: sqlite3.Connection, data_folder: Path, symbol: str, cache_names: list[str]
+    conn: sqlite3.Connection,
+    data_folder: Path,
+    symbol: str,
+    cache_names: list[str],
+    former: tuple[str, ...] = (),
 ) -> list[CorporateAction]:
-    path = corporate_action_file(data_folder, symbol, cache_names)
-    if path is None:
-        return []
-    actions: list[CorporateAction] = load_corporate_actions(path, symbol)
+    all_actions: list[CorporateAction] = []
+    labels = (symbol, *former)
+    for lbl in labels:
+        path = corporate_action_file(data_folder, lbl, cache_names)
+        if path is not None:
+            all_actions.extend(load_corporate_actions(path, symbol))
+
+    seen: set[tuple[str, str]] = set()
+    actions: list[CorporateAction] = []
+    for a in all_actions:
+        key = (a.ex_date, a.subject)
+        if key not in seen:
+            seen.add(key)
+            actions.append(a)
+
+    actions.sort(key=lambda a: a.ex_date)
     conn.executemany(
         "INSERT INTO actions VALUES (?,?,?,?,?)",
         (
@@ -520,6 +596,8 @@ def _write_meta(
         "invalid_rows": str(report.invalid_rows),
         "flags": str(report.flags),
         "duration_seconds": str(report.duration_seconds),
+        "renames_merged": str(report.renames_merged),
+        "aliases": str(report.aliases),
     }
     conn.executemany("INSERT INTO meta VALUES (?,?)", rows.items())
 
