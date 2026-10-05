@@ -45,6 +45,7 @@ from quant_system.data.upstox import UpstoxClient
 from quant_system.evidence import EvidenceStore, EvidenceStoreConfig
 from quant_system.market.index import BENCHMARK_SYMBOL
 from quant_system.market.sources import CacheRef, read_bars, scan_datasets
+from quant_system.market.symbol_changes import parse_symbol_changes
 
 logger = logging.getLogger("quantos.market.downloader")
 
@@ -52,6 +53,11 @@ NIFTY500_URL = "https://nsearchives.nseindia.com/content/indices/ind_nifty500lis
 INSTRUMENTS_URL = "https://assets.upstox.com/market-quote/instruments/exchange/NSE.json.gz"
 NSE_ACTIONS_URL = "https://www.nseindia.com/api/corporates-corporateActions"
 NSE_ACTIONS_REFERER = "https://www.nseindia.com/companies-listing/corporate-filings-actions"
+SYMBOL_CHANGES_URL = "https://nsearchives.nseindia.com/content/equities/symbolchange.csv"
+SYMBOL_CHANGES_FILE = "nse-symbol-changes.csv"  # the exact name; the index reads it by this name
+MIN_SYMBOL_CHANGES = (
+    100  # NSE's list has about 1,000 rows; far fewer means a truncated or wrong answer
+)
 _BROWSER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
@@ -136,6 +142,13 @@ def _cached(url: str, headers: dict[str, str], path: Path, max_age_hours: float)
         ) from error
     _atomic_write(path, data)
     return data
+
+
+def _fetch_symbol_changes(work_dir: Path) -> str:
+    """NSE's symbol-change list as text: fresh from the network (kept 24 hours), or the last good copy if the network fails."""
+    headers = {"User-Agent": _BROWSER_AGENT, "Referer": "https://www.nseindia.com/"}
+    data = _cached(SYMBOL_CHANGES_URL, headers, work_dir / "nse-symbolchange.csv", 24)
+    return data.decode("utf-8-sig")
 
 
 def build_targets(work_dir: Path) -> TargetSet:
@@ -578,6 +591,7 @@ class MarketDownload:
         actions_dir.mkdir(parents=True, exist_ok=True)
         _atomic_write(generated_path, "\n".join(sorted(generated)).encode("utf-8"))
         write_listings(actions_dir, members, targets.benchmark)
+        write_symbol_changes(actions_dir, data_folder / "downloads")
         write_liquid_universe(actions_dir, market_cache / history_name / "store", history_name, end)
         _prune(market_cache, keep={history_name, refresh_name})
         verb = "Updated" if updating else "Downloaded"
@@ -638,6 +652,33 @@ def write_listings(authorities: Path, members: list[Target], benchmark: Target |
             ]
         )
     _atomic_write(path, buffer.getvalue().encode("utf-8"))
+
+
+def write_symbol_changes(authorities: Path, work_dir: Path) -> int:
+    """Keep authorities/nse-symbol-changes.csv current. Returns how many changes the file holds afterwards. Never raises."""
+    path = authorities / SYMBOL_CHANGES_FILE
+    try:
+        try:
+            text = _fetch_symbol_changes(work_dir)
+            changes = parse_symbol_changes(text)
+            if len(changes) < MIN_SYMBOL_CHANGES:
+                logger.warning(
+                    "NSE symbol changes returned only %d records (expected at least %d); keeping existing file",
+                    len(changes),
+                    MIN_SYMBOL_CHANGES,
+                )
+            else:
+                _atomic_write(path, text.encode("utf-8"))
+        except (DownloadError, OSError, ValueError) as error:
+            logger.warning("Could not fetch NSE symbol changes: %s", error)
+
+        if path.is_file():
+            content = path.read_text(encoding="utf-8-sig", errors="replace")
+            return len(parse_symbol_changes(content))
+    except Exception as error:
+        logger.warning("Could not read symbol changes file %s: %s", path, error)
+        return 0
+    return 0
 
 
 def write_liquid_universe(authorities: Path, store: Path, cache: str, end: date) -> int:

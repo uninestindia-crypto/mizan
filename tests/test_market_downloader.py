@@ -178,6 +178,13 @@ class _Fakes:
         self.empty_actions: set[str] = set()
         self.committed: list[str] = []
         self.dates = sessions(date(2016, 10, 5), 2600)
+        self.symbol_changes_text: str = ""
+        self.symbol_changes_error: bool = False
+
+    def symbol_changes(self, work_dir: Any) -> str:
+        if self.symbol_changes_error:
+            raise DownloadError("SOURCE_UNREACHABLE", "x")
+        return self.symbol_changes_text
 
     def acquire(self, target: Target, start: date, end: date) -> Any:
         if target.symbol in self.explode_symbols:
@@ -219,6 +226,7 @@ def fakes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> _Fakes:
     monkeypatch.setattr(downloader, "_acquire", fake.acquire)
     monkeypatch.setattr(downloader, "_commit", fake.commit)
     monkeypatch.setattr(downloader, "_fetch_actions", fake.actions)
+    monkeypatch.setattr(downloader, "_fetch_symbol_changes", fake.symbol_changes)
     return fake
 
 
@@ -495,3 +503,120 @@ def test_an_empty_answer_never_replaces_corporate_actions_a_download_already_sav
     assert snapshot["state"] == "DONE"
     assert "Dividend" in alpha_actions.read_text(encoding="utf-8")
     assert "Dividend" in beta_actions.read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------------- symbol changes
+
+
+def _sample_symbol_changes() -> str:
+    rows = [f"Company {i},OLD{i:03d},NEW{i:03d},01-JAN-2020" for i in range(1, 151)]
+    rows.append("HEG Advanced Materials Limited,HEG,HEGAM,22-SEP-2026")
+    return "\n".join(rows) + "\n"
+
+
+def test_a_download_keeps_the_symbol_change_list_in_the_data_folder(fakes: _Fakes) -> None:
+    """A download keeps the symbol-change list in the data folder authorities."""
+    csv_text = _sample_symbol_changes()
+    fakes.symbol_changes_text = csv_text
+
+    snapshot = _run(MarketDownload(), fakes.data_folder)
+
+    symbol_file = fakes.data_folder / "authorities" / "nse-symbol-changes.csv"
+    assert symbol_file.is_file()
+    assert symbol_file.read_text(encoding="utf-8") == csv_text
+    assert snapshot["state"] == "DONE"
+
+
+def test_an_implausibly_short_list_never_replaces_a_good_one(fakes: _Fakes) -> None:
+    """A short list (< 100 changes) never replaces an existing good file."""
+    good_text = _sample_symbol_changes()
+    fakes.symbol_changes_text = good_text
+    _run(MarketDownload(), fakes.data_folder, today=date(2026, 10, 3))
+
+    symbol_file = fakes.data_folder / "authorities" / "nse-symbol-changes.csv"
+    assert symbol_file.read_text(encoding="utf-8") == good_text
+
+    fakes.symbol_changes_text = "HEG Advanced Materials Limited,HEG,HEGAM,22-SEP-2026\n"
+    snapshot = _run(MarketDownload(), fakes.data_folder, today=date(2026, 10, 4))
+    assert snapshot["state"] == "DONE"
+    assert symbol_file.read_text(encoding="utf-8") == good_text
+
+
+def test_an_unreachable_list_keeps_the_last_copy_and_the_download_still_finishes(
+    fakes: _Fakes,
+) -> None:
+    """When the network fails, the existing file is kept and download finishes with state DONE."""
+    good_text = _sample_symbol_changes()
+    fakes.symbol_changes_text = good_text
+    _run(MarketDownload(), fakes.data_folder, today=date(2026, 10, 3))
+
+    symbol_file = fakes.data_folder / "authorities" / "nse-symbol-changes.csv"
+    assert symbol_file.read_text(encoding="utf-8") == good_text
+
+    fakes.symbol_changes_error = True
+    snapshot = _run(MarketDownload(), fakes.data_folder, today=date(2026, 10, 4))
+    assert snapshot["state"] == "DONE"
+    assert symbol_file.read_text(encoding="utf-8") == good_text
+
+
+def test_no_symbol_change_list_and_no_network_is_not_an_error(fakes: _Fakes) -> None:
+    """When there is no existing file and network fails, download still completes cleanly."""
+    fakes.symbol_changes_error = True
+    snapshot = _run(MarketDownload(), fakes.data_folder)
+    assert snapshot["state"] == "DONE"
+    symbol_file = fakes.data_folder / "authorities" / "nse-symbol-changes.csv"
+    assert not symbol_file.exists()
+
+
+def test_the_symbol_change_list_is_fetched_from_nse_and_cached(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """_fetch_symbol_changes calls _get once with SYMBOL_CHANGES_URL and caches for 24 hours."""
+    calls: list[str] = []
+    sample_csv = b"HEG Advanced Materials Limited,HEG,HEGAM,22-SEP-2026\n"
+
+    def fake_get(url: str, headers: dict[str, str], timeout: float) -> bytes:
+        calls.append(url)
+        assert headers.get("User-Agent") == downloader._BROWSER_AGENT
+        assert headers.get("Referer") == "https://www.nseindia.com/"
+        return sample_csv
+
+    monkeypatch.setattr(downloader, "_get", fake_get)
+
+    text1 = downloader._fetch_symbol_changes(tmp_path)
+    text2 = downloader._fetch_symbol_changes(tmp_path)
+
+    assert calls == [downloader.SYMBOL_CHANGES_URL]
+    assert text1 == sample_csv.decode("utf-8-sig")
+    assert text2 == text1
+
+
+def test_write_symbol_changes_returns_the_count_and_never_raises(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """write_symbol_changes returns count of changes in file afterwards and never raises."""
+    authorities = tmp_path / "authorities"
+    work_dir = tmp_path / "downloads"
+    authorities.mkdir(parents=True)
+    work_dir.mkdir(parents=True)
+
+    def fail_fetch(wd: Path) -> str:
+        raise DownloadError("SOURCE_UNREACHABLE", "Cannot reach NSE")
+
+    monkeypatch.setattr(downloader, "_fetch_symbol_changes", fail_fetch)
+    count = downloader.write_symbol_changes(authorities, work_dir)
+    assert count == 0
+
+    good_text = _sample_symbol_changes()
+    monkeypatch.setattr(downloader, "_fetch_symbol_changes", lambda wd: good_text)
+    count = downloader.write_symbol_changes(authorities, work_dir)
+    assert count == 151
+
+    monkeypatch.setattr(downloader, "_fetch_symbol_changes", fail_fetch)
+    count = downloader.write_symbol_changes(authorities, work_dir)
+    assert count == 151
+
+    short_text = "HEG Advanced Materials Limited,HEG,HEGAM,22-SEP-2026\n"
+    monkeypatch.setattr(downloader, "_fetch_symbol_changes", lambda wd: short_text)
+    count = downloader.write_symbol_changes(authorities, work_dir)
+    assert count == 151
