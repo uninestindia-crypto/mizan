@@ -147,7 +147,7 @@ Raw per-page results: `ui_audit_before.json`, `ui_audit_after.json`. Screenshots
 
 ## Windows CI on the pull request
 
-Run 15 of `gates` on commit `603318f3`: **Static gates, Craft checkers and audits (including the PowerShell claims and disk-layout audits), Tests (forward order), Tests (reverse order) and the aggregate `gates` all passed.** Two earlier runs were red and are explained in the follow-up table: the first on a wall-clock latency test in forward order (fixed by warming up in the measured shape), and one commit that added a harness script ruff rejected (fixed before the run above).
+The `gates` run on commit `603318f3` (https://github.com/uninestindia-crypto/mizan/actions/runs/37354317272): **Static gates, Craft checkers and audits (including the PowerShell claims and disk-layout audits), Tests (forward order), Tests (reverse order) and the aggregate `gates` all passed.** Two earlier runs were red and are explained in the follow-up table: the first on a wall-clock latency test in forward order (fixed by warming up in the measured shape), and one commit that added a harness script ruff rejected (fixed before the run above).
 
 ## Limits of this audit
 
