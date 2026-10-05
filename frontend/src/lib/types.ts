@@ -17,6 +17,52 @@ export interface Settings {
   onboarding_complete: boolean;
   disclaimer_accepted_at: string | null;
   auto_update_paper_books: boolean;
+  shariah_mode?: boolean;
+}
+
+export interface ShariahCompliance {
+  ticker: string;
+  symbol: string;
+  company_name: string;
+  is_compliant: boolean;
+  aaoifi_compliant: boolean;
+  tasis_compliant: boolean;
+  debt_ratio: number;
+  cash_ratio: number;
+  receivables_ratio: number;
+  impermissible_revenue_ratio: number;
+  purification_ratio: number;
+  compliance_status: "COMPLIANT" | "NON_COMPLIANT" | "QUESTIONABLE";
+}
+
+export interface ShariahBasket {
+  id: string;
+  name: string;
+  thesis: string;
+  category: string;
+  expected_cagr: number;
+  expected_sharpe: number;
+  annualized_volatility: number;
+  max_drawdown: number;
+  dividend_yield: number;
+  constituents: Array<{
+    ticker: string;
+    symbol: string;
+    weight: number;
+    current_price: number;
+    company_name: string;
+  }>;
+}
+
+export interface ZakatCalculationResult {
+  method: string;
+  rate_pct: number;
+  zakatable_base: number;
+  portfolio_value: number;
+  nisab_threshold: number;
+  is_obligatory: boolean;
+  zakat_due: number;
+  method_notes: string;
 }
 
 export interface PaperUpdates {

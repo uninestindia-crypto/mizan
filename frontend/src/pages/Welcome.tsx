@@ -1,4 +1,4 @@
-import { Check, Database, LineChart, ShieldCheck, Sprout, Zap } from "lucide-react";
+import { Check, Database, LineChart, Scale, ShieldCheck, Sprout, Zap } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useNavigate } from "react-router";
 import { Illustration } from "../components/common";
@@ -68,7 +68,7 @@ export default function Welcome() {
         </header>
         <main className="mt-10 q-fade-in" key={displayedStep}>
           {displayedStep === 0 && <StepWelcome onNext={() => goTo(1)} accepted={accepted} />}
-          {displayedStep === 1 && <StepStyle current={status.data.settings.style} onNext={() => goTo(2)} onBack={() => goTo(0)} />}
+          {displayedStep === 1 && <StepStyle current={status.data.settings.style} shariahCurrent={status.data.settings.shariah_mode} onNext={() => goTo(2)} onBack={() => goTo(0)} />}
           {displayedStep === 2 && <StepMoney onNext={() => goTo(3)} onBack={() => goTo(1)} />}
           {displayedStep === 3 && <StepData onBack={() => goTo(2)} onFinish={finish} finishing={update.isPending} />}
         </main>
@@ -142,8 +142,9 @@ function StepWelcome({ onNext, accepted }: { onNext: () => void; accepted: boole
   );
 }
 
-function StepStyle({ current, onNext, onBack }: { current: Style | null; onNext: () => void; onBack: () => void }) {
+function StepStyle({ current, shariahCurrent, onNext, onBack }: { current: Style | null; shariahCurrent?: boolean; onNext: () => void; onBack: () => void }) {
   const [style, setStyle] = useState<Style | null>(current);
+  const [shariah, setShariah] = useState<boolean>(Boolean(shariahCurrent));
   const update = useUpdateSettings();
   const options: { value: Style; icon: typeof Sprout; title: string; body: string }[] = [
     { value: "investor", icon: Sprout, title: "Investor", body: "I hold for months or years and want to know if my portfolio is beating the index." },
@@ -160,7 +161,12 @@ function StepStyle({ current, onNext, onBack }: { current: Style | null; onNext:
           <Button variant="ghost" onClick={onBack}>
             Back
           </Button>
-          <Button size="lg" disabled={!style} loading={update.isPending} onClick={() => update.mutate({ style }, { onSuccess: onNext })}>
+          <Button
+            size="lg"
+            disabled={!style}
+            loading={update.isPending}
+            onClick={() => update.mutate({ style, shariah_mode: shariah }, { onSuccess: onNext })}
+          >
             Continue
           </Button>
           {!style && <span className="text-[12.5px] text-ink-3">Choose one to continue.</span>}
@@ -189,6 +195,37 @@ function StepStyle({ current, onNext, onBack }: { current: Style | null; onNext:
             </span>
           </button>
         ))}
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-line bg-surface p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className={cx("flex size-10 shrink-0 items-center justify-center rounded-xl", shariah ? "bg-emerald-600 text-white" : "bg-surface-2 text-ink-3")}>
+              <Scale className="size-5" aria-hidden />
+            </span>
+            <div>
+              <span className="block font-semibold text-ink">Mizan Shariah Compliance Mode</span>
+              <span className="mt-0.5 block text-sm text-ink-2">Apply AAOIFI/TASIS screening, ethical baskets, and zakat tools.</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={shariah}
+            onClick={() => setShariah(!shariah)}
+            className={cx(
+              "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+              shariah ? "bg-emerald-600" : "bg-surface-3"
+            )}
+          >
+            <span
+              className={cx(
+                "pointer-events-none inline-block size-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                shariah ? "translate-x-5" : "translate-x-0"
+              )}
+            />
+          </button>
+        </div>
       </div>
     </StepShell>
   );

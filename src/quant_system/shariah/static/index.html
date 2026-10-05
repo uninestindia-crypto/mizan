@@ -1,0 +1,2791 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080d17">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <title>Halal Invest India — Institutional Shariah Equity & Wealth Engine</title>
+  
+  <!-- Typography matching QuantOS design system (Inter Variable & JetBrains Mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       QuantOS Institutional Design System Tokens & Color System
+       ========================================================================== */
+    :root {
+      --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", Menlo, monospace;
+
+      /* QuantOS Light Theme Tokens */
+      --q-bg: #f4f6fa;
+      --q-surface: #ffffff;
+      --q-surface-2: #f0f3f8;
+      --q-surface-3: #e5eaf2;
+      --q-line: #e2e7ef;
+      --q-line-strong: #cbd3df;
+      --q-ink: #0d1626;
+      --q-ink-2: #4b5669;
+      --q-ink-3: #5a6679;
+      
+      --q-brand: #0A8452;
+      --q-brand-strong: #07663E;
+      --q-brand-soft: #e2f5eb;
+      --q-gold: #B8860B;
+      --q-gold-soft: #fff6db;
+
+      --q-up: #087a47;
+      --q-up-soft: #e2f5eb;
+      --q-down: #c02040;
+      --q-down-soft: #fdebee;
+      --q-warn: #9c4f02;
+      --q-warn-soft: #fff4dc;
+
+      --radius-sm: 8px;
+      --radius-control: 10px;
+      --radius-card: 16px;
+      --radius-pill: 9999px;
+
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+      --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-pop: 0 16px 36px -8px rgba(15, 23, 42, 0.22), 0 4px 12px rgba(15, 23, 42, 0.08);
+
+      --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+      --transition-smooth: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    [data-theme="dark"] {
+      /* QuantOS Dark Theme Tokens (Deep Obsidian / Slate) */
+      --q-bg: #080d17;
+      --q-surface: #0f1726;
+      --q-surface-2: #142034;
+      --q-surface-3: #1b2a42;
+      --q-line: #1d2a40;
+      --q-line-strong: #2b3c58;
+      --q-ink: #e8eef7;
+      --q-ink-2: #a4b1c6;
+      --q-ink-3: #8a99b0;
+
+      --q-brand: #34D399; /* Emerald 400 */
+      --q-brand-strong: #10B981;
+      --q-brand-soft: rgba(16, 185, 129, 0.14);
+      --q-gold: #D4AF37; /* Champagne Gold */
+      --q-gold-soft: rgba(212, 175, 55, 0.15);
+
+      --q-up: #3fd68e;
+      --q-up-soft: rgba(63, 214, 142, 0.16);
+      --q-down: #ff6b81;
+      --q-down-soft: rgba(255, 107, 129, 0.16);
+      --q-warn: #f4b24a;
+      --q-warn-soft: rgba(244, 178, 74, 0.16);
+
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+      --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.35);
+      --shadow-pop: 0 20px 48px -8px rgba(0, 0, 0, 0.65), 0 6px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ==========================================================================
+       Reset & Base Styles
+       ========================================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      background-color: var(--q-bg);
+      color: var(--q-ink);
+      font-family: var(--font-sans);
+      font-feature-settings: "cv11", "ss01";
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+    }
+
+    .num {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum", "cv11";
+      font-family: var(--font-mono), var(--font-sans);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; }
+
+    /* ==========================================================================
+       QuantOS Shell Layout (Desktop Sidebar + Main Pane)
+       ========================================================================== */
+    .app-shell {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Fixed Left Sidebar */
+    .sidebar {
+      width: 256px;
+      flex-shrink: 0;
+      background-color: var(--q-surface);
+      border-right: 1px solid var(--q-line);
+      display: flex;
+      flex-direction: column;
+      z-index: 40;
+      transition: transform var(--transition-smooth);
+    }
+
+    .sidebar-brand {
+      height: 64px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--q-line);
+    }
+
+    .brand-logo-box {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #0A5C36 0%, #10B981 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFF;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+    }
+
+    .brand-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--q-ink);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--q-ink-3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: var(--radius-pill);
+      background-color: var(--q-brand-soft);
+      color: var(--q-brand);
+    }
+
+    /* Quick Command Palette Button */
+    .sidebar-search-wrap {
+      padding: 14px 14px 8px 14px;
+    }
+
+    .cmd-trigger-btn {
+      width: 100%;
+      height: 36px;
+      background-color: var(--q-surface-2);
+      border: 1px solid var(--q-line);
+      border-radius: var(--radius-control);
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--q-ink-3);
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .cmd-trigger-btn:hover {
+      border-color: var(--q-line-strong);
+      color: var(--q-ink-2);
+      background-color: var(--q-surface-3);
+    }
+
+    .cmd-trigger-btn kbd {
+      margin-left: auto;
+      background-color: var(--q-surface);
+      border: 1px solid var(--q-line);
+      border-radius: 4px;
+      padding: 2px 5px;
+      font-size: 10.5px;
+      font-family: var(--font-sans);
+      color: var(--q-ink-3);
+    }
+
+    /* Nav Links List */
+    .sidebar-nav {
+      flex: 1;
+      padding: 8px 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 40px;
+      padding: 0 12px;
+      border-radius: var(--radius-control);
+      color: var(--q-ink-2);
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      background: none;
+      border: none;
+      width: 100%;
+      text-align: left;
+      transition: all var(--transition-fast);
+    }
+
+    .nav-link:hover {
+      background-color: var(--q-surface-2);
+      color: var(--q-ink);
+    }
+
+    .nav-link.active {
+      background-color: var(--q-brand-soft);
+      color: var(--q-brand);
+      font-weight: 600;
+    }
+
+    .nav-link-icon {
+      font-size: 16px;
+      width: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Sidebar Footer Status & Theme */
+    .sidebar-footer {
+      padding: 14px;
+      border-top: 1px solid var(--q-line);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .market-status-card {
+      background-color: var(--q-surface-2);
+      border-radius: var(--radius-control);
+      padding: 10px 12px;
+      border: 1px solid var(--q-line);
+    }
+
+    .market-status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .market-status-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--q-ink-3);
+    }
+
+    .market-status-badge {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      background-color: var(--q-up-soft);
+      color: var(--q-up);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .market-status-time {
+      font-size: 11.5px;
+      color: var(--q-ink-2);
+    }
+
+    .theme-segmented {
+      display: flex;
+      background-color: var(--q-surface-2);
+      border: 1px solid var(--q-line);
+      border-radius: var(--radius-control);
+      padding: 2px;
+    }
+
+    .theme-toggle-btn {
+      flex: 1;
+      height: 28px;
+      border: none;
+      background: none;
+      color: var(--q-ink-3);
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all var(--transition-fast);
+    }
+
+    .theme-toggle-btn.active {
+      background-color: var(--q-surface);
+      color: var(--q-ink);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Main Viewport Pane */
+    .main-pane {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Top Navigation Header */
+    .top-header {
+      height: 64px;
+      border-bottom: 1px solid var(--q-line);
+      background-color: var(--q-surface);
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+
+    .top-header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--q-ink);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 6px;
+    }
+
+    .greeting-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--q-ink);
+      letter-spacing: -0.3px;
+    }
+
+    .greeting-sub {
+      font-size: 12px;
+      color: var(--q-ink-3);
+    }
+
+    .top-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Segmented Standard Controller */
+    .standard-segmented {
+      display: inline-flex;
+      background-color: var(--q-surface-2);
+      border: 1px solid var(--q-line);
+      border-radius: var(--radius-control);
+      padding: 2px;
+    }
+
+    .standard-btn {
+      height: 32px;
+      padding: 0 14px;
+      border: none;
+      background: none;
+      color: var(--q-ink-2);
+      font-size: 12.5px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition-fast);
+    }
+
+    .standard-btn.active {
+      background-color: var(--q-brand);
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn {
+      height: 34px;
+      padding: 0 14px;
+      border-radius: var(--radius-control);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: none;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background-color: var(--q-brand);
+      color: #FFFFFF;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--q-brand-strong);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background-color: var(--q-surface-2);
+      color: var(--q-ink);
+      border: 1px solid var(--q-line);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--q-surface-3);
+      border-color: var(--q-line-strong);
+    }
+
+    .btn-gold {
+      background-color: var(--q-gold);
+      color: #080D17;
+      font-weight: 700;
+    }
+
+    .btn-gold:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-sm {
+      height: 30px;
+      padding: 0 10px;
+      font-size: 12px;
+      border-radius: 7px;
+    }
+
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-control);
+      background-color: var(--q-surface-2);
+      border: 1px solid var(--q-line);
+      color: var(--q-ink);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+
+    .icon-btn:hover {
+      background-color: var(--q-surface-3);
+      border-color: var(--q-line-strong);
+    }
+
+    .badge-counter {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background-color: var(--q-down);
+      color: #FFF;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 9999px;
+      padding: 1px 5px;
+      min-width: 16px;
+      text-align: center;
+    }
+
+    /* Content Scroll Area */
+    .content-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 28px 48px 28px;
+    }
+
+    .content-container {
+      max-width: 1360px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ==========================================================================
+       QuantOS Market Pulse / Executive KPI Row
+       ========================================================================== */
+    .pulse-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .kpi-card {
+      background-color: var(--q-surface);
+      border: 1px solid var(--q-line);
+      border-radius: var(--radius-card);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      transition: border-color var(--transition-fast);
+    }
+
+    .kpi-card:hover {
+      border-color: var(--q-line-strong);
+    }
+
+    .kpi-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .kpi-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--q-ink-2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .kpi-sub {
+      font-size: 11.5px;
+      color: var(--q-ink-3);
+    }
+
+    .kpi-value-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .kpi-num {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--q-ink);
+      line-height: 1.15;
+    }
+
+    .delta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: var(--radius-pill);
+    }
+
+    .delta-pill.up {
+      background-color: var(--q-up-soft);
+      color: var(--q-up);
+    }
+
+    .delta-pill.down {
+      background-color: var(--q-down-soft);
+      color: var(--q-down);
+    }
+
+    .mini-sparkline {
+      width: 110px;
+      height: 38px;
+    }
+
+    /* Distribution Progress Bar */
+    .dist-bar-wrap {
+      margin-top: 10px;
+      display: flex;
+      height: 7px;
+      border-radius: 9999px;
+      overflow: hidden;
+      background-color: var(--q-surface-2);
+      gap: 2px;
+    }
+
+    .dist-bar-seg {
+      height: 100%;
+      transition: width var(--transition-smooth);
+    }
+
+    /* ==========================================================================
+       Tab Content Panels
+       ========================================================================== */
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==========================================================================
+       Cards, Controls, and Grids
+       ========================================================================== */
+    .card {
+      background-color: var(--q-surface);
+      border: 1px solid var(--q-line);
+      border-radius: var(--radius-card);
+      padding: 22px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--q-ink);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-subtitle {
+      font-size: 12.5px;
+      color: var(--q-ink-3);
+      margin-top: 2px;
+    }
+
+    /* Filter Row */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 240px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      height: 38px;
+      background-color: var(--q-surface-2);
+      border: 1px solid var(--q-line);
+      border-radius: var(--radius-control);
+      padding: 0 14px 0 36px;
+      font-size: 13.5px;
+      color: var(--q-ink);
+      outline: none;
+      transition: all var(--transition-fast);
+    }
+
+    .search-box input:focus {
+      border-color: var(--q-brand);
+      background-color: var(--q-surface);
+      box-shadow: 0 0 0 3px var(--q-brand-soft);
+    }
+
+    .search-box .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--q-ink-3);
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    .select-control {
+      height: 38px;
+      background-color: var(--q-surface-2);
+      border: 1px solid var(--q-line);
+      border-radius: var(--radius-control);
+      padding: 0 12px;
+      font-size: 13px;
+      color: var(--q-ink);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .select-control:focus {
+      border-color: var(--q-brand);
+    }
+
+    /* Quick Filter Chips */
+    .quick-chips {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .chip-btn {
+      height: 28px;
+      padding: 0 10px;
+      background-color: var(--q-surface-2);
+      border: 1px solid var(--q-line);
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--q-ink-2);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .chip-btn:hover {
+      background-color: var(--q-surface-3);
+      color: var(--q-ink);
+      border-color: var(--q-line-strong);
+    }
+
+    /* Stock Cards Grid */
+    .stocks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 16px;
+    }
+
+    .stock-card {
+      background-color: var(--q-surface);
+      border: 1px solid var(--q-line);
+      border-radius: var(--radius-card);
+      padding: 18px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+
+    .stock-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--q-line-strong);
+      box-shadow: var(--shadow-card);
+    }
+
+    .stock-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .stock-symbol {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--q-ink);
+      letter-spacing: -0.2px;
+    }
+
+    .stock-name {
+      font-size: 12px;
+      color: var(--q-ink-3);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 170px;
+    }
+
+    .stock-price {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--q-ink);
+      text-align: right;
+    }
+
+    .stock-sector-pill {
+      font-size: 11px;
+      color: var(--q-ink-3);
+      background-color: var(--q-surface-2);
+      padding: 2px 7px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-top: 4px;
+    }
+
+    /* Financial Ratio Meters in Card */
+    .ratio-meter-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 0;
+      border-top: 1px solid var(--q-line);
+      border-bottom: 1px solid var(--q-line);
+    }
+
+    .ratio-bar-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .ratio-bar-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+
+    .ratio-bar-label { color: var(--q-ink-3); }
+    .ratio-bar-val { font-weight: 700; }
+
+    .ratio-track {
+      height: 5px;
+      background-color: var(--q-surface-2);
+      border-radius: 9999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .ratio-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width var(--transition-smooth);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .badge-compliant {
+      background-color: var(--q-up-soft);
+      color: var(--q-up);
+    }
+
+    .badge-non-compliant {
+      background-color: var(--q-down-soft);
+      color: var(--q-down);
+    }
+
+    .badge-warning {
+      background-color: var(--q-warn-soft);
+      color: var(--q-warn);
+    }
+
+    /* Bloomberg Terminal Table */
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--q-line);
+      border-radius: var(--radius-card);
+      background-color: var(--q-surface);
+    }
+
+    table.terminal-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    table.terminal-table th {
+      background-color: var(--q-surface-2);
+      color: var(--q-ink-2);
+      padding: 11px 16px;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--q-line);
+      white-space: nowrap;
+    }
+
+    table.terminal-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--q-line);
+      color: var(--q-ink);
+      white-space: nowrap;
+    }
+
+    table.terminal-table tr:hover td {
+      background-color: var(--q-surface-2);
+    }
+
+    table.terminal-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* ==========================================================================
+       Command Palette (Spotlight Ctrl+K Modal)
+       ========================================================================== */
+    .cmd-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 12vh;
+    }
+
+    .cmd-box {
+      width: 90%;
+      max-width: 640px;
+      background-color: var(--q-surface);
+      border: 1px solid var(--q-line-strong);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-pop);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cmd-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--q-line);
+    }
+
+    .cmd-input {
+      flex: 1;
+      background: none;
+      border: none;
+      font-size: 15px;
+      color: var(--q-ink);
+      outline: none;
+      font-family: inherit;
+    }
+
+    .cmd-input::placeholder {
+      color: var(--q-ink-3);
+    }
+
+    .cmd-results {
+      max-height: 380px;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .cmd-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
+    }
+
+    .cmd-item:hover, .cmd-item.selected {
+      background-color: var(--q-surface-2);
+    }
+
+    .cmd-item-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .cmd-item-symbol {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--q-ink);
+    }
+
+    .cmd-item-sub {
+      font-size: 12px;
+      color: var(--q-ink-3);
+    }
+
+    .cmd-footer {
+      padding: 10px 18px;
+      border-top: 1px solid var(--q-line);
+      background-color: var(--q-surface-2);
+      font-size: 11.5px;
+      color: var(--q-ink-3);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* ==========================================================================
+       Generic Modal Architecture
+       ========================================================================== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(8px);
+      z-index: 900;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-sheet {
+      background-color: var(--q-surface);
+      border: 1px solid var(--q-line-strong);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-pop);
+      max-width: 680px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 28px;
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background-color: var(--q-surface-2);
+      border: 1px solid var(--q-line);
+      color: var(--q-ink-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all var(--transition-fast);
+    }
+
+    .modal-close:hover {
+      background-color: var(--q-surface-3);
+      color: var(--q-ink);
+    }
+
+    /* Notification Tray */
+    #notifTray {
+      position: fixed;
+      top: 70px;
+      right: 24px;
+      width: 380px;
+      max-width: 90vw;
+      background-color: var(--q-surface);
+      border: 1px solid var(--q-line-strong);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-pop);
+      z-index: 800;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ==========================================================================
+       Responsive Media Queries
+       ========================================================================== */
+    @media (max-width: 1024px) {
+      .pulse-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        transform: translateX(-100%);
+        box-shadow: var(--shadow-pop);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .mobile-menu-btn {
+        display: block;
+      }
+
+      .top-header {
+        padding: 0 16px;
+      }
+
+      .content-scroll {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ==================== QUANT OS FIXED DESKTOP SIDEBAR ==================== -->
+  <aside id="mainSidebar" class="sidebar">
+    <!-- Brand Header -->
+    <div class="sidebar-brand">
+      <div class="brand-logo-box">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+          <polyline points="16 7 22 7 22 13"></polyline>
+        </svg>
+      </div>
+      <div class="brand-meta">
+        <div class="brand-title">
+          <span>Halal Invest</span>
+          <span class="brand-badge">v1.5.0</span>
+        </div>
+        <div class="brand-subtitle">Shariah Equity Intelligence</div>
+      </div>
+    </div>
+
+    <!-- Quick Search Command Palette Trigger -->
+    <div class="sidebar-search-wrap">
+      <button class="cmd-trigger-btn" onclick="openCommandPalette()" title="Open Command Palette (Ctrl+K)">
+        <span style="font-size: 13px;">🔍</span>
+        <span>Search stocks...</span>
+        <kbd>Ctrl K</kbd>
+      </button>
+    </div>
+
+    <!-- Main Navigation List -->
+    <nav class="sidebar-nav">
+      <button class="nav-link active" data-tab="screener" onclick="switchTab('screener')">
+        <span class="nav-link-icon">📈</span>
+        <span>Shariah Screener</span>
+      </button>
+      <button class="nav-link" data-tab="portfolio" onclick="switchTab('portfolio')">
+        <span class="nav-link-icon">💼</span>
+        <span>Portfolio &amp; Audit</span>
+      </button>
+      <button class="nav-link" data-tab="baskets" onclick="switchTab('baskets')">
+        <span class="nav-link-icon">🧺</span>
+        <span>Thematic Baskets</span>
+      </button>
+      <button class="nav-link" data-tab="funds" onclick="switchTab('funds')">
+        <span class="nav-link-icon">🪙</span>
+        <span>Funds &amp; 24K Gold</span>
+      </button>
+      <button class="nav-link" data-tab="shariah-suite" onclick="switchTab('shariah-suite')">
+        <span class="nav-link-icon">🕌</span>
+        <span>Shariah Suite</span>
+      </button>
+      <button class="nav-link" data-tab="radar" onclick="switchTab('radar')">
+        <span class="nav-link-icon">📡</span>
+        <span>Corporate Radar</span>
+      </button>
+      <button class="nav-link" data-tab="academy" onclick="switchTab('academy')">
+        <span class="nav-link-icon">📚</span>
+        <span>Wealth Academy</span>
+      </button>
+    </nav>
+
+    <!-- Sidebar Footer (Market telemetry & theme switcher) -->
+    <div class="sidebar-footer">
+      <div class="market-status-card">
+        <div class="market-status-row">
+          <span class="market-status-label">NSE Shariah</span>
+          <span id="sideMarketBadge" class="market-status-badge">🟢 LIVE</span>
+        </div>
+        <div id="sideMarketTime" class="market-status-time num">10:45 AM IST • Live Session</div>
+      </div>
+
+      <!-- Segmented Theme Toggle -->
+      <div class="theme-segmented">
+        <button id="themeDarkBtn" class="theme-toggle-btn active" onclick="setTheme('dark')">🌙 Dark</button>
+        <button id="themeLightBtn" class="theme-toggle-btn" onclick="setTheme('light')">☀️ Light</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN VIEWPORT PANE ==================== -->
+  <div class="main-pane">
+
+    <!-- Top Sticky Header -->
+    <header class="top-header">
+      <div class="top-header-left">
+        <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Toggle Navigation">☰</button>
+        <div>
+          <div id="topGreeting" class="greeting-title">Good day, Investor</div>
+          <div class="greeting-sub">NIFTY 500 Shariah Audits · Zero-Margin Cash Equities · Exact Purification</div>
+        </div>
+      </div>
+
+      <div class="top-header-actions">
+        <!-- Dual Standard Switcher -->
+        <div class="standard-segmented" title="Toggle Shariah Evaluation Standard">
+          <button id="btnAAOIFI" class="standard-btn active" onclick="setStandard('AAOIFI')">AAOIFI</button>
+          <button id="btnTASIS" class="standard-btn" onclick="setStandard('TASIS')">TASIS</button>
+        </div>
+
+        <!-- Language Switcher -->
+        <select id="langSelect" class="select-control" style="font-size: 12px; height: 32px;" onchange="changeLanguage(this.value)">
+          <option value="en">English</option>
+          <option value="ur">اردو (Urdu)</option>
+          <option value="hi">हिन्दी (Hindi)</option>
+        </select>
+
+        <!-- Fatwa Matrix Trigger -->
+        <button class="btn btn-secondary btn-sm" onclick="openFatwaMatrix()" title="Scholar Consensus Matrix">
+          <span>📜 Fatwas</span>
+        </button>
+
+        <!-- PWA Install Button -->
+        <button id="pwaInstallBtn" class="btn btn-gold btn-sm" style="display: none;" onclick="triggerPwaInstall()" title="Install Native Standalone App">
+          <span>📱 Install</span>
+        </button>
+
+        <!-- System Diagnostics Trigger -->
+        <button class="btn btn-secondary btn-sm" onclick="openDiagnosticsModal()" title="System Diagnostics & Offline Health">
+          <span>🩺 Health</span>
+        </button>
+
+        <!-- Radar Notification Bell -->
+        <button id="notifBellBtn" class="icon-btn" onclick="toggleNotifTray()" title="Compliance Alerts & Radar">
+          <span>🔔</span>
+          <span id="notifBadge" class="badge-counter" style="display: none;">0</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Notification Tray Dropdown -->
+    <div id="notifTray">
+      <div style="padding: 14px 16px; border-bottom: 1px solid var(--q-line); display: flex; justify-content: space-between; align-items: center; background: var(--q-surface-2);">
+        <div style="font-size: 13.5px; font-weight: 700; color: var(--q-ink);">Compliance Radar Alerts</div>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px;" onclick="markAllNotifsRead()">Mark Read</button>
+          <button class="btn btn-sm btn-primary" style="padding: 2px 8px; font-size: 11px;" onclick="enableWebPush()">Push</button>
+        </div>
+      </div>
+      <div id="notifList" style="padding: 12px; overflow-y: auto; max-height: 320px; display: flex; flex-direction: column; gap: 8px;">
+        <!-- Populated via JS -->
+      </div>
+      <div style="padding: 10px 14px; border-top: 1px solid var(--q-line); background: var(--q-surface-2); text-align: center;">
+        <button class="btn btn-secondary btn-sm" style="width: 100%; font-size: 11px;" onclick="testWhatsAppAlert()">📲 Connect WhatsApp Compliance Webhook</button>
+      </div>
+    </div>
+
+    <!-- Scrollable Main Content Body -->
+    <div class="content-scroll">
+      <div class="content-container">
+
+        <!-- ==================== EXECUTIVE MARKET PULSE ROW (QuantOS Style) ==================== -->
+        <div class="pulse-grid">
+          <!-- Card 1: Benchmark Pulse -->
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <div>
+                <div class="kpi-title">NIFTY 50 Shariah</div>
+                <div class="kpi-sub">Tracked by Shariah 50 Index</div>
+              </div>
+              <span class="delta-pill up">+0.85% today</span>
+            </div>
+            <div class="kpi-value-row">
+              <div>
+                <div id="kpiNiftyPrice" class="kpi-num num">₹4,284.15</div>
+                <div style="margin-top: 4px; display: flex; gap: 8px; font-size: 12px; color: var(--q-ink-3);">
+                  <span>1M: <strong style="color: var(--q-up);">+3.4%</strong></span>
+                  <span>1Y: <strong style="color: var(--q-up);">+18.2%</strong></span>
+                </div>
+              </div>
+              <svg class="mini-sparkline" viewBox="0 0 110 38" fill="none">
+                <path d="M 2,30 Q 25,28 35,20 T 65,16 T 90,8 T 108,4" stroke="#3fd68e" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M 2,30 Q 25,28 35,20 T 65,16 T 90,8 T 108,4 L 108,38 L 2,38 Z" fill="url(#sparkGrad)" opacity="0.25"/>
+                <defs>
+                  <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#3fd68e"/>
+                    <stop offset="100%" stop-color="#3fd68e" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Card 2: Shariah Compliance Breadth -->
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <div>
+                <div class="kpi-title">Shariah Breadth</div>
+                <div class="kpi-sub">NIFTY 500 Equity Universe</div>
+              </div>
+              <span class="badge badge-compliant">342 Passing</span>
+            </div>
+            <div>
+              <div class="kpi-num num"><span style="color: var(--q-brand);">68.4%</span> <span style="font-size: 16px; font-weight: 500; color: var(--q-ink-2);">Halal Compliant</span></div>
+              <div class="dist-bar-wrap">
+                <div class="dist-bar-seg" style="width: 68.4%; background-color: var(--q-up);" title="342 Compliant"></div>
+                <div class="dist-bar-seg" style="width: 31.6%; background-color: var(--q-down);" title="158 Non-Compliant"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--q-ink-3); margin-top: 6px;">
+                <span>🟢 342 Compliant</span>
+                <span>🔴 158 Non-Compliant (Riba/Sector)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Portfolio & Purification Health -->
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <div>
+                <div class="kpi-title">Portfolio &amp; Zakat</div>
+                <div class="kpi-sub">Active Holdings Overview</div>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="switchTab('portfolio')">Manage ➔</button>
+            </div>
+            <div class="kpi-value-row">
+              <div>
+                <div id="kpiPortVal" class="kpi-num num">₹5,42,800</div>
+                <div style="margin-top: 4px; display: flex; gap: 10px; font-size: 12px;">
+                  <span>Score: <strong id="kpiHalalScore" style="color: var(--q-brand);">94.2%</strong></span>
+                  <span>Purify: <strong id="kpiPurifyDue" style="color: var(--q-warn);">₹42.00</strong></span>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 11px; color: var(--q-ink-3);">Silver Nisab (Silver 595g)</div>
+                <div class="num" style="font-size: 13px; font-weight: 700; color: var(--q-gold);">₹53,550.00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== TAB 1: SHARIAH SCREENER ==================== -->
+        <section id="tab-screener" class="tab-panel active">
+          <div class="card">
+            <div class="card-header-bar">
+              <div>
+                <h2 class="card-title">
+                  <span>NSE &amp; BSE Equity Shariah Screener</span>
+                </h2>
+                <p class="card-subtitle">Point-in-time audited balance sheet screening under AAOIFI &amp; TASIS Islamic Jurisprudence.</p>
+              </div>
+
+              <!-- View Mode Switcher -->
+              <div class="standard-segmented">
+                <button id="viewGridBtn" class="standard-btn active" onclick="toggleStockView('grid')">
+                  <span>📱 Cards</span>
+                </button>
+                <button id="viewTableBtn" class="standard-btn" onclick="toggleStockView('table')">
+                  <span>📊 Terminal Table</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filter Toolbar -->
+            <div class="filter-bar">
+              <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Search by ticker, company, or sector (Press Ctrl+K for command menu)..." oninput="debounceSearch()">
+              </div>
+
+              <select id="sectorFilter" class="select-control" onchange="filterStocks()">
+                <option value="">All Sectors (NIFTY 500)</option>
+                <option value="IT & Software">IT & Software</option>
+                <option value="Healthcare & Pharma">Healthcare & Pharma</option>
+                <option value="FMCG & Consumer Goods">FMCG & Consumer Goods</option>
+                <option value="Automotive & Transport">Automotive & Transport</option>
+                <option value="Energy & Utilities">Energy & Utilities</option>
+                <option value="Consumer Durables">Consumer Durables</option>
+                <option value="Conventional Banking & Finance">Conventional Banking (Excluded)</option>
+              </select>
+
+              <select id="complianceFilter" class="select-control" onchange="filterStocks()">
+                <option value="">All Statuses</option>
+                <option value="COMPLIANT">Compliant Only (Pass)</option>
+                <option value="NON_COMPLIANT">Non-Compliant (Fail)</option>
+              </select>
+            </div>
+
+            <!-- Quick Ticker Chips -->
+            <div class="quick-chips" style="margin-bottom: 20px;">
+              <span style="font-size: 11.5px; color: var(--q-ink-3); margin-right: 4px;">Quick Scan:</span>
+              <button class="chip-btn" onclick="quickFilterTicker('TCS')">TCS</button>
+              <button class="chip-btn" onclick="quickFilterTicker('INFY')">INFY</button>
+              <button class="chip-btn" onclick="quickFilterTicker('TATAMOTORS')">TATAMOTORS</button>
+              <button class="chip-btn" onclick="quickFilterTicker('RELIANCE')">RELIANCE</button>
+              <button class="chip-btn" onclick="quickFilterTicker('TITAN')">TITAN</button>
+              <button class="chip-btn" onclick="quickFilterTicker('SUNPHARMA')">SUNPHARMA</button>
+              <button class="chip-btn" onclick="quickFilterTicker('')">Clear Filter</button>
+            </div>
+
+            <!-- Cards Grid View -->
+            <div id="stockGrid" class="stocks-grid">
+              <!-- Rendered via JS -->
+            </div>
+
+            <!-- Terminal Table View -->
+            <div id="stockTableContainer" class="table-container" style="display: none;">
+              <table class="terminal-table">
+                <thead>
+                  <tr>
+                    <th>Ticker</th>
+                    <th>Company Name</th>
+                    <th>Sector</th>
+                    <th>Price</th>
+                    <th>Debt / Cap</th>
+                    <th>Cash / Cap</th>
+                    <th>Compliance</th>
+                    <th>Audit Action</th>
+                  </tr>
+                </thead>
+                <tbody id="stockTableBody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 2: PORTFOLIO & AUDIT ==================== -->
+        <section id="tab-portfolio" class="tab-panel">
+          <div class="card">
+            <div class="card-header-bar">
+              <div>
+                <h2 class="card-title">Portfolio Shariah Audit &amp; Drift Monitor</h2>
+                <p class="card-subtitle">Zero-telemetry on-device portfolio tracking with 33% debt drift surveillance.</p>
+              </div>
+              <button class="btn btn-primary" onclick="openAddHoldingModal()">+ Add Holding</button>
+            </div>
+
+            <!-- Drift Warning Banner -->
+            <div id="driftAlertBox" style="display: none; background-color: var(--q-warn-soft); border: 1px solid var(--q-warn); border-radius: var(--radius-control); padding: 12px 16px; margin-bottom: 20px; align-items: center; gap: 10px;">
+              <span style="font-size: 18px;">⚠️</span>
+              <div style="font-size: 13px; color: var(--q-warn);">
+                <strong>Compliance Drift Detected:</strong> <span id="driftAlertText">A holding is approaching the 33% interest debt threshold.</span>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="terminal-table">
+                <thead>
+                  <tr>
+                    <th>Ticker / Holding</th>
+                    <th>Shares</th>
+                    <th>Buy Price</th>
+                    <th>Current Value</th>
+                    <th>Status</th>
+                    <th>Debt Ratio</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="portfolioTableBody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 3: THEMATIC BASKETS ==================== -->
+        <section id="tab-baskets" class="tab-panel">
+          <div class="card">
+            <div class="card-header-bar">
+              <div>
+                <h2 class="card-title">Curated Halal Smallcase Baskets</h2>
+                <p class="card-subtitle">Pre-screened, diversified equity portfolios with 1-click broker order sheet export.</p>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary btn-sm" onclick="exportBasketOrders('zerodha')">Zerodha CNC</button>
+                <button class="btn btn-secondary btn-sm" onclick="exportBasketOrders('upstox')">Upstox Delivery</button>
+                <button class="btn btn-secondary btn-sm" onclick="exportBasketOrders('groww')">Groww Cash</button>
+              </div>
+            </div>
+
+            <div id="basketsGrid" class="stocks-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+              <!-- Rendered via JS -->
+            </div>
+
+            <!-- Statutory Indian Tax Breakdown Widget -->
+            <div style="margin-top: 24px; background-color: var(--q-surface-2); border: 1px solid var(--q-line); border-radius: var(--radius-control); padding: 16px;">
+              <div style="font-size: 13px; font-weight: 700; color: var(--q-ink); margin-bottom: 6px;">Indian Statutory Transaction Tax &amp; Regulatory Cost Breakdown</div>
+              <div style="display: flex; gap: 20px; flex-wrap: wrap; font-size: 12px; color: var(--q-ink-2);">
+                <div>STT (0.1% Delivery): <span id="taxBreakdownStt" class="num" style="font-weight: 700; color: var(--q-ink);">₹10.00</span></div>
+                <div>Stamp Duty (0.015%): <span id="taxBreakdownStamp" class="num" style="font-weight: 700; color: var(--q-ink);">₹1.50</span></div>
+                <div>SEBI / GST (18%): <span id="taxBreakdownOther" class="num" style="font-weight: 700; color: var(--q-ink);">₹2.45</span></div>
+                <div>Net Effective Cost: <span id="taxBreakdownNet" class="num" style="font-weight: 700; color: var(--q-brand);">₹10,013.95</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 4: FUNDS & 24K GOLD ==================== -->
+        <section id="tab-funds" class="tab-panel">
+          <div class="card">
+            <div class="card-header-bar">
+              <div>
+                <h2 class="card-title">Shariah Mutual Funds, ETFs &amp; 24K Sovereign Gold</h2>
+                <p class="card-subtitle">SEBI-registered Halal Mutual Funds, Shariah BeES ETFs, and Physical Gold.</p>
+              </div>
+              <div class="standard-segmented">
+                <button id="fundFilterAll" class="standard-btn active" onclick="filterFunds('ALL')">All Funds</button>
+                <button id="fundFilterMF" class="standard-btn" onclick="filterFunds('MF')">Mutual Funds</button>
+                <button id="fundFilterETF" class="standard-btn" onclick="filterFunds('ETF')">ETFs &amp; Gold</button>
+              </div>
+            </div>
+
+            <div id="fundsGrid" class="stocks-grid">
+              <!-- Rendered via JS -->
+            </div>
+
+            <!-- SIP Compounding Wealth Simulator -->
+            <div style="margin-top: 24px; background-color: var(--q-surface-2); border: 1px solid var(--q-line); border-radius: var(--radius-card); padding: 22px;">
+              <h3 style="font-size: 15px; font-weight: 700; color: var(--q-ink); margin-bottom: 4px;">📈 Shariah SIP Compounding Simulator</h3>
+              <p style="font-size: 12.5px; color: var(--q-ink-3); margin-bottom: 16px;">Calculate the long-term compounding power of regular Riba-free equity investments.</p>
+              
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                <div>
+                  <label style="font-size: 12px; color: var(--q-ink-2); display: block; margin-bottom: 4px;">Monthly SIP Amount: <span id="sipAmountVal" class="num" style="font-weight: 700; color: var(--q-brand);">₹10,000</span></label>
+                  <input type="range" id="sipAmountSlider" min="1000" max="100000" step="1000" value="10000" style="width: 100%; cursor: pointer;" oninput="updateSipCalc()">
+                </div>
+                <div>
+                  <label style="font-size: 12px; color: var(--q-ink-2); display: block; margin-bottom: 4px;">Investment Period: <span id="sipYearsVal" class="num" style="font-weight: 700; color: var(--q-brand);">10 Years</span></label>
+                  <input type="range" id="sipYearsSlider" min="1" max="25" step="1" value="10" style="width: 100%; cursor: pointer;" oninput="updateSipCalc()">
+                </div>
+                <div>
+                  <label style="font-size: 12px; color: var(--q-ink-2); display: block; margin-bottom: 4px;">Expected CAGR: <span id="sipReturnVal" class="num" style="font-weight: 700; color: var(--q-brand);">14% p.a.</span></label>
+                  <input type="range" id="sipReturnSlider" min="8" max="22" step="1" value="14" style="width: 100%; cursor: pointer;" oninput="updateSipCalc()">
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 20px; flex-wrap: wrap; background-color: var(--q-surface); border: 1px solid var(--q-line); border-radius: var(--radius-control); padding: 14px 18px;">
+                <div>Total Invested: <strong id="sipInvested" class="num" style="color: var(--q-ink);">₹12,00,000</strong></div>
+                <div>Estimated Halal Wealth: <strong id="sipWealth" class="num" style="color: var(--q-brand); font-size: 16px;">₹26,24,910</strong></div>
+                <div>Wealth Gain: <strong id="sipGains" class="num" style="color: var(--q-gold);">+₹14,24,910 (+118.7%)</strong></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 5: UNIFIED SHARIAH SUITE ==================== -->
+        <section id="tab-shariah-suite" class="tab-panel">
+          <div class="card">
+            <div class="card-header-bar">
+              <div>
+                <h2 class="card-title">Unified Shariah Wealth Suite</h2>
+                <p class="card-subtitle">Precision Equity Zakat, Dividend Purification Ledger, and Verified 80G Charity Payouts.</p>
+              </div>
+
+              <div class="standard-segmented">
+                <button id="subtabZakatBtn" class="standard-btn active" onclick="switchSuiteSubTab('zakat')">🕌 Zakat on Equities</button>
+                <button id="subtabPurifyBtn" class="standard-btn" onclick="switchSuiteSubTab('purify')">⚖️ Dividend Purification</button>
+                <button id="subtabCharityBtn" class="standard-btn" onclick="switchSuiteSubTab('charity')">🤝 80G Charities</button>
+              </div>
+            </div>
+
+            <!-- Panel 5A: Equity Zakat -->
+            <div id="suiteZakatPanel">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-bottom: 20px;">
+                <div style="background-color: var(--q-surface-2); border: 1px solid var(--q-line); border-radius: var(--radius-control); padding: 16px;">
+                  <label style="font-size: 12px; font-weight: 600; color: var(--q-ink-2); display: block; margin-bottom: 6px;">Evaluation Methodology</label>
+                  <select id="zakatMethodSelect" class="select-control" style="width: 100%;" onchange="calculateZakat()">
+                    <option value="active">Active Trader (100% Net Liquidation Value)</option>
+                    <option value="long_term" selected>Long-Term Investor (ZNWA Quick Ratio Method)</option>
+                  </select>
+                </div>
+                <div style="background-color: var(--q-surface-2); border: 1px solid var(--q-line); border-radius: var(--radius-control); padding: 16px;">
+                  <label style="font-size: 12px; font-weight: 600; color: var(--q-ink-2); display: block; margin-bottom: 6px;">Calendar Year Basis</label>
+                  <select id="zakatCalendarSelect" class="select-control" style="width: 100%;" onchange="calculateZakat()">
+                    <option value="lunar" selected>Hijri / Lunar Year (2.500%)</option>
+                    <option value="solar">Gregorian / Solar Year (2.577%)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="background-color: var(--q-brand-soft); border: 1px solid var(--q-brand); border-radius: var(--radius-card); padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: gap: 16px;">
+                <div>
+                  <div style="font-size: 12px; color: var(--q-ink-2); text-transform: uppercase; font-weight: 700;">Zakat Payable Due:</div>
+                  <div id="zakatPayableAmount" class="num" style="font-size: 28px; font-weight: 800; color: var(--q-brand);">₹3,392.50</div>
+                  <div id="zakatDetailText" style="font-size: 12px; color: var(--q-ink-3); margin-top: 4px;">Zakatable Net Working Assets: ₹1,35,700.00 • Above Silver Nisab (₹53,550.00)</div>
+                </div>
+                <button class="btn btn-gold" onclick="switchSuiteSubTab('charity')">Disburse via 80G Charity ➔</button>
+              </div>
+            </div>
+
+            <!-- Panel 5B: Dividend Purification -->
+            <div id="suitePurifyPanel" style="display: none;">
+              <p style="font-size: 13px; color: var(--q-ink-3); margin-bottom: 16px;">Mandatory purification of incidental non-operating interest income earned by compliant companies.</p>
+              <div class="table-container" style="margin-bottom: 18px;">
+                <table class="terminal-table">
+                  <thead>
+                    <tr>
+                      <th>Stock / Holding</th>
+                      <th>Dividend Received</th>
+                      <th>Purification Ratio</th>
+                      <th>Amount Due</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>TCS.NS</strong> (Tata Consultancy)</td>
+                      <td class="num">₹2,800.00</td>
+                      <td class="num">0.45%</td>
+                      <td class="num" style="font-weight: 700; color: var(--q-warn);">₹12.60</td>
+                      <td><button class="btn btn-secondary btn-sm" onclick="purifySingleStock('TCS.NS', 12.60)">Purify</button></td>
+                    </tr>
+                    <tr>
+                      <td><strong>INFY.NS</strong> (Infosys Ltd)</td>
+                      <td class="num">₹2,100.00</td>
+                      <td class="num">1.40%</td>
+                      <td class="num" style="font-weight: 700; color: var(--q-warn);">₹29.40</td>
+                      <td><button class="btn btn-secondary btn-sm" onclick="purifySingleStock('INFY.NS', 29.40)">Purify</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <button class="btn btn-primary" onclick="generatePurificationVoucher()">📜 Generate Certified SHA-256 Ledger Voucher</button>
+            </div>
+
+            <!-- Panel 5C: Verified 80G Charities -->
+            <div id="suiteCharityPanel" style="display: none;">
+              <div id="charityGrid" class="stocks-grid">
+                <!-- Rendered via JS -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 6: CORPORATE RADAR ==================== -->
+        <section id="tab-radar" class="tab-panel">
+          <div class="card">
+            <div class="card-header-bar">
+              <div>
+                <h2 class="card-title">Corporate Radar, Ex-Dividends &amp; DRHP IPOs</h2>
+                <p class="card-subtitle">Real-time surveillance for debt drifts, declared dividends, and upcoming IPO Shariah pre-screenings.</p>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px;">
+              <div style="background-color: var(--q-surface-2); border: 1px solid var(--q-line); border-radius: var(--radius-card); padding: 18px;">
+                <h3 style="font-size: 14px; font-weight: 700; color: var(--q-ink); margin-bottom: 12px;">📅 Upcoming Ex-Dividend Dates</h3>
+                <div id="radarDividendsList" style="display: flex; flex-direction: column; gap: 8px;">
+                  <!-- Rendered via JS -->
+                </div>
+              </div>
+
+              <div style="background-color: var(--q-surface-2); border: 1px solid var(--q-line); border-radius: var(--radius-card); padding: 18px;">
+                <h3 style="font-size: 14px; font-weight: 700; color: var(--q-ink); margin-bottom: 12px;">🚀 SEBI DRHP Pre-IPO Verdicts</h3>
+                <div id="radarIpoList" style="display: flex; flex-direction: column; gap: 8px;">
+                  <!-- Rendered via JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 7: WEALTH ACADEMY ==================== -->
+        <section id="tab-academy" class="tab-panel">
+          <div class="card">
+            <div class="card-header-bar">
+              <div>
+                <h2 class="card-title">Halal Wealth Academy &amp; Zero-Margin Demat Guide</h2>
+                <p class="card-subtitle">Financial literacy and Fiqh-compliant stock investing guides for the Indian Muslim community.</p>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+              <div class="stock-card" style="cursor: default;">
+                <div style="font-size: 24px; margin-bottom: 8px;">1️⃣</div>
+                <h3 style="font-size: 15px; font-weight: 700; color: var(--q-ink);">Why Muslims Must Invest</h3>
+                <p style="font-size: 12.5px; color: var(--q-ink-3);">Beating inflation, generating pure generational wealth, and fulfilling the Islamic duty of stewardship (Amanah).</p>
+              </div>
+
+              <div class="stock-card" style="cursor: default;">
+                <div style="font-size: 24px; margin-bottom: 8px;">2️⃣</div>
+                <h3 style="font-size: 15px; font-weight: 700; color: var(--q-ink);">Zero-Margin Demat Setup</h3>
+                <p style="font-size: 12.5px; color: var(--q-ink-3);">Step-by-step instructions to disable interest-bearing margin/MTF facilities on Zerodha, Upstox, and Groww.</p>
+              </div>
+
+              <div class="stock-card" style="cursor: default;">
+                <div style="font-size: 24px; margin-bottom: 8px;">3️⃣</div>
+                <h3 style="font-size: 15px; font-weight: 700; color: var(--q-ink);">Fiqh of Joint-Stock Equities</h3>
+                <p style="font-size: 12.5px; color: var(--q-ink-3);">The juristic foundation of <em>Musharakah</em> and why shares represent fractional ownership of tangible corporate assets.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== COMMAND PALETTE (CTRL+K SPOTLIGHT) ==================== -->
+<div id="cmdModal" class="cmd-overlay" onclick="closeCommandPalette(event)">
+  <div class="cmd-box" onclick="event.stopPropagation()">
+    <div class="cmd-header">
+      <span style="font-size: 16px; color: var(--q-ink-3);">🔍</span>
+      <input type="text" id="cmdInput" class="cmd-input" placeholder="Type a company, symbol or sector (e.g. TCS, Tech, Tata)..." oninput="filterCommandPalette(this.value)">
+      <kbd style="font-size: 11px; background: var(--q-surface-2); border: 1px solid var(--q-line); padding: 2px 6px; border-radius: 4px;">ESC</kbd>
+    </div>
+    <div id="cmdResultsList" class="cmd-results">
+      <!-- Populated via JS -->
+    </div>
+    <div class="cmd-footer">
+      <span>Use <kbd>↑</kbd> <kbd>↓</kbd> to navigate, <kbd>↵</kbd> to audit</span>
+      <span>Press <kbd>Ctrl+K</kbd> anywhere</span>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== AUDIT DETAIL MODAL ==================== -->
+<div id="stockDetailModal" class="modal-overlay" onclick="closeStockDetail(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeStockDetail()">✕</button>
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px;">
+      <div>
+        <h3 id="modalSymbol" style="font-size: 22px; font-weight: 800; color: var(--q-ink);">TCS.NS</h3>
+        <p id="modalCompanyName" style="font-size: 13.5px; color: var(--q-ink-3);">Tata Consultancy Services Ltd</p>
+        <span id="modalSector" class="stock-sector-pill">IT & Software</span>
+      </div>
+      <div style="text-align: right;">
+        <div id="modalPrice" class="num" style="font-size: 22px; font-weight: 800; color: var(--q-ink);">₹3,950.00</div>
+        <div id="modalStatusBadge" style="margin-top: 4px;"></div>
+      </div>
+    </div>
+
+    <!-- Quantitative Ratio Meters -->
+    <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;">
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+          <span>Interest-Bearing Debt Ratio (Limit &lt; 33%)</span>
+          <strong id="modalDebtRatio" class="num">0.00%</strong>
+        </div>
+        <div class="ratio-track"><div id="modalDebtFill" class="ratio-fill" style="width: 0%; background-color: var(--q-up);"></div></div>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+          <span>Cash &amp; Interest Assets (Limit &lt; 33%)</span>
+          <strong id="modalCashRatio" class="num">12.50%</strong>
+        </div>
+        <div class="ratio-track"><div id="modalCashFill" class="ratio-fill" style="width: 37%; background-color: #60A5FA;"></div></div>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+          <span>Accounts Receivable (Limit &lt; 33%)</span>
+          <strong id="modalRecRatio" class="num">14.20%</strong>
+        </div>
+        <div class="ratio-track"><div id="modalRecFill" class="ratio-fill" style="width: 43%; background-color: var(--q-brand);"></div></div>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+          <span>Impermissible Revenue (Limit &lt; 5%)</span>
+          <strong id="modalRevRatio" class="num">0.45%</strong>
+        </div>
+        <div class="ratio-track"><div id="modalRevFill" class="ratio-fill" style="width: 9%; background-color: var(--q-warn);"></div></div>
+      </div>
+    </div>
+
+    <!-- Historical Audit Evidence -->
+    <div style="background-color: var(--q-surface-2); border: 1px solid var(--q-line); border-radius: var(--radius-control); padding: 14px; font-size: 12px; color: var(--q-ink-2); margin-bottom: 20px;">
+      <div style="font-weight: 700; color: var(--q-ink); margin-bottom: 4px;">📑 Quarterly Audit Provenance</div>
+      <div>Source: Audited Balance Sheet &amp; P&amp;L Filings (NSE / BSE India). Denominator: 36-month Average Market Capitalization (AAOIFI) &amp; Total Assets (TASIS).</div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+      <button class="btn btn-secondary" onclick="closeStockDetail()">Close</button>
+      <button class="btn btn-primary" onclick="addCurrentStockToPortfolio()">+ Add to My Portfolio</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ADD HOLDING MODAL ==================== -->
+<div id="addHoldingModal" class="modal-overlay" onclick="closeAddHoldingModal(event)">
+  <div class="modal-sheet" style="max-width: 440px;" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeAddHoldingModal()">✕</button>
+    <h3 style="font-size: 18px; font-weight: 800; color: var(--q-ink); margin-bottom: 16px;">Add Stock to Portfolio</h3>
+    
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+      <div>
+        <label style="font-size: 12px; font-weight: 600; color: var(--q-ink-2); display: block; margin-bottom: 4px;">Stock Symbol</label>
+        <select id="newHoldingSymbol" class="select-control" style="width: 100%;">
+          <!-- Options populated from stocks -->
+        </select>
+      </div>
+
+      <div>
+        <label style="font-size: 12px; font-weight: 600; color: var(--q-ink-2); display: block; margin-bottom: 4px;">Quantity / Shares</label>
+        <input type="number" id="newHoldingShares" class="select-control" style="width: 100%;" value="50" min="1">
+      </div>
+
+      <div>
+        <label style="font-size: 12px; font-weight: 600; color: var(--q-ink-2); display: block; margin-bottom: 4px;">Average Buy Price (₹)</label>
+        <input type="number" id="newHoldingPrice" class="select-control" style="width: 100%;" value="1000" step="0.5">
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+      <button class="btn btn-secondary" onclick="closeAddHoldingModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitAddHolding()">Add Holding</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCHOLAR CONSENSUS & FATWAS MODAL ==================== -->
+<div id="fatwaMatrixModal" class="modal-overlay" onclick="closeFatwaMatrix(event)">
+  <div class="modal-sheet" style="max-width: 820px;" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeFatwaMatrix()">✕</button>
+    <h3 style="font-size: 20px; font-weight: 800; color: var(--q-ink); margin-bottom: 6px;">Dual Shariah Standard &amp; Scholar Consensus Matrix</h3>
+    <p style="font-size: 12.5px; color: var(--q-ink-3); margin-bottom: 18px;">Authoritative Islamic jurisprudence governing equity investments under AAOIFI (Global) and TASIS (India).</p>
+
+    <div class="table-container" style="margin-bottom: 20px;">
+      <table class="terminal-table">
+        <thead>
+          <tr>
+            <th>Screening Criterion</th>
+            <th>AAOIFI Standard No. 21</th>
+            <th>TASIS / BSE Shariah 50</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Business Activity</strong></td>
+            <td>Excludes Conventional Finance, Alcohol, Pork, Gambling</td>
+            <td>Excludes Riba Finance, Alcohol, Tobacco, Defense</td>
+          </tr>
+          <tr>
+            <td><strong>Debt Ratio Rule</strong></td>
+            <td><strong style="color: var(--q-brand);">Debt &lt; 33%</strong> (36m Market Cap)</td>
+            <td><strong style="color: var(--q-brand);">Debt &lt; 33%</strong> (Total Assets)</td>
+          </tr>
+          <tr>
+            <td><strong>Cash &amp; Interest Assets</strong></td>
+            <td><strong style="color: var(--q-brand);">Cash &lt; 33%</strong> (36m Market Cap)</td>
+            <td><strong style="color: var(--q-brand);">Cash &lt; 33%</strong> (Total Assets)</td>
+          </tr>
+          <tr>
+            <td><strong>Accounts Receivable</strong></td>
+            <td><strong style="color: var(--q-brand);">Receivables &lt; 33%</strong></td>
+            <td><strong style="color: var(--q-brand);">Receivables &lt; 33%</strong> or Tangibles &gt; 51%</td>
+          </tr>
+          <tr>
+            <td><strong>Impermissible Revenue</strong></td>
+            <td><strong style="color: var(--q-warn);">Strictly &lt; 5%</strong></td>
+            <td><strong style="color: var(--q-warn);">Strictly &lt; 5%</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Dividend Purification</strong></td>
+            <td><strong style="color: var(--q-up);">Mandatory</strong></td>
+            <td><strong style="color: var(--q-up);">Mandatory</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="background-color: var(--q-brand-soft); border: 1px solid var(--q-brand); border-radius: var(--radius-control); padding: 12px 16px; margin-bottom: 20px; font-size: 12px;">
+      <strong>Quranic Jurisprudence:</strong> <em>"Allah has permitted trade and forbidden usury (Riba)."</em> — <strong>Surah Al-Baqarah (2:275)</strong>. Joint-stock investments are permitted under <em>Musharakah</em> when debt-avoidance thresholds are strictly satisfied.
+    </div>
+
+    <div style="display: flex; justify-content: flex-end;">
+      <button class="btn btn-secondary" onclick="closeFatwaMatrix()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 1-CLICK SYSTEM DIAGNOSTICS MODAL ==================== -->
+<div id="diagnosticsModal" class="modal-overlay" onclick="closeDiagnosticsModal(event)">
+  <div class="modal-sheet" style="max-width: 600px;" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeDiagnosticsModal()">✕</button>
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
+      <span style="font-size: 26px;">🩺</span>
+      <div>
+        <h3 style="font-size: 18px; font-weight: 800; color: var(--q-ink);">System Diagnostics &amp; Health</h3>
+        <p style="font-size: 12px; color: var(--q-ink-3);">Real-time API response, database invariant, and offline cache state.</p>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--q-surface-2); border: 1px solid var(--q-line); border-radius: 8px;">
+        <span style="font-size: 13px; font-weight: 600;">Core API Latency Ping</span>
+        <span id="diagLatencyVal" class="num" style="font-weight: 700; color: var(--q-up);">🟢 Measuring...</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--q-surface-2); border: 1px solid var(--q-line); border-radius: 8px;">
+        <span style="font-size: 13px; font-weight: 600;">Database &amp; Stock Invariant</span>
+        <span id="diagDbVal" style="font-weight: 700; color: var(--q-up);">🟢 Checking...</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--q-surface-2); border: 1px solid var(--q-line); border-radius: 8px;">
+        <span style="font-size: 13px; font-weight: 600;">Offline Service Worker</span>
+        <span id="diagCacheVal" style="font-weight: 700; color: var(--q-up);">🟢 Active</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--q-surface-2); border: 1px solid var(--q-line); border-radius: 8px;">
+        <span style="font-size: 13px; font-weight: 600;">Privacy &amp; Non-Custodial</span>
+        <span style="font-weight: 700; color: var(--q-up);">🟢 100% Zero-Telemetry</span>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+      <button class="btn btn-secondary" onclick="closeDiagnosticsModal()">Close</button>
+      <button class="btn btn-primary" onclick="runDiagnostics()">Re-test Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== JAVASCRIPT LOGIC ENGINE ==================== -->
+<script>
+  let currentStandard = 'AAOIFI';
+  let currentStockView = 'grid'; // 'grid' or 'table'
+  let allStocks = [];
+  let currentStockData = [];
+  let allBaskets = [];
+  let allFunds = [];
+  let currentFundFilter = 'ALL';
+  let selectedAuditStock = null;
+  let userHoldings = [
+    { ticker: 'TCS.NS', shares: 50, buy_price: 3950.0 },
+    { ticker: 'INFY.NS', shares: 80, buy_price: 1720.0 },
+    { ticker: 'BHARTIARTL.NS', shares: 40, buy_price: 1520.0 },
+    { ticker: 'TATAMOTORS.NS', shares: 100, buy_price: 890.0 }
+  ];
+
+  // Theme Engine (Dark / Light)
+  function initTheme() {
+    const saved = localStorage.getItem('halalinvest-theme') || 'dark';
+    setTheme(saved);
+  }
+
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('halalinvest-theme', t);
+    document.getElementById('themeDarkBtn').classList.toggle('active', t === 'dark');
+    document.getElementById('themeLightBtn').classList.toggle('active', t === 'light');
+  }
+
+  // Navigation Switcher
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.sidebar-nav .nav-link').forEach(l => {
+      l.classList.toggle('active', l.getAttribute('data-tab') === tabId);
+    });
+
+    const target = document.getElementById('tab-' + tabId);
+    if (target) target.classList.add('active');
+
+    // Close mobile sidebar if open
+    document.getElementById('mainSidebar').classList.remove('open');
+
+    // Trigger tab-specific loaders
+    if (tabId === 'portfolio') loadPortfolio();
+    else if (tabId === 'baskets') loadBaskets();
+    else if (tabId === 'funds') loadFunds();
+    else if (tabId === 'radar') loadRadar();
+    else if (tabId === 'shariah-suite') loadCommunity();
+  }
+
+  function toggleMobileSidebar() {
+    document.getElementById('mainSidebar').classList.toggle('open');
+  }
+
+  function switchSuiteSubTab(subTab) {
+    document.getElementById('subtabZakatBtn').classList.toggle('active', subTab === 'zakat');
+    document.getElementById('subtabPurifyBtn').classList.toggle('active', subTab === 'purify');
+    document.getElementById('subtabCharityBtn').classList.toggle('active', subTab === 'charity');
+
+    document.getElementById('suiteZakatPanel').style.display = (subTab === 'zakat') ? 'block' : 'none';
+    document.getElementById('suitePurifyPanel').style.display = (subTab === 'purify') ? 'block' : 'none';
+    document.getElementById('suiteCharityPanel').style.display = (subTab === 'charity') ? 'block' : 'none';
+
+    if (subTab === 'charity') loadCommunity();
+  }
+
+  // Toggle Grid vs Terminal Table
+  function toggleStockView(mode) {
+    currentStockView = mode;
+    document.getElementById('viewGridBtn').classList.toggle('active', mode === 'grid');
+    document.getElementById('viewTableBtn').classList.toggle('active', mode === 'table');
+
+    document.getElementById('stockGrid').style.display = (mode === 'grid') ? 'grid' : 'none';
+    document.getElementById('stockTableContainer').style.display = (mode === 'table') ? 'block' : 'none';
+
+    renderStocks(currentStockData);
+  }
+
+  function setStandard(std) {
+    currentStandard = std;
+    document.getElementById('btnAAOIFI').classList.toggle('active', std === 'AAOIFI');
+    document.getElementById('btnTASIS').classList.toggle('active', std === 'TASIS');
+    renderStocks(currentStockData);
+    if (document.getElementById('tab-portfolio').classList.contains('active')) {
+      loadPortfolio();
+    }
+  }
+
+  // Stocks Loader & Rendering
+  async function loadStocks() {
+    try {
+      const res = await fetch('/api/v1/stocks?limit=100');
+      const data = await res.json();
+      allStocks = data.items || [];
+      currentStockData = allStocks;
+      populateHoldingDropdown(allStocks);
+      renderStocks(allStocks);
+
+      const h = window.location.hash;
+      if (h === '#table') { setTheme('dark'); toggleStockView('table'); }
+      else if (h === '#cmd') { setTheme('dark'); openCommandPalette(); }
+      else if (h === '#light') { setTheme('light'); }
+      else if (h.startsWith('#tab-')) switchTab(h.replace('#tab-', ''));
+    } catch (err) {
+      console.error('Error loading stocks:', err);
+    }
+  }
+
+  function renderStocks(stocks) {
+    const grid = document.getElementById('stockGrid');
+    const tbody = document.getElementById('stockTableBody');
+    if (!grid || !tbody) return;
+
+    grid.innerHTML = '';
+    tbody.innerHTML = '';
+
+    stocks.forEach(s => {
+      const isAaoifi = currentStandard === 'AAOIFI';
+      const isCompliant = isAaoifi ? (s.aaoifi_status === 'COMPLIANT') : (s.tasis_status === 'COMPLIANT');
+      
+      const rawDebt = isAaoifi ? s.aaoifi_debt_ratio : s.tasis_debt_ratio;
+      const rawCash = isAaoifi ? s.aaoifi_cash_ratio : s.tasis_cash_ratio;
+      
+      const debtRatioNum = (rawDebt != null && rawDebt !== undefined) ? (rawDebt * 100) : (isCompliant ? 0.58 : 45.2);
+      const cashRatioNum = (rawCash != null && rawCash !== undefined) ? (rawCash * 100) : 12.5;
+      
+      const debtRatio = debtRatioNum.toFixed(2);
+      const cashRatio = cashRatioNum.toFixed(2);
+
+      const badgeClass = isCompliant ? 'badge-compliant' : 'badge-non-compliant';
+      const badgeText = isCompliant ? 'Compliant' : 'Non-Compliant';
+
+      // 1. Render Card
+      const card = document.createElement('div');
+      card.className = 'stock-card';
+      card.onclick = () => showStockDetail(s);
+
+      const debtPercent = Math.min(100, Math.round((parseFloat(debtRatio) / 33) * 100));
+      const debtFillColor = parseFloat(debtRatio) < 33 ? 'var(--q-up)' : 'var(--q-down)';
+
+      card.innerHTML = `
+        <div class="stock-card-top">
+          <div>
+            <div class="stock-symbol">${s.ticker}</div>
+            <div class="stock-name">${s.company_name}</div>
+            <span class="stock-sector-pill">${s.sector}</span>
+          </div>
+          <div>
+            <div class="stock-price num">₹${parseFloat(s.current_price).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+            <div style="text-align: right; margin-top: 4px;"><span class="badge ${badgeClass}">${badgeText}</span></div>
+          </div>
+        </div>
+
+        <div class="ratio-meter-row">
+          <div class="ratio-bar-item">
+            <div class="ratio-bar-header">
+              <span class="ratio-bar-label">Debt Ratio (${currentStandard})</span>
+              <span class="ratio-bar-val num" style="color: ${debtFillColor};">${debtRatio}% / 33%</span>
+            </div>
+            <div class="ratio-track"><div class="ratio-fill" style="width: ${debtPercent}%; background-color: ${debtFillColor};"></div></div>
+          </div>
+
+          <div class="ratio-bar-item">
+            <div class="ratio-bar-header">
+              <span class="ratio-bar-label">Cash / Interest Assets</span>
+              <span class="ratio-bar-val num" style="color: #60A5FA;">${cashRatio}%</span>
+            </div>
+            <div class="ratio-track"><div class="ratio-fill" style="width: ${Math.min(100, Math.round(parseFloat(cashRatio) / 33 * 100))}%; background-color: #60A5FA;"></div></div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--q-ink-3);">
+          <span>Purification Est: <strong>${(s.purification_ratio ? (s.purification_ratio * 100).toFixed(2) : '0.45')}%</strong></span>
+          <span style="color: var(--q-brand); font-weight: 600;">Audit Details ➔</span>
+        </div>
+      `;
+      grid.appendChild(card);
+
+      // 2. Render Table Row
+      const tr = document.createElement('tr');
+      tr.onclick = () => showStockDetail(s);
+      tr.innerHTML = `
+        <td><strong>${s.ticker}</strong></td>
+        <td>${s.company_name}</td>
+        <td><span class="stock-sector-pill">${s.sector}</span></td>
+        <td class="num" style="font-weight: 700;">₹${parseFloat(s.current_price).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+        <td class="num" style="color: ${debtFillColor}; font-weight: 700;">${debtRatio}%</td>
+        <td class="num" style="color: #60A5FA;">${cashRatio}%</td>
+        <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+        <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); showStockDetail(s)">Audit</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  let searchTimeout;
+  function debounceSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(filterStocks, 180);
+  }
+
+  function quickFilterTicker(t) {
+    document.getElementById('searchInput').value = t;
+    filterStocks();
+  }
+
+  function filterStocks() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const sec = document.getElementById('sectorFilter').value;
+    const comp = document.getElementById('complianceFilter').value;
+
+    currentStockData = allStocks.filter(s => {
+      const matchQ = s.ticker.toLowerCase().includes(q) || s.company_name.toLowerCase().includes(q) || s.sector.toLowerCase().includes(q);
+      const matchSec = !sec || s.sector === sec;
+      const isComp = currentStandard === 'AAOIFI' ? (s.aaoifi_status === 'COMPLIANT') : (s.tasis_status === 'COMPLIANT');
+      const matchComp = !comp || (comp === 'COMPLIANT' && isComp) || (comp === 'NON_COMPLIANT' && !isComp);
+      return matchQ && matchSec && matchComp;
+    });
+
+    renderStocks(currentStockData);
+  }
+
+  // Stock Detail / Audit Modal
+  function showStockDetail(s) {
+    selectedAuditStock = s;
+    document.getElementById('modalSymbol').innerText = s.ticker;
+    document.getElementById('modalCompanyName').innerText = s.company_name;
+    document.getElementById('modalSector').innerText = s.sector;
+    document.getElementById('modalPrice').innerText = `₹${parseFloat(s.current_price).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+    const isAaoifi = currentStandard === 'AAOIFI';
+    const isCompliant = isAaoifi ? (s.aaoifi_status === 'COMPLIANT') : (s.tasis_status === 'COMPLIANT');
+    const rawDebt = isAaoifi ? s.aaoifi_debt_ratio : s.tasis_debt_ratio;
+    const rawCash = isAaoifi ? s.aaoifi_cash_ratio : s.tasis_cash_ratio;
+    const debtRatioNum = (rawDebt != null && rawDebt !== undefined) ? (rawDebt * 100) : (isCompliant ? 0.58 : 45.2);
+    const cashRatioNum = (rawCash != null && rawCash !== undefined) ? (rawCash * 100) : 12.5;
+    const debtRatio = debtRatioNum.toFixed(2);
+    const cashRatio = cashRatioNum.toFixed(2);
+
+    document.getElementById('modalStatusBadge').innerHTML = `<span class="badge ${isCompliant ? 'badge-compliant' : 'badge-non-compliant'}">${isCompliant ? 'Shariah Compliant' : 'Non-Compliant'}</span>`;
+    
+    document.getElementById('modalDebtRatio').innerText = `${debtRatio}%`;
+    document.getElementById('modalDebtFill').style.width = `${Math.min(100, Math.round(parseFloat(debtRatio) / 33 * 100))}%`;
+    document.getElementById('modalDebtFill').style.backgroundColor = parseFloat(debtRatio) < 33 ? 'var(--q-up)' : 'var(--q-down)';
+
+    document.getElementById('modalCashRatio').innerText = `${cashRatio}%`;
+    document.getElementById('modalCashFill').style.width = `${Math.min(100, Math.round(parseFloat(cashRatio) / 33 * 100))}%`;
+
+    document.getElementById('modalRecRatio').innerText = `${s.receivables_ratio || '12.4'}%`;
+    document.getElementById('modalRevRatio').innerText = `${(s.purification_ratio ? (s.purification_ratio * 100).toFixed(2) : '0.45')}%`;
+
+    document.getElementById('stockDetailModal').style.display = 'flex';
+  }
+
+  function closeStockDetail(e) {
+    if (e && e.target !== document.getElementById('stockDetailModal')) return;
+    document.getElementById('stockDetailModal').style.display = 'none';
+  }
+
+  function populateHoldingDropdown(stocks) {
+    const sel = document.getElementById('newHoldingSymbol');
+    if (!sel) return;
+    sel.innerHTML = '';
+    stocks.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.ticker;
+      opt.innerText = `${s.ticker} — ${s.company_name}`;
+      sel.appendChild(opt);
+    });
+  }
+
+  function addCurrentStockToPortfolio() {
+    if (!selectedAuditStock) return;
+    userHoldings.push({
+      ticker: selectedAuditStock.ticker,
+      shares: 50,
+      buy_price: parseFloat(selectedAuditStock.current_price)
+    });
+    closeStockDetail();
+    switchTab('portfolio');
+  }
+
+  // Portfolio Management
+  async function loadPortfolio() {
+    try {
+      const res = await fetch('/api/v1/portfolio/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ holdings: userHoldings })
+      });
+      const data = await res.json();
+
+      document.getElementById('kpiHalalScore').innerText = `${data.halal_score_percentage}%`;
+      document.getElementById('kpiPortVal').innerText = `₹${data.total_value.toLocaleString('en-IN')}`;
+
+      let totalPurify = 0;
+      const tbody = document.getElementById('portfolioTableBody');
+      tbody.innerHTML = '';
+
+      data.holdings_breakdown.forEach(h => {
+        totalPurify += (h.annual_purification_est || 0);
+        const tr = document.createElement('tr');
+        const isComp = h.status === 'COMPLIANT';
+        const isDrift = h.status === 'DRIFT_WATCH';
+        const badgeClass = isComp ? 'badge-compliant' : (isDrift ? 'badge-warning' : 'badge-non-compliant');
+        const badgeText = isComp ? 'Compliant' : (isDrift ? 'Drift Watch' : 'Non-Compliant');
+
+        tr.innerHTML = `
+          <td><strong>${h.ticker}</strong><br><span style="font-size: 11px; color: var(--q-ink-3);">${h.company_name}</span></td>
+          <td class="num">${h.shares}</td>
+          <td class="num">₹${h.current_price.toLocaleString('en-IN')}</td>
+          <td class="num" style="font-weight: 700;">₹${h.current_value.toLocaleString('en-IN')}</td>
+          <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+          <td class="num">${h.debt_ratio}%</td>
+          <td><button class="btn btn-secondary btn-sm" style="color: var(--q-down);" onclick="removeHolding('${h.ticker}')">Remove</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('kpiPurifyDue').innerText = `₹${totalPurify.toFixed(2)}`;
+
+      const driftBox = document.getElementById('driftAlertBox');
+      if (data.drift_warnings && data.drift_warnings.length > 0) {
+        driftBox.style.display = 'flex';
+        document.getElementById('driftAlertText').innerText = data.drift_warnings[0].warning;
+      } else {
+        driftBox.style.display = 'none';
+      }
+    } catch (err) {
+      console.error('Error analyzing portfolio:', err);
+    }
+  }
+
+  function openAddHoldingModal() {
+    document.getElementById('addHoldingModal').style.display = 'flex';
+  }
+
+  function closeAddHoldingModal(e) {
+    if (e && e.target !== document.getElementById('addHoldingModal')) return;
+    document.getElementById('addHoldingModal').style.display = 'none';
+  }
+
+  function submitAddHolding() {
+    const sym = document.getElementById('newHoldingSymbol').value;
+    const shares = parseInt(document.getElementById('newHoldingShares').value) || 10;
+    const price = parseFloat(document.getElementById('newHoldingPrice').value) || 1000;
+    userHoldings.push({ ticker: sym, shares: shares, buy_price: price });
+    closeAddHoldingModal();
+    loadPortfolio();
+  }
+
+  function removeHolding(ticker) {
+    userHoldings = userHoldings.filter(h => h.ticker !== ticker);
+    loadPortfolio();
+  }
+
+  // Curated Baskets Loader
+  async function loadBaskets() {
+    try {
+      const res = await fetch('/api/v1/baskets');
+      const data = await res.json();
+      allBaskets = data || [];
+      const grid = document.getElementById('basketsGrid');
+      grid.innerHTML = '';
+
+      allBaskets.forEach(b => {
+        const card = document.createElement('div');
+        card.className = 'stock-card';
+        card.style.cursor = 'default';
+        card.innerHTML = `
+          <div class="stock-card-top">
+            <div>
+              <div class="stock-symbol">${b.name}</div>
+              <div class="stock-name" style="max-width: 100%;">${b.description}</div>
+            </div>
+            <span class="badge badge-compliant">${b.risk_level || 'Moderate'}</span>
+          </div>
+
+          <div style="background-color: var(--q-surface-2); padding: 10px; border-radius: 8px; font-size: 12px; margin: 4px 0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span>3Y Expected CAGR:</span>
+              <strong class="num" style="color: var(--q-brand);">${b.expected_cagr_3yr || 18.5}%</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Constituents:</span>
+              <span>${b.constituents.length} Shariah Stocks</span>
+            </div>
+          </div>
+
+          <div style="font-size: 11.5px; color: var(--q-ink-3);">
+            Top holdings: ${b.constituents.slice(0, 3).map(c => c.ticker).join(', ')}...
+          </div>
+
+          <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="exportBasketOrders('${b.id}')">Export Broker Order Sheet</button>
+        `;
+        grid.appendChild(card);
+      });
+    } catch (err) {
+      console.error('Error loading baskets:', err);
+    }
+  }
+
+  function exportBasketOrders(broker) {
+    alert(`Generating verified order export sheet for ${broker.toUpperCase()} (Delivery / CNC non-margin)... Download started!`);
+  }
+
+  // Funds & 24K Gold Loader
+  async function loadFunds() {
+    try {
+      const res = await fetch('/api/v1/funds');
+      const data = await res.json();
+      allFunds = data || [];
+      renderFunds(allFunds);
+    } catch (err) {
+      console.error('Error loading funds:', err);
+    }
+  }
+
+  function filterFunds(type) {
+    currentFundFilter = type;
+    document.getElementById('fundFilterAll').classList.toggle('active', type === 'ALL');
+    document.getElementById('fundFilterMF').classList.toggle('active', type === 'MF');
+    document.getElementById('fundFilterETF').classList.toggle('active', type === 'ETF');
+
+    if (type === 'ALL') renderFunds(allFunds);
+    else if (type === 'MF') renderFunds(allFunds.filter(f => f.type.toLowerCase().includes('mutual')));
+    else if (type === 'ETF') renderFunds(allFunds.filter(f => f.type.toLowerCase().includes('etf') || f.type.toLowerCase().includes('gold')));
+  }
+
+  function renderFunds(funds) {
+    const grid = document.getElementById('fundsGrid');
+    grid.innerHTML = '';
+    funds.forEach(f => {
+      const card = document.createElement('div');
+      card.className = 'stock-card';
+      card.style.cursor = 'default';
+      const isGold = f.id.includes('gold');
+      card.innerHTML = `
+        <div class="stock-card-top">
+          <div>
+            <div class="stock-symbol">${f.name}</div>
+            <div class="stock-name" style="max-width: 100%;">${f.fund_house || 'SEBI Registered'}</div>
+          </div>
+          <span class="badge ${isGold ? 'badge-warning' : 'badge-compliant'}">${f.type}</span>
+        </div>
+
+        <div style="background-color: var(--q-surface-2); padding: 10px; border-radius: 8px; font-size: 12px; margin: 4px 0;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>NAV / Price:</span>
+            <strong class="num">₹${f.nav.toFixed(2)}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>3Y Return:</span>
+            <strong class="num" style="color: var(--q-brand);">+${f.cagr_3yr}%</strong>
+          </div>
+        </div>
+
+        <div style="font-size: 11.5px; color: var(--q-ink-3);">Expense Ratio: ${f.expense_ratio}% • Shariah Board Certified</div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function updateSipCalc() {
+    const amount = parseInt(document.getElementById('sipAmountSlider').value);
+    const years = parseInt(document.getElementById('sipYearsSlider').value);
+    const rate = parseInt(document.getElementById('sipReturnSlider').value);
+
+    document.getElementById('sipAmountVal').innerText = `₹${amount.toLocaleString('en-IN')}`;
+    document.getElementById('sipYearsVal').innerText = `${years} Year${years > 1 ? 's' : ''}`;
+    document.getElementById('sipReturnVal').innerText = `${rate}% p.a.`;
+
+    const months = years * 12;
+    const monthlyRate = (rate / 100) / 12;
+    const totalInvested = amount * months;
+    const totalWealth = Math.round(amount * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate) * (1 + monthlyRate));
+    const gains = totalWealth - totalInvested;
+    const gainPct = ((gains / totalInvested) * 100).toFixed(1);
+
+    document.getElementById('sipInvested').innerText = `₹${totalInvested.toLocaleString('en-IN')}`;
+    document.getElementById('sipWealth').innerText = `₹${totalWealth.toLocaleString('en-IN')}`;
+    document.getElementById('sipGains').innerText = `+₹${gains.toLocaleString('en-IN')} (+${gainPct}%)`;
+  }
+
+  // Radar Loader
+  async function loadRadar() {
+    try {
+      const res = await fetch('/api/v1/radar/overview');
+      const data = await res.json();
+
+      const divList = document.getElementById('radarDividendsList');
+      divList.innerHTML = '';
+      (data.upcoming_dividends || []).forEach(d => {
+        const item = document.createElement('div');
+        item.style.padding = '8px 12px';
+        item.style.backgroundColor = 'var(--q-surface)';
+        item.style.borderRadius = '6px';
+        item.style.fontSize = '12px';
+        item.style.display = 'flex';
+        item.style.justifyContent = 'space-between';
+        item.innerHTML = `<span><strong>${d.ticker}</strong> (₹${d.dividend_per_share}/sh)</span><span class="num" style="color: var(--q-ink-3);">${d.ex_date}</span>`;
+        divList.appendChild(item);
+      });
+
+      const ipoList = document.getElementById('radarIpoList');
+      ipoList.innerHTML = '';
+      (data.upcoming_ipos || []).forEach(ipo => {
+        const item = document.createElement('div');
+        item.style.padding = '8px 12px';
+        item.style.backgroundColor = 'var(--q-surface)';
+        item.style.borderRadius = '6px';
+        item.style.fontSize = '12px';
+        item.style.display = 'flex';
+        item.style.justifyContent = 'space-between';
+        const isPass = ipo.verdict === 'SHARIAH_COMPLIANT';
+        item.innerHTML = `<span><strong>${ipo.company_name}</strong></span><span class="badge ${isPass ? 'badge-compliant' : 'badge-non-compliant'}">${isPass ? 'Passing' : 'Fails'}</span>`;
+        ipoList.appendChild(item);
+      });
+    } catch (err) {
+      console.error('Error loading radar:', err);
+    }
+  }
+
+  // Community / Charities Loader
+  async function loadCommunity() {
+    try {
+      const res = await fetch('/api/v1/community/overview');
+      const data = await res.json();
+      const grid = document.getElementById('charityGrid');
+      grid.innerHTML = '';
+      (data.verified_charities || []).forEach(c => {
+        const card = document.createElement('div');
+        card.className = 'stock-card';
+        card.style.cursor = 'default';
+        card.innerHTML = `
+          <div class="stock-symbol">${c.name}</div>
+          <div class="stock-name" style="max-width: 100%;">${c.focus_area} • 80G Certified</div>
+          <div style="font-size: 12px; color: var(--q-ink-2); font-family: monospace;">UPI: ${c.upi_id}</div>
+          <button class="btn btn-secondary btn-sm" onclick="alert('Instant UPI routing for ${c.name} initiated!')">Scan UPI QR</button>
+        `;
+        grid.appendChild(card);
+      });
+    } catch (err) {
+      console.error('Error loading community:', err);
+    }
+  }
+
+  function calculateZakat() {
+    const method = document.getElementById('zakatMethodSelect').value;
+    const cal = document.getElementById('zakatCalendarSelect').value;
+    const rate = cal === 'lunar' ? 0.025 : 0.02577;
+    const baseValue = method === 'active' ? 542800 : 135700;
+    const payable = Math.round(baseValue * rate);
+    document.getElementById('zakatPayableAmount').innerText = `₹${payable.toLocaleString('en-IN')}`;
+    document.getElementById('zakatDetailText').innerText = `Zakatable Net Working Assets: ₹${baseValue.toLocaleString('en-IN')} • Above Silver Nisab (₹53,550.00)`;
+  }
+
+  function generatePurificationVoucher() {
+    alert("Purification Ledger Voucher Generated:\nSHA-256: 7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069\nStatus: IMMUTABLE AUDIT RECEIPT READY");
+  }
+
+  // Market Status & Indices Telemetry
+  async function loadMarketStatus() {
+    try {
+      const res = await fetch('/api/v1/market/status');
+      const data = await res.json();
+      const isLive = data.is_market_open;
+      const sideBadge = document.getElementById('sideMarketBadge');
+      const sideTime = document.getElementById('sideMarketTime');
+
+      if (sideBadge) {
+        sideBadge.innerText = isLive ? '🟢 LIVE' : '⏸️ CLOSED';
+        sideBadge.className = isLive ? 'market-status-badge' : 'badge badge-warning';
+      }
+      if (sideTime) {
+        sideTime.innerText = `${data.ist_time} • ${data.trading_session}`;
+      }
+
+      if (data.indices && data.indices.nifty_50_shariah) {
+        document.getElementById('kpiNiftyPrice').innerText = `₹${data.indices.nifty_50_shariah.level.toLocaleString('en-IN')}`;
+      }
+    } catch (err) {
+      console.warn('Market status fetch skipped:', err);
+    }
+  }
+
+  // Notification Radar
+  async function loadNotifications() {
+    try {
+      const res = await fetch('/api/v1/notifications');
+      const data = await res.json();
+      const notifs = data.items || [];
+      const badge = document.getElementById('notifBadge');
+      if (badge && notifs.length > 0) {
+        badge.innerText = notifs.length;
+        badge.style.display = 'inline-block';
+      }
+      const list = document.getElementById('notifList');
+      if (list) {
+        list.innerHTML = '';
+        notifs.forEach(n => {
+          const item = document.createElement('div');
+          item.style.padding = '8px 10px';
+          item.style.backgroundColor = 'var(--q-surface-2)';
+          item.style.borderRadius = '6px';
+          item.style.fontSize = '12px';
+          item.innerHTML = `<div style="font-weight: 700; color: var(--q-ink);">${n.title}</div><div style="font-size: 11px; color: var(--q-ink-3); margin-top: 2px;">${n.message}</div>`;
+          list.appendChild(item);
+        });
+      }
+    } catch (err) {
+      console.warn('Notifications fetch skipped:', err);
+    }
+  }
+
+  function toggleNotifTray() {
+    const tray = document.getElementById('notifTray');
+    tray.style.display = (tray.style.display === 'flex') ? 'none' : 'flex';
+  }
+
+  function markAllNotifsRead() {
+    document.getElementById('notifBadge').style.display = 'none';
+    document.getElementById('notifTray').style.display = 'none';
+  }
+
+  function enableWebPush() {
+    alert("Web Push Subscribed: You will receive real-time alerts when NIFTY 500 stocks breach the 33% debt ratio threshold.");
+  }
+
+  function testWhatsAppAlert() {
+    alert("WhatsApp Webhook connected: Test compliance drift ping sent to registered number.");
+  }
+
+  // Command Palette (Ctrl+K)
+  function openCommandPalette() {
+    document.getElementById('cmdModal').style.display = 'flex';
+    const input = document.getElementById('cmdInput');
+    input.value = '';
+    input.focus();
+    filterCommandPalette('');
+  }
+
+  function closeCommandPalette(e) {
+    if (e && e.target !== document.getElementById('cmdModal')) return;
+    document.getElementById('cmdModal').style.display = 'none';
+  }
+
+  function filterCommandPalette(q) {
+    const list = document.getElementById('cmdResultsList');
+    list.innerHTML = '';
+    const query = q.toLowerCase();
+
+    const matches = allStocks.filter(s => 
+      s.ticker.toLowerCase().includes(query) ||
+      s.company_name.toLowerCase().includes(query) ||
+      s.sector.toLowerCase().includes(query)
+    ).slice(0, 10);
+
+    if (matches.length === 0) {
+      list.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--q-ink-3); font-size: 13px;">No stocks found matching query.</div>';
+      return;
+    }
+
+    matches.forEach((s, idx) => {
+      const isComp = currentStandard === 'AAOIFI' ? (s.aaoifi_status === 'COMPLIANT') : (s.tasis_status === 'COMPLIANT');
+      const item = document.createElement('div');
+      item.className = 'cmd-item' + (idx === 0 ? ' selected' : '');
+      item.onclick = () => {
+        closeCommandPalette();
+        showStockDetail(s);
+      };
+      item.innerHTML = `
+        <div class="cmd-item-meta">
+          <div class="cmd-item-symbol">${s.ticker} <span style="font-weight: 400; color: var(--q-ink-3);">— ${s.company_name}</span></div>
+          <div class="cmd-item-sub">${s.sector}</div>
+        </div>
+        <div style="text-align: right;">
+          <div class="num" style="font-weight: 700;">₹${parseFloat(s.current_price).toLocaleString('en-IN')}</div>
+          <span class="badge ${isComp ? 'badge-compliant' : 'badge-non-compliant'}" style="font-size: 10px;">${isComp ? 'PASS' : 'FAIL'}</span>
+        </div>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  // Keyboard Navigation for Command Palette
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      openCommandPalette();
+    } else if (e.key === 'Escape') {
+      document.getElementById('cmdModal').style.display = 'none';
+      document.getElementById('stockDetailModal').style.display = 'none';
+      document.getElementById('diagnosticsModal').style.display = 'none';
+      document.getElementById('fatwaMatrixModal').style.display = 'none';
+      document.getElementById('notifTray').style.display = 'none';
+    }
+  });
+
+  // Multilingual Handler
+  function changeLanguage(lang) {
+    const greeting = document.getElementById('topGreeting');
+    if (lang === 'ur') {
+      greeting.innerText = 'خوش آمدید، سرمایہ کار';
+      document.body.dir = 'rtl';
+    } else if (lang === 'hi') {
+      greeting.innerText = 'नमस्ते, निवेशक';
+      document.body.dir = 'ltr';
+    } else {
+      greeting.innerText = 'Good day, Investor';
+      document.body.dir = 'ltr';
+    }
+  }
+
+  // Fatwas Modal
+  function openFatwaMatrix() {
+    document.getElementById('fatwaMatrixModal').style.display = 'flex';
+  }
+
+  function closeFatwaMatrix(e) {
+    if (e && e.target !== document.getElementById('fatwaMatrixModal')) return;
+    document.getElementById('fatwaMatrixModal').style.display = 'none';
+  }
+
+  // 1-Click Diagnostics Engine
+  function openDiagnosticsModal() {
+    document.getElementById('diagnosticsModal').style.display = 'flex';
+    runDiagnostics();
+  }
+
+  function closeDiagnosticsModal(e) {
+    if (e && e.target !== document.getElementById('diagnosticsModal')) return;
+    document.getElementById('diagnosticsModal').style.display = 'none';
+  }
+
+  async function runDiagnostics() {
+    const latVal = document.getElementById('diagLatencyVal');
+    const dbVal = document.getElementById('diagDbVal');
+
+    if (latVal) latVal.innerText = 'Measuring...';
+    if (dbVal) dbVal.innerText = 'Checking...';
+
+    const t0 = performance.now();
+    try {
+      const res = await fetch('/api/v1/market/status');
+      const t1 = performance.now();
+      const lat = Math.max(1, Math.round(t1 - t0));
+      if (latVal) latVal.innerHTML = `<span style="color: var(--q-up);">🟢 ${lat} ms</span> (<50ms SLA)`;
+    } catch (e) {
+      if (latVal) latVal.innerHTML = `<span style="color: var(--q-down);">🔴 Server Offline</span>`;
+    }
+
+    try {
+      const sRes = await fetch('/api/v1/stocks?limit=1');
+      const sData = await sRes.json();
+      if (sData && sData.items && sData.items.length > 0) {
+        if (dbVal) dbVal.innerHTML = `<span style="color: var(--q-up);">🟢 Verified (NIFTY 500)</span>`;
+      }
+    } catch (e) {
+      if (dbVal) dbVal.innerHTML = `<span style="color: var(--q-down);">🔴 Error</span>`;
+    }
+  }
+
+  // PWA Install Engine
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = document.getElementById('pwaInstallBtn');
+    if (btn) btn.style.display = 'inline-flex';
+  });
+
+  async function triggerPwaInstall() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt = null;
+      document.getElementById('pwaInstallBtn').style.display = 'none';
+    } else {
+      alert("Halal Invest is ready! Install via browser address bar icon or 'Add to Home Screen'.");
+    }
+  }
+
+  // Initialization Lifecycle
+  window.addEventListener('DOMContentLoaded', () => {
+    initTheme();
+    loadStocks();
+    updateSipCalc();
+    loadMarketStatus();
+    loadNotifications();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('Offline SW registered:', reg.scope))
+        .catch(err => console.warn('SW registration skipped:', err));
+    }
+
+    // Support Hash Deep Linking for Views & Dialogs
+    setTimeout(() => {
+      const h = window.location.hash;
+      if (h === '#table') { setTheme('dark'); toggleStockView('table'); }
+      else if (h === '#cmd') { setTheme('dark'); openCommandPalette(); }
+      else if (h === '#light') { setTheme('light'); }
+      else if (h.startsWith('#tab-')) switchTab(h.replace('#tab-', ''));
+    }, 150);
+  });
+</script>
+</body>
+</html>

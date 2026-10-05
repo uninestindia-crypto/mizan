@@ -19,6 +19,7 @@ const PaperNew = lazy(() => import("./pages/PaperNew"));
 const PaperBook = lazy(() => import("./pages/PaperBook"));
 const Tools = lazy(() => import("./pages/Tools"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Shariah = lazy(() => import("./pages/Shariah"));
 
 function PageFallback() {
   return (
@@ -81,6 +82,7 @@ export function App() {
           <Route path="/tools/:tool" element={<Tools />} />
           <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
           <Route path="/settings/:section" element={<Settings />} />
+          <Route path="/shariah" element={<Shariah />} />
           <Route
             path="*"
             element={

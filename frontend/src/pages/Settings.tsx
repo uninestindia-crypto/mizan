@@ -140,6 +140,25 @@ function Profile() {
         />
       </Card>
       <Card>
+        <CardHeader
+          title="Mizan Shariah Compliance Mode"
+          subtitle="Enable AAOIFI & TASIS Shariah compliance screening, thematic Halal baskets, dividend purification, and equity zakat engine."
+        />
+        <div className="flex items-center justify-between p-1">
+          <div>
+            <div className="text-[14px] font-medium text-ink">Shariah Compliant Wealth System</div>
+            <div className="text-[12.5px] text-ink-3">
+              Filters stock universes, displays compliance badges, and enables the Mizan Shariah workspace.
+            </div>
+          </div>
+          <Switch
+            label="Shariah Mode"
+            checked={Boolean(settings.shariah_mode)}
+            onChange={(checked: boolean) => update.mutate({ shariah_mode: checked })}
+          />
+        </div>
+      </Card>
+      <Card>
         <CardHeader title="Money rules" subtitle="Used for position sizing and as the default capital in the Strategy Lab." />
         <div className="grid gap-5 sm:grid-cols-3">
           <Field label="Capital" htmlFor="st-cap" hint={`At least ${inr(MONEY_LIMITS.capitalMin, 0)}`} error={problems.capital}>

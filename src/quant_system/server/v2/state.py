@@ -88,6 +88,7 @@ class Settings(BaseModel):
     onboarding_complete: bool = False
     auto_update_paper_books: bool = True
     disclaimer_accepted_at: str | None = None
+    shariah_mode: bool = False
 
 
 class Holding(BaseModel):

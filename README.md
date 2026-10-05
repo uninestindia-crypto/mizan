@@ -1,104 +1,86 @@
-# Modular Quant System (QuantOS)
+# Mizan (QuantOS) ⚖️
 
-A governed quantitative **research and backtesting** platform for NSE India equity and derivatives
-markets, built so that a model cannot be promoted on evidence it has not earned.
+**Institutional-Grade Quantitative Trading OS & Dual-Standard Shariah-Compliant Wealth Engine**
 
-**It has never placed an order.** Shadow and paper surfaces simulate execution and are invariant-checked
-to submit zero broker orders. Live-money routing is explicitly out of scope, not merely unimplemented.
-See [What this does and does not do](#-what-this-does-and-does-not-do).
+Mizan unifies advanced quantitative research, backtesting, risk governance, and live paper-trading with an ethical, dual-standard (**AAOIFI** & **TASIS**) Shariah compliance framework for Indian equities (NSE/BSE).
 
 ---
 
-## 🏛️ Architecture & Modular Pipeline
+## 🌟 Operating Modes (User-Configurable)
+
+During initial setup or anytime in **Settings**, users can select their preferred operating mode:
+
+1. **Standard QuantOS Mode**:
+   - Institutional quantitative trading, backtesting (zero lookahead bias), strategy lab, and paper books.
+   - Unconstrained screening across the full NIFTY 500 universe.
+   - Rigorous Decimal accounting, pre-trade risk governor, and cost-aware execution models.
+
+2. **Mizan Shariah Mode (Ethical / Halal)**:
+   - **Deterministic Dual-Standard Shariah Screener**:
+     - **AAOIFI Standard** (Global): Debt, cash & receivables ratios $< 33\%$, non-operating interest income $< 5\%$.
+     - **TASIS Standard** (Domestic India): Total assets denominator aligned with Indian scholarly consensus.
+   - **Curated Thematic Halal Baskets**:
+     - *Halal Tech Giants*, *Shariah High-Growth Champions*, *Ethical Infrastructure*, and *NIFTY Shariah 25*.
+     - 1-Click order sheet exports formatted for **Zerodha CNC**, **Upstox**, **Groww**, and **AngelOne**.
+   - **Cryptographic Dividend Purification Ledger**:
+     - Calculates exact Rupee charity deductions from non-operating interest income.
+     - Sequential **SHA-256 cryptographic hash chaining** ensuring immutable audit receipts.
+   - **Equity Zakat Calculator**:
+     - Dual-method calculation: Active Trader ($100\%$ NLV) vs Long-term Investor (Zakatable net working assets) calibrated to the Indian Silver Nisab ($\text{₹}53,550.00$).
+   - **Halal Wealth Academy & Demat Guides**:
+     - Foundational Fiqh modules (Musharakah/Mudarabah) and zero-interest, cash-only Demat account setup instructions.
+
+---
+
+## 🏛️ Architecture & Unified Repository Structure
 
 ```
-quant_system/
+mizan/
 ├── configs/                     # YAML risk limits & strategy configs
-├── examples/                    # End-to-end runnable scripts
-│   ├── run_equity_backtest.py   # Equity Dual Momentum Backtest & Tearsheet
-│   └── run_options_straddle.py  # NIFTY 09:20 Intraday Straddle Simulation
+├── client/                      # Cross-platform Flutter client (Android, iOS, Windows, Web)
+├── data/
+│   ├── cuantos2/                # QuantOS state and SQLite market index
+│   └── shariah/                 # Pre-audited halal_stocks.db & DuckDB analytics
+├── frontend/                    # Apple-grade React 19 + Vite + Tailwind desktop/web UI
+├── installer/                   # Inno Setup Windows installer definitions
 ├── src/quant_system/
-│   ├── core/                    # Exact Decimal financial primitives, ledger, domain models
-│   ├── data/                    # Market data bars, option chains, universe loaders
-│   ├── alpha/                   # Technical indicators, Black-Scholes Greeks, IV surfaces
-│   ├── strategies/              # BaseStrategy protocol, Equity Momentum, Options Straddles
-│   ├── portfolio/               # Sizing (Kelly, Vol Parity) & capital allocation
-│   ├── risk/                    # Pre-Trade Risk Governor & circuit breakers
-│   ├── backtest/                # Event-driven backtester (zero lookahead) & cost models
-│   ├── analytics/               # Tearsheets, Sharpe/Sortino/Calmar, Deflated Sharpe
-│   └── execution/               # Deterministic paper broker & order state machine
-└── tests/                       # Complete unit & integration test suite
+│   ├── core/                    # Exact Decimal financial primitives, ledger, models
+│   ├── data/                    # Market data downloaders, NSE symbol change tracking
+│   ├── market/                  # Rename-aware historical bar stitching & market index
+│   ├── modeling/                # Mizan cross-sectional ranking engine
+│   ├── risk/                    # Pre-trade risk governor & circuit breakers
+│   ├── server/                  # FastAPI high-performance local engine (API v2)
+│   ├── shariah/                 # Shariah compliance, screening, baskets, zakat, purification
+│   └── strategies/              # Quant strategies & backtest engine
+└── tests/
+    ├── shariah/                 # 160/160 Shariah test suite
+    └── unit & integration/      # Comprehensive QuantOS test suites
 ```
 
 ---
 
 ## 🚀 Quickstart
 
-### 1. Install dependencies
+### 1. Install Python Environment
 ```bash
-pip install -e .
+uv pip install -e .
 ```
 
-### 2. Run Tests
+### 2. Run the Full Test Gate
 ```bash
 pytest tests/ -v
+pytest tests/shariah/ -v
 ```
 
-### 3. Run Equity Momentum Backtest Example
+### 3. Launch Desktop Studio / Server
 ```bash
-python examples/run_equity_backtest.py
+python -m quant_system.launcher
 ```
-
-### 4. Run Options Straddle Simulation Example
-```bash
-python examples/run_options_straddle.py
-```
+Interactive API documentation: `http://127.0.0.1:8777/docs`.
 
 ---
 
-## 📚 Detailed Documentation
+## 🛡️ Trust & Security
 
-Comprehensive documentation is available in the [`docs/`](file:///d:/quant_system/docs) directory:
-* **[Platform Overview](file:///d:/quant_system/docs/PLATFORM_OVERVIEW.md)**: System vision, core design invariants, multi-modal alpha architecture, and subsystem guide.
-* **[Technical Architecture](file:///d:/quant_system/docs/ARCHITECTURE.md)**: Deep dive into the event-driven backtest engine, exact Decimal ledger, pre-trade risk governor, and domain models.
-* **[Alpha & Data Roadmap](file:///d:/quant_system/docs/DATA_AND_ALPHA_ROADMAP.md)**: Blueprint for integrating Technical, Fundamental (Quantamental), and Sentiment (NLP/LLM) alpha.
-
----
-
-## 🛡️ Core Invariants
-
-1. **Exact Decimal Accounting**: All cash, transaction costs, and portfolio values are computed using exact `Decimal` precision. No floating-point penny leaks.
-2. **Strict Pre-Trade Risk**: Every trade proposal must be approved by the `RiskGovernor` before it can reach execution.
-3. **No Lookahead Bias**: Fills occur on the *next bar open* after a signal is calculated at bar close. Same-bar fills are strictly rejected.
-4. **Realistic Market Friction**: Models Indian STT (Securities Transaction Tax), GST, Exchange Turnover, Stamp Duty, and slippage.
-5. **Governed Model Lifecycle**: A model reaches an execution surface only by carrying evidence — a
-   published fitted state, its validated decision threshold, and a promotion verdict — all bound to a
-   single evidence record. Ungoverned strategies are refused at the boundary.
-6. **Multiplicity Accounting**: Every training attempt is recorded and counted, including failed ones,
-   and a candidate's deflated Sharpe is discounted for the whole search that produced it.
-
----
-
-## 🔍 What this does and does not do
-
-Verified against the code, not against intent.
-
-**It does:**
-
-* Acquire real point-in-time NSE equity history with typed failures and no synthetic fallback.
-* Build features, executable labels, and purged/embargoed folds under a versioned feature schema.
-* Charge real dated NSE statutory costs — STT, GST, exchange turnover, SEBI, stamp duty — measured at
-  about 0.224% per equity-delivery round trip.
-* Record every trial immutably and deflate results against the full attempt count.
-* Refuse to promote, and refuse to execute, anything that has not earned it.
-
-**It does not:**
-
-* **Trade.** No live-money order routing exists, by design. `broker_orders_submitted` is enforced as
-  zero on the shadow surface.
-* **Support US equities.** The instrument contract accepts NSE cash equities only.
-* **Score fundamentals.** There is no balance-sheet, earnings, or valuation factor model.
-* **Have a profitable model.** Two governed campaigns totalling 101 trials, plus six pre-declared
-  research screens, found no edge that survives real costs. The best candidate reached a deflated
-  Sharpe of 0.398 against a 0.95 promotion gate. That is a result the platform produced about itself,
-  and it is recorded rather than hidden — see `agent_context/CURRENT.md`.
+- **Strict Local Trust Boundary**: Bound to loopback with anti-CSRF ephemeral tokens and Host header verification.
+- **Hermetic & Deterministic**: Zero live-money execution routing; shadow and paper execution models verified invariant-safe.

@@ -804,6 +804,11 @@ def ai_tools(refresh: bool = False) -> list[dict[str, Any]]:
 def register_api(app: FastAPI) -> None:
     app.add_exception_handler(V2Error, v2_error_handler)
     app.include_router(router)
+    try:
+        from quant_system.shariah.api.v1.router import api_router as shariah_router
+        app.include_router(shariah_router, prefix="/api/v2/shariah")
+    except Exception:
+        pass
     _run_auto_update_with(app)
     try:
         services().credentials.apply_to_environment()

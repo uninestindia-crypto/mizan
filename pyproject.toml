@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "quant-system"
+name = "mizan"
 version = "2.2.0"
-description = "Institutional-grade, modular quantitative trading, backtesting, and risk management system"
+description = "Mizan: Institutional Quantitative Trading OS & Dual-Standard Shariah-Compliant Wealth Engine"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -16,6 +16,8 @@ dependencies = [
     "uvicorn>=0.29.0",
     "pydantic>=2.6.0",
     "python-multipart>=0.0.9",
+    "aiosqlite>=0.20.0",
+    "duckdb>=1.1.0",
     # Native window for the desktop app (Windows WebView2). Optional at runtime: quantos_studio.py
     # falls back to an Edge/Chrome app window when it cannot be imported.
     "pywebview>=5.4; sys_platform == 'win32'",
@@ -25,6 +27,7 @@ dependencies = [
 dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.24.0",
     "ruff>=0.4.0",
     "mypy>=1.9.0",
     "types-PyYAML>=6.0.12.20240314",

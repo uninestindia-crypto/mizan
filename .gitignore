@@ -27,6 +27,8 @@ data/quantos2/
 *.sqlite3
 *.db
 !data/evidence/**/*.log
+!data/shariah/*.db
+!data/shariah/*.duckdb
 
 # Credentials and machine-local configuration
 .env

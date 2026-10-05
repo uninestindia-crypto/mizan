@@ -10,6 +10,7 @@ import {
   Moon,
   Search,
   Settings as SettingsIcon,
+  ShieldCheck,
   Sun,
 } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
@@ -134,7 +135,14 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
         </button>
       </div>
       <nav aria-label="Main" className="flex-1 space-y-0.5 px-3 py-2">
-        {NAV.map(({ to, label, icon: Icon, end }) => (
+        {(status.data?.settings?.shariah_mode
+          ? [
+              ...NAV.slice(0, 2),
+              { to: "/shariah", label: "Mizan Shariah", icon: ShieldCheck },
+              ...NAV.slice(2),
+            ]
+          : NAV
+        ).map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
@@ -190,6 +198,16 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
 }
 
 function MobileBar({ onSearch }: { onSearch: () => void }) {
+  const status = useStatus();
+  const navItems = status.data?.settings?.shariah_mode
+    ? [
+        ...NAV.slice(0, 2),
+        { to: "/shariah", label: "Mizan Shariah", icon: ShieldCheck },
+        ...NAV.slice(2),
+        { to: "/settings", label: "Settings", icon: SettingsIcon, end: false },
+      ]
+    : [...NAV, { to: "/settings", label: "Settings", icon: SettingsIcon, end: false }];
+
   return (
     <div className="border-b border-line bg-surface md:hidden">
       <div className="flex h-14 items-center justify-between px-4">
@@ -202,7 +220,7 @@ function MobileBar({ onSearch }: { onSearch: () => void }) {
         </button>
       </div>
       <nav aria-label="Main" className="flex gap-1 overflow-x-auto px-3 pb-2">
-        {[...NAV, { to: "/settings", label: "Settings", icon: SettingsIcon, end: false }].map(({ to, label, icon: Icon, end }) => (
+        {navItems.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
