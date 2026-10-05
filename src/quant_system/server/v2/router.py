@@ -40,7 +40,7 @@ from quant_system.market.downloader import MarketDownload, baseline_exists
 from quant_system.market.index import BENCHMARK_SYMBOL
 from quant_system.market.sources import discover_caches, store_fingerprint
 from quant_system.server.security import format_error_response
-from quant_system.server.v2 import paths
+from quant_system.server.v2 import health, paths
 from quant_system.server.v2.aitools import detect_cli_tools
 from quant_system.server.v2.auto_update import AutoUpdater
 from quant_system.server.v2.cli_bridge import (
@@ -231,6 +231,47 @@ def _today() -> date:
 
 
 # ----------------------------------------------------------------------------- status
+
+
+@router.get("/health/live")
+def health_live() -> dict[str, Any]:
+    """Liveness: the process is up. Takes no lock and reads nothing."""
+    return health.liveness()
+
+
+@router.get("/health/ready")
+def health_ready() -> JSONResponse:
+    """Readiness: what works and what does not. 503 only if the app's own state cannot be read."""
+    svc = services()
+    today = datetime.now(UTC).astimezone().date()
+    checks: list[health.Check] = []
+    try:
+        svc.state.settings()
+        checks.append(
+            health.Check("state_store", "ok", "The app's settings and paper books can be read.")
+        )
+    except Exception as err:  # any failure to read local state means this app cannot serve
+        checks.append(
+            health.Check("state_store", "fail", f"The app's state store cannot be read: {err}")
+        )
+    latest: str | None = None
+    folder: Path | None = None
+    if svc.index.is_ready():
+        meta = svc.index.meta()
+        latest = meta.get("latest_session") or None
+        folder = Path(meta["data_folder"]) if meta.get("data_folder") else None
+        checks.append(
+            health.Check("market_index", "ok", f"Indexed {meta.get('symbols', '?')} symbols.")
+        )
+    else:
+        checks.append(
+            health.Check("market_index", "degraded", "The market index is not built yet.")
+        )
+    checks.append(health.market_data_check(latest, today))
+    checks.append(health.holiday_calendar_check(folder, today))
+    overall = health.rollup(checks)
+    body = {**health.liveness(), "status": overall, "checks": [c.as_dict() for c in checks]}
+    return JSONResponse(body, status_code=503 if overall == "fail" else 200)
 
 
 @router.get("/status")
