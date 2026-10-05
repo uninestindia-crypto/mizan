@@ -9,13 +9,40 @@ Work record: `agent_context/work/active/20261005-claude-live-paper-readiness-aud
 
 | What was asked | Verdict | One-line reason |
 |---|---|---|
-| Automatic paper trading on the **live** market (intraday quotes), no human in the loop | **NOT READY** | Never exercised end to end here (no broker token; NSE unreachable from this container). The code path exists and fails closed, but it has had **no independent PASS** since seven Red Team rounds, the last of which was run by the author of the repairs. The live dashboard is broken on this branch. The unattended run depends on a laptop that has slept through the flagship's start at least twice. |
-| **Mode A**: the platform paper-trades, the owner copies the orders into their own account by hand | **READY for daily-close books, with caveats** | Orders are decided at a close and fill at the next open, with exact NSE charges. Before this change there was no safe way to copy them and **no check that they were current**. Both are now in (order ticket, freshness guard). No delivery channel yet: the owner must open the app. |
+| Automatic paper trading on the **live** market (intraday quotes), no human in the loop | **NOT READY** | Never exercised end to end here (no broker token; NSE unreachable from this container). The code path exists and fails closed, but it has had **no independent PASS** since seven Red Team rounds, the last of which was run by the author of the repairs. The live dashboard was broken inside the app (repaired in the follow-up below). The unattended run depends on a laptop that has slept through the flagship's start at least twice. |
+| **Mode A**: the platform paper-trades, the owner copies the orders into their own account by hand | **READY for daily-close books, with caveats** | Orders are decided at a close and fill at the next open, with exact NSE charges. Before this work there was no safe way to copy them and **no check that they were current**. Now: freshness guard, order ticket, an "Orders to place" inbox with a sidebar count, a record of what you placed or skipped, and a comparison of your prices with the paper fills. No email or push yet: the owner must open the app. |
 | **Mode B**: the owner grants direct broker access and the platform places the orders | **NOT BUILT, and not authorised** | This is T4 money-movement work. `.launch/CHARTER.md` and `AGENTS.md` exclude it "unless the user separately authorizes T4". Your message describes it as an option; it is not a T4 authorisation. I assessed it and did not build it. |
 | Apple-grade consumer UI/UX | **Measurably much closer, not certifiable** | Design system, dark mode, speed and keyboard/screen-reader basics are good. I found and fixed a layout bug on phones, contrast failures, undersized touch targets, a 404 and misleading labels. "Apple-made" is a taste judgement I cannot certify with a test. |
 | Microsoft-grade infrastructure for trading, investing and bank enterprises | **NOT MET, and out of the current charter** | It is a single-user local desktop app. No sign-in, roles, SSO, tenancy, audit export, health or metrics endpoints, or always-on hosting. The charter lists "multi-user accounts, or tenancy" as a non-goal. That is a new charter, not a repair. |
 
 **The most important fact is not technical.** Every model in this repository is `RESEARCH_ONLY`: 101 governed trials and seven screens found no edge that survives real costs (best deflated Sharpe 0.398 against a 0.95 gate; `agent_context/CURRENT.md`). Mode A invites real money to follow a paper book. The platform can now do that **safely and accurately**; it cannot make the strategy worth following. The order ticket says so on any book with under 60 sessions of record.
+
+## Follow-up, same day: what the second pass closed
+
+After the first pass the founder asked for everything open to be completed. The pull request is
+https://github.com/uninestindia-crypto/mizan/pull/1. Status of the open items below, measured:
+
+| # | Was | Now |
+|---|---|---|
+| O1 | Live dashboard refused by the app's CSP | **FIXED.** Script moved to `server/static/live_dashboard.js`, no inline handlers, no Google Fonts, a real no-session state, a ticking IST clock, escaped table cells, Start and Halt report what happened, and inside the app (which cannot start sessions) the controls are replaced by a note. Verified in Chromium: no console errors, no axe violations, both the app and the supervised dashboard. 11 tests. The earlier fix (`b79351813`) is not on the remote, so this re-implements it; see `agent_context/work/active/20261005-NOTICE-live-paper-readiness-edits-under-other-claims.md` |
+| O2 | Round 7 mutants survive; no independent check | **PARTLY CLOSED.** Re-ran all 13 Round 7 survivors against this tree on a scratch mirror: **7 still survived** (6 had been fixed since). Eight new tests run the real `run_paper_session` end to end with a fake feed and the real governor, engine, ledger and portfolio file. **0 of 13 survive now.** This is a mutation re-check by an agent that did not write the code, not a Red Team adjudication: that still needs its own pass on a live-fed session. Harness and result: `round7_mutation_check.py`, `round7_mutation_results.json` |
+| O3 | No live session run | **STILL OPEN.** Needs `UPSTOX_ANALYTICS_TOKEN` on your machine |
+| O4 | Unattended run depends on a laptop | **STILL OPEN.** Infrastructure decision |
+| O5 | Models are `RESEARCH_ONLY` | Standing finding |
+| O6 | No delivery channel, no record of what you did | **MOSTLY CLOSED.** Home "Orders to place" card, sidebar count, a note per order (placed with shares and optional price, or skipped; correctable and clearable), and a tracking card comparing your prices with the paper fills in basis points and rupees. Only prices you typed are compared. **Still missing: email or push at the close.** That needs a delivery service and its credentials, which do not belong in the repository |
+| O7 | NSE holiday list ends 2026-12-31 | **WARNED, NOT FETCHED.** `/api/v2/health/ready` and the scheduled runner both warn 90 days ahead (they warn today: 87 days). NSE is unreachable from this container, so the 2027 list still has to be fetched on your machine |
+| O8 | Log lines say IST on the host's clock | **FIXED.** Real IST on any host; 4 tests, mutation-killed |
+| O9 | `--upstox-token` on the command line | **WARNED.** The flag still works (a scheduled task may pass it) but logs why it should not |
+| O10 | Shariah audit lines say VERIFIED | **FIXED** for the labels (`UNVERIFIED_SAMPLE`, plus a notice). Hardcoded charge rates in the basket tax endpoint remain: a product decision |
+| O11 | Windows-only tests red on Linux | **FIXED.** `tkinter` and `pefile` tests now skip where the dependency is absent. The Linux suite is fully green. The Playwright e2e config remains Windows and Edge only |
+| O12 | Release due | **STILL OPEN.** Windows-only |
+| O13, O14 | Inline link size; synthetic-mode wording | Unchanged |
+| new | No health probes | **ADDED.** `/api/v2/health/live` and `/api/v2/health/ready`: state store, market index, price age and holiday-list expiry, each in words. An empty install is degraded but up; only an unreadable state store returns 503. 15 tests |
+| new | CI failed on a wall-clock test | `test_stress_mixed_concurrency_under_load` failed twice in forward file order on the Windows runner (p95 62.6 ms, 67.5 ms against 50 ms) while passing in reverse order and locally (15 ms). Its warm-up was two sequential requests; it now warms up in the measured shape. The assertion is unchanged |
+
+**Mode B is still not built.** "Complete all" is not a T4 authorisation, and the charter requires one
+by name. What exists is the part that is safe without one: an exact order list, scaled to your account,
+that you place yourself, with a record of how well your copy tracked the paper book.
 
 ## What I ran
 
