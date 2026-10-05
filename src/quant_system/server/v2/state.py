@@ -61,6 +61,12 @@ CREATE TABLE IF NOT EXISTS paper_snapshots(
     recorded_at TEXT NOT NULL,
     PRIMARY KEY(book_id, session)
 );
+CREATE TABLE IF NOT EXISTS orders_notified(
+    book_id TEXT NOT NULL,
+    as_of TEXT NOT NULL,
+    notified_at TEXT NOT NULL,
+    PRIMARY KEY(book_id, as_of)
+);
 CREATE TABLE IF NOT EXISTS paper_placements(
     book_id TEXT NOT NULL,
     as_of TEXT NOT NULL,
@@ -343,6 +349,20 @@ class AppState:
             conn.executemany(
                 "INSERT OR IGNORE INTO paper_snapshots VALUES (?,?,?,?)",
                 [(book_id, d, e, _now()) for d, e in sorted(equity_by_session.items())],
+            )
+
+    def orders_notified(self, book_id: str, as_of: str) -> bool:
+        """Whether the reminder for this book's orders at this close has already been sent."""
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM orders_notified WHERE book_id = ? AND as_of = ?", (book_id, as_of)
+            ).fetchone()
+        return row is not None
+
+    def mark_orders_notified(self, book_id: str, as_of: str) -> None:
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO orders_notified VALUES (?,?,?)", (book_id, as_of, _now())
             )
 
     # ------------------------------------------------------------------ owner's own record

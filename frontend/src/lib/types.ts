@@ -124,6 +124,13 @@ export interface Status {
     job: IndexJob;
   };
   credentials_available: boolean;
+  /** The opt-in reminder when a paper book has orders waiting. Never carries the address itself. */
+  orders_reminder: {
+    enabled: boolean;
+    host: string | null;
+    problem: string | null;
+    last_error: string | null;
+  };
   costs_covered_from: string;
   lab_runs: number;
 }

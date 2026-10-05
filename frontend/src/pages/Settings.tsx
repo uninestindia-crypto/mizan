@@ -240,6 +240,32 @@ function Charges() {
   );
 }
 
+/** Whether a reminder is sent when a book has orders waiting, and how to switch it on. */
+function OrdersReminderLine() {
+  const status = useStatus();
+  const reminder = status.data?.orders_reminder;
+  if (!reminder) return null;
+  return (
+    <div className="mt-4 border-t border-line pt-3 text-[13px] text-ink-3">
+      <div className="font-medium text-ink-2">Orders reminder</div>
+      {reminder.problem ? (
+        <p role="alert" className="mt-1 text-down">{reminder.problem}</p>
+      ) : reminder.enabled ? (
+        <p className="mt-1">
+          On. A short message goes to <strong className="text-ink-2">{reminder.host}</strong> once per book after each close with orders
+          waiting. It carries a count and the book's name, never a stock, a quantity or a price.
+          {reminder.last_error && <span className="text-down"> The last attempt failed: {reminder.last_error}</span>}
+        </p>
+      ) : (
+        <p className="mt-1">
+          Off. To be told when a book has orders to place, set <code>QUANTOS_ORDERS_WEBHOOK_URL</code> to a Slack, Discord or ntfy address
+          (and <code>QUANTOS_ORDERS_WEBHOOK_FORMAT</code> to <code>slack</code>, <code>discord</code>, <code>ntfy</code> or <code>json</code>) and restart QuantOS. The address stays on this computer.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function AutoUpdateCard({ enabled }: { enabled: boolean }) {
   const update = useUpdateSettings();
   const updates = usePaperUpdates();
@@ -253,6 +279,7 @@ function AutoUpdateCard({ enabled }: { enabled: boolean }) {
       />
       <p className="mt-3 text-[13px] text-ink-3">{updates.data?.message ?? "QuantOS fetches a recent window of prices once a day, only while a paper book is running."}</p>
       {update.isError && <p className="mt-2 text-[13px] text-down">{errorMessage(update.error)}</p>}
+      <OrdersReminderLine />
     </Card>
   );
 }

@@ -45,7 +45,7 @@ See the active record, "Commands and outcomes".
 - Nothing was run against a live broker feed; no token was available. Findings O3 and O4 remain.
 - The earlier live-dashboard fix (`b79351813` on `claude/amazing-lamport-e18bd1`) is not on the remote.
   This branch re-implements it; expect conflicts if that branch is ever merged, and prefer this one.
-- Mode A still has no email or push at the close. Mode B is not built (T4, needs its own charter).
+- The orders reminder is an opt-in webhook (`QUANTOS_ORDERS_WEBHOOK_URL`); it was verified against a local server only. Email is not built. Mode B is not built (T4, needs its own charter).
 - The 2027 NSE holiday list is not fetched (NSE is unreachable from the container). Both the app and
   the scheduled runner warn from 90 days out; today it is 87.
 - A release is due (`release_status.py`) and cannot be cut from Linux.

@@ -58,6 +58,7 @@ from quant_system.server.v2.credentials import (
     with_saved_credentials,
 )
 from quant_system.server.v2.jobs import IndexJob
+from quant_system.server.v2.notify import OrdersNotifier
 from quant_system.server.v2.paper_books import PaperBooks
 from quant_system.server.v2.portfolio import paper_books, portfolio_summary
 from quant_system.server.v2.schemas import (
@@ -124,6 +125,7 @@ class Services:
     paper: PaperBooks
     updates: UpdateChecker
     auto: AutoUpdater
+    notifier: OrdersNotifier
 
 
 _services: Services | None = None
@@ -152,13 +154,15 @@ def services() -> Services:
             index = MarketIndex(paths.index_dir())
             job = IndexJob()
             download = MarketDownload(on_done=_connect_downloaded_data)
+            paper = PaperBooks(state)
             _services = Services(
                 state=state,
                 index=index,
                 job=job,
                 credentials=CredentialStore(),
                 download=download,
-                paper=PaperBooks(state),
+                paper=paper,
+                notifier=OrdersNotifier(state, paper, index),
                 updates=UpdateChecker(__version__),
                 auto=AutoUpdater(
                     state=state,
@@ -311,6 +315,7 @@ def status() -> dict[str, Any]:
             "scan": scan["state"],
         },
         "download": _download_snapshot(svc),
+        "orders_reminder": svc.notifier.settings(),
         "index": index_info,
         "credentials_available": svc.credentials.available,
         "costs_covered_from": COSTS_COVERED_FROM.isoformat(),
@@ -912,7 +917,7 @@ def register_api(app: FastAPI) -> None:
 
 
 def _run_auto_update_with(app: FastAPI) -> None:
-    """Start the paper-book updater when the server starts and stop it when the server stops.
+    """Start the paper-book updater and the orders reminder with the server, and stop them with it.
 
     Wraps the app's existing lifespan, so ``server/app.py`` does not change.
     """
@@ -921,10 +926,12 @@ def _run_auto_update_with(app: FastAPI) -> None:
     @asynccontextmanager
     async def lifespan(scope: FastAPI) -> AsyncIterator[Any]:
         services().auto.start()
+        services().notifier.start()
         try:
             async with inner(scope) as state:
                 yield state
         finally:
+            services().notifier.stop()
             services().auto.stop()
 
     app.router.lifespan_context = lifespan
