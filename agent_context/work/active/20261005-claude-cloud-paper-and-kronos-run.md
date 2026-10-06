@@ -150,6 +150,14 @@ possible. This overrides, knowingly, the one-trial-only rule in `reports/kronos_
 | Workflow run on GitHub, [37415038898](https://github.com/uninestindia-crypto/mizan/actions/runs/37415038898), mode `rehearse-state` | PASS | 45 s, every step green; log read, not inferred. `check` 3 of 3 priced at 10:13 IST; real-secret leak guard refused (exit 14, nothing copied, value masked `***`); `cloud-paper-state-rehearsal` created, checked out, written, committed, pushed; real-session step skipped. |
 | Temporary `push` trigger removed from the workflow | DONE, untested | The shipped file differs from the tested one by that trigger and its fallback mode. `workflow_dispatch` can only be exercised once the file is on the default branch. |
 | `git fetch origin main` | FINDING | `main` advanced (PR #3, `v2.4.0`). No file overlap with this branch. Merged into the branch, not rebased (PROTOCOL section 1). |
+| PR #4 merged (`0a22d7c9`) after all five checks green on one re-run | DONE | The failed check was `tests/shariah/test_m3_stress_challenger.py::test_stress_mixed_concurrency_under_load`, a wall-clock p95 assertion (50.40 ms vs 50 ms) on a shared Windows runner; locally p95 is 8-11 ms. Unrelated to the diff. It passed on its one allowed re-run. The 50 ms threshold stays fragile; no patch made (not this PR's code). |
+| `workflow_dispatch` `check` run on `main` | started | Run 37416149667; result not read at the time of writing. |
+| **Trial 11 (Kronos-base, 5 paths): feasibility** | FINDING | No Kaggle credential, `LIGHTNING_API_KEY` set but **empty**, no GPU. No third-party run can be started from this container. |
+| Trial 11 inputs exported (`scripts/kronos_trial11.py export-inputs`) | PASS | 45 names, 529 dates, 23,805 forecasts; round-trips identically; all 23,805 `last_close` values equal trial 10's recorded ones. |
+| Trial 11 runner, scorer wrapper, 42 tests | PASS | 17 mutations of the two scripts all killed. One test caught a real hole in my own once-only guard (a results file under any other name would not have been refused); fixed with a sentinel. ruff, format, `mypy --platform win32` (303 files), craft clean. |
+| Package zip from a clean folder, no repo | PASS | `selfcheck` passes; a tampered generator is refused. Loader rehearsed on synthetic bars: base + 5 paths forecasts on CPU. |
+| Declaration committed **before any forecast** | DONE | `7a33c62c`, 2026-10-06 10:41 IST. |
+| Trial 11 CPU fallback run | **RUNNING** | Started 10:42 IST here, niced, base 5 paths, output in scratch (`kronos-trial/trial11/`). Measured 694.5 s/date on 4 cores = about 102 h. Checkpointed; lost with the container unless copied. A GPU run supersedes it (first complete run is scored). |
 
 ## Files changed
 
