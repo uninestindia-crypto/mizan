@@ -13,6 +13,8 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
+from quant_system.copilot.guard import fence
+
 logger = logging.getLogger(__name__)
 
 MAX_LIST = 20
@@ -65,7 +67,7 @@ class ToolResult:
     def for_prompt(self, limit: int = 6000) -> str:
         """The result as text for the model. Untrusted text is fenced so it reads as data."""
         body = json.dumps(self.data if self.ok else {"error": self.error}, default=str)[:limit]
-        return f"<untrusted_data>{body}</untrusted_data>" if self.untrusted else body
+        return f"<untrusted_data>{fence(body)}</untrusted_data>" if self.untrusted else body
 
 
 def failure(summary: str, message: str) -> ToolResult:
