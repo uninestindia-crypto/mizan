@@ -110,6 +110,19 @@ class CredentialTestRequest(BaseModel):
     credentials: dict[str, str] = Field(default_factory=dict)
 
 
+class EnvFileUpload(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    text: str = Field(max_length=200_000)
+
+
+class CredentialImportRequest(BaseModel):
+    """Dotenv files to read keys from. ``dry_run`` defaults to True so a bare call can only preview."""
+
+    files: list[EnvFileUpload] = Field(min_length=1, max_length=10)
+    dry_run: bool = True
+    names: list[str] | None = Field(default=None, max_length=200)
+
+
 class CliLaunchRequest(BaseModel):
     agent_id: str = Field(min_length=1, max_length=50)
     action: Literal["run", "signin", "install", "custom"] = "run"
