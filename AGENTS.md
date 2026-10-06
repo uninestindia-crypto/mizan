@@ -119,6 +119,14 @@ At completion, move the record from `agent_context/work/active/` to
   (bundling audited SQLite/DuckDB seed data, pre-compiled UI assets, and WebView2/App Mode runner) so
   that non-technical users can install and run the system out-of-the-box on a fresh laptop with zero
   pre-installed Python, Node, or Git, zero black terminal popups, and complete drive isolation.
+- **No-Terminal Law (users run everything from the app)**: Traders and investors are not programmers.
+  Every capability a user needs (setup, keys, market data, AI, live prices, agents, workflows, settings)
+  must be operable from the app's own screens. Never ask a user to open a terminal, type a command, edit a
+  file, set an environment variable, restart a service, or use a backend, API or developer tool. A feature
+  that still needs one of those is **not delivered**; an engine without its screen is unfinished work, not a
+  release. Backend code, scripts and CLIs exist for developers and CI only. User-facing text is plain
+  language with no code terms. Founder instruction, 2026-10-06. Decision and guard tests:
+  `agent_context/decisions/20261006-no-terminal-law.md`.
 - **Cloud Development Completeness Law (Claude Code & Container Readiness)**: Every asset required
   to build, run, test, and iterate on QuantOS/Mizan in a headless cloud container (e.g. Claude Code
   Web/Cloud, GitHub Codespaces, CI runners) must be fully tracked and pushed to GitHub:
