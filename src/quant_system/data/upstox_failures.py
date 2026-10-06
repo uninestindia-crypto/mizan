@@ -156,6 +156,24 @@ def empty_failure(detected_at: datetime) -> HistoricalAcquisitionFailure:
     )
 
 
+def quote_unavailable_failure(detected_at: datetime) -> HistoricalAcquisitionFailure:
+    """A well-formed quote with no priced two-sided market; distinct from schema drift.
+
+    Reuses `DATASET_EMPTY` rather than adding a code, because the enum lives in `market_data.py`,
+    a shared contract. Unlike `empty_failure` this is retryable: the same instrument quotes both
+    sides again when the market opens.
+    """
+    return create_failure(
+        AcquisitionFailureCode.DATASET_EMPTY,
+        detected_at,
+        retryable=True,
+        recovery_action=(
+            "No priced two-sided market is quoted, typically outside trading hours; "
+            "retry while the market is open."
+        ),
+    )
+
+
 def quality_failure(
     detected_at: datetime,
     findings: tuple[QualityFinding, ...],
