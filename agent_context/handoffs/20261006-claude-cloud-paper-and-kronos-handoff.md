@@ -37,13 +37,15 @@ Nothing partial.
 
 - **`cloud_paper_session.py run` has never run for real.** It starts a paper book. Its logic is tested with a
   fake session only.
-- **The workflow has never run on GitHub.** The YAML parses; that is all that is known.
+- **The workflow has only partly run on GitHub.** `check` and `rehearse-state` ran green on 2026-10-06 (run 37415038898, via a temporary push trigger since removed). `workflow_dispatch`, the schedule and `session` mode have not.
 - The first cloud refresh's duration and any provider rate limit from a cloud IP are unmeasured.
 - The PowerShell audits (`audit-agent-claims.ps1`, `audit-disk-layout.ps1`) were not run: there is no PowerShell
   in this container. CI's craft job runs them on Windows.
 - The full test suite was not run here (CI runs it, about 28 minutes). Only the new tests and their neighbours.
-- No release was cut, although `release_status.py` reports one **DUE** (30 user-visible changes, 2 security).
-  That predates this work, needs the Windows installer build and `main`, and the founder said not to merge.
+- **A release claim I made earlier was wrong.** I reported a release as DUE with 30 changes and 2 security items;
+  that came from a clone with no tags. With tags fetched the last release was `v2.3.0`, and `v2.4.0` has since
+  been published by another session. Re-run `python scripts/release_status.py` after `git fetch --tags`. No release
+  was cut by this work.
 
 ## Decisions waiting for the founder
 
@@ -63,9 +65,12 @@ Nothing partial.
 3. The Kronos claim owner updates its ledger row 10 and decides about a stronger "scored once" guard. **Do not
    score the trial again**, whatever a laptop run produces. See the notice.
 4. A coordinator reconciles `CURRENT.md` (claimed by two records, so not edited here) with trial 10's result.
-5. A separate task was queued for a defect found on the way: `UpstoxClient.fetch_market_quote` cannot parse the
-   real quote reply, because the provider keys it by symbol (`NSE_EQ:INFY`) and the client looks for the ISIN
-   key. The paper session works around it and is not affected. Its unit test encodes the wrong shape.
+5. ~~A defect found on the way: `UpstoxClient.fetch_market_quote` cannot parse the real quote reply.~~ **Fixed
+   2026-10-06** (`e52f4d86`). The provider keys the reply by symbol (`NSE_EQ:INFY`) and the client looked for the
+   instrument key; it now accepts both, refuses an entry naming a different instrument, and treats a side of the
+   book with nothing resting as an empty quote. Verified against the real feed during market hours.
+   **Correction to what this handoff first said:** it claimed the unit test "encodes the wrong shape". It did not.
+   No test parsed a quote body at all, so the success path was never exercised.
 
 ## Known risks
 

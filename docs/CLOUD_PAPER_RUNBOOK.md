@@ -55,12 +55,19 @@ Verified on 2026-10-06 from a Claude Code cloud container, with the real token a
 | No token fails closed | Exit 10, nothing fetched. |
 | A refused token is classified as the token's fault | A well-formed fake token got `HTTP Error 401: Unauthorized` from the provider and exit 11. |
 | The wrapper's logic | `tests/test_cloud_paper_session.py`: 37 tests with fakes. Each guarantee was checked by breaking the code and watching a test fail. |
+| The workflow on a **real GitHub runner**, with the repository secret | [Run 37415038898](https://github.com/uninestindia-crypto/mizan/actions/runs/37415038898), mode `rehearse-state`, 45 seconds, every step green. `check` priced 3 of 3 symbols at 10:13 IST, during market hours. |
+| The token cannot reach the state branch, with the **real** secret | In that run a state file holding the secret was refused (`save-state` exit 14) and nothing was copied. GitHub masked the value as `***` in the log. |
+| The state-branch mechanics | In that run the branch `cloud-paper-state-rehearsal` was created, checked out, written, committed and pushed (`d852743..5562fc4`). It holds one labelled dummy file and is safe to delete. |
+| The real-session step stayed off | In that run it was `skipped`; no book was started. |
 
 **Not verified:**
 
 - **`run` has not been run for real.** Doing so starts a paper book. The wrapper's behaviour is tested with a
   fake session, not a real one.
-- **The workflow has not run on GitHub.** The YAML parses; that is all that is known.
+- **Only part of the workflow has run on GitHub.** `check` and `rehearse-state` ran, through a temporary `push`
+  trigger that has since been removed, so the version that ships differs by that trigger (and by the default of
+  its fallback mode). Not yet run on GitHub: `workflow_dispatch`, which only works once the file is on the default
+  branch (do one `check` run right after merging), the `schedule` trigger, and `session` mode.
 - **Whether the refresh finishes inside the window from a cloud IP.** The session refreshes about 500 names
   from the tracked cache, which ends 2026-08-27, so the first run has about six weeks to fetch. The duration
   and any provider rate limiting are unmeasured.
@@ -72,14 +79,21 @@ Verified on 2026-10-06 from a Claude Code cloud container, with the real token a
 
 ## One-time setup (GitHub-hosted)
 
+The workflow takes a **mode**. Only `session` can start or continue a book.
+
+| Mode | What it does | Places orders or starts a book? |
+|---|---|---|
+| `check` (default) | Installs from the lock file and proves the token reads live quotes. | no |
+| `rehearse-state` | `check`, then proves with the **real** secret that `save-state` refuses a state file holding it, then runs the state-branch mechanics (create, check out, save, commit, push) on a throwaway branch `cloud-paper-state-rehearsal` with a labelled dummy file. | no |
+| `session` | The real paper session. Writes `cloud-paper-state`. The only mode a schedule runs. | **starts or continues the cloud book** |
+
 1. Add the secret `UPSTOX_ANALYTICS_TOKEN` (see the limits above).
-2. Run the workflow by hand: Actions, `cloud-paper-session`, Run workflow, leave `check_only` ticked. It
-   installs from the lock file, then proves the token. It places nothing and saves nothing. A green run
-   shows the token and the environment are right.
-3. Only after the purpose is written down (above): untick `check_only` for one supervised run. It creates
-   the `cloud-paper-state` branch with an empty commit and pushes one commit per session.
+2. Run the workflow by hand: Actions, `cloud-paper-session`, Run workflow, mode `check`, then `rehearse-state`.
+   Green runs show the token, the environment and the state mechanics are right.
+3. Only after the purpose is written down (above): one supervised `session` run. It creates the
+   `cloud-paper-state` branch with an empty commit and pushes one commit per session.
 4. To schedule it: set the repository variable `CLOUD_PAPER_ENABLED` to `true`. It then runs at 08:45 IST
-   on weekdays. GitHub can delay a scheduled run by many minutes under load.
+   on weekdays, always in `session` mode. GitHub can delay a scheduled run by many minutes under load.
 
 Account billing matters: the repository's CI has been red for billing reasons before
 (`agent_context/work/active/20260918-NOTICE-ci-billing-failure-has-recurred.md`), and a job that cannot start

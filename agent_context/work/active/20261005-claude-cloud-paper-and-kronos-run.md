@@ -123,8 +123,16 @@ New owned paths (checked: no active record claims them; two records only mention
 | `pytest` new + neighbours (`test_scheduled_paper_session*`, `test_kronos_trial`) | PASS | 92 passed forwards and in reverse file order; the 37 new tests also pass on Python 3.13. |
 | `node scripts/check-tests.mjs` / `check-code.mjs` on my files | PASS | clean after one refactor removed two `deep-nesting` findings; mutations re-run on the refactored code, all killed. |
 | `detect-secrets scan` on every committed file | PASS | 0 candidates, except 10 `Hex High Entropy String` in `kronos-probe.json`, verified line by line as the public SHA-256 and revisions of the pinned code and weights. The live token value was also searched for in every staged file: absent. |
-| `release_status.py` | DUE | 30 user-visible changes, 2 security, "No release yet". Predates this work. Not cut: needs a Windows installer build and `main`, and the founder said no merge. |
+| `release_status.py` (first, tags missing in this clone) | **WRONG, retracted** | Reported "DUE: 30 changes, 2 security, no release yet". The clone had no tags. With tags fetched (`git fetch --tags`) the last release is `v2.3.0` (and `v2.4.0` has since been cut by another session): 11 user-visible changes, DUE only by the count and not by any security item. I told the founder and the handoff the wrong thing; both corrected. |
 | `audit-agent-claims.ps1`, `audit-disk-layout.ps1` | NOT RUN | No PowerShell in the container. |
+| **2026-10-06, second request** | | |
+| Parser tests first, against the old code | FAIL as intended | 3 behaviour tests failed. Two pre-existing "without token" tests also failed here because this container has a token in its environment: they made two real read-only provider calls. Hardened with `monkeypatch.delenv`. |
+| Parser fix (`upstox_parsing.py`, `upstox.py`) | PASS | 22 tests in `test_upstox_data.py`; 9 mutations of the fix all killed (two initial survivors got their own tests). Pass with and without a token in the environment; 89 related tests pass forwards. |
+| Fixed `UpstoxClient.fetch_market_quote` against the real feed, 10:11 IST | PASS | Parsed a real two-sided intraday quote (bid 1010.15, ask 1010.30). Earlier, closed-market, the same reply had a best bid of price 0.0, quantity 0, now refused as an empty quote. |
+| ruff, ruff format, `mypy --platform win32` (300 files), craft checkers | PASS | clean. |
+| Workflow run on GitHub, [37415038898](https://github.com/uninestindia-crypto/mizan/actions/runs/37415038898), mode `rehearse-state` | PASS | 45 s, every step green; log read, not inferred. `check` 3 of 3 priced at 10:13 IST; real-secret leak guard refused (exit 14, nothing copied, value masked `***`); `cloud-paper-state-rehearsal` created, checked out, written, committed, pushed; real-session step skipped. |
+| Temporary `push` trigger removed from the workflow | DONE, untested | The shipped file differs from the tested one by that trigger and its fallback mode. `workflow_dispatch` can only be exercised once the file is on the default branch. |
+| `git fetch origin main` | FINDING | `main` advanced (PR #3, `v2.4.0`). No file overlap with this branch. Merged into the branch, not rebased (PROTOCOL section 1). |
 
 ## Files changed
 

@@ -50,11 +50,6 @@ on:
         type: choice
         options: [NIFTY500, NIFTY50]
         default: NIFTY500
-  # TEMPORARY, removed before merge: lets this branch run the rehearsal before the workflow exists on the
-  # default branch, where workflow_dispatch cannot see it. It only ever runs `rehearse-state`.
-  push:
-    branches: [claude/dazzling-brown-yn5qu3]
-    paths: [".github/workflows/cloud-paper-session.yml"]
 
 # One run at a time. A second session would start from the same state and one would overwrite the other.
 concurrency:
@@ -65,7 +60,7 @@ permissions:
   contents: write # pushes the state branches, and nothing else
 
 env:
-  MODE: ${{ inputs.mode || (github.event_name == 'schedule' && 'session') || 'rehearse-state' }}
+  MODE: ${{ inputs.mode || (github.event_name == 'schedule' && 'session') || 'check' }}
 
 jobs:
   session:

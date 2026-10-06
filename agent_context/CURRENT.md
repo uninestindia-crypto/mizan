@@ -724,6 +724,38 @@ Records: `agent_context/work/completed/20260823-claude-redteam-repair-b1-b3.md`,
 `20260822-claude-governed-execution-adapter.md`, `20260822-claude-maturity-horizon.md`,
 `20260822-claude-dotenv-loading.md`, `20260823-claude-real-governed-shadow-session.md`.
 
+### Kronos zero-shot, short-horizon trial 10: research only (added 2026-10-06)
+
+**Additive.** Added on the founder's instruction, and nothing else in this file was re-verified or altered by
+it. This file is claimed by `20260820-codex-slice4-ridge-training.md` and `20260821-claude-ci-workflow.md`; a
+notice records the edit. Full report: `reports/kronos_cloud_run/RESULT.md`. Declaration:
+`reports/kronos_trial/TRIAL-LEDGER.md`.
+
+The one declared test of Kronos, the finance-pretrained forecaster (MIT licence), was run in the cloud exactly as
+declared and scored once on 2026-10-06. Compute scope was fixed by the declared timing rule before any forecast
+existed (`reports/kronos_cloud_run/AMENDMENT-1.md`): Kronos-small, one sample path.
+
+| | Candidate | CASH | ALWAYS_TRADE | Best of 30 NOISE-K |
+|---|---:|---:|---:|---:|
+| Sharpe | **-0.444** | 0.000 | -0.956 | -0.606 |
+| Net return, total | **-6.65%** | 0% | -22.35% | |
+| Deflated Sharpe (10 trials) | **0.0134** | | | |
+
+**`RESEARCH_ONLY`.** The gate needs a deflated Sharpe of 0.95; this is 0.013. The candidate is less negative than
+the controls and loses to holding cash, so "beats the controls" here means "loses less than controls that also
+lose". Rank IC t = 1.32 and top-quintile edge t = 0.45, neither significant.
+
+Three things to carry with it:
+
+- **The trial is spent.** Ordinal 10 of the short-horizon family. Do not score it again. `scripts/run_kronos_trial.py`
+  refuses an existing results file only at the path it is given, so a laptop run scoring elsewhere would not be refused.
+- **Not bit-identical to the declared machine.** Linux x86_64, not the declaration's ARM64 Windows. Same code,
+  weights and library versions, all hash-verified.
+- **The reserved holdout is seen.** The window includes the final 252 sessions the program set aside.
+
+This is a second model family failing the same bar on the same data, after TimesFM. It adds to the case in
+"Next safe actions" that research on this model class and market is closed.
+
 ## In flight, not reconciled here (2026-09-11)
 
 A concurrent session is running a **short-horizon program** under
