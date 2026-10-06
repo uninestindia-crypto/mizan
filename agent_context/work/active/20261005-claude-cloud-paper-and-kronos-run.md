@@ -1,7 +1,7 @@
 # Active work: cloud paper runner and Kronos trial 10 in the cloud
 
-STATUS: ACTIVE  
-OWNER: Claude Code session (cloud container), on founder instruction 2026-10-05 ("go ahead with your proposal")  
+STATUS: HANDOFF_REQUIRED  
+OWNER: Claude Code session (cloud container), on founder instruction 2026-10-05 ("go ahead with your proposal"); finished by a second session on 2026-10-06  
 TOOL: Claude Code  
 STARTED_UTC: 2026-10-05T19:30:00Z  
 STARTING_REVISION: eaba6da92c018a31160baa9f22d39a9d4fbe43fe  
@@ -98,6 +98,16 @@ Founder also asked (mid-session) for a goal file every agent reads: `agent_conte
 | Kronos code at `67b630e6`, three SHA-256 values | PASS | Match the ledger and the commit's git blob SHA-1s. |
 | Kronos weights at the three declared revisions | PASS | SHA-256 matches the ledger's abbreviations **and** the hash Hugging Face reports for that revision, all three. |
 | `forecast --dry-run` | PASS | 45 names, 529 decision dates, 2024-07-01 to 2026-08-17, 23,805 forecasts. |
+| `probe --dates 529` (synthetic bars only) | PASS | base S=5 694.5 s/date (102.1 h), base S=1 116.1 (17.1 h), small S=5 195.6 (28.7 h), small S=1 36.7 (5.4 h). Rule picks **small S=1**. `AMENDMENT-1.md` committed (`1c3b5d06`) before any forecast. |
+| `forecast --model small --samples 1` | PASS | 23,805 forecasts, 529 dates, 17,636 s compute (4.9 h). 0 duplicates, 0 non-finite or non-positive. Checkpoint snapshot pushed once at half way (`91511cb1`); removed from the tree at the end. |
+| `scripts/run_kronos_trial.py --forecasts ... --out reports/kronos_cloud_run/results-kronos.json` | **RESEARCH_ONLY** | Scored once. Sharpe -0.444, net -6.65%, DSR 0.0134 (10 trials) vs 0.95. Beats every NOISE-K seed and ALWAYS_TRADE, loses to CASH. Rank IC t 1.32, top-quintile t 0.45. `RESULT.md`. |
+| `ruff check .` / `ruff format --check .` | PASS | all checks passed; 940 files formatted (two of mine were reformatted first). |
+| `mypy --platform win32 src launcher.py scripts` | PASS after 1 fix | Found a real defect of mine (`SimpleNamespace` where `_run` takes `argparse.Namespace`), fixed. One further error was `pywebview` absent because its marker is win32-only; installed in the scratch venv, no repo or lock change. **300 files, no issues.** |
+| `pytest` new + neighbours (`test_scheduled_paper_session*`, `test_kronos_trial`) | PASS | 92 passed forwards and in reverse file order; the 37 new tests also pass on Python 3.13. |
+| `node scripts/check-tests.mjs` / `check-code.mjs` on my files | PASS | clean after one refactor removed two `deep-nesting` findings; mutations re-run on the refactored code, all killed. |
+| `detect-secrets scan` on every committed file | PASS | 0 candidates, except 10 `Hex High Entropy String` in `kronos-probe.json`, verified line by line as the public SHA-256 and revisions of the pinned code and weights. The live token value was also searched for in every staged file: absent. |
+| `release_status.py` | DUE | 30 user-visible changes, 2 security, "No release yet". Predates this work. Not cut: needs a Windows installer build and `main`, and the founder said no merge. |
+| `audit-agent-claims.ps1`, `audit-disk-layout.ps1` | NOT RUN | No PowerShell in the container. |
 
 ## Files changed
 
@@ -122,8 +132,16 @@ Founder also asked (mid-session) for a goal file every agent reads: `agent_conte
 
 ## Stop point
 
-Committed and pushed to `claude/dazzling-brown-yn5qu3` as a work in progress. Not merged, no PR.
+All four steps of the founder's instruction are done and pushed to `claude/dazzling-brown-yn5qu3`. Not merged, **no pull
+request**. The remaining items are founder decisions and first runs that this session deliberately did not do:
+enabling the cloud book, a first `check_only` workflow run on GitHub, and a supervised real `run`.
+
+Handoff: `agent_context/handoffs/20261006-claude-cloud-paper-and-kronos-handoff.md`.
+Notices filed: `20261005-NOTICE-kronos-trial-run-from-cloud.md` (for `20260928-claude-kronos-trial.md`) and
+`20261005-NOTICE-goal-file-added-and-agents-md-edited.md` (for `20260821-claude-concurrent-workspace-rule.md`).
 
 ## Next safe action
 
-In the new session: run `python scripts/cloud_paper_session.py check` first (proves the token, places nothing).
+See the handoff, "Next safe actions". In short: add the Actions secret and run the workflow with `check_only`; do not
+enable `CLOUD_PAPER_ENABLED` until the founder has written the purpose, decision, benchmark and end date; do not score
+trial 10 again.
