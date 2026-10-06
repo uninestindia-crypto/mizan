@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { VerifyPoll, VerifyResult } from "../../lib/copilot";
 import {
   initialRun,
+  jobToCancel,
   progressFraction,
   progressLabel,
   RUN_FAILED,
@@ -106,6 +107,42 @@ describe("a second opinion run", () => {
   it("cannot be started twice at once", () => {
     const state = underway();
     expect(runReducer(state, { type: "starting" })).toBe(state);
+  });
+});
+
+describe("a run the engine says was stopped", () => {
+  it("goes back to set-up and says the check was stopped, like a Cancel from the person", () => {
+    const state = runReducer(underway(), polled({ status: "cancelled", error: "You stopped this check." }));
+    expect(state).toMatchObject({ phase: "setup", jobId: null, stopped: true, error: null, result: null });
+    expect(shouldPoll(state)).toBe(false);
+  });
+
+  it("ignores a stopped answer for another run", () => {
+    const state = underway();
+    expect(runReducer(state, polled({ status: "cancelled" }, "other"))).toBe(state);
+  });
+});
+
+describe("which job to stop on the engine", () => {
+  it("is the running job when the person cancels", () => {
+    expect(jobToCancel(underway(), { type: "stopped" })).toBe("j1");
+  });
+
+  it("is nothing when there is no job yet, or the run is not going", () => {
+    expect(jobToCancel(initialRun, { type: "stopped" })).toBeNull();
+    expect(jobToCancel(play([{ type: "starting" }]), { type: "stopped" })).toBeNull();
+    expect(jobToCancel(runReducer(underway(), finished), { type: "stopped" })).toBeNull();
+  });
+
+  it("is a job that started after the person had already cancelled, so it does not run on unseen", () => {
+    const stopped = play([{ type: "starting" }, { type: "stopped" }]);
+    expect(jobToCancel(stopped, { type: "started", jobId: "late" })).toBe("late");
+    expect(jobToCancel(play([{ type: "starting" }]), { type: "started", jobId: "j1" })).toBeNull();
+  });
+
+  it("is nothing for any other action", () => {
+    expect(jobToCancel(underway(), running(1, 2))).toBeNull();
+    expect(jobToCancel(underway(), { type: "reset" })).toBeNull();
   });
 });
 

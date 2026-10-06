@@ -2,49 +2,13 @@ import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, ApiError } from "../../lib/api";
 import { SECOND_OPINION_EVENT } from "../../lib/copilot";
-import { CopilotButton } from "./CopilotButton";
-import { CopilotDrawer } from "./CopilotDrawer";
-import { CopilotProvider } from "./CopilotProvider";
+import { box, CHAT, chatWith, openDrawer, reply, say, Shell } from "./chatTestKit";
 import { callsTo, renderApp, routeApi } from "./testHarness";
 
 vi.mock("../../lib/api", async (importOriginal) => {
   const original = await importOriginal<typeof import("../../lib/api")>();
   return { ...original, api: vi.fn() };
 });
-
-const CHAT = "/api/v2/copilot/chat";
-
-function Shell() {
-  return (
-    <CopilotProvider>
-      <CopilotButton />
-      <CopilotDrawer />
-    </CopilotProvider>
-  );
-}
-
-const reply = (over: Record<string, unknown> = {}) => ({
-  reply: "TCS passes both standards.",
-  steps: [],
-  proposals: [],
-  mode: "ai",
-  provider: "openai",
-  model: "gpt-x",
-  error: null,
-  ...over,
-});
-
-function chatWith(...replies: unknown[]) {
-  const queue = [...replies];
-  routeApi({ [`POST ${CHAT}`]: () => queue.shift() ?? reply() });
-}
-
-const openDrawer = () => fireEvent.click(screen.getByRole("button", { name: /Copilot/ }));
-const box = () => screen.getByRole("textbox", { name: "Your message to the Copilot" });
-async function say(text: string) {
-  fireEvent.change(box(), { target: { value: text } });
-  fireEvent.keyDown(box(), { key: "Enter" });
-}
 
 describe("the Copilot drawer", () => {
   beforeEach(() => {
@@ -66,6 +30,46 @@ describe("the Copilot drawer", () => {
     fireEvent.keyDown(box(), { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     await waitFor(() => expect(screen.getByRole("button", { name: /Copilot/ })).toHaveFocus());
+  });
+
+  it("lets Tab leave the drawer instead of looping inside it", async () => {
+    chatWith();
+    renderApp(<Shell />);
+    openDrawer();
+    await screen.findByRole("dialog");
+    await waitFor(() => expect(box()).toHaveFocus());
+    // The last thing to reach in the drawer is the message box (Send is off until something is typed).
+    const wasLeftAlone = fireEvent.keyDown(box(), { key: "Tab" });
+    expect(wasLeftAlone).toBe(true);
+    expect(box()).toHaveFocus();
+    const first = screen.getByRole("button", { name: "Close Copilot" });
+    first.focus();
+    expect(fireEvent.keyDown(first, { key: "Tab", shiftKey: true })).toBe(true);
+    expect(first).toHaveFocus();
+  });
+
+  it("still closes with Escape and Ctrl+J after focus has left the drawer, and returns to the opener", async () => {
+    chatWith();
+    renderApp(<Shell />);
+    const button = screen.getByRole("button", { name: /Copilot/ });
+    button.focus();
+    fireEvent.click(button);
+    await screen.findByRole("dialog");
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(button).toHaveFocus());
+    fireEvent.keyDown(window, { key: "j", ctrlKey: true });
+    await screen.findByRole("dialog");
+    fireEvent.keyDown(window, { key: "j", ctrlKey: true });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(button).toHaveFocus());
+  });
+
+  it("names the button for a screen reader and gives it a tooltip with the shortcut", () => {
+    renderApp(<Shell />);
+    const button = screen.getByRole("button", { name: "Copilot" });
+    expect(button).toHaveAttribute("title", "Copilot (Ctrl J)");
+    expect(button).toHaveAttribute("aria-keyshortcuts", "Control+J");
   });
 
   it("opens and closes with Ctrl+J and Cmd+J", async () => {
@@ -257,11 +261,39 @@ describe("what a reply shows", () => {
     expect(screen.getAllByRole("button", { name: "Add an AI key" })).toHaveLength(1);
   });
 
-  it("does not show the built-in line when an AI model answered, and says which one did", async () => {
+  it("does not show the built-in line when an AI model answered, and names only the company", async () => {
     await ask(reply());
     await screen.findByText("TCS passes both standards.");
     expect(screen.queryByText(/built-in answers/)).toBeNull();
-    expect(screen.getByText(/Answered by the AI model gpt-x from openai/)).toBeInTheDocument();
+    expect(screen.getByText("Answered by an AI model from OpenAI.")).toBeInTheDocument();
+    expect(screen.queryByText(/gpt-x/)).toBeNull();
+  });
+
+  it("never shows a model id or a provider id, even for a company it cannot name", async () => {
+    await ask(reply({ provider: "anthropic-model", model: "claude-model-9" }));
+    await screen.findByText("TCS passes both standards.");
+    expect(screen.getByText("Answered by an AI model.")).toBeInTheDocument();
+    expect(screen.queryByText(/claude-model-9|anthropic-model/)).toBeNull();
+  });
+
+  it("does not say twice to add an AI key when the reply already says it", async () => {
+    const text = "Which stock?\n\nTo ask open-ended questions, add an AI key: open Settings, then Accounts and keys.";
+    const addKey = { kind: "navigate", label: "Add an AI key", path: "/settings/accounts", symbol: null };
+    await ask(reply({ reply: text, mode: "built_in", provider: null, model: null, proposals: [addKey] }));
+    await screen.findByText(/add an AI key: open Settings/);
+    expect(screen.queryByText(/Answered from QuantOS's built-in answers/)).toBeNull();
+    expect(screen.queryByText(/for open-ended questions\./)).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Add an AI key" })).toHaveLength(1);
+  });
+
+  it("adds no footer after a rejected key, and still gives one clear button", async () => {
+    const text = "That AI service did not accept your key. Open Settings, then Accounts and keys, and check it.";
+    await ask(reply({ reply: text, mode: "built_in", provider: null, model: null }));
+    await screen.findByText(/did not accept your key/);
+    expect(screen.queryByText(/Add an AI key for open-ended questions/)).toBeNull();
+    expect(screen.queryByText(/Answered from QuantOS's built-in answers/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Check your AI keys" }));
+    await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/settings/accounts"));
   });
 
   it("shows a plain note the engine attached, such as why the AI could not be reached", async () => {

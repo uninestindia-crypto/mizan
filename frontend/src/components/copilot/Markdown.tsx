@@ -61,7 +61,7 @@ function ListBlock({ items }: { items: readonly (readonly Inline[])[] }) {
 export function Markdown({ text, className }: { text: string; className?: string }) {
   const blocks = useMemo(() => parseMarkdown(text), [text]);
   return (
-    <div className={cx("space-y-2 break-words text-[13.5px] leading-relaxed text-ink", className)}>
+    <div className={cx("min-w-0 space-y-2 [overflow-wrap:anywhere] text-[13.5px] leading-relaxed text-ink", className)}>
       {blocks.map((block, index) =>
         block.type === "list" ? (
           <ListBlock key={index} items={block.items} />

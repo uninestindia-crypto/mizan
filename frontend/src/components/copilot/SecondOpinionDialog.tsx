@@ -4,8 +4,7 @@ import { type SecondOpinionRequest, useCopilotModels } from "../../lib/copilot";
 import { Finished, Waiting } from "./RunPanels";
 import { SecondOpinionSetup } from "./SecondOpinionSetup";
 import { type StartChoice, useStartRun } from "./useStartRun";
-import { useVerifyPolling } from "./verifyPolling";
-import { type RunAction, type RunState, shouldPoll } from "./verifyState";
+import type { RunAction, RunState } from "./verifyState";
 
 export const INTRO =
   "Several AI models each read the same facts on their own and never see each other's answers. " +
@@ -14,6 +13,8 @@ export const INTRO =
 const PANEL_STYLE =
   "q-fade-in fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-2xl " +
   "-translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl border border-line bg-surface shadow-[var(--shadow-pop)]";
+// A word with no gaps, such as a pasted address in a model's reason, breaks at the edge instead of widening the window.
+const BODY_STYLE = "min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 [overflow-wrap:anywhere]";
 
 const CLOSE_STYLE = "rounded-lg p-1 text-ink-3 hover:bg-surface-2 hover:text-ink";
 
@@ -28,7 +29,7 @@ interface DialogProps {
 function Header({ symbol }: { symbol: string }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-line px-6 py-4">
-      <div>
+      <div className="min-w-0">
         <DialogPrimitive.Title className="text-lg font-semibold text-ink">
           Second opinion on {symbol}
         </DialogPrimitive.Title>
@@ -53,7 +54,7 @@ function Body(props: Omit<DialogProps, "onClosed">) {
   const waiting = run.phase === "starting" || run.phase === "running";
   const finished = run.phase === "done" || run.phase === "failed";
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+    <div className={BODY_STYLE}>
       {run.phase === "setup" && (
         <SecondOpinionSetup
           models={models}
@@ -64,17 +65,16 @@ function Body(props: Omit<DialogProps, "onClosed">) {
         />
       )}
       {waiting && <Waiting run={run} onCancel={stop} />}
-      {finished && <Finished run={run} models={models.data} onAgain={again} />}
+      {finished && <Finished run={run} models={models.data} onAgain={again} onClose={onClose} />}
     </div>
   );
 }
 
 /**
- * The Second opinion window for one stock. Closing it stops the waiting for answers; the run itself is kept by the
- * caller, so opening the window again for the same stock picks up where it was.
+ * The Second opinion window for one stock. Closing it does not stop the run: the caller keeps the run and goes on
+ * checking for its answers, so opening the window again for the same stock picks up where it was.
  */
 export function SecondOpinionDialog({ onClosed, ...props }: DialogProps) {
-  useVerifyPolling(shouldPoll(props.run), props.run.jobId, props.report);
   return (
     <DialogPrimitive.Root open onOpenChange={(open) => !open && props.onClose()}>
       <DialogPrimitive.Portal>
@@ -84,7 +84,7 @@ export function SecondOpinionDialog({ onClosed, ...props }: DialogProps) {
             event.preventDefault();
             onClosed();
           }}
-          className={PANEL_STYLE}
+          className={`${PANEL_STYLE} min-w-0`}
         >
           <Header symbol={props.request.symbol} />
           <Body {...props} />

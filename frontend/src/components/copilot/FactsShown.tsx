@@ -3,11 +3,11 @@ import type { FactSectionView, ResultView } from "./resultModel";
 function FactSection({ section }: { section: FactSectionView }) {
   return (
     <div>
-      <h4 className="text-[13px] font-medium text-ink">
+      <h4 className="text-[13px] font-medium text-ink [overflow-wrap:anywhere]">
         {section.title}
         {section.fromOutside && <span className="ml-2 text-[12px] font-normal text-ink-3">(from outside sources)</span>}
       </h4>
-      <p className="mt-0.5 whitespace-pre-wrap break-words text-[13px] text-ink-2">{section.summary}</p>
+      <p className="mt-0.5 whitespace-pre-wrap [overflow-wrap:anywhere] text-[13px] text-ink-2">{section.summary}</p>
     </div>
   );
 }

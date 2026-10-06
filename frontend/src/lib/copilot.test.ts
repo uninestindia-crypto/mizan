@@ -1,18 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { api } from "./api";
+import { api, ApiError } from "./api";
 import {
   buildChatRequest,
   buildVerifyRequest,
   copilotApi,
   defaultSelection,
   EMPTY_REPLY,
+  friendlyProvider,
   HISTORY_LIMIT,
   isSafeAppPath,
   isValidSymbol,
+  lengthNote,
+  MAX_MESSAGE_CHARS,
   normaliseReply,
+  OFFLINE_MESSAGE,
   openSecondOpinion,
+  plainFailure,
   readSecondOpinionRequest,
   SECOND_OPINION_EVENT,
+  SOMETHING_WRONG,
 } from "./copilot";
 
 vi.mock("./api", async (importOriginal) => ({ ...(await importOriginal<typeof import("./api")>()), api: vi.fn() }));
@@ -232,5 +238,84 @@ describe("the engine calls", () => {
     expect(api).toHaveBeenLastCalledWith("/api/v2/copilot/verify", "POST", sent);
     await copilotApi.pollVerify("a/b");
     expect(api).toHaveBeenLastCalledWith("/api/v2/copilot/verify/a%2Fb");
+  });
+});
+
+describe("cancelling a second opinion", () => {
+  beforeEach(() => {
+    vi.mocked(api).mockReset();
+  });
+
+  it("asks the engine to stop the run, on the path the contract names", async () => {
+    vi.mocked(api).mockResolvedValue({ cancelled: true });
+    await copilotApi.cancelVerify("a/b");
+    expect(api).toHaveBeenLastCalledWith("/api/v2/copilot/verify/a%2Fb", "DELETE");
+  });
+});
+
+describe("how long a message may be", () => {
+  it("allows what the engine accepts, which is 4,000 characters", () => {
+    expect(MAX_MESSAGE_CHARS).toBe(4000);
+    const long = "x".repeat(9000);
+    expect(buildChatRequest([{ role: "user", content: long }], null).messages[0]?.content).toHaveLength(4000);
+  });
+
+  it("says nothing until the message is close to the limit", () => {
+    expect(lengthNote(0)).toBeNull();
+    expect(lengthNote(3500)).toBeNull();
+  });
+
+  it("shows a counter near the limit and a plain sentence at it", () => {
+    expect(lengthNote(3501)).toBe("3,501 of 4,000");
+    expect(lengthNote(3800)).toBe("3,800 of 4,000");
+    expect(lengthNote(3999)).toBe("3,999 of 4,000");
+    expect(lengthNote(4000)).toBe("You have reached the limit of 4,000 characters. Shorten the message to add more.");
+  });
+});
+
+describe("naming an AI company", () => {
+  it("builds a friendly name from the provider id and never from a model id", () => {
+    expect(friendlyProvider("anthropic")).toBe("Anthropic (Claude)");
+    expect(friendlyProvider("openai")).toBe("OpenAI");
+    expect(friendlyProvider("gemini")).toBe("Google Gemini");
+    expect(friendlyProvider("groq")).toBe("Groq");
+    expect(friendlyProvider("deepseek")).toBe("DeepSeek");
+    expect(friendlyProvider("mistral")).toBe("Mistral");
+    expect(friendlyProvider("openrouter")).toBe("OpenRouter");
+  });
+
+  it("returns nothing for a provider it cannot name", () => {
+    expect(friendlyProvider("some-provider-x")).toBeNull();
+    expect(friendlyProvider(null)).toBeNull();
+  });
+});
+
+describe("what a person is told when a call fails", () => {
+  it("shows the engine's own sentence when it refused the request", () => {
+    const refused = new ApiError("BAD_REQUEST", "Your message is too long. Shorten it and try again.", 422);
+    expect(plainFailure(refused)).toBe("Your message is too long. Shorten it and try again.");
+    const busy = new ApiError("TOO_BUSY", "Wait for one to finish, then try again.", 429);
+    expect(plainFailure(busy)).toBe("Wait for one to finish, then try again.");
+  });
+
+  it("never shows a server error's own words", () => {
+    expect(plainFailure(new ApiError("INTERNAL", "Traceback (most recent call last) KeyError", 500))).toBe(
+      SOMETHING_WRONG,
+    );
+    expect(plainFailure(new ApiError("HTTP_502", "Bad Gateway", 502))).toBe(SOMETHING_WRONG);
+    expect(plainFailure(new ApiError("HTTP_404", "Not Found", 404))).toBe(SOMETHING_WRONG);
+    expect(plainFailure(new Error("boom"))).toBe(SOMETHING_WRONG);
+    expect(SOMETHING_WRONG).toBe("Something went wrong. Please try again in a moment.");
+  });
+
+  it("says in plain words when QuantOS itself is not answering", () => {
+    const offline = new ApiError("ENGINE_OFFLINE", "The QuantOS engine is not responding.", 0);
+    expect(plainFailure(offline)).toBe(OFFLINE_MESSAGE);
+    expect(OFFLINE_MESSAGE).toBe("QuantOS is not responding. Close it and open it again, then try once more.");
+  });
+
+  it("does not repeat the words of a failed secure start either", () => {
+    const secure = new ApiError("CSRF_UNAVAILABLE", "Could not start a secure session with the engine.", 403);
+    expect(plainFailure(secure)).toBe(SOMETHING_WRONG);
   });
 });

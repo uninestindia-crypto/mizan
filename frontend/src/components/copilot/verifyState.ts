@@ -42,6 +42,7 @@ function applyPoll(state: RunState, poll: VerifyPoll): RunState {
     return { ...state, phase: "done", progress: poll.progress ?? state.progress, result: poll.result, error: null };
   }
   if (poll.status === "failed") return { ...state, phase: "failed", error: poll.error?.trim() || RUN_FAILED };
+  if (poll.status === "cancelled") return { ...initialRun, stopped: true };
   return { ...state, progress: poll.progress ?? state.progress };
 }
 
@@ -67,6 +68,16 @@ export function runReducer(state: RunState, action: RunAction): RunState {
     case "reset":
       return initialRun;
   }
+}
+
+/**
+ * The job the engine should be told to stop when this action arrives: the one the person just cancelled, or one that
+ * only got its number after they had cancelled. Anything else leaves the engine alone.
+ */
+export function jobToCancel(state: RunState, action: RunAction): string | null {
+  if (action.type === "stopped") return state.phase === "running" ? state.jobId : null;
+  if (action.type === "started") return state.phase === "starting" ? null : action.jobId;
+  return null;
 }
 
 /** Runs kept per stock, so closing the dialog and opening it again for the same stock shows the same run. */

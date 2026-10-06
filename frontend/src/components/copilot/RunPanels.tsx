@@ -36,10 +36,12 @@ export function Finished({
   run,
   models,
   onAgain,
+  onClose,
 }: {
   run: RunState;
   models: readonly ProviderOption[] | undefined;
   onAgain: () => void;
+  onClose: () => void;
 }) {
   const list = models ?? NO_MODELS;
   const view = useMemo(() => (run.result ? buildResultView(run.result, list) : null), [run.result, list]);
@@ -51,7 +53,7 @@ export function Finished({
           {run.error}
         </Callout>
       )}
-      {view && <ResultView view={view} />}
+      {view && <ResultView view={view} onClose={onClose} />}
       {view && (
         <div className="flex justify-end">
           <Button variant="secondary" onClick={onAgain}>

@@ -5,6 +5,7 @@ import {
   consensusWords,
   FALLBACK_DISCLOSURE,
   HALAL_HEADING,
+  headlineInWords,
   providerName,
   readingWords,
 } from "./resultModel";
@@ -45,6 +46,11 @@ describe("words for a reading", () => {
   it("names a provider by its label, or makes its id readable", () => {
     expect(providerName("openai", models)).toBe("OpenAI");
     expect(providerName("open_router", models)).toBe("Open router");
+  });
+
+  it("knows the common companies even when the list of models is not at hand", () => {
+    expect(providerName("openai", [])).toBe("OpenAI");
+    expect(providerName("anthropic", [])).toBe("Anthropic (Claude)");
   });
 });
 
@@ -130,7 +136,7 @@ describe("each model's reading", () => {
 describe("the headline and counts", () => {
   it("keeps the engine's headline and shows the consensus as words", () => {
     const view = buildResultView(sampleResult(), models);
-    expect(view.headline).toBe("2 of 3 models that answered read the evidence as MIXED.");
+    expect(view.headline).toBe("2 of 3 models that answered read the evidence as mixed.");
     expect(view.consensus).toBe("Most of the models agree");
     expect(view.sharedReading).toBe("Mixed");
     expect(view.answeredLine).toBe("3 of 4 models answered.");
@@ -153,6 +159,75 @@ describe("the headline and counts", () => {
     const { newsTones } = buildResultView(sampleResult(), models);
     expect(newsTones).toBe("How the models read the news headlines: neutral: 2, positive: 1.");
     expect(buildResultView(sampleResult({ news_tones: { None: 3 } }), models).newsTones).toBeNull();
+  });
+});
+
+describe("the headline's reading word", () => {
+  it("says the reading the way the badges do, not in raw capitals", () => {
+    expect(headlineInWords("2 of 3 models read the facts as MIXED.")).toBe("2 of 3 models read the facts as mixed.");
+    expect(headlineInWords("All 3 models read the facts as POSITIVE.")).toBe(
+      "All 3 models read the facts as looking positive.",
+    );
+    expect(headlineInWords("2 of 3 models read the facts as NEGATIVE.")).toBe(
+      "2 of 3 models read the facts as looking negative.",
+    );
+    expect(headlineInWords("1 model read the facts as UNCLEAR.")).toBe("1 model read the facts as not clear.");
+  });
+
+  it("changes only whole capitalised reading words and leaves the rest of the sentence alone", () => {
+    const text = "2 of 5 models answered, and both read the facts as POSITIVE.";
+    expect(headlineInWords(text)).toBe("2 of 5 models answered, and both read the facts as looking positive.");
+    expect(headlineInWords("The facts are mixed and positive in places.")).toBe(
+      "The facts are mixed and positive in places.",
+    );
+    expect(headlineInWords("The word NEGATIVELY is not a reading.")).toBe("The word NEGATIVELY is not a reading.");
+    expect(headlineInWords("")).toBe("");
+  });
+
+  it("is applied to the headline of a result, and to nothing else", () => {
+    const view = buildResultView(sampleResult({ headline: "2 of 3 models read the facts as MIXED." }), models);
+    expect(view.headline).toBe("2 of 3 models read the facts as mixed.");
+    expect(view.notes).toEqual(sampleResult().notes);
+  });
+});
+
+describe("whose reading it is", () => {
+  it("calls it the shared reading when several models answered", () => {
+    expect(buildResultView(sampleResult(), models).readingLabel).toBe("Shared reading");
+  });
+
+  it("calls it its own reading when only one model answered", () => {
+    const view = buildResultView(sampleResult({ consensus: "SINGLE", answered: 1, asked: 3 }), models);
+    expect(view.readingLabel).toBe("Its reading");
+    expect(view.sharedReading).toBe("Mixed");
+  });
+});
+
+describe("a stock the engine could not find", () => {
+  const none = sampleResult({
+    headline: "QuantOS has no price data for ZZZ, so no AI model was asked.",
+    consensus: "NONE",
+    reading: null,
+    asked: 0,
+    answered: 0,
+    counts: {},
+    news_tones: {},
+    verdicts: [],
+    dissent: [],
+    notes: [],
+    halal: null,
+    facts: null,
+  });
+
+  it("is marked empty so the screen shows the headline and the disclosure only", () => {
+    const view = buildResultView(none, models);
+    expect(view.empty).toBe(true);
+    expect(view.headline).toBe("QuantOS has no price data for ZZZ, so no AI model was asked.");
+    expect(view.disclosure).toBe("These are opinions from AI models. They are not independent evidence.");
+  });
+
+  it("is not empty when any model was asked", () => {
+    expect(buildResultView(sampleResult(), models).empty).toBe(false);
   });
 });
 

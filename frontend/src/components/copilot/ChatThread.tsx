@@ -40,7 +40,17 @@ function Thinking() {
   );
 }
 
-function CouldNotAnswer({ onRetry }: { onRetry: () => void }) {
+const COULD_NOT_ANSWER = "The Copilot could not answer just now. Check that QuantOS is running and try again.";
+
+/** The engine's own sentence when it refused the message (the person edits and sends again); otherwise a retry. */
+function CouldNotAnswer({ sentence, onRetry }: { sentence: string | null; onRetry: () => void }) {
+  if (sentence) {
+    return (
+      <Callout tone="warn">
+        <span className="[overflow-wrap:anywhere]">{sentence}</span>
+      </Callout>
+    );
+  }
   const retry = (
     <Button size="sm" variant="secondary" onClick={onRetry}>
       Retry
@@ -48,13 +58,13 @@ function CouldNotAnswer({ onRetry }: { onRetry: () => void }) {
   );
   return (
     <Callout tone="warn" action={retry}>
-      The Copilot could not answer just now. Check that QuantOS is running and try again.
+      {COULD_NOT_ANSWER}
     </Callout>
   );
 }
 
 export function ChatThread() {
-  const { messages, thinking, failed, send, retry } = useCopilot();
+  const { messages, thinking, failed, failure, send, retry } = useCopilot();
   const scroller = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const box = scroller.current;
@@ -63,14 +73,14 @@ export function ChatThread() {
 
   const empty = messages.length === 0 && !thinking && !failed;
   return (
-    <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+    <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 [overflow-wrap:anywhere]">
       {empty && <Starters onPick={send} />}
       <div role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions" className="space-y-4">
         {messages.map((message) => (
           <ChatMessageView key={message.id} message={message} />
         ))}
         {thinking && <Thinking />}
-        {failed && <CouldNotAnswer onRetry={retry} />}
+        {failed && <CouldNotAnswer sentence={failure} onRetry={retry} />}
       </div>
     </div>
   );

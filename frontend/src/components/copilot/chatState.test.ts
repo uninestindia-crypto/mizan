@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { normaliseReply } from "../../lib/copilot";
+import { type ChatReply, normaliseReply } from "../../lib/copilot";
 import {
   type AssistantMessage,
   type ChatAction,
   type ChatState,
   chatReducer,
   initialChat,
+  keyHelp,
+  replyExplainsKeys,
   visibleProposals,
 } from "./chatState";
 
@@ -30,6 +32,70 @@ describe("the buttons under a reply", () => {
 
   it("shows every button when an AI model answered", () => {
     expect(visibleProposals(answered("ai"))).toEqual([addKey, openTcs]);
+  });
+});
+
+describe("when a reply already talks about AI keys", () => {
+  const addKey = { kind: "navigate" as const, label: "Add an AI key", path: "/settings/accounts", symbol: null };
+  const make = (text: string, mode: "ai" | "built_in", proposals: ChatReply["proposals"] = []) => {
+    const state = run([
+      { type: "sent", content: "hi", requestId: 1 },
+      { type: "replied", requestId: 1, reply: { ...reply(text), mode, proposals } },
+    ]);
+    return state.messages[1] as AssistantMessage;
+  };
+  const NEED_AI = "To ask open-ended questions, add an AI key: open Settings, then Accounts and keys.";
+  const REJECTED = "That AI service did not accept your key. Open Settings, then Accounts and keys, and check it.";
+
+  it("recognises the engine's own key sentences", () => {
+    expect(replyExplainsKeys(`Which stock?\n\n${NEED_AI}`)).toBe(true);
+    expect(replyExplainsKeys(REJECTED)).toBe(true);
+    expect(replyExplainsKeys("TCS passes both standards. Key ratios are below.")).toBe(false);
+  });
+
+  it("adds a note and a button of its own only when the reply says nothing about keys", () => {
+    expect(keyHelp(make("Which stock?", "built_in"))).toBe("footer");
+    expect(keyHelp(make("Which stock?", "ai"))).toBe("none");
+  });
+
+  it("adds no note when the reply already says to add a key, and keeps the engine's one button", () => {
+    const message = make(`Which stock?\n\n${NEED_AI}`, "built_in", [addKey]);
+    expect(keyHelp(message)).toBe("none");
+    expect(visibleProposals(message)).toEqual([addKey]);
+  });
+
+  it("adds no note after a rejected key either, but makes sure there is one clear button", () => {
+    const withButton = make(REJECTED, "built_in", [addKey]);
+    expect(keyHelp(withButton)).toBe("none");
+    expect(keyHelp(make(REJECTED, "built_in"))).toBe("button");
+  });
+});
+
+describe("a message the engine refuses", () => {
+  it("takes the refused message out of the conversation and keeps the engine's sentence", () => {
+    const state = run([
+      { type: "sent", content: "hi", requestId: 1 },
+      { type: "failed", requestId: 1, refusal: "Your message is too long." },
+    ]);
+    expect(state).toMatchObject({ status: "failed", failure: "Your message is too long.", messages: [] });
+  });
+
+  it("keeps the question after any other failure, with no sentence of its own", () => {
+    const state = run([
+      { type: "sent", content: "hi", requestId: 1 },
+      { type: "failed", requestId: 1 },
+    ]);
+    expect(state).toMatchObject({ status: "failed", failure: null });
+    expect(state.messages).toHaveLength(1);
+  });
+
+  it("forgets the sentence when the person sends something new", () => {
+    const state = run([
+      { type: "sent", content: "hi", requestId: 1 },
+      { type: "failed", requestId: 1, refusal: "Too long." },
+      { type: "sent", content: "shorter", requestId: 2 },
+    ]);
+    expect(state).toMatchObject({ status: "thinking", failure: null });
   });
 });
 

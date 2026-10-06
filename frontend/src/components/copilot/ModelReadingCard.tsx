@@ -7,7 +7,7 @@ function Points({ title, items }: { title: string; items: readonly string[] }) {
   return (
     <div>
       <h4 className="text-[12.5px] font-medium text-ink-3">{title}</h4>
-      <ul className="mt-1 list-disc space-y-0.5 pl-5 text-[13.5px] text-ink">
+      <ul className="mt-1 list-disc space-y-0.5 pl-5 text-[13.5px] text-ink [overflow-wrap:anywhere]">
         {items.map((item, index) => (
           <li key={index}>{item}</li>
         ))}
@@ -18,7 +18,7 @@ function Points({ title, items }: { title: string; items: readonly string[] }) {
 
 function WhoAnswered({ name, modelName }: { name: string; modelName: string | null }) {
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 [overflow-wrap:anywhere]">
       <span className="font-semibold text-ink">{name}</span>
       {modelName && <span className="text-ink-3"> · {modelName}</span>}
     </div>
@@ -28,7 +28,7 @@ function WhoAnswered({ name, modelName }: { name: string; modelName: string | nu
 /** One model's own reading with its reasons. A model that could not answer is shown too, with its reason. */
 export function ModelReadingCard({ model }: { model: ModelView }) {
   return (
-    <li className="space-y-3 rounded-xl border border-line bg-surface px-4 py-3">
+    <li className="min-w-0 space-y-3 rounded-xl border border-line bg-surface px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2 text-[13.5px]">
         <WhoAnswered name={model.name} modelName={model.modelName} />
         {model.answered ? <Badge>{readingWords(model.reading)}</Badge> : <Badge tone="warn">Could not answer</Badge>}
@@ -52,7 +52,7 @@ export function ModelReadingCard({ model }: { model: ModelView }) {
 /** A model that read the evidence differently from the rest, and why. */
 export function DissentCard({ entry }: { entry: DissentView }) {
   return (
-    <li className="space-y-3 rounded-xl border border-line bg-surface-2 px-4 py-3">
+    <li className="min-w-0 space-y-3 rounded-xl border border-line bg-surface-2 px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2 text-[13.5px]">
         <WhoAnswered name={entry.name} modelName={entry.modelName} />
         <Badge>{readingWords(entry.reading)}</Badge>

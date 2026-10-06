@@ -1,6 +1,5 @@
 import { useCallback } from "react";
-import { errorMessage } from "../../lib/api";
-import { buildVerifyRequest, copilotApi, type SecondOpinionRequest } from "../../lib/copilot";
+import { buildVerifyRequest, copilotApi, plainFailure, type SecondOpinionRequest } from "../../lib/copilot";
 import type { RunAction } from "./verifyState";
 
 export interface StartChoice {
@@ -17,10 +16,10 @@ async function startRun(request: SecondOpinionRequest, choice: StartChoice, repo
   try {
     const note = choice.withPick ? (request.pickNote ?? null) : null;
     const started = await copilotApi.startVerify(buildVerifyRequest(request.symbol, choice.providers, note));
-    if (!started.job_id) throw new Error(COULD_NOT_START);
-    report({ type: "started", jobId: started.job_id });
+    if (started.job_id) report({ type: "started", jobId: started.job_id });
+    else report({ type: "startFailed", message: COULD_NOT_START });
   } catch (error) {
-    report({ type: "startFailed", message: errorMessage(error) });
+    report({ type: "startFailed", message: plainFailure(error) });
   }
 }
 

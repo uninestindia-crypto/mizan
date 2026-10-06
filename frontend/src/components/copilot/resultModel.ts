@@ -11,6 +11,7 @@ import type {
   VerifyFacts,
   VerifyResult,
 } from "../../lib/copilot";
+import { friendlyProvider } from "../../lib/copilot";
 
 /** Shown whenever the engine sends no disclosure of its own. The disclosure is never left out. */
 export const FALLBACK_DISCLOSURE =
@@ -27,6 +28,15 @@ const READING_WORDS: Record<string, string> = {
   UNCLEAR: "Not clear",
 };
 const READING_ORDER = ["POSITIVE", "MIXED", "NEGATIVE", "UNCLEAR"];
+
+/** The engine writes a reading in capitals inside its headline; this is how the same reading is said in a sentence. */
+const HEADLINE_WORDS: Record<string, string> = {
+  POSITIVE: "looking positive",
+  MIXED: "mixed",
+  NEGATIVE: "looking negative",
+  UNCLEAR: "not clear",
+};
+const HEADLINE_READING = /\b(POSITIVE|MIXED|NEGATIVE|UNCLEAR)\b/g;
 
 const CONSENSUS_WORDS: Record<string, string> = {
   AGREE: "The models agree",
@@ -64,13 +74,18 @@ export function readingWords(reading: string | null | undefined): string {
   return reading ? (READING_WORDS[reading] ?? "Not clear") : "No reading";
 }
 
+/** The engine's headline with its capitalised reading codes said the way the badges say them. Only for the headline. */
+export function headlineInWords(headline: string): string {
+  return headline.replace(HEADLINE_READING, (code) => HEADLINE_WORDS[code] ?? code);
+}
+
 export function consensusWords(consensus: string): string {
   return CONSENSUS_WORDS[consensus] ?? "The models did not agree on a reading";
 }
 
 /** The company's name for a provider, or its id made readable when the list does not know it. */
 export function providerName(id: string, models: readonly ProviderOption[]): string {
-  return models.find((m) => m.id === id)?.label ?? sentenceCase(id);
+  return models.find((m) => m.id === id)?.label ?? friendlyProvider(id) ?? sentenceCase(id);
 }
 
 const countOf = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -244,6 +259,8 @@ export interface ResultView {
   symbol: string;
   headline: string;
   consensus: string;
+  /** "Shared reading" when several models answered; "Its reading" when only one did. */
+  readingLabel: string;
   sharedReading: string | null;
   answeredLine: string;
   counts: { reading: string; count: number }[];
@@ -251,6 +268,8 @@ export interface ResultView {
   models: ModelView[];
   dissent: DissentView[];
   noDissent: boolean;
+  /** No model was asked, for example because the stock could not be found. Only the headline has anything to say. */
+  empty: boolean;
   notes: string[];
   disclosure: string;
   halal: HalalView | null;
@@ -283,8 +302,9 @@ export function buildResultView(result: VerifyResult, models: readonly ProviderO
   const dissent = (result.dissent ?? []).map((d, i) => dissentView(d, i, models));
   return {
     symbol: result.symbol,
-    headline: result.headline,
+    headline: headlineInWords(result.headline),
     consensus: consensusWords(result.consensus),
+    readingLabel: result.answered === 1 ? "Its reading" : "Shared reading",
     sharedReading: result.reading ? readingWords(result.reading) : null,
     answeredLine: `${result.answered} of ${countOf(result.asked, "model")} answered.`,
     counts: countRows(result.counts ?? {}),
@@ -292,6 +312,7 @@ export function buildResultView(result: VerifyResult, models: readonly ProviderO
     models: (result.verdicts ?? []).map((v, i) => modelView(v, i, models)),
     dissent,
     noDissent: dissent.length === 0 && result.consensus === "AGREE",
+    empty: result.asked === 0,
     notes: [...(result.notes ?? [])],
     disclosure: result.disclosure?.trim() || FALLBACK_DISCLOSURE,
     halal: halalView(result.halal ?? null),

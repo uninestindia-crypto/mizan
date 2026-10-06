@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Badge, Callout } from "../ui";
+import { useNavigate } from "react-router";
+import { Badge, Button, Callout } from "../ui";
 import { FactsShown } from "./FactsShown";
 import { HalalPanel } from "./HalalPanel";
 import { DissentCard, ModelReadingCard } from "./ModelReadingCard";
@@ -36,7 +37,11 @@ function Summary({ view }: { view: ResultModel }) {
       <p className="text-[16px] font-semibold leading-snug text-ink">{view.headline}</p>
       <div className="flex flex-wrap items-center gap-2">
         <Badge>{view.consensus}</Badge>
-        {view.sharedReading && <Badge>Shared reading: {view.sharedReading}</Badge>}
+        {view.sharedReading && (
+          <Badge>
+            {view.readingLabel}: {view.sharedReading}
+          </Badge>
+        )}
       </div>
       <p className="text-[13.5px] text-ink-2">{view.answeredLine}</p>
       <CountList counts={view.counts} />
@@ -77,7 +82,7 @@ function Notes({ notes }: { notes: readonly string[] }) {
   if (notes.length === 0) return null;
   return (
     <Section title="Worth keeping in mind">
-      <ul className="list-disc space-y-1 pl-5 text-[13.5px] text-ink-2">
+      <ul className="list-disc space-y-1 pl-5 text-[13.5px] text-ink-2 [overflow-wrap:anywhere]">
         {notes.map((note, index) => (
           <li key={index}>{note}</li>
         ))}
@@ -86,11 +91,40 @@ function Notes({ notes }: { notes: readonly string[] }) {
   );
 }
 
+const MARKET_DATA_PATH = "/settings/data";
+
+/**
+ * No model was asked, for example because QuantOS has no market data for the stock. The headline says why. The
+ * screener's own result is kept when it has one for the stock; "cannot screen this stock" would only repeat the
+ * headline.
+ */
+function NoModelsAsked({ view, onClose }: { view: ResultModel; onClose: () => void }) {
+  const navigate = useNavigate();
+  const openSettings = () => {
+    onClose();
+    void navigate(MARKET_DATA_PATH);
+  };
+  return (
+    <div className="space-y-6">
+      <p className="text-[16px] font-semibold leading-snug text-ink">{view.headline}</p>
+      <Notes notes={view.notes} />
+      <Callout tone="warn" title="What this is, and what it is not">
+        {view.disclosure}
+      </Callout>
+      {view.halal?.covered && <HalalPanel halal={view.halal} />}
+      <div className="flex justify-end">
+        <Button onClick={openSettings}>Open Settings, then Market data</Button>
+      </div>
+    </div>
+  );
+}
+
 /**
  * A finished second opinion, in a fixed order: the headline and counts, each model's own reading, the dissenters,
  * every note, the disclosure (always shown in full), the screener's halal result, and what the models were shown.
  */
-export function ResultView({ view }: { view: ResultModel }) {
+export function ResultView({ view, onClose }: { view: ResultModel; onClose: () => void }) {
+  if (view.empty) return <NoModelsAsked view={view} onClose={onClose} />;
   return (
     <div className="space-y-6">
       <Summary view={view} />

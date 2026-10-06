@@ -1,48 +1,55 @@
-import * as Dialog from "@radix-ui/react-dialog";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { ChatThread } from "./ChatThread";
 import { Composer } from "./Composer";
 import { useCopilot } from "./CopilotProvider";
-import { DrawerHeader } from "./DrawerHeader";
+import { DRAWER_NOTE_ID, DRAWER_TITLE_ID, DrawerHeader } from "./DrawerHeader";
 
+// It starts below the top bar (h-14) so the Copilot button stays in reach and can close it again.
 const PANEL_STYLE =
-  "q-fade-in fixed inset-y-0 right-0 z-30 flex w-full max-w-[440px] flex-col border-l border-line bg-surface " +
-  "shadow-[var(--shadow-pop)]";
+  "q-fade-in fixed bottom-0 right-0 top-14 z-30 flex w-full max-w-[440px] flex-col overflow-hidden border-l " +
+  "border-line bg-surface shadow-[var(--shadow-pop)]";
+
+/** Escape closes the drawer, unless a window on top of it (the Second opinion, the search) already took the key. */
+function useEscapeToClose(open: boolean, close: () => void): void {
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+      event.preventDefault();
+      close();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, close]);
+}
 
 /**
- * The side panel, on every screen. It is not modal: the page behind it stays readable and usable, and clicking
- * the page does not close it. Escape and the close button do. Focus moves to the message box on open and
- * returns to where the person was on close.
+ * The side panel, on every screen. It is not modal and does not trap the keyboard: the page behind it stays readable
+ * and usable, Tab moves on in the page's own order, and clicking the page does not close it. Escape, Ctrl+J and the
+ * close button do. Focus moves to the message box on open and returns to where the person was on close.
  */
 export function CopilotDrawer() {
-  const { open, openCopilot, closeCopilot, restoreFocus } = useCopilot();
+  const { open, closeCopilot, restoreFocus } = useCopilot();
   const input = useRef<HTMLTextAreaElement>(null);
+  const wasOpen = useRef(false);
+  useEscapeToClose(open, closeCopilot);
+  useEffect(() => {
+    if (open) input.current?.focus();
+    else if (wasOpen.current) restoreFocus();
+    wasOpen.current = open;
+  }, [open, restoreFocus]);
+  if (!open) return null;
   return (
-    <Dialog.Root open={open} onOpenChange={(next) => (next ? openCopilot() : closeCopilot())} modal={false}>
-      <Dialog.Portal>
-        <Dialog.Content
-          onOpenAutoFocus={(event) => {
-            event.preventDefault();
-            input.current?.focus();
-          }}
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            restoreFocus();
-          }}
-          onInteractOutside={(event) => event.preventDefault()}
-          className={PANEL_STYLE}
-        >
-          <DrawerHeader />
-          <ChatThread />
-          <div className="space-y-2 border-t border-line px-4 py-3">
-            <Composer ref={input} />
-            <p className="text-[12px] text-ink-3">
-              The Copilot explains and looks things up. Its answers are information, not advice, and it never places
-              an order.
-            </p>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <div role="dialog" aria-labelledby={DRAWER_TITLE_ID} aria-describedby={DRAWER_NOTE_ID} className={PANEL_STYLE}>
+      <DrawerHeader />
+      <ChatThread />
+      <div className="space-y-2 border-t border-line px-4 py-3">
+        <Composer ref={input} />
+        <p className="text-[12px] text-ink-3">
+          The Copilot explains and looks things up. Its answers are information, not advice, and it never places an
+          order.
+        </p>
+      </div>
+    </div>
   );
 }

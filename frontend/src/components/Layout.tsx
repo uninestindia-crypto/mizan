@@ -19,11 +19,12 @@ import { type ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
 import { ageLabel, date, daysSince } from "../lib/format";
 import { usePaperOrders, useSearch, useStatus, useUpdate, useUpdateSettings } from "../lib/queries";
-import type { Theme } from "../lib/types";
+import type { Status, Theme } from "../lib/types";
 import { CopilotButton } from "./copilot/CopilotButton";
 import { CopilotDrawer } from "./copilot/CopilotDrawer";
 import { CopilotProvider } from "./copilot/CopilotProvider";
 import { SecondOpinionHost } from "./copilot/SecondOpinionHost";
+import { SecondOpinionReady } from "./copilot/SecondOpinionReady";
 import { Logo } from "./Logo";
 import { Badge, cx } from "./ui";
 
@@ -230,196 +231,214 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
   );
 }
 
-function TopHeader({ onSearch }: { onSearch: () => void }) {
+/** Which mode the person is in, and the two ways to change it. Shared by the wide top bar and the phone bar. */
+function useModeSwitch() {
   const status = useStatus();
   const updateSettings = useUpdateSettings();
   const location = useLocation();
   const navigate = useNavigate();
-
-  const isShariahActive = location.pathname.startsWith("/shariah");
-  const shariahModeEnabled = Boolean(status.data?.settings?.shariah_mode);
-
-  const handleSwitchMode = (mode: "quant" | "shariah") => {
-    if (mode === "shariah") {
-      if (!shariahModeEnabled) {
-        updateSettings.mutate({ shariah_mode: true });
-      }
-      if (!isShariahActive) {
-        void navigate("/shariah");
-      }
-    } else {
-      if (isShariahActive) {
-        void navigate("/");
-      }
-    }
+  const isShariah = location.pathname.startsWith("/shariah");
+  const enabled = Boolean(status.data?.settings?.shariah_mode);
+  const goQuant = () => {
+    if (isShariah) void navigate("/");
   };
+  const goShariah = () => {
+    if (!enabled) updateSettings.mutate({ shariah_mode: true });
+    if (!isShariah) void navigate("/shariah");
+  };
+  return { isShariah, enabled, goQuant, goShariah, toggle: isShariah ? goQuant : goShariah };
+}
 
-  const latest = status.data?.index.latest_session;
+// The top bar measures itself (a container), and each piece decides from the bar's own width how much to say. Below
+// the widths named here a piece drops its key hint, then its words, and becomes an icon with a tooltip, so nothing
+// wraps onto a second line and the bar never grows wider than the window.
+const BAR_STYLE =
+  "@container hidden h-14 shrink-0 items-center justify-between gap-3 border-b border-line bg-surface/90 px-6 " +
+  "backdrop-blur-[6px] md:flex";
+const MODE_BUTTON =
+  "flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[7px] px-2 text-[13px] font-medium " +
+  "transition-all @min-[820px]:gap-2 @min-[820px]:px-3.5";
+const MODE_ON_QUANT = "bg-surface text-ink shadow-sm";
+const MODE_ON_SHARIAH = "bg-emerald-700 text-white shadow-sm";
+const MODE_OFF = "text-ink-3 hover:text-ink";
+const ONE_CLICK =
+  "ml-1 hidden rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 " +
+  "@min-[900px]:inline dark:text-emerald-200";
+const SEARCH_BUTTON =
+  "flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-line " +
+  "bg-surface-2 px-2.5 text-[12.5px] text-ink-3 transition-colors hover:border-line-strong hover:text-ink " +
+  "@min-[780px]:px-3";
+const KEY_HINT =
+  "hidden rounded border border-line bg-surface px-1.5 font-sans text-[10px] text-ink-3 @min-[900px]:inline";
+const PILL_STYLE =
+  "flex min-w-0 items-center gap-2 whitespace-nowrap rounded-lg border border-line/60 bg-surface-2/60 px-2 " +
+  "py-1 text-[12px] text-ink-3 @min-[820px]:px-2.5";
 
+function ModeSwitch() {
+  const { isShariah, enabled, goQuant, goShariah } = useModeSwitch();
   return (
-    <header className="hidden h-14 shrink-0 items-center justify-between border-b border-line bg-surface/90 px-6 backdrop-blur-[6px] md:flex">
-      {/* 1-Click Executive Mode Switcher */}
-      <div className="flex items-center gap-3">
-        <div
-          role="radiogroup"
-          aria-label="Application Mode"
-          className="flex rounded-[var(--radius-control)] border border-line bg-surface-2 p-0.5"
-        >
-          <button
-            type="button"
-            role="radio"
-            aria-checked={!isShariahActive}
-            onClick={() => handleSwitchMode("quant")}
-            className={cx(
-              "flex h-8 items-center gap-2 rounded-[7px] px-3.5 text-[13px] font-medium transition-all",
-              !isShariahActive
-                ? "bg-surface text-ink shadow-sm"
-                : "text-ink-3 hover:text-ink",
-            )}
-          >
-            <LayoutDashboard className="size-4" aria-hidden />
-            <span>Institutional QuantOS</span>
-          </button>
+    <div
+      role="radiogroup"
+      aria-label="Application Mode"
+      className="flex shrink-0 rounded-[var(--radius-control)] border border-line bg-surface-2 p-0.5"
+    >
+      <button
+        type="button"
+        role="radio"
+        aria-checked={!isShariah}
+        aria-label="Institutional QuantOS"
+        onClick={goQuant}
+        className={cx(MODE_BUTTON, isShariah ? MODE_OFF : MODE_ON_QUANT)}
+      >
+        <LayoutDashboard className="size-4" aria-hidden />
+        <span>
+          <span className="hidden @min-[640px]:inline">Institutional </span>QuantOS
+        </span>
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={isShariah}
+        aria-label="Mizan Shariah"
+        onClick={goShariah}
+        className={cx(MODE_BUTTON, isShariah ? MODE_ON_SHARIAH : MODE_OFF)}
+      >
+        <Scale className="size-4" aria-hidden />
+        <span>Mizan Shariah</span>
+        {!enabled && !isShariah && <span className={ONE_CLICK}>1-Click</span>}
+      </button>
+    </div>
+  );
+}
 
-          <button
-            type="button"
-            role="radio"
-            aria-checked={isShariahActive}
-            onClick={() => handleSwitchMode("shariah")}
-            className={cx(
-              "flex h-8 items-center gap-2 rounded-[7px] px-3.5 text-[13px] font-medium transition-all",
-              isShariahActive
-                ? "bg-emerald-700 text-white shadow-sm"
-                : "text-ink-3 hover:text-ink",
-            )}
-          >
-            <Scale className="size-4" aria-hidden />
-            <span>Mizan Shariah</span>
-            {!shariahModeEnabled && !isShariahActive && (
-              <span className="ml-1 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 dark:text-emerald-200">
-                1-Click
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
+function marketWords(status: Status): string {
+  const latest = status.index.latest_session;
+  if (status.download.state === "RUNNING") return `Syncing (${status.download.done}/${status.download.total})`;
+  if (status.index.job.state === "RUNNING") return "Indexing NSE...";
+  if (status.index.ready) return `NSE: ${latest ? date(latest) : "Ready"}`;
+  return "NSE: Local Cache";
+}
 
-      {/* Right Controls: Market Status Badge + Search Trigger */}
-      <div className="flex items-center gap-3">
-        {status.data && (
-          <div className="flex items-center gap-2 rounded-lg border border-line/60 bg-surface-2/60 px-2.5 py-1 text-[12px] text-ink-3">
-            <span
-              className={cx(
-                "size-2 rounded-full",
-                status.data.download.state === "RUNNING" || status.data.index.job.state === "RUNNING"
-                  ? "bg-amber-500 animate-pulse"
-                  : status.data.index.ready
-                    ? "bg-emerald-500"
-                    : "bg-amber-500",
-              )}
-            />
-            <span>
-              {status.data.download.state === "RUNNING"
-                ? `Syncing (${status.data.download.done}/${status.data.download.total})`
-                : status.data.index.job.state === "RUNNING"
-                  ? "Indexing NSE..."
-                  : status.data.index.ready
-                    ? `NSE: ${latest ? date(latest) : "Ready"}`
-                    : "NSE: Local Cache"}
-            </span>
-          </div>
-        )}
+function marketDot(status: Status): string {
+  const busy = status.download.state === "RUNNING" || status.index.job.state === "RUNNING";
+  if (busy) return "animate-pulse bg-amber-500";
+  return status.index.ready ? "bg-emerald-500" : "bg-amber-500";
+}
 
+/** How fresh the market data is. It shortens with an ellipsis, never onto a second line, when the bar is tight. */
+function MarketPill({ status }: { status: Status }) {
+  const words = marketWords(status);
+  return (
+    <div className={PILL_STYLE} title={words}>
+      <span className={cx("size-2 shrink-0 rounded-full", marketDot(status))} />
+      <span className="truncate">{words}</span>
+    </div>
+  );
+}
+
+function SearchButton({ onSearch }: { onSearch: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onSearch}
+      aria-label="Search stocks"
+      aria-keyshortcuts="Control+K"
+      title="Search stocks (Ctrl K)"
+      className={SEARCH_BUTTON}
+    >
+      <Search className="size-3.5" aria-hidden />
+      <span className="hidden @min-[780px]:inline">Search stocks</span>
+      <kbd className={KEY_HINT}>Ctrl K</kbd>
+    </button>
+  );
+}
+
+function TopHeader({ onSearch }: { onSearch: () => void }) {
+  const status = useStatus();
+  return (
+    <header className={BAR_STYLE}>
+      <ModeSwitch />
+      <div className="flex min-w-0 items-center justify-end gap-2 @min-[900px]:gap-3">
+        {status.data && <MarketPill status={status.data} />}
+        <SecondOpinionReady />
         <CopilotButton />
-
-        <button
-          type="button"
-          onClick={onSearch}
-          className="flex h-8 items-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 text-[12.5px] text-ink-3 transition-colors hover:border-line-strong hover:text-ink"
-        >
-          <Search className="size-3.5" aria-hidden />
-          <span>Search stocks</span>
-          <kbd className="rounded border border-line bg-surface px-1.5 font-sans text-[10px] text-ink-3">
-            Ctrl K
-          </kbd>
-        </button>
+        <SearchButton onSearch={onSearch} />
       </div>
     </header>
   );
 }
 
-function MobileBar({ onSearch }: { onSearch: () => void }) {
+function PhoneModeButton() {
+  const { isShariah, toggle } = useModeSwitch();
+  const style = isShariah ? "bg-emerald-700 text-white" : "border border-line bg-surface-2 text-ink-2";
+  const Icon = isShariah ? Scale : LayoutDashboard;
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label="Switch Mode"
+      className={cx("flex h-7 items-center gap-1 rounded-full px-2.5 text-[11.5px] font-medium", style)}
+    >
+      <Icon className="size-3" aria-hidden />
+      <span>{isShariah ? "Shariah" : "Quant"}</span>
+    </button>
+  );
+}
+
+function phoneNavStyle({ isActive }: { isActive: boolean }): string {
+  const base = "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium";
+  return cx(base, isActive ? "bg-brand-soft text-brand" : "text-ink-2 hover:bg-surface-2");
+}
+
+type PhoneNavItem = { to: string; label: string; icon: typeof SettingsIcon; end?: boolean };
+
+function PhoneNavLink({ item, waiting }: { item: PhoneNavItem; waiting: number }) {
+  const Icon = item.icon;
+  return (
+    <NavLink to={item.to} end={item.end} className={phoneNavStyle}>
+      <Icon className="size-4" aria-hidden />
+      {item.label}
+      {item.to === "/paper" && <OrdersPill count={waiting} />}
+    </NavLink>
+  );
+}
+
+function PhoneNav() {
   const waiting = useOrdersWaiting();
   const status = useStatus();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const updateSettings = useUpdateSettings();
-  const isShariah = location.pathname.startsWith("/shariah");
-  const shariahModeEnabled = Boolean(status.data?.settings?.shariah_mode);
+  const settings = { to: "/settings", label: "Settings", icon: SettingsIcon, end: false };
+  const mizan = { to: "/shariah", label: "Mizan Shariah", icon: ShieldCheck, end: false };
+  const items: PhoneNavItem[] = status.data?.settings?.shariah_mode
+    ? [...NAV.slice(0, 2), mizan, ...NAV.slice(2), settings]
+    : [...NAV, settings];
+  return (
+    <nav aria-label="Main" className="flex gap-1 overflow-x-auto px-3 pb-2">
+      {items.map((item) => (
+        <PhoneNavLink key={item.to} item={item} waiting={waiting} />
+      ))}
+    </nav>
+  );
+}
 
-  const toggleMode = () => {
-    if (isShariah) {
-      void navigate("/");
-    } else {
-      if (!shariahModeEnabled) updateSettings.mutate({ shariah_mode: true });
-      void navigate("/shariah");
-    }
-  };
-
-  const navItems = status.data?.settings?.shariah_mode
-    ? [
-        ...NAV.slice(0, 2),
-        { to: "/shariah", label: "Mizan Shariah", icon: ShieldCheck },
-        ...NAV.slice(2),
-        { to: "/settings", label: "Settings", icon: SettingsIcon, end: false },
-      ]
-    : [...NAV, { to: "/settings", label: "Settings", icon: SettingsIcon, end: false }];
-
+function MobileBar({ onSearch }: { onSearch: () => void }) {
+  const searchStyle = "rounded-lg p-2 text-ink-2 hover:bg-surface-2";
   return (
     <div className="border-b border-line bg-surface md:hidden">
-      <div className="flex h-14 items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <Logo className="size-7" />
-          <span className="text-[15px] font-semibold">QuantOS</span>
+      <div className="flex h-14 items-center justify-between gap-2 px-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <Logo className="size-7 shrink-0" />
+          <span className="truncate text-[15px] font-semibold">QuantOS</span>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={toggleMode}
-            aria-label="Switch Mode"
-            className={cx(
-              "flex h-7 items-center gap-1 rounded-full px-2.5 text-[11.5px] font-medium transition-colors",
-              isShariah ? "bg-emerald-700 text-white" : "border border-line bg-surface-2 text-ink-2",
-            )}
-          >
-            {isShariah ? <Scale className="size-3" /> : <LayoutDashboard className="size-3" />}
-            <span>{isShariah ? "Shariah" : "Quant"}</span>
-          </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <PhoneModeButton />
+          <SecondOpinionReady />
           <CopilotButton compact />
-          <button type="button" onClick={onSearch} aria-label="Search stocks" className="rounded-lg p-2 text-ink-2 hover:bg-surface-2">
+          <button type="button" onClick={onSearch} aria-label="Search stocks" className={searchStyle}>
             <Search className="size-5" aria-hidden />
           </button>
         </div>
       </div>
-      <nav aria-label="Main" className="flex gap-1 overflow-x-auto px-3 pb-2">
-        {navItems.map(({ to, label, icon: Icon, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              cx(
-                "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium",
-                isActive ? "bg-brand-soft text-brand" : "text-ink-2 hover:bg-surface-2",
-              )
-            }
-          >
-            <Icon className="size-4" aria-hidden />
-            {label}
-            {to === "/paper" && <OrdersPill count={waiting} />}
-          </NavLink>
-        ))}
-      </nav>
+      <PhoneNav />
     </div>
   );
 }

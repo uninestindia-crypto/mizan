@@ -2,7 +2,7 @@
 // (agent_context/decisions/20261006-copilot-api-contract.md) and the small pure helpers both screens share.
 
 import { useQuery } from "@tanstack/react-query";
-import { api } from "./api";
+import { api, ApiError, errorMessage } from "./api";
 
 // ----------------------------------------------------------------------------------------------- chat shapes
 
@@ -151,7 +151,7 @@ export interface VerifyProgress {
 }
 
 export interface VerifyPoll {
-  status: "running" | "done" | "failed";
+  status: "running" | "done" | "failed" | "cancelled";
   progress: VerifyProgress | null;
   result: VerifyResult | null;
   error: string | null;
@@ -171,6 +171,9 @@ export const copilotApi = {
   models: listModels,
   startVerify: (body: VerifyRequest) => api<{ job_id: string }>("/api/v2/copilot/verify", "POST", body),
   pollVerify: (jobId: string) => api<VerifyPoll>(`/api/v2/copilot/verify/${encodeURIComponent(jobId)}`),
+  /** Asks the engine to stop a run for good. A caller that does not need the answer may ignore a failure. */
+  cancelVerify: (jobId: string) =>
+    api<{ cancelled?: boolean }>(`/api/v2/copilot/verify/${encodeURIComponent(jobId)}`, "DELETE"),
 };
 
 export const copilotKeys = { models: ["copilot", "models"] as const };
@@ -184,10 +187,10 @@ export function useCopilotModels(enabled = true) {
 
 /** The engine reads this many recent turns; sending more only makes the request larger. */
 export const HISTORY_LIMIT = 8;
-/** What a person may type in one message. */
-export const MAX_MESSAGE_CHARS = 2000;
-/** The most the engine accepts for one turn, which a long reply from the Copilot itself can approach. */
-const MAX_TURN_CHARS = 4000;
+/** The most the engine accepts for one turn. A person may type that much, and a long reply can approach it. */
+export const MAX_MESSAGE_CHARS = 4000;
+/** The counter appears once a message is longer than this. */
+const COUNT_FROM = 3500;
 const MAX_PICK_NOTE_CHARS = 300;
 const MAX_PROVIDERS = 6;
 
@@ -209,7 +212,7 @@ export function buildChatRequest(turns: readonly ChatTurn[], page: string | null
   const recent = turns
     .filter((t) => t.content.trim() !== "")
     .slice(-HISTORY_LIMIT)
-    .map((t): ChatTurn => ({ role: t.role, content: t.content.slice(0, MAX_TURN_CHARS) }));
+    .map((t): ChatTurn => ({ role: t.role, content: t.content.slice(0, MAX_MESSAGE_CHARS) }));
   while (recent.length > 0 && recent[0]?.role !== "user") recent.shift();
   return { messages: recent, page: isSafeAppPath(page) ? page : null, agent_id: null };
 }
@@ -227,6 +230,53 @@ export function buildVerifyRequest(
 /** The ready providers to tick at first: up to three, in the order the engine listed them. */
 export function defaultSelection(models: readonly ProviderOption[], limit = 3): string[] {
   return models.filter((m) => m.ready).slice(0, limit).map((m) => m.id);
+}
+
+const thousands = (n: number) => n.toLocaleString("en-IN");
+
+/** A quiet counter near the limit and a plain sentence at it; nothing for an ordinary message. */
+export function lengthNote(count: number): string | null {
+  if (count >= MAX_MESSAGE_CHARS) {
+    return `You have reached the limit of ${thousands(MAX_MESSAGE_CHARS)} characters. Shorten the message to add more.`;
+  }
+  return count > COUNT_FROM ? `${thousands(count)} of ${thousands(MAX_MESSAGE_CHARS)}` : null;
+}
+
+// ------------------------------------------------------------------------------------------------ plain wording
+
+const PROVIDER_NAMES: Record<string, string> = {
+  anthropic: "Anthropic (Claude)",
+  openai: "OpenAI",
+  gemini: "Google Gemini",
+  groq: "Groq",
+  deepseek: "DeepSeek",
+  mistral: "Mistral",
+  openrouter: "OpenRouter",
+};
+
+/** The company's name for an AI provider id, or null when it is not one the screen can name. Never a model id. */
+export function friendlyProvider(id: string | null | undefined): string | null {
+  return id ? (PROVIDER_NAMES[id] ?? null) : null;
+}
+
+export const SOMETHING_WRONG = "Something went wrong. Please try again in a moment.";
+export const OFFLINE_MESSAGE = "QuantOS is not responding. Close it and open it again, then try once more.";
+
+/** A request the engine refused comes back with one plain sentence of its own. A crash does not. */
+function isRefusal(error: unknown): error is ApiError {
+  const refused = error instanceof ApiError && error.status >= 400 && error.status < 500;
+  return refused && error.code !== "CSRF_UNAVAILABLE" && !error.code.startsWith("HTTP_");
+}
+
+/** The engine's own sentence for a request it refused, such as a message it cannot read, or null. */
+export function refusalSentence(error: unknown): string | null {
+  return isRefusal(error) ? errorMessage(error).trim() || null : null;
+}
+
+/** What to tell a person about a failed call: the engine's sentence when it sent one, never a raw error. */
+export function plainFailure(error: unknown): string {
+  if (error instanceof ApiError && error.code === "ENGINE_OFFLINE") return OFFLINE_MESSAGE;
+  return refusalSentence(error) ?? SOMETHING_WRONG;
 }
 
 // -------------------------------------------------------------------------------------------- reply cleaning
