@@ -393,3 +393,21 @@ def test_the_copilot_prices_a_stock_from_the_live_service_with_its_freshness_lab
     monkeypatch.setattr(copilot_wiring, "_quotes", lambda: FakeQuotes(entry))
     body = _chat(ready, headers, "price of AAA")
     assert "130.5" in body["reply"] and "last closing price" in body["reply"]
+
+
+def _expired_key() -> str:
+    import base64
+
+    def part(data: dict[str, object]) -> str:
+        return base64.urlsafe_b64encode(json.dumps(data).encode()).decode().rstrip("=")
+
+    return f"{part({'alg': 'none'})}.{part({'exp': 1})}.{CANARY}"
+
+
+def test_an_expired_broker_key_is_not_reported_as_ready(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("UPSTOX_ANALYTICS_TOKEN", _expired_key())
+    body = client.get("/api/v2/copilot/status").json()
+    assert body["live_prices"]["ready"] is False and "expired" in body["live_prices"]["message"]
+    assert CANARY not in json.dumps(body)

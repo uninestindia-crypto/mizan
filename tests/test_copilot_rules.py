@@ -9,7 +9,11 @@ import pytest
 
 from quant_system.copilot.rules import AnswerContext, answer_without_ai
 from quant_system.copilot.tools import default_registry
-from tests.copilot_fakes import FakeNews, FakeQuotes, make_context
+from tests.copilot_fakes import FakeNews, FakeQuotes, WordIndex, make_context
+
+NO_ADVICE = "I can't tell you whether to buy or sell."
+NO_ADVICE_WITH_FACTS = f"{NO_ADVICE} Here are the facts to look at yourself:"
+MENU_START = "I can answer from what is inside QuantOS"
 
 
 def _ask(text: str, page: str | None = None, ai: bool = False, **context: Any) -> Any:
@@ -121,7 +125,7 @@ def test_a_question_about_the_portfolio_uses_the_portfolio_tool_and_shows_rupees
     None
 ):
     summary = {
-        "totals": {"value": 123456.7, "cost": 100000.0, "pnl": 23456.7, "pnl_pct": 0.234567},
+        "totals": {"value": 123456.7, "cost": 100000.0, "pnl": 23456.7, "pnl_pct": 23.4567},
         "warnings": ["AAA is 62% of your portfolio (above 40%)."],
         "note": "Values use each stock's last end-of-day close, not live prices.",
     }
@@ -158,3 +162,135 @@ def test_no_reply_asks_for_a_terminal_a_file_or_a_code_setting(text: str) -> Non
 def test_nothing_is_ever_described_as_a_recommendation_or_an_edge(word: str) -> None:
     reply = _ask("is AAA halal").reply.lower() + _ask("AAA facts").reply.lower()
     assert word not in reply
+
+
+@pytest.mark.parametrize(
+    ("percent_points", "shown"), [(23.4567, "+23.5%"), (-4.26, "-4.3%"), (0.31, "+0.3%")]
+)
+def test_a_percent_from_the_portfolio_tool_is_shown_as_it_is_and_not_multiplied_again(
+    percent_points: float, shown: str
+) -> None:
+    totals = {"value": 1000.0, "cost": 900.0, "pnl": 100.0, "pnl_pct": percent_points}
+    result = _ask("my portfolio", portfolio=lambda: {"totals": totals, "warnings": []})
+    assert shown in result.reply
+
+
+# ------------------------------------------------------------------------------------- everyday words are not stocks
+
+EVERYDAY_WORDS = [
+    ("is that a good idea?", "IDEA"),
+    ("explain beta to me", "BETA"),
+    ("how do I value a company", "VALUE"),
+    ("take me through the basics", "TAKE"),
+    ("what does total return mean", "TOTAL"),
+    ("is the global economy slowing", "GLOBAL"),
+    ("what is momentum", "MOMENTUM"),
+    ("explain alpha to me", "ALPHA"),
+    ("a clean energy story", "CLEAN"),
+    ("a deep dive please", "DEEP"),
+    ("why is oil so expensive", "OIL"),
+    ("what is a sigma move", "SIGMA"),
+    ("how are star ratings made", "STAR"),
+    ("i am happy with this", "HAPPY"),
+]
+
+
+@pytest.mark.parametrize(("text", "word"), EVERYDAY_WORDS)
+def test_an_ordinary_word_is_never_taken_for_a_stock(text: str, word: str) -> None:
+    result = _ask(text, ai=True, index=WordIndex())
+    assert result.steps == [] and result.proposals == []
+    assert MENU_START in result.reply and word not in result.reply
+
+
+@pytest.mark.parametrize(
+    ("text", "company"),
+    [
+        ("how is IDEA doing?", "VODAFONE IDEA LTD"),
+        ("facts on BETA", "BETA DRUGS LTD"),
+        ("TOTAL stats please", "TOTAL TRANSPORT LTD"),
+    ],
+)
+def test_the_same_word_written_in_capitals_is_read_as_a_stock_symbol(
+    text: str, company: str
+) -> None:
+    result = _ask(text, index=WordIndex())
+    assert company in result.reply and "Last close" in result.reply
+
+
+@pytest.mark.parametrize("text", ["is aaa halal?", "how is aaa doing?", "is idea halal"])
+def test_a_symbol_in_lower_case_is_not_guessed_and_the_person_is_told_how_to_write_it(
+    text: str,
+) -> None:
+    result = _ask(text, index=WordIndex())
+    assert result.steps == []
+    assert "which stock" in result.reply.lower() and "capital letters" in result.reply
+
+
+def test_a_stock_named_in_capitals_beats_the_one_on_screen() -> None:
+    result = _ask("is IDEA halal?", page="/stock/AAA", index=WordIndex())
+    assert "IDEA" in result.reply and "ALPHA" not in result.reply
+
+
+def test_the_stock_a_workflow_passes_in_wins_over_words_in_the_text() -> None:
+    registry = default_registry(make_context(index=WordIndex()))
+    context = AnswerContext(symbol="AAA")
+    result = answer_without_ai("show me the facts, not the idea behind them", registry, context)
+    assert "ALPHA LTD" in result.reply and "Last close" in result.reply
+
+
+@pytest.mark.parametrize(
+    ("text", "names"),
+    [
+        ("is TCS or INFY halal?", "TCS or INFY"),
+        ("compare INFY and TCS facts", "INFY or TCS"),
+        ("news on TCS, INFY and WIPRO", "TCS, INFY or WIPRO"),
+        ("second opinion on TCS vs INFY", "TCS or INFY"),
+    ],
+)
+def test_two_stocks_in_one_question_get_a_plain_question_and_no_guess(
+    text: str, names: str
+) -> None:
+    result = _ask(text, index=WordIndex())
+    assert f"Which stock do you mean: {names}?" in result.reply
+    assert {s.tool for s in result.steps} == {"find_stock"}  # no screener, news or opinion was run
+
+
+@pytest.mark.parametrize(
+    "text", ["AAA", "AAA facts", "is AAA halal?", "second opinion on AAA", "AAA and AAA", "AAA AAA"]
+)
+def test_the_stock_lookup_is_recorded_once_per_symbol(text: str) -> None:
+    result = _ask(text, ai=True)
+    assert [s.tool for s in result.steps].count("find_stock") == 1
+
+
+# ------------------------------------------------------------------------------------- asking for advice
+
+
+@pytest.mark.parametrize("text", ["Should I buy AAA?", "Is AAA a good buy?", "sell AAA?"])
+def test_a_question_that_asks_for_advice_gets_the_facts_with_a_plain_line_first(
+    text: str,
+) -> None:
+    reply = _ask(text).reply
+    assert reply.startswith(NO_ADVICE_WITH_FACTS)
+    assert "Last close" in reply and "ALPHA LTD" in reply
+
+
+def test_a_halal_question_that_also_asks_for_advice_gets_the_line_before_the_screener() -> None:
+    reply = _ask("is AAA halal to buy?").reply
+    assert reply.startswith(NO_ADVICE_WITH_FACTS) and "AAOIFI" in reply
+
+
+def test_an_advice_question_with_no_facts_to_show_still_says_it_cannot_advise() -> None:
+    reply = _ask("should I buy TCS or INFY", index=WordIndex()).reply
+    assert reply.startswith(NO_ADVICE) and "Here are the facts" not in reply
+    assert "Which stock do you mean: TCS or INFY?" in reply
+
+
+def test_an_advice_question_that_matches_nothing_gets_the_menu_which_already_says_so() -> None:
+    reply = _ask("is it wise to sell?", ai=True).reply
+    assert reply.startswith(MENU_START) and "what to buy or sell" in reply
+
+
+@pytest.mark.parametrize("text", ["how is AAA doing?", "is AAA halal", "AAA facts"])
+def test_a_question_that_does_not_ask_for_advice_gets_no_such_line(text: str) -> None:
+    assert "can't tell you whether" not in _ask(text).reply

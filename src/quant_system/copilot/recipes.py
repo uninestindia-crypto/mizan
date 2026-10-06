@@ -48,7 +48,10 @@ RECIPES: tuple[Recipe, ...] = (
         id="recipe-check-stock",
         name="Check a stock, step by step",
         description="Price facts, halal screening, news and a button for an independent AI second opinion.",
-        instructions=f"Be brief. Finish with two lines: what looks fine and what to double-check. {_HONEST}",
+        instructions=(
+            "Be brief. Finish with two lines: what the facts show and what to double-check. "
+            f"{_HONEST}"
+        ),
         tools=(
             "stock_facts",
             "shariah_check",

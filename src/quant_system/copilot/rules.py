@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from quant_system.copilot.agent import AgentResult, Step
+from quant_system.copilot.guard import is_advice
 from quant_system.copilot.registry import Proposal, ToolRegistry, ToolResult, failure
 
 __all__ = ["AnswerContext", "answer_without_ai", "render_halal"]
@@ -33,6 +34,11 @@ _NEED_AI = (
 )
 _ADD_KEY_BUTTON = Proposal("navigate", "Add an AI key", "/settings/accounts")
 _NOT_ALLOWED = "This assistant is not set up to look that up. Open Agents, edit it, and tick that item in its list."
+_WHICH_STOCK = "Which stock do you mean? Write its symbol in capital letters, for example TCS."
+_WHICH_FOR_OPINION = "Which stock should the AI models look at? Write its symbol in capital letters, for example TCS."
+_NO_ADVICE = "I can't tell you whether to buy or sell."
+_NO_ADVICE_WITH_FACTS = f"{_NO_ADVICE} Here are the facts to look at yourself:"
+_MAX_SYMBOL_LOOKUPS = 12  # capital-letter words checked in one question
 _MENU = """I can answer from what is inside QuantOS:
 - **Halal screening** for a stock ("is TCS halal?"), with every ratio and where the data comes from
 - **Price facts** ("how is INFY doing?")
@@ -65,13 +71,16 @@ class _Run:
     symbol: str | None = None
     steps: list[Step] = field(default_factory=list)
     proposals: list[Proposal] = field(default_factory=list)
+    looked_up: dict[str, bool] = field(default_factory=dict)  # word -> is it a stock symbol
+    answered: bool = False  # a read-only lookup succeeded, so facts are being shown
 
     def call(self, tool: str, args: dict[str, Any]) -> ToolResult:
         if self.allowed is not None and tool not in self.allowed:
-            result = failure(f"{tool}: not allowed", _NOT_ALLOWED)
+            result = failure("Not allowed for this assistant.", _NOT_ALLOWED)
         else:
             result = self.registry.call(tool, args)
         self.steps.append(Step(tool, self.registry.label(tool), result.summary, result.ok))
+        self.answered = self.answered or (result.ok and not tool.startswith("suggest_"))
         self.offer(*result.proposals)
         return result
 
@@ -83,24 +92,53 @@ def _words(text: str) -> set[str]:
     return {w.upper() for w in re.findall(r"[A-Za-z][A-Za-z']*", text)}
 
 
-def _known_symbol(run: _Run, token: str) -> bool:
+def _lookup_symbol(run: _Run, token: str) -> bool:
     found = run.registry.call("find_stock", {"query": token})
     matches = found.data.get("matches", []) if found.ok else []
-    if not any(m["symbol"] == token for m in matches):
-        return False
-    run.steps.append(Step("find_stock", run.registry.label("find_stock"), found.summary, True))
-    return True
+    known = any(m["symbol"] == token for m in matches)
+    if known:
+        run.steps.append(Step("find_stock", run.registry.label("find_stock"), found.summary, True))
+    return known
 
 
-def _find_symbol(run: _Run, text: str, page: str | None) -> str | None:
+def _known_symbol(run: _Run, token: str) -> bool:
+    """Whether the market data has a stock with exactly this symbol. Asked once per word, however often it recurs.
+
+    This is the one lookup the built-in answers make on their own, to read a symbol out of the person's words, so it
+    goes straight to the market data instead of through an assistant's list of allowed items.
+    """
+    if token not in run.looked_up:
+        run.looked_up[token] = _lookup_symbol(run, token)
+    return run.looked_up[token]
+
+
+def _capital_words(text: str) -> list[str]:
+    """Words written entirely in capitals, in order, once each. Only these can be a stock symbol.
+
+    A word typed in lower case or as a Capitalised word is ordinary language ("idea", "Beta", "Total"), even when a
+    listed company has that very symbol, so it is never looked up and never guessed at.
+    """
+    words = re.findall(r"[A-Za-z][A-Za-z0-9&-]{1,14}", text)
+    return list(dict.fromkeys(w for w in words if w.isupper() and w not in _STOP))
+
+
+def _named_symbols(run: _Run, text: str, page: str | None) -> list[str]:
+    """The stocks the question is about: a workflow's stock, else those written in capitals, else the screen's."""
     if run.symbol:
-        return run.symbol
-    tokens = [str(t).upper() for t in re.findall(r"[A-Za-z][A-Za-z0-9&-]{1,14}", text)]
-    for token in tokens:
-        if token not in _STOP and _known_symbol(run, token):
-            return token
+        return [run.symbol]
+    named = [w for w in _capital_words(text)[:_MAX_SYMBOL_LOOKUPS] if _known_symbol(run, w)]
+    if named:
+        return named
     on_screen = re.match(r"^/stock/([A-Za-z0-9&-]+)", page or "")
-    return str(on_screen.group(1)).upper() if on_screen else None
+    return [str(on_screen.group(1)).upper()] if on_screen else []
+
+
+def _which(named: list[str], none_named: str) -> str:
+    """The plain question to ask when the words did not settle on exactly one stock."""
+    if not named:
+        return none_named
+    names = f"{', '.join(named[:-1])} or {named[-1]}" if len(named) > 1 else named[0]
+    return f"Which stock do you mean: {names}?"
 
 
 # ------------------------------------------------------------------------------------- renderers
@@ -198,7 +236,7 @@ def _render_portfolio(data: dict[str, Any]) -> str:
             data.get("note") or "You have not added any holdings yet. Open Portfolio to add them."
         )
     change = totals.get("pnl_pct")
-    percent = f" ({float(change) * 100:+.1f}%)" if isinstance(change, (int, float)) else ""
+    percent = f" ({float(change):+.1f}%)" if isinstance(change, (int, float)) else ""
     lines = [
         "**Your portfolio**",
         f"- Value: {_rupees(totals.get('value'))} (you paid {_rupees(totals.get('cost'))})",
@@ -215,18 +253,20 @@ def _render_portfolio(data: dict[str, Any]) -> str:
 def _stock_question(
     run: _Run, text: str, page: str | None, tool: str, render: Callable[[dict[str, Any]], str]
 ) -> str:
-    symbol = _find_symbol(run, text, page)
-    if symbol is None:
-        return "Which stock do you mean? Tell me its name or symbol, for example TCS."
+    named = _named_symbols(run, text, page)
+    if len(named) != 1:
+        return _which(named, _WHICH_STOCK)
+    symbol = named[0]
     key = "symbols" if tool == "live_quote" else "symbol"
     result = run.call(tool, {key: [symbol] if tool == "live_quote" else symbol})
     return render(result.data) if result.ok else str(result.error)
 
 
 def _second_opinion(run: _Run, text: str, page: str | None, ai_available: bool) -> str:
-    symbol = _find_symbol(run, text, page)
-    if symbol is None:
-        return "Which stock should the AI models look at? Tell me its name or symbol."
+    named = _named_symbols(run, text, page)
+    if len(named) != 1:
+        return _which(named, _WHICH_FOR_OPINION)
+    symbol = named[0]
     run.call("suggest_second_opinion", {"symbol": symbol})
     if ai_available:
         return (
@@ -277,7 +317,7 @@ def _route(run: _Run, text: str, page: str | None, ai_available: bool) -> str:
     ):
         if words & trigger:
             return _portfolio(run, kind)
-    if words & {"FACTS", "STATS", "DOING", "ABOUT", "SUMMARY"} or _find_symbol(run, text, None):
+    if words & {"FACTS", "STATS", "DOING", "ABOUT", "SUMMARY"} or _named_symbols(run, text, None):
         return _stock_question(run, text, page, "stock_facts", _render_facts)
     return _MENU
 
@@ -288,6 +328,9 @@ def answer_without_ai(
     context = context or AnswerContext()
     run = _Run(registry, context.allowed, context.symbol)
     reply = _route(run, text, context.page, context.ai_available)
+    # The menu already says it cannot tell anyone what to buy or sell; every other answer says so first.
+    if reply != _MENU and is_advice(text):
+        reply = f"{_NO_ADVICE_WITH_FACTS if run.answered else _NO_ADVICE}\n\n{reply}"
     if context.hint and not context.ai_available and "add an AI key" not in reply:
         reply = f"{reply}\n\n{_NEED_AI}"
         run.offer(_ADD_KEY_BUTTON)

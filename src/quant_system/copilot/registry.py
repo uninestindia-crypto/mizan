@@ -86,6 +86,15 @@ class Param:
     required: bool = True
 
 
+@dataclass(frozen=True, slots=True)
+class ToolText:
+    """The three things said about a tool, to two different readers."""
+
+    label: str  # the person: a few plain words, shown in the activity trail and the agent editor
+    help: str  # the person: one plain sentence under the label in the agent editor
+    description: str  # the model only: what the tool does and how to use it; may name code
+
+
 @dataclass(slots=True)
 class ToolSpec:
     name: str
@@ -93,6 +102,7 @@ class ToolSpec:
     description: str  # for the model
     params: tuple[Param, ...]
     handler: Callable[[Mapping[str, Any]], ToolResult]
+    help: str = ""  # for the person: one plain sentence; never an instruction to the model
 
 
 @dataclass(slots=True)
@@ -135,13 +145,16 @@ def check_args(spec: ToolSpec, args: Mapping[str, Any]) -> str | None:
 def bound(
     ctx: ToolContext,
     name: str,
-    label: str,
-    description: str,
+    text: ToolText,
     params: tuple[Param, ...],
     fn: Callable[[ToolContext, Mapping[str, Any]], ToolResult],
 ) -> ToolSpec:
     """A tool whose handler is ``fn`` with the context already supplied."""
-    return ToolSpec(name, label, description, params, lambda args: fn(ctx, args))
+
+    def handler(args: Mapping[str, Any]) -> ToolResult:
+        return fn(ctx, args)
+
+    return ToolSpec(name, text.label, text.description, params, handler, text.help)
 
 
 class ToolRegistry:
@@ -156,9 +169,13 @@ class ToolRegistry:
         return spec.label if spec else name
 
     def catalog(self) -> list[dict[str, str]]:
-        """What the interface shows when a person picks tools for an agent: plain labels, no code names."""
+        """What the screens need to let a person pick tools for an agent.
+
+        ``label`` and ``help`` are for the person. ``description`` is written for the model (it may name code and
+        give instructions), so a screen must never show it. ``name`` is only what the choice is saved under.
+        """
         return [
-            {"name": s.name, "label": s.label, "description": s.description}
+            {"name": s.name, "label": s.label, "help": s.help, "description": s.description}
             for s in self._specs.values()
         ]
 
@@ -179,16 +196,16 @@ class ToolRegistry:
     ) -> ToolResult:
         spec = self._specs.get(name)
         if spec is None or (allowed is not None and name not in allowed):
-            return failure(f"{name}: not available", f"There is no tool called {name}.")
+            return failure("That lookup is not available.", f"There is no tool called {name}.")
         problem = check_args(spec, args)
         if problem:
-            return failure(f"{name}: bad arguments", problem)
+            return failure("The request was not complete.", problem)
         try:
             return spec.handler(args)
         except UserFacingError as error:
-            return failure(f"{name}: could not run", str(error))
+            return failure("Could not run.", str(error))
         except Exception:
             logger.exception("Copilot tool %s failed", name)
             return failure(
-                f"{name}: failed", "That lookup failed unexpectedly, so no answer is available."
+                "The lookup failed.", "That lookup failed unexpectedly, so no answer is available."
             )

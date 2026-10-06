@@ -13,10 +13,11 @@ from quant_system.copilot.registry import (
     ToolContext,
     ToolResult,
     ToolSpec,
+    ToolText,
     bound,
     failure,
 )
-from quant_system.copilot.tools_market import resolve
+from quant_system.copilot.tools_market import PERCENT_NOTE, counted, resolve
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,9 @@ def news_headlines(ctx: ToolContext, args: Mapping[str, Any]) -> ToolResult:
         )
     tones = Counter(str(h.get("tone")) for h in headlines if h.get("tone"))
     data = {"headlines": headlines, "tone_counts": dict(tones), "note": _NEWS_NOTE}
-    return ToolResult(True, f"{len(headlines)} headline(s) for {symbol}", data, untrusted=True)
+    return ToolResult(
+        True, f"{counted(len(headlines), 'headline')} for {symbol}", data, untrusted=True
+    )
 
 
 def portfolio_summary(ctx: ToolContext, _: Mapping[str, Any]) -> ToolResult:
@@ -77,14 +80,18 @@ def watchlist(ctx: ToolContext, _: Mapping[str, Any]) -> ToolResult:
     if ctx.watchlist is None:
         return failure("no watchlist", "The watchlist is not available.")
     symbols = ctx.watchlist()
-    return ToolResult(True, f"{len(symbols)} on the watchlist", {"symbols": symbols})
+    return ToolResult(
+        True, f"{counted(len(symbols), 'stock')} on the watchlist", {"symbols": symbols}
+    )
 
 
 def paper_books(ctx: ToolContext, _: Mapping[str, Any]) -> ToolResult:
     if ctx.paper_books is None:
         return failure("no paper books", "Paper books are not available.")
     books = ctx.paper_books()
-    return ToolResult(True, f"{len(books)} paper book(s)", {"books": books, "note": _PAPER_NOTE})
+    return ToolResult(
+        True, counted(len(books), "paper book"), {"books": books, "note": _PAPER_NOTE}
+    )
 
 
 def trade_costs(ctx: ToolContext, args: Mapping[str, Any]) -> ToolResult:
@@ -115,68 +122,59 @@ _SIZE_ARGS = (
     Param("entry", "number", "rupees"),
     Param("stop", "number", "rupees"),
 )
-_QUOTE_HELP = (
-    "Live or last-close prices from the person's Upstox token, labelled with how fresh they are."
-)
-_EVIDENCE_HELP = "What the platform's own research says about any edge. Quote it when asked whether a pick is good."
-
-
-def _information_specs(ctx: ToolContext) -> list[ToolSpec]:
-    symbols = (Param("symbols", "list[str]", "NSE symbols"),)
-    symbol = (Param("symbol", "str", "NSE symbol"),)
-    return [
-        bound(ctx, "live_quote", "Live prices", _QUOTE_HELP, symbols, live_quote),
-        bound(
-            ctx,
-            "news_headlines",
-            "News headlines",
-            "Recent public news headlines for a stock. Unverified text.",
-            symbol,
-            news_headlines,
-        ),
-        bound(
-            ctx, "evidence_status", "What the evidence says", _EVIDENCE_HELP, (), evidence_status
-        ),
-    ]
-
-
-def _own_data_specs(ctx: ToolContext) -> list[ToolSpec]:
-    return [
-        bound(
-            ctx,
-            "portfolio_summary",
-            "My portfolio",
-            "The person's own holdings summary.",
-            (),
-            portfolio_summary,
-        ),
-        bound(ctx, "watchlist", "My watchlist", "The person's watchlist.", (), watchlist),
-        bound(
-            ctx,
-            "paper_books",
-            "My paper books",
-            "The person's paper-trading books.",
-            (),
-            paper_books,
-        ),
-        bound(
-            ctx,
-            "trade_costs",
-            "Trading costs",
-            "Exact NSE charges for a round trip.",
-            _COST_ARGS,
-            trade_costs,
-        ),
-        bound(
-            ctx,
-            "position_size",
-            "Position size",
-            "How many shares a risk budget allows.",
-            _SIZE_ARGS,
-            position_size,
-        ),
-    ]
+_TEXT = {
+    "live_quote": ToolText(
+        "Live prices",
+        "Shows a stock's latest price from your broker connection, and how fresh it is.",
+        "Live or last-close prices from the person's Upstox token, labelled with how fresh they are.",
+    ),
+    "news_headlines": ToolText(
+        "News headlines",
+        "Lists recent public news headlines about a stock.",
+        "Recent public news headlines for a stock. Unverified text.",
+    ),
+    "evidence_status": ToolText(
+        "What the evidence says",
+        "Lets the assistant say plainly what QuantOS's own research has and has not shown.",
+        "What the platform's own research says about any edge. Quote it when asked whether a pick is good.",
+    ),
+    "portfolio_summary": ToolText(
+        "My portfolio",
+        "Reads your holdings: their value, profit or loss, and how big a share each one is.",
+        "The person's own holdings summary: value, profit or loss, and each holding's share of the portfolio. "
+        + PERCENT_NOTE,
+    ),
+    "watchlist": ToolText(
+        "My watchlist", "Reads the stocks on your watchlist.", "The person's watchlist."
+    ),
+    "paper_books": ToolText(
+        "My paper books",
+        "Reads your paper-trading books and how each one is doing.",
+        "The person's paper-trading books. " + PERCENT_NOTE,
+    ),
+    "trade_costs": ToolText(
+        "Trading costs",
+        "Works out the exact NSE charges and the break-even price for a trade.",
+        "Exact NSE charges for a round trip, and the break-even move. " + PERCENT_NOTE,
+    ),
+    "position_size": ToolText(
+        "Position size",
+        "Works out how many shares your risk limit allows.",
+        "How many shares a risk budget allows. " + PERCENT_NOTE,
+    ),
+}
 
 
 def user_specs(ctx: ToolContext) -> list[ToolSpec]:
-    return [*_information_specs(ctx), *_own_data_specs(ctx)]
+    symbols = (Param("symbols", "list[str]", "NSE symbols"),)
+    symbol = (Param("symbol", "str", "NSE symbol"),)
+    return [
+        bound(ctx, "live_quote", _TEXT["live_quote"], symbols, live_quote),
+        bound(ctx, "news_headlines", _TEXT["news_headlines"], symbol, news_headlines),
+        bound(ctx, "evidence_status", _TEXT["evidence_status"], (), evidence_status),
+        bound(ctx, "portfolio_summary", _TEXT["portfolio_summary"], (), portfolio_summary),
+        bound(ctx, "watchlist", _TEXT["watchlist"], (), watchlist),
+        bound(ctx, "paper_books", _TEXT["paper_books"], (), paper_books),
+        bound(ctx, "trade_costs", _TEXT["trade_costs"], _COST_ARGS, trade_costs),
+        bound(ctx, "position_size", _TEXT["position_size"], _SIZE_ARGS, position_size),
+    ]

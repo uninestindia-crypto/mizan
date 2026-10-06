@@ -5,9 +5,14 @@ import { api, ApiError, errorMessage } from "./api";
 
 // ------------------------------------------------------------------------------------------- types
 
+/**
+ * One thing an agent may look at. Show `label` and `help`. `name` is only what it is saved under, and `description`
+ * is written for the AI model, so no screen shows it.
+ */
 export interface AgentTool {
   name: string;
   label: string;
+  help: string;
   description: string;
 }
 

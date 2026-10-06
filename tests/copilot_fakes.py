@@ -92,6 +92,41 @@ class FakeIndex:
         return FakeSeries(symbol, self._dates, np.linspace(100.0, 128.0, len(self._dates)))
 
 
+class WordIndex(FakeIndex):
+    """An index whose symbols are also everyday English words, as real tickers are (IDEA, BETA, TAKE, VALUE...)."""
+
+    NAMES = {
+        "AAA": "ALPHA LTD",
+        "ALPHA": "ALPHA INDUSTRIES",
+        "BETA": "BETA DRUGS LTD",
+        "CLEAN": "CLEAN SCIENCE LTD",
+        "DEEP": "DEEP INDUSTRIES",
+        "GLOBAL": "GLOBAL SPIRITS LTD",
+        "HAPPY": "HAPPY FORGINGS LTD",
+        "IDEA": "VODAFONE IDEA LTD",
+        "MOMENTUM": "MOMENTUM LTD",
+        "OIL": "OIL INDIA LTD",
+        "SIGMA": "SIGMA SOLVE LTD",
+        "STAR": "STAR CEMENT LTD",
+        "TAKE": "TAKE SOLUTIONS LTD",
+        "TOTAL": "TOTAL TRANSPORT LTD",
+        "VALUE": "VALUE INDUSTRIES LTD",
+        "TCS": "TATA CONSULTANCY SERVICES",
+        "INFY": "INFOSYS LTD",
+        "WIPRO": "WIPRO LTD",
+    }
+
+    def search(self, query: str, limit: int = 20) -> list[dict[str, Any]]:
+        rows = [{"symbol": s, "name": n} for s, n in self.NAMES.items() if query.upper() in (s, n)]
+        return rows[:limit]
+
+    def symbol_info(self, symbol: str) -> dict[str, Any]:
+        if symbol.upper() not in self.NAMES:
+            raise SymbolNotFoundError(symbol)
+        info = super().symbol_info("AAA")
+        return {**info, "symbol": symbol.upper(), "name": self.NAMES[symbol.upper()]}
+
+
 class FakeShariah:
     def company(self, symbol: str) -> dict[str, Any] | None:
         return dict(SAMPLE_ROW) if symbol.upper() == "AAA" else None

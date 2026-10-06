@@ -38,8 +38,8 @@ const needsAi: Recipe = { ...ready, id: "recipe_news", name: "Read the news", ne
 
 const TOOLS = {
   tools: [
-    { name: "stock_facts", label: "Price facts", description: "Prices." },
-    { name: "shariah_check", label: "Halal screening", description: "Both standards." },
+    { name: "stock_facts", label: "Price facts", help: "Prices.", description: "For the model: prices." },
+    { name: "shariah_check", label: "Halal screening", help: "Both standards.", description: "For the model." },
   ],
 };
 

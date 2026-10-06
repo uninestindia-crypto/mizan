@@ -12,8 +12,13 @@ vi.mock("../../lib/api", async (importOriginal) => {
 
 const TOOLS = {
   tools: [
-    { name: "stock_facts", label: "Price facts", description: "Prices and returns." },
-    { name: "shariah_check", label: "Halal screening", description: "Checks both standards." },
+    { name: "stock_facts", label: "Price facts", help: "Prices and returns.", description: "For the model: prices." },
+    {
+      name: "shariah_check",
+      label: "Halal screening",
+      help: "Checks both standards.",
+      description: "For the model: only this tool may state a halal verdict.",
+    },
   ],
 };
 const saved: Agent = {
@@ -56,6 +61,7 @@ describe("the agent form", () => {
     expect(screen.getByText("Optional. For example: keep answers short")).toBeInTheDocument();
     expect(await screen.findByRole("checkbox", { name: /Price facts/ })).toBeInTheDocument();
     expect(screen.getByText("Checks both standards.")).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("only this tool may state");
     expect(document.body.textContent).not.toContain("stock_facts");
     expect(document.body.textContent).not.toContain("shariah_check");
   });

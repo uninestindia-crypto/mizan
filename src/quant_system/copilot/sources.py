@@ -11,9 +11,7 @@ from quant_system.copilot.registry import UserFacingError
 
 __all__ = ["SqliteShariahSource"]
 
-_UNREADABLE = (
-    "The halal screening data could not be opened right now. Restart QuantOS and ask again."
-)
+_UNREADABLE = "The halal screening data could not be opened right now. Close QuantOS, open it again and ask once more."
 
 
 class SqliteShariahSource:

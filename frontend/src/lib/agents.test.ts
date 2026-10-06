@@ -240,7 +240,7 @@ describe("showing the engine's problems under the right field", () => {
 });
 
 describe("what an agent may look at", () => {
-  const tools = [{ name: "stock_facts", label: "Price facts", description: "d" }];
+  const tools = [{ name: "stock_facts", label: "Price facts", help: "Shows price facts.", description: "d" }];
 
   it("shows the plain label and never the name it is saved under", () => {
     expect(toolLabels(["stock_facts"], tools)).toEqual(["Price facts"]);
