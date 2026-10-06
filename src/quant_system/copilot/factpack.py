@@ -65,12 +65,34 @@ class FactPack:
         }
 
 
+def _always(_data: dict[str, Any]) -> bool:
+    return True
+
+
+def _has_price(data: dict[str, Any]) -> bool:
+    """A live quote lookup can succeed and still carry no price (no broker key, or a share it could not price)."""
+    quotes = data.get("quotes")
+    entries = quotes.values() if isinstance(quotes, dict) else ()
+    return any(
+        isinstance(entry, dict)
+        and entry.get("last_price") is not None
+        and entry.get("label") != "UNAVAILABLE"
+        for entry in entries
+    )
+
+
+def _has_headlines(data: dict[str, Any]) -> bool:
+    return bool(data.get("headlines"))
+
+
 @dataclass(frozen=True, slots=True)
 class _Source:
     tool: str
     title: str
     summary: str
     args: Callable[[str], dict[str, Any]]
+    # False when the tool answered but gave the models nothing to read; the source then counts as unavailable.
+    has_content: Callable[[dict[str, Any]], bool] = _always
 
 
 _SOURCES = (
@@ -97,12 +119,14 @@ _SOURCES = (
         "Recent headlines",
         "Public news headlines: unverified text from outside the app",
         lambda s: {"symbol": s},
+        _has_headlines,
     ),
     _Source(
         "live_quote",
         "Live price",
         "The latest price from your broker connection, with its freshness",
         lambda s: {"symbols": [s]},
+        _has_price,
     ),
 )
 
@@ -121,14 +145,15 @@ def _section(source: _Source, result: ToolResult) -> FactSection:
 
 
 def build_fact_pack(registry: ToolRegistry, symbol: str) -> FactPack:
-    """Gather every fact the panel can use. A source that fails is named, never papered over."""
+    """Gather every fact the panel can use. A source that fails, or answers with nothing in it, is named, never
+    papered over: the screen lists as 'shown to the models' only what they were really given."""
     symbol = symbol.strip().upper()
     sections: list[FactSection] = []
     unavailable: list[str] = []
     halal: dict[str, Any] | None = None
     for source in _SOURCES:
         result = registry.call(source.tool, source.args(symbol))
-        if not result.ok:
+        if not result.ok or not source.has_content(result.data):
             unavailable.append(source.title)
             continue
         sections.append(_section(source, result))

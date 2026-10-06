@@ -37,7 +37,10 @@ API or developer tool, and always name the next click ("Open Settings, then Acco
 ```
 
 `page` is the screen path the person is on (optional). `agent_id` runs the chat as that saved agent, or a recipe id
-(optional). Reply (always HTTP 200 for a normal outcome, including "no AI key" and provider failures):
+(optional). Each message may hold up to **4000** characters; a longer one is refused with HTTP 422 and the plain
+sentence "That message is too long. Please shorten it and send again." (see "Other responses" below); the screen must
+not cut a message that is under that limit. Reply (always HTTP 200 for a normal outcome, including "no AI key" and
+provider failures):
 
 ```json
 {
@@ -83,7 +86,8 @@ API or developer tool, and always name the next click ("Open Settings, then Acco
 }
 ```
 
-`status` is `running`, `done` or `failed`. When `done`, `result` is:
+`status` is `running`, `done`, `failed` or `cancelled`. `cancelled` means the person stopped it (see below): `result`
+is null and `error` is "You stopped this check." When `done`, `result` is:
 
 ```json
 {
@@ -116,11 +120,34 @@ API or developer tool, and always name the next click ("Open Settings, then Acco
 }
 ```
 
+`DELETE /copilot/verify/{job_id}` stops a second opinion for good and returns HTTP 200 `{"cancelled": true}`. It needs
+the CSRF header like every other write. It is idempotent: asking again returns the same answer. An id the engine does
+not know returns 404 `{"error": {"code": "NOT_FOUND", "message": "That second opinion is no longer available. Start it
+again."}}`. After it, `GET /copilot/verify/{job_id}` returns `status: "cancelled"`. The job stops counting toward the
+limit of three running second opinions at once, and no AI call that has not started yet is made for it. A call that is
+already out with an AI service cannot be recalled: it finishes in the background and its answer is thrown away, and a
+late result never replaces `cancelled`. A job that had already finished keeps its result and its status (`done` or
+`failed`); the call still returns 200. The screen's Cancel must call this route, not only stop polling.
+
+When the engine cannot ask anyone, `result` says so and no AI is blamed. For a symbol with no price facts, or with no AI
+chosen: `asked` 0, `answered` 0, `consensus` `NONE`, `reading` null, `verdicts` and `dissent` empty, `counts` and
+`news_tones` empty, `notes` empty, and `headline` is the one plain sentence that says what is wrong and names the click
+(for example "I could not find price facts for ZZZ, so no AI was asked. Check the symbol, or connect market data: open
+Settings, then Market data."). Show it as the answer, with `disclosure`; do not add "no AI could answer" wording of
+your own. `facts.unavailable` still lists what was missing.
+
+`facts.sections` lists only what the AI models were really given. A lookup that came back with nothing in it is listed
+under `unavailable` instead: "Live price" when no price came back (no broker connection, or a share it could not
+price), and "Recent headlines" when there were none.
+
 `consensus` is `AGREE`, `MAJORITY`, `SPLIT`, `SINGLE` or `NONE`. `MAJORITY` means more than half of the models that
 answered share one reading; a reading shared by fewer than that (for example 2, 1 and 1 of four) is `SPLIT`. `reading` is
 `POSITIVE`, `MIXED`, `NEGATIVE`, `UNCLEAR` or null (null for `SPLIT` and `NONE`). When fewer models answered than were
-asked, `headline` says so in words ("2 of 5 models answered, and both read the facts as POSITIVE."). Screens must show
-`disclosure` and every entry of `notes` on every result, show the dissenters and
+asked, `headline` says so in words ("2 of 5 models answered, and both read the facts as POSITIVE."). Each entry of `notes`
+is a finished plain-language sentence with correct plurals ("1 AI model", "2 AI models", "1 statement was removed"), and
+names AI services by their friendly label ("Anthropic (Claude)"), never by an id. A note about models that could not
+answer ends "...reason is shown with its answer": the failed model's card is on the screen above the notes. Screens must
+show `disclosure` and every entry of `notes` on every result, show the dissenters and
 their reasons, show which models answered and which could not (and why), and must never present a reading as a
 recommendation, a score or a green light. The halal block is shown as the screener's own result and labelled as
 such; models never produce it.
@@ -198,6 +225,9 @@ Poll no faster than every 15 seconds while the market is open, and not at all in
   `{"error": {"code": "NOT_FOUND", "message": "That agent no longer exists."}}`.
 - `POST /copilot/agents/{id}/run` returns HTTP 429 `{"error": {"code": "TOO_BUSY", "message": "..."}}` when that agent is
   already running or three runs are already in progress. Show `message`; the person can try again in a moment.
+- A chat message over 4000 characters returns HTTP 422 `BAD_REQUEST` with the message "That message is too long.
+  Please shorten it and send again." The screen must show it as written and must not silently cut a message that is
+  under the limit.
 - A request the engine cannot read returns HTTP 422 `{"error": {"code": "BAD_REQUEST", "message": "<one plain
   sentence>", "details": {}}}`. Show `message` as written. (A rejected agent *form* still uses `AGENT_INVALID` with
   `details.problems`.)

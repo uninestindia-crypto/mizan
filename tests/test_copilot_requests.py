@@ -247,7 +247,7 @@ BAD_REQUESTS = [
     (
         "/chat",
         {"messages": [{"role": "user", "content": "x" * 4001}]},
-        "That message is too long. Shorten it and send it again.",
+        "That message is too long. Please shorten it and send again.",
     ),
     (
         "/chat",
@@ -285,6 +285,14 @@ def test_a_bad_request_is_one_plain_sentence_about_what_to_fix(
     error = response.json()["error"]
     assert response.status_code == 422 and error["code"] == "BAD_REQUEST"
     assert error["message"] == sentence and error["details"] == {}
+
+
+@pytest.mark.parametrize("length", [1, 2000, 2001, 4000])
+def test_a_message_up_to_four_thousand_letters_is_accepted(
+    client: TestClient, headers: dict[str, str], length: int
+) -> None:
+    body = _ask(client, headers, "x" * length)
+    assert body["mode"] == "built_in" and body["reply"]
 
 
 def test_a_request_that_cannot_be_read_at_all_says_to_reload(
@@ -390,11 +398,11 @@ def _stalled(clock: _Clock) -> tuple[VerifyJobs, list[Any]]:
     return VerifyJobs(clock=clock, spawn=held.append, deadline=10.0), held
 
 
-def _work(_on_opinion: Any) -> Any:
+def _work(_on_opinion: Any, _cancelled: Any) -> Any:
     return _Done()
 
 
-def _boom(_on_opinion: Any) -> Any:
+def _boom(_on_opinion: Any, _cancelled: Any) -> Any:
     raise RuntimeError("late failure")
 
 

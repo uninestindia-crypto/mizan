@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
+from collections.abc import Callable
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -18,7 +19,8 @@ from quant_system.copilot.registry import Param, ToolRegistry, ToolSpec, UserFac
 from quant_system.copilot.sources import SqliteShariahSource
 from quant_system.copilot.tools import default_registry
 from quant_system.copilot.verify import VerifyOptions, verify_stock
-from quant_system.copilot.verify_jobs import MAX_RUNNING, TooBusyError, VerifyJobs
+from quant_system.copilot.verify_jobs import MAX_RUNNING, TooBusyError, VerifyJobs, Work
+from quant_system.copilot.verify_opinion import Opinion
 from quant_system.copilot.verify_summary import VerificationResult
 from quant_system.lab.costs import BrokerCharges
 from quant_system.server.v2 import copilot_wiring, router
@@ -114,11 +116,14 @@ class _Inline:
         task()  # type: ignore[operator]
 
 
-def _work(models: list[StubModel]) -> object:
+def _work(models: list[StubModel]) -> Work:
     pack = build_fact_pack(default_registry(make_context()), "AAA")
 
-    def work(on_opinion: object) -> VerificationResult:
-        return verify_stock(models, pack, VerifyOptions(recheck=False), on_opinion)  # type: ignore[arg-type]
+    def work(
+        on_opinion: Callable[[Opinion], None], cancelled: Callable[[], bool]
+    ) -> VerificationResult:
+        options = VerifyOptions(recheck=False, cancelled=cancelled)
+        return verify_stock(models, pack, options, on_opinion)
 
     return work
 
@@ -127,7 +132,7 @@ def test_a_finished_job_reports_done_with_its_result_and_full_progress() -> None
     jobs = VerifyJobs(spawn=_Inline())
     job_id = jobs.start(
         _work([StubModel("p0", opinion_json()), StubModel("p1", opinion_json())]), 2
-    )  # type: ignore[arg-type]
+    )
     found = jobs.get(job_id)
     assert (
         found is not None
@@ -138,11 +143,11 @@ def test_a_finished_job_reports_done_with_its_result_and_full_progress() -> None
 
 
 def test_a_job_that_crashes_reports_a_plain_failure_and_not_the_exception() -> None:
-    def crash(_on: object) -> VerificationResult:
+    def crash(_on: object, _cancelled: object) -> VerificationResult:
         raise RuntimeError("boom at /secret/path")
 
     jobs = VerifyJobs(spawn=_Inline())
-    found = jobs.get(jobs.start(crash, 3))  # type: ignore[arg-type]
+    found = jobs.get(jobs.start(crash, 3))
     assert found is not None and found["status"] == "failed" and "/secret/path" not in str(found)
     assert "Accounts and keys" in str(found["error"])
 
@@ -153,18 +158,18 @@ def test_an_unknown_job_is_none() -> None:
 
 def test_only_a_few_jobs_run_at_once() -> None:
     jobs = VerifyJobs(spawn=lambda _task: None)  # never finishes
-    started = [jobs.start(_work([]), 1) for _ in range(MAX_RUNNING)]  # type: ignore[arg-type]
+    started = [jobs.start(_work([]), 1) for _ in range(MAX_RUNNING)]
     assert len(set(started)) == MAX_RUNNING
     with pytest.raises(TooBusyError):
-        jobs.start(_work([]), 1)  # type: ignore[arg-type]
+        jobs.start(_work([]), 1)
 
 
 def test_finished_jobs_are_forgotten_after_a_while() -> None:
     now = [0.0]
     jobs = VerifyJobs(clock=lambda: now[0], spawn=_Inline())
-    old = jobs.start(_work([StubModel("p0", opinion_json())]), 1)  # type: ignore[arg-type]
+    old = jobs.start(_work([StubModel("p0", opinion_json())]), 1)
     now[0] = 99999.0
-    jobs.start(_work([StubModel("p0", opinion_json())]), 1)  # type: ignore[arg-type]
+    jobs.start(_work([StubModel("p0", opinion_json())]), 1)
     assert jobs.get(old) is None
 
 

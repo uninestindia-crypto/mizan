@@ -181,8 +181,8 @@ def test_a_changed_reading_after_the_hint_is_anchoring_in_either_direction(
 ) -> None:
     result = summarise(PACK, [_told(blind, informed), _told(M, M)], 2, [])
     notes = [n for n in result.notes if "changed their reading after being told" in n]
-    assert len(notes) == 1 and notes[0].startswith("1 of 2 model(s)")
-    assert "QuantOS's own model picked it" in notes[0] and "anchoring" in notes[0]
+    assert len(notes) == 1 and notes[0].startswith("1 of 2 AI models changed")
+    assert "QuantOS had picked this stock" in notes[0] and "anchoring" in notes[0]
 
 
 def test_readings_that_do_not_move_after_the_hint_raise_no_anchoring_note() -> None:
@@ -212,3 +212,75 @@ def test_without_a_recheck_asked_for_there_is_no_note_about_reordering() -> None
     model = StubModel("p0", opinion_json())
     result = verify_stock([model], _one_section_pack(), VerifyOptions(recheck=False))
     assert [n for n in result.notes if "different order" in n] == []
+
+
+# ------------------------------------------------------------------------------------- notes in plain words
+
+
+def _notes_with(text: str, result: VerificationResult) -> list[str]:
+    return [n for n in result.notes if text in n]
+
+
+@pytest.mark.parametrize(
+    ("readings", "sentence"),
+    [
+        (
+            [M, None, None],
+            "2 of 3 AI models could not answer. Each one's reason is shown with its answer.",
+        ),
+        ([M, M, None], "1 of 3 AI models could not answer. Its reason is shown with its answer."),
+        ([None], "1 of 1 AI model could not answer. Its reason is shown with its answer."),
+    ],
+    ids=["two-failed", "one-failed", "the-only-one-failed"],
+)
+def test_the_note_about_models_that_could_not_answer_counts_correctly_and_points_to_their_cards(
+    readings: list[str | None], sentence: str
+) -> None:
+    assert _notes_with("could not answer", _result(readings)) == [sentence]
+
+
+def _wobbly(first: str, second: str) -> ModelVerdict:
+    return ModelVerdict(
+        _blind(first), recheck=Opinion("p", "m", "recheck", True, second, "NEUTRAL")
+    )
+
+
+@pytest.mark.parametrize(
+    ("verdicts", "start"),
+    [
+        ([_wobbly(P, N)], "1 of 1 AI model changed their reading"),
+        ([_wobbly(P, N), _wobbly(M, M), _wobbly(N, P)], "2 of 3 AI models changed their reading"),
+    ],
+    ids=["one-of-one", "two-of-three"],
+)
+def test_the_note_about_a_reading_that_changed_with_the_order_counts_ai_models(
+    verdicts: list[ModelVerdict], start: str
+) -> None:
+    notes = _notes_with("different order", summarise(PACK, verdicts, len(verdicts), []))
+    assert len(notes) == 1 and notes[0].startswith(start) and notes[0].endswith("as weak.")
+
+
+def _removed(count: int) -> ModelVerdict:
+    return ModelVerdict(Opinion("p", "m", "blind", True, M, "NEUTRAL", removed=count))
+
+
+@pytest.mark.parametrize(
+    ("count", "start"),
+    [
+        (1, "1 statement was removed because it told you to trade or ruled on halal status."),
+        (3, "3 statements were removed because they told you to trade or ruled on halal status."),
+    ],
+)
+def test_the_note_about_removed_statements_has_the_right_plural_and_verb(
+    count: int, start: str
+) -> None:
+    notes = _notes_with("removed", summarise(PACK, [_removed(count)], 1, []))
+    assert len(notes) == 1 and notes[0] == f"{start} Halal status comes only from the screener."
+
+
+@pytest.mark.parametrize("readings", [[M, None, None], [P, N, M, None], [M, M, M]])
+def test_no_note_uses_a_plural_in_brackets_or_the_word_provider(
+    readings: list[str | None],
+) -> None:
+    text = " ".join(_result(readings).notes)
+    assert "(s)" not in text and "provider" not in text.lower() and "listed below" not in text

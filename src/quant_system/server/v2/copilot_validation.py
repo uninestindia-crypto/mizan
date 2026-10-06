@@ -22,7 +22,7 @@ __all__ = ["BAD_REQUEST", "CopilotRoute", "plain_sentence"]
 BAD_REQUEST: Final = "BAD_REQUEST"
 _FIELD: Final[dict[str, str]] = {
     "symbol": "Use letters and numbers only for the stock symbol, for example TCS.",
-    "content": "That message is too long. Shorten it and send it again.",
+    "content": "That message is too long. Please shorten it and send again.",
     "pick_note": "The note about the pick is too long. Shorten it to 300 letters or fewer.",
     "agent_id": "That assistant could not be found. Pick it again from the list.",
     "name": "Check the name: it must be plain text and not extremely long. Then save again.",

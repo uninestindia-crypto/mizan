@@ -24,6 +24,7 @@ from quant_system.copilot.llm import (
     supported_providers,
     urllib_transport,
 )
+from quant_system.copilot.messages import explain_failure
 
 CANARY = "canary-value-MARKER-1234"
 
@@ -369,3 +370,46 @@ def test_a_reply_shaped_like_nothing_we_know_is_an_error_not_a_crash(
 ) -> None:
     reply = _chat(provider, _Recorder(body=body)).complete("s", "u")
     assert reply.text is None and reply.status == 502 and reply.error
+
+
+# ------------------------------------------------------------------------------------- what a person is told
+
+
+FAILURE_STATUSES = [BAD_KEY_STATUS, 401, 403, 404, 408, 413, 429, 500, 502, 503, 504]
+
+
+@pytest.mark.parametrize("status", FAILURE_STATUSES)
+def test_no_failure_message_uses_the_word_provider_or_a_plural_in_brackets(status: int) -> None:
+    message = explain_failure(status)
+    assert "provider" not in message.lower() and "(s)" not in message
+
+
+@pytest.mark.parametrize("status", [BAD_KEY_STATUS, 401, 403, 404, 429, 500])
+def test_a_failure_that_the_person_can_fix_names_where_to_click(status: int) -> None:
+    assert "Settings, then Accounts and keys" in explain_failure(status)
+
+
+@pytest.mark.parametrize(
+    ("status", "sentence"),
+    [
+        (
+            404,
+            "That AI model is not available with your key. "
+            "Open Settings, then Accounts and keys, and check that key.",
+        ),
+        (
+            429,
+            "That AI service is busy or you have reached its limit. Wait a minute and try again, "
+            "or add a key for another AI service: open Settings, then Accounts and keys.",
+        ),
+        (
+            500,
+            "Something went wrong with the AI service. "
+            "Try again, or add a key for another AI service in Settings, then Accounts and keys.",
+        ),
+    ],
+)
+def test_the_failure_messages_say_ai_service_and_name_the_next_click(
+    status: int, sentence: str
+) -> None:
+    assert explain_failure(status) == sentence

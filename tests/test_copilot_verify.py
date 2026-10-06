@@ -153,12 +153,19 @@ def test_the_disclosure_that_opinions_are_not_evidence_is_always_present(case: s
     assert "no model or strategy has shown an edge" in result.disclosure
 
 
-def test_models_from_one_provider_are_called_less_independent() -> None:
-    same = [StubModel("openai", opinion_json(), "m1"), StubModel("openai", opinion_json(), "m2")]
+@pytest.mark.parametrize(
+    ("provider", "label"), [("openai", "OpenAI"), ("anthropic", "Anthropic (Claude)")]
+)
+def test_models_from_one_ai_service_are_called_less_independent_using_its_friendly_name(
+    provider: str, label: str
+) -> None:
+    same = [StubModel(provider, opinion_json(), "m1"), StubModel(provider, opinion_json(), "m2")]
     result = verify_stock(same, _pack(), VerifyOptions(recheck=False))
-    assert any("one AI provider (openai)" in note for note in result.notes)
+    notes = [note for note in result.notes if "less independent" in note]
+    assert len(notes) == 1 and f"one AI service, {label}, so" in notes[0]
+    assert f"({provider})" not in notes[0] and "provider" not in notes[0].lower()
     mixed = verify_stock(_models("MIXED", "MIXED"), _pack(), VerifyOptions(recheck=False))
-    assert not any("one AI provider" in note for note in mixed.notes)
+    assert not any("one AI service" in note for note in mixed.notes)
 
 
 # ------------------------------------------------------------------------------------- stability, anchoring
@@ -173,7 +180,7 @@ def test_a_model_that_changes_its_mind_when_the_facts_are_reordered_is_flagged()
     steady = StubModel("p1", _by_order("POSITIVE", "POSITIVE"))
     result = verify_stock([wobbly, steady], _pack())
     assert [v.stable for v in result.verdicts] == [False, True]
-    assert any("1 of 2 model(s) changed their reading" in note for note in result.notes)
+    assert any("1 of 2 AI models changed their reading" in note for note in result.notes)
 
 
 def test_a_model_that_warms_to_the_platforms_pick_is_flagged_as_anchored() -> None:
@@ -212,7 +219,7 @@ def test_trading_advice_and_halal_rulings_in_an_answer_are_removed_and_counted()
     opinion = result.verdicts[0].blind
     assert opinion.reasons == ("Steady returns",) and opinion.risks == ("Valuation is rich",)
     assert opinion.missing == () and opinion.removed == 4
-    assert any("4 statement(s) were removed" in note for note in result.notes)
+    assert any("4 statements were removed" in note for note in result.notes)
 
 
 def test_a_sell_off_is_a_risk_not_advice() -> None:
@@ -287,15 +294,29 @@ def test_when_nobody_answers_the_headline_says_so_instead_of_inventing_a_view() 
     )
 
 
-def test_a_stock_with_no_facts_is_not_sent_to_any_model() -> None:
+NO_FACTS = (
+    "I could not find price facts for ZZZ, so no AI was asked. "
+    "Check the symbol, or connect market data: open Settings, then Market data."
+)
+NO_MODELS = (
+    "No AI models were chosen. Pick at least one, or add an AI key: "
+    "open Settings, then Accounts and keys."
+)
+
+
+def test_a_stock_with_no_facts_asks_no_model_and_is_not_reported_as_a_model_failure() -> None:
     model = StubModel("p0", opinion_json())
-    result = verify_stock([model], _pack(None, "ZZZ"))
-    assert model.calls == [] and "nothing to check" in result.headline
+    result = verify_stock([model, StubModel("p1", opinion_json())], _pack(None, "ZZZ"))
+    assert model.calls == []
+    assert (result.asked, result.answered, result.consensus) == (0, 0, "NONE")
+    assert result.verdicts == [] and result.counts == {} and result.dissent == []
+    assert result.headline == NO_FACTS and result.notes == []
 
 
-def test_no_models_chosen_is_a_plain_message_naming_the_next_step() -> None:
+def test_no_models_chosen_is_a_plain_message_naming_the_next_step_and_adds_no_note() -> None:
     result = verify_stock([], _pack())
-    assert "Pick at least one" in result.headline and result.asked == 0
+    assert result.headline == NO_MODELS and result.asked == 0
+    assert (result.answered, result.consensus, result.verdicts, result.notes) == (0, "NONE", [], [])
 
 
 def test_only_the_first_few_models_are_asked() -> None:

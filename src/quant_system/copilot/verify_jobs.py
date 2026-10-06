@@ -5,6 +5,10 @@ the oldest are dropped, and a job that fails reports a plain sentence rather tha
 
 A job that is still running after its deadline is marked failed and stops counting toward the limit. A thread cannot
 be stopped from outside, so the work is only left behind: whatever it finally returns is ignored.
+
+A person can stop a job (:meth:`VerifyJobs.cancel`). It reads ``cancelled`` at once and stops counting toward the
+limit. The work is told through the ``cancelled`` check it is handed, and must stop starting new AI calls. A call
+that is already in flight cannot be recalled: it finishes in the background and its answer is ignored.
 """
 
 from __future__ import annotations
@@ -17,10 +21,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from quant_system.copilot.messages import CANCELLED_TEXT
 from quant_system.copilot.verify_opinion import Opinion
 from quant_system.copilot.verify_summary import VerificationResult
 
-__all__ = ["TooBusyError", "VerifyJobs"]
+__all__ = ["CANCELLED_TEXT", "TooBusyError", "VerifyJobs"]
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +37,8 @@ FAILED_TEXT = (
     "The second opinion could not be finished. "
     "Check your AI keys in Settings, then Accounts and keys, and try again."
 )
-Work = Callable[[Callable[[Opinion], None]], VerificationResult]
+# The work is handed a way to report each answer and a check it must make before it starts any new AI call.
+Work = Callable[[Callable[[Opinion], None], Callable[[], bool]], VerificationResult]
 Spawn = Callable[[Callable[[], None]], None]
 
 
@@ -92,16 +98,37 @@ class VerifyJobs:
                 "error": job.error,
             }
 
+    def cancel(self, job_id: str) -> bool:
+        """Stop a job the person no longer wants. False only when there is no such job.
+
+        Asking twice changes nothing, and a job that has already finished keeps its result.
+        """
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return False
+            if job.status == "running":
+                job.status, job.error = "cancelled", CANCELLED_TEXT
+            return True
+
     # ------------------------------------------------------------------------------------------
 
     def _run(self, job: _Job, work: Work) -> None:
+        if self._stopped(job):
+            return  # stopped before it even started: nothing to ask
         try:
-            result = work(lambda _opinion: self._count(job))
+            result = work(lambda _opinion: self._count(job), lambda: self._stopped(job))
         except Exception:
             logger.exception("second opinion job failed")
             self._finish(job, "failed", None, FAILED_TEXT)
         else:
             self._finish(job, "done", result.as_dict(), None)
+
+    def _stopped(self, job: _Job) -> bool:
+        """True once the job is no longer running: stopped by the person, or given up on at its deadline."""
+        with self._lock:
+            self._expire()
+            return job.status != "running"
 
     def _count(self, job: _Job) -> None:
         with self._lock:
@@ -112,7 +139,8 @@ class VerifyJobs:
         self, job: _Job, status: str, result: dict[str, Any] | None, error: str | None
     ) -> None:
         with self._lock:
-            # A job given up on at its deadline stays failed: whatever the stalled work finally returns is ignored.
+            # A job stopped by the person or given up on at its deadline stays so: whatever the work finally returns
+            # is ignored.
             if job.status != "running":
                 return
             job.status, job.result, job.error = status, result, error

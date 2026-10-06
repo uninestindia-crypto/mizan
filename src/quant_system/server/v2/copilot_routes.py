@@ -3,7 +3,7 @@
 The JSON shapes are fixed in agent_context/decisions/20261006-copilot-api-contract.md.
 
 Every route is read-only with respect to money: nothing here places an order. A normal outcome, including "no AI key"
-and a provider that is down, is HTTP 200 with a plain-language reply; only a malformed request is an error.
+and an AI service that is down, is HTTP 200 with a plain-language reply; only a malformed request is an error.
 """
 
 from __future__ import annotations
@@ -42,6 +42,7 @@ _gate = RunGate()
 _store: AgentStore | None = None
 _NO_AI_KEY = "Add at least one AI key first. Open Settings, then Accounts and keys."
 _BUSY = "Several second opinions are already running. Wait for one to finish, then try again."
+_NO_SECOND_OPINION = "That second opinion is no longer available. Start it again."
 _AI_FAILED = "\n\nMeanwhile, here is what QuantOS can tell you without the AI:\n\n"
 _NO_AGENT = "That agent no longer exists."
 _CHAT_FAILED = (
@@ -214,11 +215,13 @@ def start_verify(body: VerifyRequest) -> Any:
     if not chosen:
         return _fail(422, "NO_AI_KEY", _NO_AI_KEY)
     registry = _registry()
-    options = VerifyOptions(pick_context=body.pick_note, recheck=body.recheck)
     symbol = body.symbol.upper()
     arms = 1 + bool(body.pick_note) + body.recheck
 
-    def work(on_opinion: Any) -> Any:
+    def work(on_opinion: Any, cancelled: Any) -> Any:
+        options = VerifyOptions(
+            pick_context=body.pick_note, recheck=body.recheck, cancelled=cancelled
+        )
         return verify_stock(chosen, build_fact_pack(registry, symbol), options, on_opinion)
 
     try:
@@ -231,10 +234,16 @@ def start_verify(body: VerifyRequest) -> Any:
 def verify_progress(job_id: str) -> Any:
     found = _jobs.get(job_id)
     if found is None:
-        return _fail(
-            404, "NOT_FOUND", "That second opinion is no longer available. Start it again."
-        )
+        return _fail(404, "NOT_FOUND", _NO_SECOND_OPINION)
     return found
+
+
+@router.delete("/verify/{job_id}", response_model=None)
+def cancel_verify(job_id: str) -> Any:
+    """Stop a second opinion for good: no new AI call is made for it and it stops counting as running."""
+    if not _jobs.cancel(job_id):
+        return _fail(404, "NOT_FOUND", _NO_SECOND_OPINION)
+    return {"cancelled": True}
 
 
 # ------------------------------------------------------------------------------------- agents

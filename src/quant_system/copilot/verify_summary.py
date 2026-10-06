@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from quant_system.copilot.factpack import FactPack
+from quant_system.copilot.providers import PROVIDER_LABELS
+from quant_system.copilot.tools_market import counted
 from quant_system.copilot.verify_opinion import Opinion
 
 __all__ = ["DISCLOSURE", "ModelVerdict", "VerificationResult", "summarise"]
@@ -165,8 +167,8 @@ def _stability_note(verdicts: list[ModelVerdict]) -> str | None:
     if not changed:
         return None
     return (
-        f"{len(changed)} of {len(checked)} model(s) changed their reading when the same facts were shown in a "
-        "different order. Treat those readings as weak."
+        f"{len(changed)} of {counted(len(checked), 'AI model')} changed their reading when the same facts were "
+        "shown in a different order. Treat those readings as weak."
     )
 
 
@@ -176,9 +178,33 @@ def _anchoring_note(verdicts: list[ModelVerdict]) -> str | None:
     if not anchored:
         return None
     return (
-        f"{len(anchored)} of {len(measured)} model(s) changed their reading after being told QuantOS's own model "
-        "picked it, whether more favourable or less. That is anchoring, so go by the readings given without that hint."
+        f"{len(anchored)} of {counted(len(measured), 'AI model')} changed their reading after being told QuantOS "
+        "had picked this stock, whether more favourable or less. That is anchoring, so go by the readings given "
+        "without that hint."
     )
+
+
+def _unanswered_note(asked: int, answered: int) -> str:
+    failed = asked - answered
+    reasons = "Its reason is" if failed == 1 else "Each one's reason is"
+    return f"{failed} of {counted(asked, 'AI model')} could not answer. {reasons} shown with its answer."
+
+
+def _one_service_note(providers: set[str]) -> str:
+    name = next(iter(providers))
+    return (
+        f"Every answer came from one AI service, {PROVIDER_LABELS.get(name, name)}, so they are less independent. "
+        "Add a second AI service in Settings, then Accounts and keys, for a real cross-check."
+    )
+
+
+def _removed_note(removed: int) -> str:
+    what = (
+        "1 statement was removed because it"
+        if removed == 1
+        else f"{removed} statements were removed because they"
+    )
+    return f"{what} told you to trade or ruled on halal status. Halal status comes only from the screener."
 
 
 def _sample_notes(
@@ -186,21 +212,13 @@ def _sample_notes(
 ) -> list[str]:
     notes: list[str] = []
     if asked > len(answered):
-        notes.append(
-            f"{asked - len(answered)} of {asked} model(s) could not answer. Their reason is listed below."
-        )
+        notes.append(_unanswered_note(asked, len(answered)))
     providers = {v.blind.provider for v in answered}
     if len(answered) >= 1 and len(providers) == 1:
-        notes.append(
-            f"Every answer came from one AI provider ({next(iter(providers))}), so they are less independent. "
-            "Add a second provider in Settings, then Accounts and keys, for a real cross-check."
-        )
+        notes.append(_one_service_note(providers))
     removed = sum(o.removed for v in verdicts for o in (v.blind, v.informed, v.recheck) if o)
     if removed:
-        notes.append(
-            f"{removed} statement(s) were removed because they told you to trade or ruled on halal status. "
-            "Halal status comes only from the screener."
-        )
+        notes.append(_removed_note(removed))
     return notes
 
 

@@ -222,6 +222,22 @@ def test_a_second_opinion_without_any_ai_key_says_what_to_click(
     assert "Accounts and keys" in response.json()["error"]["message"]
 
 
+def test_a_second_opinion_on_a_stock_with_no_price_facts_asks_no_ai_and_says_what_to_check(
+    ready: TestClient, headers: dict[str, str], lab: Lab
+) -> None:
+    lab.models["openai"] = StubModel("openai", opinion_json("MIXED"))
+    started = _verify(ready, headers, symbol="ZZZ")
+    result = ready.get(f"/api/v2/copilot/verify/{started.json()['job_id']}").json()["result"]
+    assert lab.models["openai"].calls == []
+    assert (result["asked"], result["answered"], result["consensus"]) == (0, 0, "NONE")
+    assert result["verdicts"] == [] and result["notes"] == []
+    assert (
+        "no AI was asked" in result["headline"]
+        and "Settings, then Market data" in result["headline"]
+    )
+    assert "not independent evidence" in result["disclosure"]
+
+
 @pytest.mark.parametrize(
     "extra", [{"symbol": "AAA; DROP"}, {"providers": []}, {"providers": ["a"] * 7}]
 )
