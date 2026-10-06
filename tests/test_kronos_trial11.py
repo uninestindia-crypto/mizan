@@ -355,9 +355,17 @@ def test_the_package_is_built_deterministically(tmp_path: Path) -> None:
     assert first.read_bytes() == second.read_bytes()
 
 
-def test_the_committed_package_is_not_stale(tmp_path: Path) -> None:
-    """If the runner, README, ledger or inputs change, the zip people download must be rebuilt."""
-    rebuilt = tmp_path / runner.PACKAGE_NAME
-    runner.build_package(REPO_ROOT, rebuilt)
+def test_the_committed_package_is_not_stale() -> None:
+    """If the runner, README, ledger or inputs change, the zip people download must be rebuilt.
 
-    assert PACKAGE.read_bytes() == rebuilt.read_bytes()
+    Compares what is inside each member, not the zip's own bytes: the container records the platform that
+    wrote it (and may compress differently), and this has to hold on Windows as well as Linux.
+    """
+    import zipfile
+
+    with zipfile.ZipFile(PACKAGE) as archive:
+        packaged = {name: archive.read(name) for name in archive.namelist()}
+
+    expected = {name: source.read_bytes() for name, source in runner.package_members(REPO_ROOT)}
+
+    assert packaged == expected
