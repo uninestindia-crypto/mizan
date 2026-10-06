@@ -14,13 +14,14 @@ import re
 import sqlite3
 import threading
 from collections.abc import Callable, Mapping
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, Depends, Query
 
 from quant_system.data.upstox_http import HttpTransport, UrlLibHttpTransport
 from quant_system.live import BatchQuoteSource, QuoteService, QuoteServiceConfig
-from quant_system.live.upstox_key import pick_key
+from quant_system.live.upstox_key import key_problem, pick_key
 from quant_system.market import MarketIndex, SymbolNotFoundError
 from quant_system.market.index import IndexNotReadyError
 from quant_system.server.v2.credentials import CredentialError, CredentialStore
@@ -51,10 +52,19 @@ def index_resolver(index: MarketIndex) -> Callable[[str], str | None]:
     return resolve
 
 
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
 def key_provider(
-    store: CredentialStore, environ: Mapping[str, str] | None = None
+    store: CredentialStore,
+    environ: Mapping[str, str] | None = None,
+    clock: Callable[[], datetime] = _utc_now,
 ) -> Callable[[], str]:
-    """The current Upstox key: the app's environment first, then the saved keys, analytics first."""
+    """The Upstox key to use: the app's environment first, then the saved keys, analytics first.
+
+    A key that says it has expired is passed over when another one is still good.
+    """
     source = os.environ if environ is None else environ
 
     def read(name: str) -> str | None:
@@ -66,7 +76,20 @@ def key_provider(
         except (CredentialError, OSError):
             return None
 
-    return lambda: pick_key(read)
+    return lambda: pick_key(read, clock())
+
+
+def key_readiness(
+    store: CredentialStore,
+    environ: Mapping[str, str] | None = None,
+    clock: Callable[[], datetime] = _utc_now,
+) -> dict[str, Any]:
+    """Whether a live price can be asked for right now, and if not, what the person should click.
+
+    It uses the same key choice as the prices themselves, so an expired key is not reported as ready.
+    """
+    problem = key_problem(key_provider(store, environ, clock)(), clock())
+    return {"ready": problem is None, "message": problem}
 
 
 def _transport() -> HttpTransport:

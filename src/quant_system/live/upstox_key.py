@@ -22,13 +22,16 @@ PREFERRED_SOURCES = ("UPSTOX_ANALYTICS_TOKEN", "UPSTOX_ACCESS_TOKEN")
 _JWT_PARTS = 3
 
 
-def pick_key(read: Callable[[str], str | None]) -> str:
-    """The first non-blank key, asking `read` for each source in order of preference."""
-    for name in PREFERRED_SOURCES:
-        value = (read(name) or "").strip()
-        if value:
-            return value
-    return ""
+def pick_key(read: Callable[[str], str | None], now: datetime | None = None) -> str:
+    """The first key that can be used right now, asking `read` for each source in order of preference.
+
+    A key that says it has expired is passed over when a later one is still good. When none is usable the first
+    key that was given is returned, so the reason it cannot be used is the one that gets told.
+    """
+    moment = now or datetime.now(UTC)
+    given = [value for name in PREFERRED_SOURCES if (value := (read(name) or "").strip())]
+    usable = [key for key in given if key_problem(key, moment) is None]
+    return (usable or given or [""])[0]
 
 
 def key_expiry(key: str) -> datetime | None:

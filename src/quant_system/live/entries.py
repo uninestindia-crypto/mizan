@@ -1,22 +1,27 @@
 """What the live-price service says about one share, and how a price earns its label.
 
 A label is a promise about the price, so it is decided when the answer is given, from the clock then
-and the age of the price: a price that was live when it was fetched is not live ten seconds on.
+and the age of the price: a price that was live when it was fetched is not live ten seconds on, and a
+price is called the last close only when it is dated the last trading day.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Any
 
 from quant_system.live import messages
-from quant_system.live.market_hours import IST, is_session_open
+from quant_system.live.market_hours import IST, is_session_open, last_trading_date
 
 SOURCE = "Upstox"
 FRESH_SECONDS = 60
+# How far ahead of this computer's clock a price may be stamped before its time is not trusted.
+CLOCK_SKEW_SECONDS = 5
+# A feed time this far past the last trade means the share has been quiet.
+QUIET_AFTER = timedelta(minutes=5)
 
 
 class Label(StrEnum):
@@ -28,11 +33,16 @@ class Label(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class RawQuote:
-    """A price as Upstox gave it, before it is labelled. `quoted_at` is None when it did not say."""
+    """A price as Upstox gave it, before it is labelled.
+
+    `quoted_at` is the feed's own time and is None when it did not say. `last_traded_at` is when the share
+    last changed hands, which can be long before the feed's time for a quiet share.
+    """
 
     last_price: float
     change_pct: float | None
     quoted_at: datetime | None
+    last_traded_at: datetime | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,20 +91,38 @@ def refused_batch(symbols: Sequence[str], message: str) -> QuoteBatch:
 
 def entry_from_quote(raw: RawQuote, now: datetime) -> QuoteEntry:
     label, message = _label_for(raw.quoted_at, now)
-    as_of = raw.quoted_at.astimezone(IST).isoformat(timespec="seconds") if raw.quoted_at else None
+    shown_at, traded = raw.quoted_at, raw.last_traded_at
+    if shown_at is not None and traded is not None and shown_at - traded > QUIET_AFTER:
+        # The label rests on the feed's time, but a quiet share is not presented as freshly traded.
+        told = messages.last_traded(traded.astimezone(IST), shown_at.astimezone(IST))
+        message = f"{message} {told}" if message else told
+        shown_at = traded
+    as_of = shown_at.astimezone(IST).isoformat(timespec="seconds") if shown_at else None
     return QuoteEntry(label, raw.last_price, raw.change_pct, as_of, message)
 
 
 def _label_for(quoted_at: datetime | None, now: datetime) -> tuple[Label, str | None]:
-    """Closed is the last close. Open is live only when the price is under a minute old.
+    """Live only while the session is open and the price is under a minute old; the last close only when the price
+    is dated the last trading day. A price stamped ahead of the clock, or from an earlier day, is delayed.
 
-    Exchange holidays are unknown here, so a weekday that is really a holiday reaches the last
-    branch with a price from the day before, and is called delayed, never live.
+    Exchange holidays are unknown here, so a weekday that is really a holiday has a price from the day before and
+    is called delayed, never live and never the last close.
     """
-    if not is_session_open(now):
-        return Label.LAST_CLOSE, messages.MARKET_CLOSED
     if quoted_at is None:
         return Label.DELAYED, messages.NO_TIME
-    if abs((now - quoted_at).total_seconds()) < FRESH_SECONDS:
+    if (quoted_at - now).total_seconds() > CLOCK_SKEW_SECONDS:
+        return Label.DELAYED, messages.CLOCK_MISMATCH
+    if not is_session_open(now):
+        return _closed_label(quoted_at, now)
+    if (now - quoted_at).total_seconds() < FRESH_SECONDS:
         return Label.LIVE, None
     return Label.DELAYED, messages.OLD_PRICE
+
+
+def _closed_label(quoted_at: datetime, now: datetime) -> tuple[Label, str | None]:
+    quoted_on, last_session = quoted_at.astimezone(IST).date(), last_trading_date(now)
+    if quoted_on == last_session:
+        return Label.LAST_CLOSE, messages.MARKET_CLOSED
+    if quoted_on < last_session:
+        return Label.DELAYED, messages.older_than_last_session(quoted_on)
+    return Label.DELAYED, messages.not_from_last_session(quoted_on)

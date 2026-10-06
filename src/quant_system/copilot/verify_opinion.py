@@ -7,11 +7,11 @@ counted, because the first is advice the platform does not give and the second m
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from typing import Any
 
 from quant_system.alpha.direct_providers import parse_json_from_llm_response
+from quant_system.copilot.guard import scrub_points
 from quant_system.copilot.llm import ChatModel
 from quant_system.copilot.messages import explain_failure
 
@@ -22,10 +22,6 @@ _TONES = ("POSITIVE", "NEUTRAL", "NEGATIVE", "NONE")
 MAX_POINTS = 4
 POINT_CHARS = 300
 MAX_PICK_CHARS = 300
-_ADVICE = re.compile(
-    r"\b(?:buy|sell)\b(?!-)|accumulate|target price|price target|stop[- ]loss|recommend", re.I
-)
-_HALAL = re.compile(r"halal|haram|shariah|sharia|shari'ah|fatwa|permissible", re.I)
 _UNREADABLE = "answered in a form that could not be read, so it is not counted"
 
 SYSTEM_PROMPT = """You are one of several independent analysts reviewing a stock for a retail investor in India. \
@@ -44,7 +40,7 @@ Reply with exactly ONE JSON object and nothing else:
 {"reading": "POSITIVE" | "MIXED" | "NEGATIVE" | "UNCLEAR",
  "news_tone": "POSITIVE" | "NEUTRAL" | "NEGATIVE" | "NONE",
  "reasons": [up to 4 short strings], "risks": [up to 4 short strings], "missing": [up to 4 short strings]}
-"reading" is how the evidence in the facts reads for this stock as a candidate worth researching further. It is not \
+"reading" is how the facts read for this stock as a candidate worth researching further. It is not \
 a trading instruction. Use UNCLEAR when the facts are not enough to say. Use "news_tone" NONE when there are no \
 headlines."""
 
@@ -101,18 +97,11 @@ def build_question(symbol: str, facts: str, *, pick_context: str | None = None) 
 
 
 def _points(raw: Any) -> tuple[tuple[str, ...], int]:
-    """The usable short strings in a list, and how many were dropped for advice or a halal ruling."""
-    kept: list[str] = []
-    removed = 0
-    for item in raw if isinstance(raw, list) else []:
-        text = " ".join(str(item).split())[:POINT_CHARS]
-        if not text:
-            continue
-        if _ADVICE.search(text) or _HALAL.search(text):
-            removed += 1
-        elif len(kept) < MAX_POINTS:
-            kept.append(text)
-    return tuple(kept), removed
+    """The usable short strings in a list, and how many the shared guard dropped for advice or a halal ruling."""
+    items = raw if isinstance(raw, list) else []
+    texts = [" ".join(str(item).split())[:POINT_CHARS] for item in items]
+    kept, removed = scrub_points([text for text in texts if text])
+    return tuple(kept[:MAX_POINTS]), removed
 
 
 def _choice(raw: Any, allowed: tuple[str, ...]) -> str | None:

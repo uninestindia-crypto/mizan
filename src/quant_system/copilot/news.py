@@ -1,22 +1,26 @@
 """Public news headlines for a stock, read from Google News' RSS feed. No key and no account are needed.
 
-Headlines are *untrusted outside text*: they are cleaned, capped and only ever shown as data. The feed is read with a
-size cap, and any document that declares a DOCTYPE or an entity is refused, because that is how XML expansion
-attacks are built. Each headline also gets a rough tone from a small published word list. It is a keyword count, so
-it is labelled as rough; the AI second opinion reads the headlines properly.
+Headlines are *untrusted outside text*: they are cleaned, capped and only ever shown as data. Invisible characters
+are dropped, and a link is kept only when it is a plain https address that cannot carry markdown. The feed is read
+with a size cap and never followed through a redirect, and any document that declares a DOCTYPE or an entity is
+refused (as is any document in a wide encoding, which would hide the declaration from the check). Each headline also
+gets a rough tone from a small published word list. It is a keyword count, so it is labelled as rough; the AI second
+opinion reads the headlines properly.
 """
 
 from __future__ import annotations
 
+import codecs
 import re
 import threading
 import time
+import unicodedata
 import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from datetime import UTC
 from email.utils import parsedate_to_datetime
-from typing import Any
+from typing import Any, NoReturn
 from urllib.parse import quote
 
 __all__ = ["GoogleNewsSource", "NewsError", "headline_tone", "parse_feed"]
@@ -28,8 +32,12 @@ CACHE_SECONDS = 600.0
 CACHE_ENTRIES = 64
 Fetch = Callable[[str, float], bytes]
 
-# Control characters and the invisible direction marks that can make text read differently from how it is stored.
-_CONTROL = re.compile("[\x00-\x1f\x7f\u200b-\u200f\u202a-\u202e\u2066-\u2069]")
+# Format, control, private-use and unassigned characters: the invisible ones, which can hide an instruction (the tag
+# block U+E0000 to U+E007F spells whole sentences) or make text read differently from how it is stored.
+_INVISIBLE = frozenset({"Cf", "Cc", "Co", "Cn"})
+_SPACING = frozenset(" \t\n\r\v\f")
+_HTTPS_LINK = re.compile(r"https://[^\s()<>*\[\]\"']+")
+_WIDE_MARKS = (codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE, codecs.BOM_UTF32_LE, codecs.BOM_UTF32_BE)
 _WORDS = re.compile(r"[a-z]+")
 _POSITIVE = frozenset(
     "surge surges surged jump jumps jumped rally rallies rallied gain gains gained rise rises rose soar soars soared "
@@ -47,17 +55,37 @@ class NewsError(Exception):
     """The feed could not be read safely. The message is for logs; the person is told something plainer."""
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """The feed address is fixed, so an answer that points somewhere else is refused, not followed."""
+
+    def redirect_request(self, *_args: Any, **_kwargs: Any) -> NoReturn:
+        raise NewsError("the news feed tried to send the request somewhere else")
+
+
 def fetch_capped(url: str, timeout: float) -> bytes:
     request = urllib.request.Request(url, headers={"User-Agent": "QuantOS/2.0"})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    opener = urllib.request.build_opener(_NoRedirect)
+    with opener.open(request, timeout=timeout) as response:
         data: bytes = response.read(MAX_BYTES + 1)
     if len(data) > MAX_BYTES:
         raise NewsError("the news feed was larger than the allowed size")
     return data
 
 
+def _visible(ch: str) -> str:
+    """The character itself, a space for any spacing, or nothing for an invisible one. A tab or a line break is
+    spacing, but the other control characters (the C1 block included) are invisible and are dropped."""
+    if ch in _SPACING:
+        return " "
+    if unicodedata.category(ch) in _INVISIBLE:
+        return ""
+    return " " if ch.isspace() else ch
+
+
 def _clean(text: str | None, limit: int = TITLE_CHARS) -> str:
-    return " ".join(_CONTROL.sub(" ", text or "").split())[:limit]
+    """One line of visible text: spacing becomes single spaces and every invisible character is dropped."""
+    visible = "".join(_visible(ch) for ch in (text or "")[: limit * 4])
+    return " ".join(visible.split())[:limit]
 
 
 def headline_tone(title: str) -> str:
@@ -68,8 +96,9 @@ def headline_tone(title: str) -> str:
 
 
 def _link(raw: str | None) -> str | None:
+    """A plain https address, or None. Anything that could end a markdown link or start another is refused."""
     link = (raw or "").strip()
-    return link if link.lower().startswith(("https://", "http://")) else None
+    return link if _HTTPS_LINK.fullmatch(link) else None
 
 
 def _published(raw: str | None) -> str | None:
@@ -105,6 +134,8 @@ def _item(node: ET.Element) -> dict[str, Any] | None:
 def parse_feed(data: bytes, limit: int = 10) -> list[dict[str, Any]]:
     if len(data) > MAX_BYTES:
         raise NewsError("the news feed was larger than the allowed size")
+    if b"\x00" in data or data.startswith(_WIDE_MARKS):
+        raise NewsError("the news feed was in an encoding that cannot be checked, which is refused")
     lowered = data.lower()
     if b"<!doctype" in lowered or b"<!entity" in lowered:
         raise NewsError("the news feed declared a document type, which is refused")

@@ -21,7 +21,7 @@ from quant_system.server.v2 import live_routes
 from quant_system.server.v2 import router as v2_router
 from quant_system.server.v2.credentials import CredentialError
 from quant_system.server.v2.live_routes import quote_service, router
-from tests.test_live_quotes import (
+from tests.live_fakes import (
     CANARY,
     EXPECTED_FIELDS,
     LISTINGS,

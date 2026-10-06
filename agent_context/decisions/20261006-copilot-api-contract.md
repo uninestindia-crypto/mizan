@@ -88,7 +88,7 @@ API or developer tool, and always name the next click ("Open Settings, then Acco
 ```json
 {
   "symbol": "TCS",
-  "headline": "2 of 3 models read the evidence as MIXED.",
+  "headline": "2 of 3 models read the facts as MIXED.",
   "consensus": "MAJORITY",
   "reading": "MIXED",
   "asked": 3,
@@ -116,16 +116,21 @@ API or developer tool, and always name the next click ("Open Settings, then Acco
 }
 ```
 
-`consensus` is `AGREE`, `MAJORITY`, `SPLIT`, `SINGLE` or `NONE`. `reading` is `POSITIVE`, `MIXED`, `NEGATIVE`,
-`UNCLEAR` or null. Screens must show `disclosure` and every entry of `notes` on every result, show the dissenters and
+`consensus` is `AGREE`, `MAJORITY`, `SPLIT`, `SINGLE` or `NONE`. `MAJORITY` means more than half of the models that
+answered share one reading; a reading shared by fewer than that (for example 2, 1 and 1 of four) is `SPLIT`. `reading` is
+`POSITIVE`, `MIXED`, `NEGATIVE`, `UNCLEAR` or null (null for `SPLIT` and `NONE`). When fewer models answered than were
+asked, `headline` says so in words ("2 of 5 models answered, and both read the facts as POSITIVE."). Screens must show
+`disclosure` and every entry of `notes` on every result, show the dissenters and
 their reasons, show which models answered and which could not (and why), and must never present a reading as a
 recommendation, a score or a green light. The halal block is shown as the screener's own result and labelled as
 such; models never produce it.
 
 ## Agents (saved assistants) and recipes
 
-`GET /copilot/tools` returns `{"tools": [{"name": "stock_facts", "label": "Price facts", "description": "..."}]}`.
-The form shows `label` with a checkbox; `name` is only what is saved. Never show `name` to the person.
+`GET /copilot/tools` returns
+`{"tools": [{"name": "stock_facts", "label": "Price facts", "help": "Shows how a stock has moved over the last month, six months and year.", "description": "..."}]}`.
+The form shows `label` with a checkbox and `help` under it. `name` is only what is saved, and `description` is written
+for the AI model (it names code and gives instructions): never show either to the person.
 
 `GET /copilot/agents` returns `{"agents": [Agent], "recipes": [Recipe]}`:
 
@@ -179,11 +184,27 @@ progress, and let the person leave the screen without losing the result of the r
 }
 ```
 
-`label` is exactly one of `LIVE` (market open, quote under a minute old), `DELAYED` (market open, older), `LAST_CLOSE`
-(market closed; this is the last session's close), `UNAVAILABLE`. Screens must show the label next to every price in
+`label` is exactly one of `LIVE` (market open, quote under a minute old), `DELAYED` (market open and older; or a price
+that is not from the last trading day, or whose time does not match this computer's clock: `message` says which),
+`LAST_CLOSE` (market closed, and the price is dated the last trading day), `UNAVAILABLE`. For a share that has been
+quiet, `as_of` is the time it last traded and `message` says so. Screens must show the label next to every price in
 plain words (Live, Delayed, Last close, Not available) and must never show a price without its label. When
 `connected` is false, `message` names the click that fixes it, and the screen shows that message instead of a price.
 Poll no faster than every 15 seconds while the market is open, and not at all in a hidden tab.
+
+## Other responses a screen must handle
+
+- `POST /copilot/chat` with an `agent_id` that no longer exists returns HTTP 404
+  `{"error": {"code": "NOT_FOUND", "message": "That agent no longer exists."}}`.
+- `POST /copilot/agents/{id}/run` returns HTTP 429 `{"error": {"code": "TOO_BUSY", "message": "..."}}` when that agent is
+  already running or three runs are already in progress. Show `message`; the person can try again in a moment.
+- A request the engine cannot read returns HTTP 422 `{"error": {"code": "BAD_REQUEST", "message": "<one plain
+  sentence>", "details": {}}}`. Show `message` as written. (A rejected agent *form* still uses `AGENT_INVALID` with
+  `details.problems`.)
+- When `mode` is `built_in`, `provider`, `model` and `error` are always null.
+- Replies that came from an AI model have been checked by the engine: sentences that read like trading advice and halal
+  statements the screener did not make are removed, links the tools did not return are removed, and the halal
+  screener's own block (with its sample-data notice and not-a-fatwa line) is appended whenever the screener ran.
 
 ## What the screens must never do
 

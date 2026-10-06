@@ -12,6 +12,7 @@ served, because "live" depends on the clock and not on when the price was fetche
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import threading
 from collections import OrderedDict
@@ -31,12 +32,13 @@ from quant_system.live.entries import (
     unavailable,
 )
 from quant_system.live.market_hours import as_aware
-from quant_system.live.upstox_fetch import Failure, FetchSettings, fetch_quotes
+from quant_system.live.upstox_fetch import Failure, FetchResult, FetchSettings, fetch_quotes
 from quant_system.live.upstox_key import key_problem
 
 logger = logging.getLogger(__name__)
 
 CACHE_SECONDS = 10.0
+REJECTION_SECONDS = 60.0  # how long a key Upstox refused is not sent again
 TIMEOUT_SECONDS = 8.0
 MAX_REPLY_BYTES = 512 * 1024
 MAX_CACHED = 512
@@ -97,16 +99,46 @@ class _ReplyCache:
                 self._items.popitem(last=False)  # the oldest is also the first to expire
 
     def block(self, failure: Failure, now: datetime) -> None:
-        """Leave Upstox alone for the ttl, or for as long as it asked if that is longer."""
+        """Leave Upstox alone for the ttl, or for as long as it asked if that is longer. A shorter wait that arrives
+        later (from a request already in flight) never cuts a longer one short."""
         asked = timedelta(seconds=failure.retry_after_seconds or 0)
+        until = now + max(self._ttl, asked)
         with self._lock:
-            self._blocked = (now + max(self._ttl, asked), failure)
+            current = self._blocked
+            if current is None or current[0] <= now or until >= current[0]:
+                self._blocked = (until, failure)
 
     def blocked(self, now: datetime) -> Failure | None:
         with self._lock:
             if self._blocked is not None and self._blocked[0] > now:
                 return self._blocked[1]
             return None
+
+
+def _fingerprint(api_key: str) -> str:
+    """A one-way mark of a key, so it can be recognised again without the key itself being kept."""
+    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+
+
+class _Rejections:
+    """The key Upstox last refused, remembered briefly by its fingerprint. The same key is not sent again for a
+    minute, but a key saved a moment ago has a different fingerprint and is tried at once."""
+
+    def __init__(self, hold: timedelta) -> None:
+        self._hold = hold
+        self._latest: tuple[str, datetime, Failure] | None = None
+        self._lock = threading.Lock()
+
+    def remember(self, api_key: str, failure: Failure, now: datetime) -> None:
+        with self._lock:
+            self._latest = (_fingerprint(api_key), now + self._hold, failure)
+
+    def refused(self, api_key: str, now: datetime) -> Failure | None:
+        with self._lock:
+            latest = self._latest
+        if latest is None or latest[1] <= now or latest[0] != _fingerprint(api_key):
+            return None
+        return latest[2]
 
 
 class QuoteService:
@@ -118,6 +150,7 @@ class QuoteService:
             config.transport, self._now, config.timeout_seconds, config.max_response_bytes
         )
         self._cache = _ReplyCache(timedelta(seconds=config.ttl_seconds), config.max_cached)
+        self._rejections = _Rejections(timedelta(seconds=REJECTION_SECONDS))
 
     def quotes(self, symbols: Sequence[str]) -> dict[str, Any]:
         """The Copilot's `QuoteSource` contract: one plain dictionary per symbol."""
@@ -171,26 +204,32 @@ class QuoteService:
     def _load(
         self, pending: dict[str, str], api_key: str
     ) -> tuple[dict[str, QuoteEntry], Failure | None]:
-        blocked = self._cache.blocked(self._now())
-        if blocked is not None:
-            return _all_unavailable(pending, blocked), blocked
+        now = self._now()
+        barred = self._cache.blocked(now) or self._rejections.refused(api_key, now)
+        if barred is not None:
+            return _all_unavailable(pending, barred), barred
         result = fetch_quotes(self._settings, api_key, pending)
         if result.failure is not None:
-            self._note(result.failure)
-            return _all_unavailable(pending, result.failure), result.failure
-        return self._keep(pending, result.quotes), None
+            self._note(result.failure, api_key)
+        return self._keep(pending, result), result.failure
 
-    def _note(self, failure: Failure) -> None:
+    def _note(self, failure: Failure, api_key: str) -> None:
         logger.warning("Upstox price request did not succeed (%s).", failure.reason)
         if failure.transient:
             self._cache.block(failure, self._now())
+        if failure.key_rejected:
+            self._rejections.remember(api_key, failure, self._now())
 
-    def _keep(self, pending: dict[str, str], quotes: dict[str, RawQuote]) -> dict[str, QuoteEntry]:
-        """Hold each result, and label it by the clock at the moment the reply arrived."""
+    def _keep(self, pending: dict[str, str], result: FetchResult) -> dict[str, QuoteEntry]:
+        """Hold each result, and label it by the clock at the moment the reply arrived. When the request failed
+        after pricing only some shares, those are kept and the rest say why they have no price."""
         now = self._now()
         entries: dict[str, QuoteEntry] = {}
         for symbol in pending:
-            raw = quotes.get(symbol)
+            raw = result.quotes.get(symbol)
+            if raw is None and result.failure is not None:
+                entries[symbol] = unavailable(result.failure.message)
+                continue
             self._cache.keep(symbol, raw, now)
             entries[symbol] = _entry_for(symbol, raw, now)
         return entries

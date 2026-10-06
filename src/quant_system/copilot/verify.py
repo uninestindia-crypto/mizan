@@ -22,6 +22,10 @@ from quant_system.copilot.verify_summary import ModelVerdict, VerificationResult
 __all__ = ["MAX_MODELS", "VerifyOptions", "verify_stock"]
 
 MAX_MODELS = 6
+NOT_REORDERABLE = (
+    "The facts could not be shown in a different order, so whether the models hold their reading "
+    "when the facts are reordered was not checked."
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,7 +55,7 @@ def _jobs(count: int, pack: FactPack, options: VerifyOptions) -> list[_Job]:
         if options.pick_context:
             informed = build_question(pack.symbol, facts, pick_context=options.pick_context)
             jobs.append(_Job(index, ask("informed", informed)))
-        if options.recheck:
+        if options.recheck and pack.reorderable:
             jobs.append(_Job(index, ask("recheck", build_question(pack.symbol, reordered))))
     return jobs
 
@@ -108,5 +112,7 @@ def verify_stock(
             pack, 0, "No AI models were chosen. Pick at least one, or add an AI key in Settings."
         )
     cut = [f"Only the first {MAX_MODELS} models were asked."] if len(models) > MAX_MODELS else []
+    if options.recheck and not pack.reorderable:
+        cut.append(NOT_REORDERABLE)
     done = _run_panel(panel, _jobs(len(panel), pack, options), on_opinion)
     return summarise(pack, _verdicts(len(panel), done), len(panel), cut)

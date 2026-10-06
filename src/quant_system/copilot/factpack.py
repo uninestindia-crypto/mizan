@@ -11,6 +11,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from quant_system.copilot.guard import fence
 from quant_system.copilot.registry import ToolRegistry, ToolResult
 
 __all__ = ["FactPack", "FactSection", "build_fact_pack"]
@@ -38,6 +39,11 @@ class FactPack:
     def usable(self) -> bool:
         """Without price history there is nothing meaningful to ask a model about."""
         return any(section.tool == "stock_facts" for section in self.sections)
+
+    @property
+    def reorderable(self) -> bool:
+        """False when showing the facts the other way round changes nothing, so a recheck would not be a reorder."""
+        return self.render() != self.render(reverse=True)
 
     def render(self, *, reverse: bool = False) -> str:
         """The facts as text. ``reverse`` shows the sections in the opposite order, for the stability recheck."""
@@ -102,10 +108,13 @@ _SOURCES = (
 
 
 def _section(source: _Source, result: ToolResult) -> FactSection:
+    """Outside text arrives already fenced by ``for_prompt``. The rest still carries names and notes that came from
+    data files, so it is made unable to forge a fence tag too: every angle bracket in it is written as an escape."""
+    text = result.for_prompt(SECTION_CHARS)
     return FactSection(
         source.tool,
         source.title,
-        result.for_prompt(SECTION_CHARS),
+        text if result.untrusted else fence(text),
         source.summary,
         result.untrusted,
     )

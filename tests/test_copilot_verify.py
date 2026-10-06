@@ -117,7 +117,7 @@ def test_agreement_is_reported_with_the_shared_reading() -> None:
     result = verify_stock(_models("MIXED", "MIXED", "MIXED"), _pack(), VerifyOptions(recheck=False))
     assert result.consensus == "AGREE" and result.reading == "MIXED"
     assert result.answered == 3 and result.counts == {"MIXED": 3}
-    assert result.headline == "All 3 models read the evidence as MIXED."
+    assert result.headline == "All 3 models read the facts as MIXED."
     assert result.dissent == []
 
 
@@ -126,7 +126,7 @@ def test_a_majority_names_the_dissenter_and_what_the_dissenter_said() -> None:
     panel[2] = StubModel("p2", opinion_json("NEGATIVE", reasons=["Debt is climbing"]))
     result = verify_stock(panel, _pack(), VerifyOptions(recheck=False))
     assert result.consensus == "MAJORITY" and result.reading == "POSITIVE"
-    assert result.headline == "2 of 3 models read the evidence as POSITIVE."
+    assert result.headline == "2 of 3 models read the facts as POSITIVE."
     assert [d["provider"] for d in result.dissent] == ["p2"]
     assert result.dissent[0]["reasons"] == ["Debt is climbing"]
 

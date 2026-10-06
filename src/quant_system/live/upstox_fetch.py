@@ -12,9 +12,10 @@ from __future__ import annotations
 
 import json
 import math
+from collections import deque
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlencode
 
@@ -37,6 +38,9 @@ from quant_system.live import messages
 from quant_system.live.entries import RawQuote
 
 QUOTES_URL = f"{UpstoxClient.BASE_URL}/v2/market-quote/quotes"
+MAX_REQUESTS = 6  # one batch, and at most five more when it is refused and has to be split to find the share to blame
+LONG_WAIT_SECONDS = 120  # a wait longer than this is described as "a few minutes", not "a minute"
+_EPOCH_MS_DIGITS = 13  # an epoch time in milliseconds has thirteen digits from 2001 until 2286
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +60,8 @@ class Failure:
     key_rejected: bool = False
     transient: bool = False
     retry_after_seconds: int | None = None
+    # Upstox refused the request itself (a 4xx), which one bad share in a batch can cause.
+    bad_request: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,7 +80,20 @@ def request_url(instrument_keys: list[str]) -> str:
 def fetch_quotes(
     settings: FetchSettings, api_key: str, requested: Mapping[str, str]
 ) -> FetchResult:
-    """Ask for every instrument in one call. `requested` maps each symbol to its instrument key."""
+    """Ask for every instrument in one call. `requested` maps each symbol to its instrument key.
+
+    If Upstox refuses the whole batch as a bad request, one share in it may be to blame, so the batch is split
+    to find out. That is bounded and cannot be checked against the real service, only against a stand-in.
+    """
+    first = _fetch_group(settings, api_key, requested)
+    if first.failure is None or not first.failure.bad_request or len(requested) < 2:
+        return first
+    return _isolate(settings, api_key, requested, first.failure)
+
+
+def _fetch_group(
+    settings: FetchSettings, api_key: str, requested: Mapping[str, str]
+) -> FetchResult:
     response = _send(settings, api_key, list(dict.fromkeys(requested.values())))
     if isinstance(response, Failure):
         return FetchResult({}, response)
@@ -82,6 +101,32 @@ def fetch_quotes(
     if quotes is None:
         return FetchResult({}, Failure(messages.UNREADABLE, "reply unreadable", transient=True))
     return FetchResult(quotes)
+
+
+def _halves(group: Mapping[str, str]) -> list[dict[str, str]]:
+    items = list(group.items())
+    middle = (len(items) + 1) // 2
+    return [dict(items[:middle]), dict(items[middle:])]
+
+
+def _isolate(
+    settings: FetchSettings, api_key: str, requested: Mapping[str, str], refused: Failure
+) -> FetchResult:
+    """Price what can be priced when a batch was refused. Halves are tried before smaller pieces, and a share
+    still refused on its own, or left in a piece the request limit stopped short of, simply has no price."""
+    quotes: dict[str, RawQuote] = {}
+    waiting = deque(_halves(requested))
+    sent = 1
+    while waiting and sent < MAX_REQUESTS:
+        group = waiting.popleft()
+        sent += 1
+        result = _fetch_group(settings, api_key, group)
+        quotes.update(result.quotes)
+        if result.failure is not None and not result.failure.bad_request:
+            return FetchResult(quotes, result.failure)
+        if result.failure is not None and len(group) > 1:
+            waiting.extend(_halves(group))
+    return FetchResult(quotes) if quotes else FetchResult({}, refused)
 
 
 def _send(
@@ -121,11 +166,15 @@ def _status_failure(response: HttpResponse, detected_at: datetime) -> Failure:
     if failure.code is AcquisitionFailureCode.PROVIDER_UNAUTHORIZED:
         return Failure(messages.KEY_REJECTED, reason, key_rejected=True)
     wait = failure.retry_after_seconds
+    long_wait = wait is not None and wait > LONG_WAIT_SECONDS
     if failure.code is AcquisitionFailureCode.PROVIDER_RATE_LIMITED:
-        return Failure(messages.BUSY, reason, transient=True, retry_after_seconds=wait)
+        busy = messages.BUSY_LONGER if long_wait else messages.BUSY
+        return Failure(busy, reason, transient=True, retry_after_seconds=wait)
     if failure.code is AcquisitionFailureCode.PROVIDER_TIMEOUT:
         return Failure(messages.TOO_SLOW, reason, transient=True)
-    return Failure(messages.UNAVAILABLE_NOW, reason, transient=True, retry_after_seconds=wait)
+    said = messages.UNAVAILABLE_LONGER if long_wait else messages.UNAVAILABLE_NOW
+    client_error = 400 <= response.status < 500
+    return Failure(said, reason, transient=True, retry_after_seconds=wait, bad_request=client_error)
 
 
 # ------------------------------------------------------------------------------ the reply
@@ -162,7 +211,21 @@ def _quote_for(data: dict[str, Any], instrument: str, symbol: str) -> RawQuote |
         return None
     if not (math.isfinite(price) and price > 0):
         return None
-    return RawQuote(price, _change_pct(price, entry), _quoted_at(entry))
+    return RawQuote(price, _change_pct(price, entry), _quoted_at(entry), _last_traded_at(entry))
+
+
+def _last_traded_at(entry: dict[str, Any]) -> datetime | None:
+    """When the share last changed hands, from `last_trade_time` (epoch milliseconds). A bad value is ignored."""
+    value = entry.get("last_trade_time")
+    if isinstance(value, bool) or not isinstance(value, (str, int)):
+        return None
+    text = str(value).strip()
+    if not (text.isascii() and text.isdigit() and len(text) == _EPOCH_MS_DIGITS):
+        return None
+    try:
+        return datetime.fromtimestamp(int(text) / 1000, UTC)
+    except (ValueError, OverflowError, OSError):
+        return None
 
 
 def _quoted_at(entry: dict[str, Any]) -> datetime | None:

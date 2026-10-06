@@ -8,7 +8,7 @@ Windows laptop has none).
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta, timezone
 
 IST = timezone(timedelta(hours=5, minutes=30), "IST")
 SESSION_OPENS = time(9, 15)
@@ -27,3 +27,16 @@ def is_session_open(moment: datetime) -> bool:
     if local.weekday() >= _SATURDAY:
         return False
     return SESSION_OPENS <= local.time() < SESSION_CLOSES
+
+
+def last_trading_date(moment: datetime) -> date:
+    """The most recent weekday whose session has begun, in India. Before 09:15 that is the day before, and a weekend
+    goes back to Friday. Exchange holidays are unknown, so a holiday can be named as a trading day: a price from
+    an earlier day is then never mistaken for the last close, which is the safe way to be wrong."""
+    local = as_aware(moment).astimezone(IST)
+    day = local.date()
+    if local.time() < SESSION_OPENS:
+        day -= timedelta(days=1)
+    while day.weekday() >= _SATURDAY:
+        day -= timedelta(days=1)
+    return day
