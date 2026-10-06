@@ -2,15 +2,17 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { type Agent, type AgentTool, toolLabels } from "../../lib/agents";
 import { plural } from "../../lib/format";
-import { Badge, Card } from "../ui";
+import { Card } from "../ui";
 
+/** Says what really happens: without an AI key this agent stops at once and points here. */
 function AiNote() {
   return (
-    <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-ink-3">
-      <Badge tone="warn">Works best with an AI key</Badge>
-      <Link to="/settings/accounts" className="font-medium text-brand hover:underline">
-        Add a key
+    <p className="mt-2 text-[12.5px] text-warn">
+      Needs an AI key. Add one in{" "}
+      <Link to="/settings/accounts" className="font-medium underline">
+        Settings, then Accounts and keys
       </Link>
+      .
     </p>
   );
 }
@@ -19,11 +21,14 @@ interface Props {
   agent: Agent;
   tools: AgentTool[] | undefined;
   actions: ReactNode;
+  /** True only once the engine has said that no AI key is saved. Until then the note is not shown. */
+  noAiKey: boolean;
   children?: ReactNode;
 }
 
 /** One agent: its name, what it is for, what it may look at, and buttons. A run panel can open under it. */
-export function AgentCard({ agent, tools, actions, children }: Props) {
+export function AgentCard(props: Props) {
+  const { agent, tools, actions, noAiKey, children } = props;
   const looksAt = toolLabels(agent.tools, tools);
   const needsAi = "needs_ai" in agent && agent.needs_ai === true;
   return (
@@ -36,7 +41,7 @@ export function AgentCard({ agent, tools, actions, children }: Props) {
             {plural(agent.steps.length, "step")}
             {looksAt.length > 0 && ` · Looks at: ${looksAt.join(", ")}`}
           </p>
-          {needsAi && <AiNote />}
+          {needsAi && noAiKey && <AiNote />}
         </div>
         <div className="flex flex-wrap gap-2">{actions}</div>
       </div>

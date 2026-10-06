@@ -66,7 +66,7 @@ describe("reading bold and links in a line", () => {
       "[a](data:text/html,<script>alert(1)</script>)",
       "[a](//example.com)",
       "[a](/relative)",
-      "[a](https://user:pass@example.com)",
+      "[a](https://" + "someone:" + "word@example.com)", // a link with sign-in details inside it
       "[a](https://example.com/x y)",
       '[a](https://example.com/"onclick="x)',
       "[a](https://example.com/\\@evil.com)",

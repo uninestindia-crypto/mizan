@@ -91,6 +91,31 @@ describe("when to keep asking", () => {
     expect(pollInterval(2, false)).toBe(false);
     expect(pollInterval(0, true)).toBe(false);
   });
+
+  it("asks every 5 minutes while every price is the last close, and quickly again as soon as one moves", () => {
+    const closed = answer({ A: quote({ label: "LAST_CLOSE" }), B: quote({ label: "LAST_CLOSE" }) });
+    expect(pollInterval(2, true, closed)).toBe(300_000);
+    expect(pollInterval(2, false, closed)).toBe(false);
+    expect(pollInterval(0, true, closed)).toBe(false);
+    for (const label of ["LIVE", "DELAYED"] as const) {
+      expect(pollInterval(2, true, answer({ A: quote({ label: "LAST_CLOSE" }), B: quote({ label }) }))).toBe(20_000);
+    }
+  });
+
+  it("stays quick when there is no answer yet, a problem to retry, or nothing has a price", () => {
+    const closed = quote({ label: "LAST_CLOSE" });
+    expect(pollInterval(2, true, undefined)).toBe(20_000);
+    const busy = answer({ A: closed }, { message: "Upstox is busy. Try again in a minute." });
+    expect(pollInterval(2, true, busy)).toBe(20_000);
+    expect(pollInterval(2, true, answer({ A: closed }, { connected: false, message: "Connect it." }))).toBe(20_000);
+    expect(pollInterval(2, true, answer({}))).toBe(20_000);
+    expect(pollInterval(2, true, answer({ A: quote({ label: "UNAVAILABLE", last_price: null }) }))).toBe(20_000);
+  });
+
+  it("slows down for the last close even when one stock has no price of its own", () => {
+    const none = quote({ label: "UNAVAILABLE", last_price: null, message: "Upstox has no price for B right now." });
+    expect(pollInterval(2, true, answer({ A: quote({ label: "LAST_CLOSE" }), B: none }))).toBe(300_000);
+  });
 });
 
 describe("showing the time in India", () => {
@@ -165,6 +190,13 @@ describe("reading the answer for one stock", () => {
     expect(joined.message).toBe("Why.");
     expect(Object.keys(joined.quotes).sort()).toEqual(["A", "B"]);
   });
+
+  it("keeps the engine's reason when it is connected but could not get prices, so the screen can say it once", () => {
+    const joined = mergeQuotes([answer({ A: quote() }, { message: "Upstox is busy. Try again in a minute." })]);
+    expect(joined.connected).toBe(true);
+    expect(joined.message).toBe("Upstox is busy. Try again in a minute.");
+    expect(mergeQuotes([answer({ A: quote() })]).message).toBeNull();
+  });
 });
 
 describe("fetching live prices", () => {
@@ -220,6 +252,28 @@ describe("the live price hook", () => {
     expect(api).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(20_100);
     expect(api).toHaveBeenCalledTimes(2);
+  });
+
+  it("asks only once in five minutes while every price is the last close", async () => {
+    vi.mocked(api).mockResolvedValue(answer({ TCS: quote({ label: "LAST_CLOSE" }) }));
+    renderHook(() => useLiveQuotes(["TCS"]), { wrapper });
+    await vi.advanceTimersByTimeAsync(100);
+    expect(api).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(api).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(185_000);
+    expect(api).toHaveBeenCalledTimes(2);
+  });
+
+  it("goes back to every 20 seconds once a price is live again", async () => {
+    vi.mocked(api).mockResolvedValueOnce(answer({ TCS: quote({ label: "LAST_CLOSE" }) }));
+    renderHook(() => useLiveQuotes(["TCS"]), { wrapper });
+    await vi.advanceTimersByTimeAsync(100);
+    vi.mocked(api).mockResolvedValue(answer({ TCS: quote({ label: "LIVE" }) }));
+    await vi.advanceTimersByTimeAsync(300_100);
+    expect(api).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(20_100);
+    expect(api).toHaveBeenCalledTimes(3);
   });
 
   it("stops asking while the tab is hidden and stops for good when the screen is left", async () => {

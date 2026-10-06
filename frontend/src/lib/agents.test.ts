@@ -120,6 +120,12 @@ describe("filling the form", () => {
     expect(copy).toMatchObject({ id: null, heading: "Your copy of My check" });
   });
 
+  it("names the button each form was opened from, so focus can go back to it", () => {
+    expect(newTarget().opener).toBe("new-agent");
+    expect(editTarget(agent()).opener).toBe("edit:a1");
+    expect(copyTarget(agent({ id: "recipe", built_in: true })).opener).toBe("copy:recipe");
+  });
+
   it("sends the text trimmed", () => {
     const sent = toInput(filled({ name: "  My check ", steps: [" one ", "two  "], instructions: "  short " }));
     expect(sent).toMatchObject({ name: "My check", instructions: "short", steps: ["one", "two"] });

@@ -102,26 +102,48 @@ export function useAgentList() {
 const post = (agentId: string, symbol: string | null) =>
   api<RunResult>(`${agentPath(agentId)}/run`, "POST", symbol ? { symbol } : {});
 
-/** Creates the agent when `id` is null, otherwise replaces that agent. */
+/** The list with this agent put in: replacing the one with its id, or added at the end when it is new. */
+function withSaved(list: AgentList | undefined, saved: Agent): AgentList | undefined {
+  if (!list) return list;
+  const known = list.agents.some((agent) => agent.id === saved.id);
+  const agents = known ? list.agents.map((agent) => (agent.id === saved.id ? saved : agent)) : [...list.agents, saved];
+  return { ...list, agents };
+}
+
+function refreshAfterSave(qc: QueryClient, saved: Agent): Promise<void> {
+  qc.setQueryData<AgentList>(LIST_KEY, (list) => withSaved(list, saved));
+  return qc.invalidateQueries({ queryKey: LIST_KEY, refetchType: "all" });
+}
+
+/**
+ * Creates the agent when `id` is null, otherwise replaces that agent. The list is brought up to date before the form
+ * closes: the engine's answer goes in at once, and the list is asked for again even though no screen is showing it
+ * (the form is open), so "Saved" never appears beside an old description or without the new agent.
+ */
 export function useSaveAgent() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, input }: { id: string | null; input: AgentInput }) =>
       id ? api<Agent>(agentPath(id), "PUT", input) : api<Agent>("/api/v2/copilot/agents", "POST", input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: LIST_KEY }),
+    onSuccess: (saved) => refreshAfterSave(qc, saved),
   });
 }
 
 function afterDelete(qc: QueryClient, id: string): Promise<void> {
   qc.removeQueries({ queryKey: outcomeKey(id) });
+  qc.setQueryData<AgentList>(LIST_KEY, (list) => list && { ...list, agents: list.agents.filter((a) => a.id !== id) });
   return qc.invalidateQueries({ queryKey: LIST_KEY });
 }
 
+/** Deleting an agent that is already gone ends the same way for the list: the agent is not there. */
 export function useDeleteAgent() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api<{ deleted: boolean }>(agentPath(id), "DELETE"),
     onSuccess: (_done, id) => afterDelete(qc, id),
+    onError: (error, id) => {
+      if (error instanceof ApiError && error.status === 404) void afterDelete(qc, id);
+    },
   });
 }
 
@@ -189,19 +211,31 @@ export function toInput(form: AgentInput): AgentInput {
   };
 }
 
-/** Which agent the form is for: null when saving makes a new one. */
+/** Which agent the form is for: null when saving makes a new one. `opener` names the button that opened it. */
 export interface FormTarget {
   id: string | null;
   heading: string;
   initial: AgentInput;
+  opener: string;
 }
 
-export const newTarget = (): FormTarget => ({ id: null, heading: "New agent", initial: blankForm() });
+/** What marks a button on the list (`data-focus-key`), so focus can go back to it when the form closes. */
+export const NEW_OPENER = "new-agent";
+export const editOpener = (id: string) => `edit:${id}`;
+export const copyOpener = (id: string) => `copy:${id}`;
+
+export const newTarget = (): FormTarget => ({
+  id: null,
+  heading: "New agent",
+  initial: blankForm(),
+  opener: NEW_OPENER,
+});
 
 export const editTarget = (agent: Agent): FormTarget => ({
   id: agent.id,
   heading: `Edit ${agent.name}`,
   initial: formFromAgent(agent, false),
+  opener: editOpener(agent.id),
 });
 
 /** Saving a copy always makes a new agent of the person's own; a ready-made one is never changed. */
@@ -209,6 +243,7 @@ export const copyTarget = (agent: Agent): FormTarget => ({
   id: null,
   heading: `Your copy of ${agent.name}`,
   initial: formFromAgent(agent, true),
+  opener: copyOpener(agent.id),
 });
 
 export function isDirty(form: AgentInput, initial: AgentInput): boolean {

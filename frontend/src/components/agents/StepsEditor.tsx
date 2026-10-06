@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { addStep, LIMITS, moveStep, removeStep, setStep, stepHasProblem } from "../../lib/agents";
 import { Button } from "../ui";
-import { NumberBadge, TextArea } from "./fields";
+import { groupErrorId, NumberBadge, STEPS_GROUP, TextArea } from "./fields";
 
 export const STEPS_HELP =
   "Write each step as a request, in your own words. " + "Use {symbol} where the stock's name should go.";
@@ -41,6 +41,7 @@ function StepRow({ index, steps, invalid, onChange }: RowProps) {
       <div className="min-w-0 flex-1 space-y-1.5">
         <TextArea
           aria-label={`Step ${index + 1}`}
+          aria-describedby={invalid ? groupErrorId(STEPS_GROUP) : undefined}
           rows={2}
           invalid={invalid}
           value={steps[index] ?? ""}

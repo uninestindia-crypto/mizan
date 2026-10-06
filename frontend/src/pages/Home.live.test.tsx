@@ -67,6 +67,38 @@ describe("live prices on the Home watchlist", () => {
     expect(screen.queryByText("Live")).toBeNull();
   });
 
+  it("says End of day under every right-hand price, so no price on a row goes without a word", async () => {
+    const when = "2026-10-06T10:15:00+05:30";
+    const live = { last_price: 3501.5, change_pct: 0.5, label: "LIVE", as_of: when, source: "Upstox", message: null };
+    engine({ connected: true, message: null, quotes: { TCS: live } });
+    renderApp(<Home />);
+    await screen.findByText("₹3,501.50");
+    for (const symbol of ["TCS", "INFY"]) {
+      const right = within(row(symbol)).getByText("End of day");
+      expect(right.parentElement).toHaveTextContent(/^₹[\d,.]+[+−]?[\d.]+%End of day$/);
+    }
+    expect(within(row("TCS")).getAllByText("End of day")).toHaveLength(1);
+  });
+
+  it("keeps the caption when live prices are off, so the price is still named", async () => {
+    engine({ connected: false, message: OFF, quotes: {} });
+    renderApp(<Home />);
+    await screen.findByText(OFF);
+    expect(within(row("INFY")).getByText("End of day")).toBeInTheDocument();
+  });
+
+  it("says once, under the Watchlist heading, that Upstox is busy, with only Not available on each row", async () => {
+    const busy = "Upstox is busy. Try again in a minute.";
+    const none = { last_price: null, change_pct: null, label: "UNAVAILABLE", as_of: null, source: null, message: busy };
+    engine({ connected: true, message: busy, quotes: { TCS: none, INFY: none } });
+    renderApp(<Home />);
+    expect(await screen.findByText(busy)).toBeInTheDocument();
+    expect(screen.getAllByText(busy)).toHaveLength(1);
+    expect(within(row("TCS")).getByText("Not available")).toBeInTheDocument();
+    expect(within(row("INFY")).getByText("Not available")).toBeInTheDocument();
+    expect(within(row("TCS")).getByText("₹3,400.00")).toBeInTheDocument();
+  });
+
   it("keeps working when the live price answer never comes", async () => {
     engine(() => {
       throw new Error("offline");

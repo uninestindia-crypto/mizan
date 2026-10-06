@@ -201,6 +201,48 @@ describe("problems the engine finds", () => {
   });
 });
 
+describe("problems and the controls they belong to, for a screen reader", () => {
+  const found = [
+    { field: "name", message: "Give your agent a name." },
+    { field: "tools", message: "Tick at least one thing this agent may look at." },
+    { field: "steps", message: "Step 1 is empty. Write what to do, or remove the step." },
+  ];
+
+  it("reads a problem with its field, for the name, the ticks and the steps", async () => {
+    open();
+    await screen.findByRole("checkbox", { name: /Price facts/ });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await screen.findByText("Check the highlighted fields.");
+    const name = screen.getByLabelText("Name");
+    expect(name).toHaveAttribute("aria-invalid", "true");
+    expect(name).toHaveAccessibleDescription(found[0]?.message as string);
+    const tools = screen.getByRole("group", { name: "What may it look at?" });
+    expect(tools).toHaveAccessibleDescription(found[1]?.message as string);
+    const step = screen.getByLabelText("Step 1");
+    expect(step).toHaveAttribute("aria-invalid", "true");
+    expect(step).toHaveAccessibleDescription(found[2]?.message as string);
+    expect(screen.getByRole("alert")).toHaveTextContent("Check the highlighted fields.");
+  });
+
+  it("reads the hint with a field that has no problem, and the group's hint with the steps", async () => {
+    open();
+    const how = screen.getByLabelText("How should it behave?");
+    expect(how).toHaveAccessibleDescription("Optional. For example: keep answers short");
+    expect(how).not.toHaveAttribute("aria-invalid");
+    const steps = screen.getByRole("group", { name: "Steps" });
+    expect(steps).toHaveAccessibleDescription(/Write each step as a request/);
+    expect(screen.getByLabelText("Step 1")).not.toHaveAttribute("aria-describedby");
+  });
+});
+
+describe("where focus starts", () => {
+  it("starts on the form's heading, so a screen reader hears where the person is", () => {
+    open(editTarget({ ...saved, name: "Mine" }));
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Edit Mine");
+    expect(document.activeElement?.textContent).toBe("Edit Mine");
+  });
+});
+
 describe("leaving the form", () => {
   it("closes at once when nothing was changed", () => {
     const onClose = open();

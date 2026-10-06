@@ -8,6 +8,7 @@ import {
   type RunResult,
   type RunStep,
 } from "../../lib/agents";
+import { friendlyDates } from "../../lib/plainDates";
 import { Badge, Button, Callout } from "../ui";
 import { NumberBadge } from "./fields";
 import { Reply } from "./Reply";
@@ -24,7 +25,7 @@ function LookedAtList({ items }: { items: LookedAt[] }) {
           <li key={i} className="flex flex-wrap items-baseline gap-x-2">
             <span className="font-medium text-ink">{item.label}</span>
             {!item.ok && <Badge tone="warn">Could not be looked up</Badge>}
-            <span className="text-ink-3">{item.summary}</span>
+            <span className="text-ink-3">{friendlyDates(item.summary)}</span>
           </li>
         ))}
       </ul>
@@ -37,10 +38,10 @@ function StepView({ step }: { step: RunStep }) {
     <li className="flex gap-3">
       <NumberBadge number={step.number} className="mt-0.5" />
       <div className="min-w-0 flex-1 space-y-2">
-        <p className="text-[13px] font-medium text-ink-2">{step.text}</p>
+        <p className="text-[13px] font-medium text-ink-2">{friendlyDates(step.text)}</p>
         {step.error && (
           <p role="alert" className="text-[13px] text-down">
-            {step.error}
+            {friendlyDates(step.error)}
           </p>
         )}
         {step.reply && step.reply !== step.error && (
@@ -107,7 +108,7 @@ function Outcome({ result }: { result: RunResult }) {
       {!result.completed && !result.note && (
         <Callout tone="warn">{ranSome ? "The agent stopped before its last step." : "The agent did not run."}</Callout>
       )}
-      {result.note && <Callout tone="info">{result.note}</Callout>}
+      {result.note && <Callout tone="info">{friendlyDates(result.note)}</Callout>}
     </>
   );
 }
@@ -123,7 +124,7 @@ export function RunResultView({ result }: { result: RunResult }) {
       <ProposalButtons proposals={result.proposals} />
       <p className="text-[12px] text-ink-3">
         This is information to help you look into a stock yourself. It is not advice.
-        {result.model ? ` Written with ${result.model}.` : ""}
+        {result.model ? " Written with an AI model." : ""}
       </p>
     </div>
   );

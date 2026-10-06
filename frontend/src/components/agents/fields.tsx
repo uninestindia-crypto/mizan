@@ -1,5 +1,6 @@
 import { clsx } from "clsx";
 import type { ReactNode, TextareaHTMLAttributes } from "react";
+import { useFieldAria } from "../ui";
 
 // Small form pieces the agent form shares. They match the look of the app's own Input.
 
@@ -11,8 +12,9 @@ const textAreaClass =
 type TextAreaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean };
 
 export function TextArea({ invalid, className, ...rest }: TextAreaProps) {
+  const aria = useFieldAria({ ...rest, "aria-invalid": invalid ? true : rest["aria-invalid"] });
   const border = invalid ? "border-down" : "border-line";
-  return <textarea aria-invalid={invalid || undefined} className={clsx(textAreaClass, border, className)} {...rest} />;
+  return <textarea className={clsx(textAreaClass, border, className)} {...rest} {...aria} />;
 }
 
 /** Red border for a field with a problem, in addition to the message under it. */
@@ -35,16 +37,34 @@ interface GroupProps {
   hint?: ReactNode;
   error?: ReactNode;
   children: ReactNode;
+  /** Names the hint and the problem line, so a screen reader reads them with the group. */
+  id: string;
 }
 
+/** The id of a group's problem line, for a control inside the group that wants to point at it. */
+export const groupErrorId = (id: string) => `${id}-error`;
+
+/** The group the steps live in. */
+export const STEPS_GROUP = "agent-steps";
+
 /** A group of controls (the ticks, the steps) with a heading, a hint and the problems for the whole group. */
-export function FieldGroup({ legend, hint, error, children }: GroupProps) {
+export function FieldGroup(props: GroupProps) {
+  const { legend, hint, error, children, id } = props;
+  const described = [hint ? `${id}-hint` : null, error ? groupErrorId(id) : null].filter(Boolean).join(" ");
   return (
-    <fieldset className="min-w-0 space-y-2">
+    <fieldset aria-describedby={described || undefined} className="min-w-0 space-y-2">
       <legend className="text-[13px] font-medium text-ink-2">{legend}</legend>
-      {hint && <p className="text-[12.5px] text-ink-3">{hint}</p>}
+      {hint && (
+        <p id={`${id}-hint`} className="text-[12.5px] text-ink-3">
+          {hint}
+        </p>
+      )}
       {children}
-      {error && <p className="text-[12.5px] text-down">{error}</p>}
+      {error && (
+        <p id={groupErrorId(id)} className="text-[12.5px] text-down">
+          {error}
+        </p>
+      )}
     </fieldset>
   );
 }

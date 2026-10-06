@@ -1,4 +1,5 @@
 import { Fragment, useMemo } from "react";
+import { friendlyDates } from "../../lib/plainDates";
 import { type Block, hostOf, type Inline, parseReply } from "./replyMarkdown";
 
 // A reply from an agent, drawn as plain React elements. Nothing here ever inserts HTML.
@@ -6,12 +7,12 @@ import { type Block, hostOf, type Inline, parseReply } from "./replyMarkdown";
 const LINK_CLASS = "font-medium text-brand underline";
 
 function InlineView({ node }: { node: Inline }) {
-  if (node.kind === "bold") return <strong className="font-semibold text-ink">{node.text}</strong>;
-  if (node.kind === "text") return <>{node.text}</>;
+  if (node.kind === "bold") return <strong className="font-semibold text-ink">{friendlyDates(node.text)}</strong>;
+  if (node.kind === "text") return <>{friendlyDates(node.text)}</>;
   return (
     <>
       <a href={node.href} title={node.href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
-        {node.text}
+        {friendlyDates(node.text)}
       </a>
       <span className="text-ink-3"> ({hostOf(node.href)})</span>
     </>

@@ -1,7 +1,8 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { AI_OFF, AI_READY, card, engine, mine, RESULT, runUrl, TOOLS } from "../components/agents/agentFixtures";
 import { callsTo, deferred, newClient, renderApp, routeApi } from "../components/agents/testHarness";
-import type { Agent, Recipe, RunResult } from "../lib/agents";
+import type { RunResult } from "../lib/agents";
 import { api } from "../lib/api";
 import Agents from "./Agents";
 
@@ -9,76 +10,6 @@ vi.mock("../lib/api", async (importOriginal) => {
   const real = await importOriginal<typeof import("../lib/api")>();
   return { ...real, api: vi.fn() };
 });
-
-const mine: Agent = {
-  id: "mine1",
-  name: "My halal check",
-  description: "Checks a stock I am watching.",
-  instructions: "",
-  tools: ["shariah_check"],
-  steps: ["Is {symbol} halal?", "Show the facts about {symbol}."],
-  needs_symbol: true,
-  built_in: false,
-  created_at: "2026-10-06T10:00:00+00:00",
-  updated_at: "2026-10-06T10:00:00+00:00",
-};
-const daily: Agent = { ...mine, id: "mine2", name: "Daily look", steps: ["Show my watchlist."], needs_symbol: false };
-const ready: Recipe = {
-  id: "recipe_check",
-  name: "Check a stock, step by step",
-  description: "Facts, halal screen and news for one stock.",
-  instructions: "",
-  tools: ["stock_facts", "shariah_check"],
-  steps: ["Show the facts about {symbol}."],
-  needs_symbol: true,
-  built_in: true,
-  needs_ai: false,
-};
-const needsAi: Recipe = { ...ready, id: "recipe_news", name: "Read the news", needs_ai: true };
-
-const TOOLS = {
-  tools: [
-    { name: "stock_facts", label: "Price facts", help: "Prices.", description: "For the model: prices." },
-    { name: "shariah_check", label: "Halal screening", help: "Both standards.", description: "For the model." },
-  ],
-};
-
-const RESULT: RunResult = {
-  name: "Check a stock, step by step",
-  symbol: "TCS",
-  steps: [
-    {
-      number: 1,
-      text: "Show the facts about TCS.",
-      reply: "TCS has been **steady**.\n\n- one\n- see [the filing](https://example.com/f)",
-      looked_at: [
-        { label: "Price facts", summary: "One-year return 12%", ok: true },
-        { label: "News", summary: "Could not reach the news.", ok: false },
-      ],
-      error: null,
-    },
-    { number: 2, text: "Is TCS halal?", reply: "", looked_at: [], error: "That step could not finish." },
-  ],
-  proposals: [
-    { kind: "navigate", label: "Open TCS", path: "/stock/TCS", symbol: "TCS" },
-    { kind: "second_opinion", label: "Get a second opinion on TCS", path: null, symbol: "TCS" },
-    { kind: "navigate", label: "Somewhere else", path: "https://evil.example", symbol: null },
-  ],
-  model: null,
-  completed: true,
-  note: "No AI key was used, so each step used the built-in answers.",
-};
-
-function engine(extra: Record<string, unknown> = {}, agents: Agent[] = [mine, daily]) {
-  routeApi({
-    "GET /api/v2/copilot/tools": TOOLS,
-    "GET /api/v2/copilot/agents": { agents, recipes: [ready, needsAi] },
-    ...extra,
-  });
-}
-
-const runUrl = (id: string) => `/api/v2/copilot/agents/${id}/run`;
-const card = (name: string) => screen.getByRole("heading", { name }).closest("article") as HTMLElement;
 
 beforeEach(() => {
   vi.mocked(api).mockReset();
@@ -117,15 +48,34 @@ describe("the Agents screen", () => {
     expect(screen.getByText(next)).toBeInTheDocument();
   });
 
-  it("notes that an agent works best with an AI key, and still lets it be run", async () => {
-    engine();
+  it("says what really happens when no AI key is saved: it needs one, and where to add it", async () => {
+    engine({ "GET /api/v2/copilot/models": AI_OFF });
     renderApp(<Agents />);
     const news = await screen.findByRole("heading", { name: "Read the news" });
     const note = within(news.closest("article") as HTMLElement);
-    expect(note.getByText("Works best with an AI key")).toBeInTheDocument();
-    expect(note.getByRole("link", { name: "Add a key" })).toHaveAttribute("href", "/settings/accounts");
+    const sentence = "Needs an AI key. Add one in Settings, then Accounts and keys.";
+    await note.findByText((_, el) => el?.tagName === "P" && el.textContent === sentence);
+    const link = note.getByRole("link", { name: "Settings, then Accounts and keys" });
+    expect(link).toHaveAttribute("href", "/settings/accounts");
     expect(note.getByRole("button", { name: "Run" })).toBeEnabled();
-    expect(within(card("Check a stock, step by step")).queryByText("Works best with an AI key")).toBeNull();
+    expect(within(card("Check a stock, step by step")).queryByText(/Needs an AI key/)).toBeNull();
+    expect(document.body.textContent).not.toContain("Works best with an AI key");
+  });
+
+  it("shows no AI key note when a key is saved, and none while it is not yet known", async () => {
+    const pending = deferred<unknown>();
+    engine({ "GET /api/v2/copilot/models": () => pending.promise });
+    const first = renderApp(<Agents />);
+    await screen.findByRole("heading", { name: "Read the news" });
+    expect(screen.queryByText(/Needs an AI key/)).toBeNull();
+    await act(async () => pending.resolve(AI_READY));
+    expect(screen.queryByText(/Needs an AI key/)).toBeNull();
+    first.unmount();
+    engine({ "GET /api/v2/copilot/models": () => { throw new Error("offline"); } });
+    renderApp(<Agents />);
+    await screen.findByRole("heading", { name: "Read the news" });
+    await waitFor(() => expect(callsTo("GET", "/api/v2/copilot/models").length).toBeGreaterThan(1));
+    expect(screen.queryByText(/Needs an AI key/)).toBeNull();
   });
 
   it("says plainly, with a way to retry, when the agents cannot be loaded", async () => {

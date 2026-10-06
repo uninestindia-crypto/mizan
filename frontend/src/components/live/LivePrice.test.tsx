@@ -136,6 +136,37 @@ describe("prices for a whole list", () => {
     expect(screen.getByTestId("INFY")).toHaveTextContent(/^INFY$/);
   });
 
+  it("says a shared problem once, above the list, and leaves each row with only its Not available label", async () => {
+    const busy = "Upstox is busy. Try again in a minute.";
+    const none = quote({ label: "UNAVAILABLE", last_price: null, change_pct: null, as_of: null, message: busy });
+    const answerBusy = { connected: true, message: busy, quotes: { TCS: none, INFY: none } };
+    routeApi({ "GET /api/v2/live/quotes?symbols=TCS,INFY": answerBusy });
+    renderApp(<Watchlist symbols={["TCS", "INFY"]} />);
+    expect(await screen.findByText(busy)).toBeInTheDocument();
+    expect(screen.getAllByText(busy)).toHaveLength(1);
+    expect(screen.queryByRole("link", { name: "Open Accounts and keys" })).toBeNull();
+    expect(screen.getByTestId("TCS")).toHaveTextContent(/^TCSNot available$/);
+    expect(screen.getByTestId("INFY")).toHaveTextContent(/^INFYNot available$/);
+  });
+
+  it("keeps a reason that belongs to one row only, beside that row's label", async () => {
+    const busy = "Upstox is busy. Try again in a minute.";
+    const own = "Upstox has no price for INFY right now.";
+    const base = { last_price: null, change_pct: null, as_of: null, label: "UNAVAILABLE" } as const;
+    const quotes = { TCS: quote({ ...base, message: busy }), INFY: quote({ ...base, message: own }) };
+    routeApi({ "GET /api/v2/live/quotes?symbols=TCS,INFY": { connected: true, message: busy, quotes } });
+    renderApp(<Watchlist symbols={["TCS", "INFY"]} />);
+    expect(await screen.findByText(own)).toBeInTheDocument();
+    expect(screen.getAllByText(busy)).toHaveLength(1);
+  });
+
+  it("shows no note at all when every price came through", async () => {
+    routeApi({ "GET /api/v2/live/quotes?symbols=TCS,INFY": connected({ TCS: quote(), INFY: quote() }) });
+    renderApp(<Watchlist symbols={["TCS", "INFY"]} />);
+    await screen.findAllByText("Live");
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
   it("asks nothing for an empty list", async () => {
     routeApi({});
     renderApp(<Watchlist symbols={[]} />);

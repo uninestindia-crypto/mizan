@@ -69,9 +69,14 @@ function QuoteBody({ quote, large }: { quote: LiveQuote; large: boolean }) {
 
 const NOTE_CLASS = "flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12.5px] text-ink-3";
 
-/** Says once, with a button, how to turn live prices on. Nothing when they are connected or still loading. */
+/**
+ * Says once what is wrong with live prices. Not connected: the message and a button to Accounts and keys. Connected but
+ * the engine had a problem (Upstox busy, unreachable): the message alone, because there is nothing to click. Nothing
+ * when all is well or while loading.
+ */
 export function LiveConnectNote({ quotes, className }: { quotes: LiveQuotes | undefined; className?: string }) {
-  if (!quotes || quotes.connected) return null;
+  if (!quotes) return null;
+  if (quotes.connected) return quotes.message ? <ProblemNote message={quotes.message} className={className} /> : null;
   return (
     <div role="status" className={cx(NOTE_CLASS, className)}>
       <span>{quotes.message || NOT_CONNECTED_MESSAGE}</span>
@@ -84,12 +89,23 @@ export function LiveConnectNote({ quotes, className }: { quotes: LiveQuotes | un
   );
 }
 
+function ProblemNote({ message, className }: { message: string; className?: string }) {
+  return (
+    <p role="status" className={cx(NOTE_CLASS, className)}>
+      {message}
+    </p>
+  );
+}
+
 const CHIP_CLASS = "mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12.5px]";
 
 /** One small line for a list row, from prices fetched once for the whole list. Nothing until there is an answer. */
 export function LiveChip({ symbol, quotes }: { symbol: string; quotes: LiveQuotes | undefined }) {
-  const quote = quoteFor(quotes, symbol);
-  if (!quote) return null;
+  const found = quoteFor(quotes, symbol);
+  if (!found) return null;
+  // A reason the whole list shares is said once, above the list, so a row keeps only its "Not available" label.
+  const shared = quotes?.message && found.message === quotes.message;
+  const quote = shared ? { ...found, message: null } : found;
   const line = asOfLine(quote);
   return (
     <span title={line ?? undefined} className={CHIP_CLASS}>

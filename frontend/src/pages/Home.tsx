@@ -232,11 +232,10 @@ function WatchlistRow({ w, quotes }: { w: WatchRow; quotes: LiveQuotes | undefin
           <LiveChip symbol={w.symbol} quotes={quotes} />
         </div>
         <Sparkline values={w.spark ?? []} width={84} height={28} />
-        <div className="w-24 text-right">
+        <div className="w-24 shrink-0 text-right">
           <div className="num text-sm font-medium text-ink">{inr(w.close)}</div>
-          <Delta value={w.chg_1d} className="text-[12.5px]">
-            {pct(w.chg_1d, 2)}
-          </Delta>
+          <Delta value={w.chg_1d} className="text-[12.5px]">{pct(w.chg_1d, 2)}</Delta>
+          <div className="text-[11.5px] text-ink-3">End of day</div>
         </div>
       </Link>
     </li>

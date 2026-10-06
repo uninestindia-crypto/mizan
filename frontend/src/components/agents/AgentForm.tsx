@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import {
   type Agent,
   type AgentInput,
@@ -17,7 +17,7 @@ import {
 import { errorMessage } from "../../lib/api";
 import { Button, Callout, Card, Field, Input, PageHeader, Skeleton } from "../ui";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { FieldGroup, invalidClass, problemText, TextArea } from "./fields";
+import { FieldGroup, invalidClass, problemText, STEPS_GROUP, TextArea } from "./fields";
 import { STEPS_HELP, StepsEditor } from "./StepsEditor";
 import { ToolPicker } from "./ToolPicker";
 
@@ -87,7 +87,7 @@ function ToolsField({ form, messages, change }: SectionProps) {
   const tools = useAgentTools();
   const pick = (names: string[]) => change({ tools: names });
   return (
-    <FieldGroup legend="What may it look at?" error={problemText(messages.tools)}>
+    <FieldGroup id="agent-tools" legend="What may it look at?" error={problemText(messages.tools)}>
       {tools.isPending && <Skeleton className="h-24" />}
       {tools.isError && <ToolsError onRetry={() => void tools.refetch()} />}
       {tools.data && <ToolPicker tools={tools.data} selected={form.tools} onChange={pick} />}
@@ -98,7 +98,7 @@ function ToolsField({ form, messages, change }: SectionProps) {
 function StepsField({ form, messages, change }: SectionProps) {
   const setSteps = (steps: string[]) => change({ steps });
   return (
-    <FieldGroup legend="Steps" hint={STEPS_HELP} error={problemText(messages.steps)}>
+    <FieldGroup id={STEPS_GROUP} legend="Steps" hint={STEPS_HELP} error={problemText(messages.steps)}>
       <StepsEditor steps={form.steps} messages={messages.steps} onChange={setSteps} />
       {usesSymbol(form) && (
         <p className="text-[12.5px] text-ink-3">When you run this agent, it will ask which stock to use.</p>
@@ -143,9 +143,17 @@ function Banners({ problems, messages, failure }: { problems: Problem[]; message
   );
 }
 
+/** The form replaces the list, so the control the person clicked is gone: start at the form's own heading. */
+function useHeadingFocus() {
+  const heading = useRef<HTMLSpanElement>(null);
+  useEffect(() => heading.current?.focus(), []);
+  return heading;
+}
+
 /** Create or change an agent: a name, what it may look at, and the steps it follows. */
 export function AgentForm({ target, onClose }: { target: FormTarget; onClose: (saved: Agent | null) => void }) {
   const state = useAgentFormState(target, onClose);
+  const heading = useHeadingFocus();
   const [asking, setAsking] = useState(false);
   const messages = groupProblems(state.problems);
   const section = { form: state.form, messages, change: state.change };
@@ -155,7 +163,14 @@ export function AgentForm({ target, onClose }: { target: FormTarget; onClose: (s
   };
   return (
     <form onSubmit={state.submit} noValidate className="space-y-5">
-      <PageHeader title={target.heading} subtitle="Agents can only look. No agent can place an order." />
+      <PageHeader
+        title={
+          <span ref={heading} tabIndex={-1} className="outline-none">
+            {target.heading}
+          </span>
+        }
+        subtitle="Agents can only look. No agent can place an order."
+      />
       <Banners problems={state.problems} messages={messages} failure={state.failure} />
       <Card className="space-y-5">
         <BasicsFields {...section} />

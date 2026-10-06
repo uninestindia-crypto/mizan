@@ -24,6 +24,8 @@ export interface LiveQuotes {
 }
 
 export const POLL_MS = 20_000;
+/** When nothing is moving (the market is closed), once in five minutes is plenty. */
+export const SLOW_POLL_MS = 5 * 60_000;
 export const MAX_SYMBOLS = 20;
 const FRESH_MS = 15_000;
 
@@ -73,15 +75,27 @@ export function shouldPoll(symbolCount: number, tabVisible: boolean): boolean {
   return symbolCount > 0 && tabVisible;
 }
 
-export function pollInterval(symbolCount: number, tabVisible: boolean): number | false {
-  return shouldPoll(symbolCount, tabVisible) ? POLL_MS : false;
+/**
+ * True when every price that has an answer is the last close and the engine reported no problem: nothing will change
+ * until the market opens. A price that is live or delayed, a problem to retry, or no answer yet all keep the quick
+ * pace.
+ */
+export function onlyLastClose(data: LiveQuotes | undefined): boolean {
+  if (!data || !data.connected || data.message) return false;
+  const labels = Object.values(data.quotes).map((quote) => knownLabel(quote.label));
+  return labels.includes("LAST_CLOSE") && labels.every((label) => label === "LAST_CLOSE" || label === "UNAVAILABLE");
+}
+
+export function pollInterval(symbolCount: number, tabVisible: boolean, data?: LiveQuotes): number | false {
+  if (!shouldPoll(symbolCount, tabVisible)) return false;
+  return onlyLastClose(data) ? SLOW_POLL_MS : POLL_MS;
 }
 
 export function mergeQuotes(parts: readonly LiveQuotes[]): LiveQuotes {
   const connected = parts.every((part) => part.connected);
   const message = parts.find((part) => part.message)?.message ?? null;
   const quotes: Record<string, LiveQuote> = Object.assign({}, ...parts.map((part) => part.quotes));
-  return { connected, message: connected ? null : message, quotes };
+  return { connected, message, quotes };
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -169,7 +183,8 @@ export function usePageVisible(): boolean {
 
 /**
  * Live prices for a list of stocks in one request (more only past 20). Refreshes every 20 seconds while the tab is
- * visible, and not at all with no symbols. A failure is quiet: the screen simply keeps its end-of-day price.
+ * visible (every five minutes while every price is the last close), and not at all with no symbols. A failure is
+ * quiet: the screen simply keeps its end-of-day price.
  */
 export function useLiveQuotes(symbols: readonly string[]) {
   const list = normalizeSymbols(symbols);
@@ -179,7 +194,7 @@ export function useLiveQuotes(symbols: readonly string[]) {
     queryFn: () => fetchLiveQuotes(list),
     enabled: list.length > 0,
     staleTime: FRESH_MS,
-    refetchInterval: pollInterval(list.length, visible),
+    refetchInterval: (query) => pollInterval(list.length, visible, query.state.data),
     refetchOnWindowFocus: true,
     retry: false,
   });
