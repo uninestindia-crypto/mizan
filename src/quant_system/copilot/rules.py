@@ -73,6 +73,9 @@ class _Run:
     proposals: list[Proposal] = field(default_factory=list)
     looked_up: dict[str, bool] = field(default_factory=dict)  # word -> is it a stock symbol
     answered: bool = False  # a read-only lookup succeeded, so facts are being shown
+    blocked: str | None = (
+        None  # why no stock could be looked up at all (for example no market data yet)
+    )
 
     def call(self, tool: str, args: dict[str, Any]) -> ToolResult:
         if self.allowed is not None and tool not in self.allowed:
@@ -94,6 +97,8 @@ def _words(text: str) -> set[str]:
 
 def _lookup_symbol(run: _Run, token: str) -> bool:
     found = run.registry.call("find_stock", {"query": token})
+    if not found.ok:
+        run.blocked = found.error
     matches = found.data.get("matches", []) if found.ok else []
     known = any(m["symbol"] == token for m in matches)
     if known:
@@ -133,10 +138,14 @@ def _named_symbols(run: _Run, text: str, page: str | None) -> list[str]:
     return [str(on_screen.group(1)).upper()] if on_screen else []
 
 
-def _which(named: list[str], none_named: str) -> str:
-    """The plain question to ask when the words did not settle on exactly one stock."""
+def _which(run: _Run, named: list[str], none_named: str) -> str:
+    """The plain question to ask when the words did not settle on exactly one stock.
+
+    When no stock could be looked up at all (market data not connected), say that instead, because a symbol in
+    capitals is not the problem and asking again would not help.
+    """
     if not named:
-        return none_named
+        return run.blocked or none_named
     names = f"{', '.join(named[:-1])} or {named[-1]}" if len(named) > 1 else named[0]
     return f"Which stock do you mean: {names}?"
 
@@ -145,30 +154,30 @@ def _which(named: list[str], none_named: str) -> str:
 
 
 def render_halal(data: dict[str, Any]) -> str:
+    """The screener's own result as short paragraphs and flat lists, so it reads the same in every screen."""
     if not data.get("covered"):
         return str(data["message"])
-    lines = [f"**{data['symbol']} ({data.get('company')})**: halal screening"]
+    blocks = [f"**From QuantOS's halal screener: {data['symbol']} ({data.get('company')})**"]
     if not data.get("sector_compliant", True):
-        lines.append(f"- Business activity: not allowed ({data.get('sector_failure_reason')})")
+        blocks.append(f"**Business activity:** not allowed ({data.get('sector_failure_reason')})")
     for standard in data["standards"]:
-        lines.append(
-            f"- **{standard['standard']}:** {_STATUS.get(standard['status'], standard['status'])}"
-        )
-        lines.extend(
-            f"  - {r['name']}: {r['actual_pct']:.1f}% (limit {r['threshold_pct']:.0f}%)"
+        status = _STATUS.get(standard["status"], standard["status"])
+        ratios = [
+            f"- {r['name']}: {r['actual_pct']:.1f}% (limit {r['threshold_pct']:.0f}%)"
             for r in standard["ratios"]
-        )
+        ]
+        blocks.append("\n".join([f"**{standard['standard']}: {status}**", *ratios]))
     if data.get("standards_disagree"):
-        lines.append(f"- The two standards disagree: {data.get('disagreement_reason')}")
+        blocks.append(f"The two standards disagree: {data.get('disagreement_reason')}")
     source = data["provenance"]
-    lines.append(
-        f"\nData: {source.get('reporting_period')}, filed {source.get('filing_date')}. This is an illustrative sample "
+    blocks.append(
+        f"Data: {source.get('reporting_period')}, filed {source.get('filing_date')}. This is an illustrative sample "
         "entered by hand: not audited and not live."
     )
-    lines.append(
+    blocks.append(
         "This is a screening aid, not a religious ruling (fatwa). Please ask a qualified scholar before you decide."
     )
-    return "\n".join(lines)
+    return "\n\n".join(blocks)
 
 
 def _render_facts(data: dict[str, Any]) -> str:
@@ -255,7 +264,7 @@ def _stock_question(
 ) -> str:
     named = _named_symbols(run, text, page)
     if len(named) != 1:
-        return _which(named, _WHICH_STOCK)
+        return _which(run, named, _WHICH_STOCK)
     symbol = named[0]
     key = "symbols" if tool == "live_quote" else "symbol"
     result = run.call(tool, {key: [symbol] if tool == "live_quote" else symbol})
@@ -265,7 +274,7 @@ def _stock_question(
 def _second_opinion(run: _Run, text: str, page: str | None, ai_available: bool) -> str:
     named = _named_symbols(run, text, page)
     if len(named) != 1:
-        return _which(named, _WHICH_FOR_OPINION)
+        return _which(run, named, _WHICH_FOR_OPINION)
     symbol = named[0]
     run.call("suggest_second_opinion", {"symbol": symbol})
     if ai_available:

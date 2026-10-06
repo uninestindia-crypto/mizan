@@ -30,9 +30,9 @@ _HIDDEN = frozenset(
     {"Cf", "Cc", "Co", "Cn", "Mn", "Me"}
 )  # format, control, private, unassigned, combining marks
 _SPACED = re.compile(r"\b(?:[a-z][\s.\-_]){2,}[a-z]\b")
-_SENTENCES = re.compile(r"(?<=[.!?])\s+|\n+")
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 _LINK = re.compile(r"\[([^\]\n]*)\]\((\S+?)\)")
-_BARE_LINK = re.compile(r"https?://\S+")
+_BARE_LINK = re.compile(r"https?://[^\s<>\"')\]]+")
 
 _ADVICE = re.compile(
     r"""
@@ -57,13 +57,17 @@ _ADVICE = re.compile(
     | \bwill\s+(?:double|triple|multiply|soar|skyrocket|surge|rocket)\b
     | \b(?:certain|bound|sure)\s+to\s+(?:rise|go\s+up|gain|grow|double|win|outperform)\b
     | \balways\s+(?:rises?|goes?\s+up|wins?)\b
+    | \b(?:top|best|favou?rite)\s+pick\b | \bundervalued\b | \bsafe\s+bet\b | \bbargain\b | \bload\s+up\b
+    | \bgo\s+for\s+(?!a\b|an\b|the\b)\w+ | \bput\s+(?:your|some)\s+money\b | \b(?:consider|think\s+about)\s+adding\b
+    | \bgood\s+(?:fit|investment)\b
     | \bshould\s+(?:you\s+)?(?:invest|hold)\b | \bworth\s+(?:buying|investing)\b
     """,
     re.VERBOSE,
 )
 _HALAL = re.compile(
     r"""
-    \bhal+a+l\b | \bharam\b | \bshari\w* | \bsharia\w* | \bfatwa\w* | \bpermissib\w* | \bimpermissib\w*
+    \bhal+a+l\b | \bhara+m\b | \bkosher\b | \bmuslims?\b | \binterest[\s-](?:free|based)\b
+    | \bshari\w* | \bsharia\w* | \bfatwa\w* | \bpermissib\w* | \bimpermissib\w*
     | \bislam\w* | \briba\b | \baaoifi\b | \btasis\b | \blawful\b | \bunlawful\b | \bcompliant\b | \bcompliance\b
     | \bpermitted\b | \bforbidden\b
     """,
@@ -138,18 +142,11 @@ def _only_known_links(text: str, allowed: Collection[str]) -> tuple[str, int]:
     return out, dropped
 
 
-def scrub_prose(
-    text: str, *, halal_allowed: bool, allowed_links: Collection[str] = ()
-) -> ScrubResult:
-    """A model's free-text reply. Advice sentences go; halal sentences go unless the screener ran; stray links go.
-
-    ``halal_allowed`` is true only when the halal screener tool actually ran for this answer, because then the model
-    is quoting the screener and the caller appends the screener's own block as the authority.
-    """
-    linked, links = _only_known_links(text, allowed_links)
+def _scrub_line(line: str, halal_allowed: bool) -> tuple[str, int, int]:
+    """One line of a reply with its advice and (unless allowed) halal sentences removed: (text, advice, halal)."""
     kept: list[str] = []
     advice = halal = 0
-    for sentence in _SENTENCES.split(linked):
+    for sentence in _SENTENCE_END.split(line):
         if not sentence.strip():
             continue
         if is_advice(sentence):
@@ -158,7 +155,28 @@ def scrub_prose(
             halal += 1
         else:
             kept.append(sentence.strip())
+    return " ".join(kept), advice, halal
+
+
+def scrub_prose(
+    text: str, *, halal_allowed: bool, allowed_links: Collection[str] = ()
+) -> ScrubResult:
+    """A model's free-text reply. Advice sentences go; halal sentences go unless the screener ran; stray links go.
+
+    ``halal_allowed`` is true only when the halal screener tool actually ran for this answer, because then the model
+    is quoting the screener and the caller appends the screener's own block as the authority. Lines and paragraphs
+    the reply already had are kept as they were; only the offending sentences are cut out.
+    """
+    linked, links = _only_known_links(text, allowed_links)
+    lines: list[str] = []
+    advice = halal = 0
+    for line in linked.split("\n"):
+        kept, line_advice, line_halal = (
+            _scrub_line(line, halal_allowed) if line.strip() else ("", 0, 0)
+        )
+        advice, halal = advice + line_advice, halal + line_halal
+        if kept or not line.strip():
+            lines.append(kept)
     notes = ([_REMOVED_ADVICE] if advice else []) + ([_REMOVED_HALAL] if halal else [])
-    return ScrubResult(
-        "\n\n".join([*kept, *notes]) if (kept or notes) else "", advice, halal, links
-    )
+    body = re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+    return ScrubResult("\n\n".join(part for part in (body, *notes) if part), advice, halal, links)

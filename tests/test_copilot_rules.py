@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from quant_system.copilot.rules import AnswerContext, answer_without_ai
-from quant_system.copilot.tools import default_registry
+from quant_system.copilot.tools import ToolContext, default_registry
 from tests.copilot_fakes import FakeNews, FakeQuotes, WordIndex, make_context
 
 NO_ADVICE = "I can't tell you whether to buy or sell."
@@ -294,3 +294,20 @@ def test_an_advice_question_that_matches_nothing_gets_the_menu_which_already_say
 @pytest.mark.parametrize("text", ["how is AAA doing?", "is AAA halal", "AAA facts"])
 def test_a_question_that_does_not_ask_for_advice_gets_no_such_line(text: str) -> None:
     assert "can't tell you whether" not in _ask(text).reply
+
+
+@pytest.mark.parametrize(
+    "text", ["Is TCS halal?", "How is INFY doing?", "News on RELIANCE", "second opinion on TCS"]
+)
+def test_with_no_market_data_the_answer_says_so_and_names_the_click(text: str) -> None:
+    registry = default_registry(ToolContext(index=None, shariah=None))
+    reply = answer_without_ai(text, registry, AnswerContext(ai_available=True)).reply
+    assert "Market data is not connected yet" in reply and "Settings, then Market data" in reply
+    assert "capital letters" not in reply
+
+
+def test_the_halal_block_is_flat_labelled_and_says_it_is_the_screeners_own_result() -> None:
+    block = _ask("is AAA halal?").reply
+    assert block.startswith("**From QuantOS's halal screener: AAA (Alpha Ltd)**")
+    assert "**AAOIFI: Compliant**" in block and "**TASIS: Compliant**" in block
+    assert "\n  - " not in block  # no nested list: every screen shows a flat list the same way

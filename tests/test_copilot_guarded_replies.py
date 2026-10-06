@@ -99,7 +99,7 @@ def test_every_stock_the_screener_covered_gets_its_own_block() -> None:
     reply = _ask(
         _use("shariah_check", "AAA"), _use("shariah_check", "BBB"), _say("Both."), registry=registry
     ).reply
-    assert "**AAA (Alpha Ltd)**" in reply and "**BBB (Alpha Ltd)**" in reply
+    assert "screener: AAA (Alpha Ltd)**" in reply and "screener: BBB (Alpha Ltd)**" in reply
 
 
 def test_a_run_that_ends_early_still_carries_the_screener_block() -> None:
