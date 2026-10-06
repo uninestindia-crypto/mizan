@@ -104,6 +104,11 @@ possible. This overrides, knowingly, the one-trial-only rule in `reports/kronos_
   `tests/test_kronos_trial11.py`, `agent_context/work/active/20261006-NOTICE-kronos-trial-11-declared.md` (new, additive).
 - Read and run, never edited: `scripts/generate_kronos_forecasts.py`, `scripts/run_kronos_trial.py` (claimed by
   `20260928-claude-kronos-trial.md`).
+- **Founder decision, 2026-10-06 (after the declaration was committed):** "keep five paths, I'll run it on Kaggle". Five paths is
+  now locked. The founder runs the package on Kaggle; the file comes back as `kronos-forecasts.json`, to be placed at
+  `reports/kronos_trial11/kronos-forecasts.json` and scored with `python scripts/score_kronos_trial11.py`. The CPU run left
+  going here is only a backup (first complete run is scored; any other is discarded unscored). The declaration file is
+  deliberately not edited to say this, because it is frozen and its zip is pinned by a test.
 - **Feasibility checked, not assumed:** no Kaggle credential exists here; `LIGHTNING_API_KEY` is set but empty (length 0);
   no GPU. So no third-party run can be started from this container. A CPU run here is the fallback only.
 
