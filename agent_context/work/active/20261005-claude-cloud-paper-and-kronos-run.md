@@ -73,6 +73,23 @@ Second session (this one has the Upstox credential). Founder instructions of 202
 Founder also asked (mid-session) for a goal file every agent reads: `agent_context/GOAL.md`, wired into `AGENTS.md`,
 `CLAUDE.md`, the Cursor rule and `agent_context/README.md`.
 
+## Added on founder instruction, 2026-10-06 (second request: "fix the parser and do the rest ... make it ready, test it")
+
+New owned paths (checked: no active record claims them; two records only mention the test names):
+
+- `src/quant_system/data/upstox.py`, `src/quant_system/data/upstox_parsing.py`, `tests/test_upstox_data.py`: the quote
+  parser fix. Defect: `UpstoxClient.fetch_market_quote` looked the reply up by instrument key; the provider keys it by
+  symbol, so it always raised schema drift against the real feed. **Correction to my earlier handoff:** I wrote that its
+  unit test "encodes the wrong shape". It does not: no test parsed a quote body at all, so the success path was never
+  exercised. Also hardened two "without token" tests that made live requests whenever a token was set.
+- `.github/workflows/cloud-paper-session.yml` (reworked: `mode` input, rehearsal, temporary push trigger to be removed),
+  `docs/CLOUD_PAPER_RUNBOOK.md` (updated to match).
+- `agent_context/CURRENT.md`: one additive, dated Kronos section only, on the founder's "do the rest". It is claimed by
+  `20260820-codex-slice4-ridge-training.md` and `20260821-claude-ci-workflow.md`; nothing they wrote is altered; a notice
+  is filed.
+- `agent_context/handoffs/20261006-claude-cloud-paper-and-kronos-handoff.md`: correct the line above.
+- Branch `claude/dazzling-brown-yn5qu3` pull request: opened on this instruction, **not merged**.
+
 ## Decision rationale
 
 - **Separate state.** The laptop flagship's live state is `logs/paper_runs/portfolio_state.json` (untracked). A cloud run
