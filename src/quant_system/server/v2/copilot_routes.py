@@ -124,10 +124,7 @@ def _reply(result: AgentResult, mode: str, provider: str | None) -> dict[str, An
 @router.get("/status")
 def status() -> dict[str, Any]:
     providers = provider_status(_lookup)
-    live: dict[str, Any] = {
-        "ready": False,
-        "message": "Add an Upstox key in Settings, then Accounts and keys.",
-    }
+    live = copilot_wiring.live_prices_status()
     return {
         "ai_ready": any(p["ready"] for p in providers),
         "providers": providers,

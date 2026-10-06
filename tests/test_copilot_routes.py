@@ -18,7 +18,7 @@ from quant_system.copilot.verify_jobs import VerifyJobs
 from quant_system.server.app import app
 from quant_system.server.v2 import copilot_routes, copilot_wiring, paths, router
 from quant_system.server.v2.credentials import CredentialStore
-from tests.copilot_fakes import SAMPLE_ROW, FakeNews, StubModel, opinion_json
+from tests.copilot_fakes import SAMPLE_ROW, FakeNews, FakeQuotes, StubModel, opinion_json
 from tests.market_fixtures import build_standard_store
 
 CANARY = "canary-ai-value-QQ77"
@@ -351,3 +351,45 @@ def test_the_agents_screen_survives_a_refresh(
     monkeypatch.setattr(paths, "spa_dir", lambda: built)
     response = client.get(path)
     assert response.status_code == 200 and "QuantOS" in response.text
+
+
+# ------------------------------------------------------------------------------------- live prices
+
+
+@pytest.fixture()
+def no_upstox_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("UPSTOX_ANALYTICS_TOKEN", raising=False)
+    monkeypatch.delenv("UPSTOX_ACCESS_TOKEN", raising=False)
+
+
+@pytest.mark.usefixtures("no_upstox_key")
+def test_without_a_broker_key_the_status_and_the_prices_route_say_what_to_click(
+    client: TestClient,
+) -> None:
+    live = client.get("/api/v2/copilot/status").json()["live_prices"]
+    assert live["ready"] is False and "Accounts and keys" in live["message"]
+    prices = client.get("/api/v2/live/quotes?symbols=AAA").json()
+    assert prices["connected"] is False and "Accounts and keys" in prices["message"]
+
+
+def test_with_a_broker_key_the_status_is_ready_and_never_shows_the_key(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("UPSTOX_ANALYTICS_TOKEN", CANARY)
+    body = client.get("/api/v2/copilot/status").json()
+    assert body["live_prices"] == {"ready": True, "message": None} and CANARY not in json.dumps(
+        body
+    )
+
+
+def test_the_copilot_prices_a_stock_from_the_live_service_with_its_freshness_label(
+    ready: TestClient, headers: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    entry = {
+        "last_price": 130.5,
+        "label": "LAST_CLOSE",
+        "message": "The market is closed. This is the last closing price.",
+    }
+    monkeypatch.setattr(copilot_wiring, "_quotes", lambda: FakeQuotes(entry))
+    body = _chat(ready, headers, "price of AAA")
+    assert "130.5" in body["reply"] and "last closing price" in body["reply"]

@@ -17,7 +17,7 @@ from quant_system.server.v2.credentials import AI_KEY_NAMES
 from quant_system.server.v2.portfolio import portfolio_summary
 from quant_system.server.v2.tools import SEGMENTS, ToolError, position_size, trade_costs
 
-__all__ = ["key_lookup", "news_source", "tool_context"]
+__all__ = ["key_lookup", "live_prices_status", "news_source", "tool_context"]
 
 _NEWS = GoogleNewsSource()
 _NO_DATA = "Market data is not connected yet. Open Settings, then Data."
@@ -38,6 +38,22 @@ def key_lookup(provider: str) -> str | None:
     if name is None:
         return None
     return os.environ.get(name) or services().credentials.get(name)
+
+
+def live_prices_status() -> dict[str, Any]:
+    """Whether a broker key is saved, so the screens can say what to click when it is not."""
+    from quant_system.live import messages
+    from quant_system.server.v2.live_routes import key_provider
+    from quant_system.server.v2.router import services
+
+    ready = bool(key_provider(services().credentials)())
+    return {"ready": ready, "message": None if ready else messages.NO_KEY}
+
+
+def _quotes() -> Any:
+    from quant_system.server.v2.live_routes import quote_service
+
+    return quote_service()
 
 
 def _shariah() -> SqliteShariahSource:
@@ -111,6 +127,7 @@ def tool_context() -> ToolContext:
         index=svc.index if svc.index.is_ready() else None,
         shariah=_shariah(),
         news=news_source(),
+        quotes=_quotes(),
         portfolio=_portfolio,
         watchlist=svc.state.watchlist,
         paper_books=_paper_books,
