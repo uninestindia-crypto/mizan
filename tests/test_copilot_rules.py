@@ -117,9 +117,31 @@ def test_an_unknown_question_gets_the_menu_not_a_made_up_answer() -> None:
     assert result.steps == []
 
 
-def test_a_question_about_the_portfolio_uses_the_portfolio_tool() -> None:
-    result = _ask("how is my portfolio", portfolio=lambda: {"holdings": 2, "value": 1000.0})
+def test_a_question_about_the_portfolio_uses_the_portfolio_tool_and_shows_rupees_and_percent() -> (
+    None
+):
+    summary = {
+        "totals": {"value": 123456.7, "cost": 100000.0, "pnl": 23456.7, "pnl_pct": 0.234567},
+        "warnings": ["AAA is 62% of your portfolio (above 40%)."],
+        "note": "Values use each stock's last end-of-day close, not live prices.",
+    }
+    result = _ask("how is my portfolio", portfolio=lambda: summary)
     assert result.steps and result.steps[0].tool == "portfolio_summary"
+    assert (
+        "₹123,457" in result.reply
+        and "+23.5%" in result.reply
+        and "62% of your portfolio" in result.reply
+    )
+    assert "not live prices" in result.reply
+
+
+def test_an_empty_portfolio_says_how_to_add_holdings() -> None:
+    empty = {
+        "holdings": [],
+        "totals": None,
+        "note": "No holdings added yet. Add them on the Portfolio screen.",
+    }
+    assert "Portfolio screen" in _ask("my portfolio", portfolio=lambda: empty).reply
 
 
 @pytest.mark.parametrize(

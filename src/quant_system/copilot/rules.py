@@ -187,15 +187,26 @@ def _render_quotes(data: dict[str, Any]) -> str:
     return "\n".join(lines) or "No prices came back."
 
 
-def _render_summary(title: str, data: dict[str, Any]) -> str:
+def _rupees(value: Any) -> str:
+    return f"₹{float(value):,.0f}" if isinstance(value, (int, float)) else "not available"
+
+
+def _render_portfolio(data: dict[str, Any]) -> str:
     totals = data.get("totals")
-    source: dict[str, Any] = totals if isinstance(totals, dict) else data
-    facts = [
-        f"- {key.replace('_', ' ').capitalize()}: {value}"
-        for key, value in source.items()
-        if isinstance(value, (int, float, str))
+    if not isinstance(totals, dict):
+        return str(
+            data.get("note") or "You have not added any holdings yet. Open Portfolio to add them."
+        )
+    change = totals.get("pnl_pct")
+    percent = f" ({float(change) * 100:+.1f}%)" if isinstance(change, (int, float)) else ""
+    lines = [
+        "**Your portfolio**",
+        f"- Value: {_rupees(totals.get('value'))} (you paid {_rupees(totals.get('cost'))})",
+        f"- Profit or loss so far: {_rupees(totals.get('pnl'))}{percent}",
     ]
-    return title + ("\n" + "\n".join(facts[:8]) if facts else "")
+    lines.extend(f"- {warning}" for warning in data.get("warnings") or [])
+    lines.append(str(data.get("note") or ""))
+    return "\n".join(line for line in lines if line)
 
 
 # ------------------------------------------------------------------------------------- questions
@@ -239,7 +250,7 @@ def _portfolio(run: _Run, kind: str) -> str:
             + "\n"
             + str(result.data["note"])
         )
-    return _render_summary("Your portfolio:", result.data)
+    return _render_portfolio(result.data)
 
 
 def _costs(run: _Run) -> str:
