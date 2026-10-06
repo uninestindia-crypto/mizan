@@ -339,3 +339,15 @@ def test_no_copilot_route_can_place_an_order() -> None:
     routes = [getattr(route, "path", "") for route in copilot_routes.router.routes]
     forbidden = ("order", "buy", "sell", "trade", "place", "execute")
     assert routes and not [p for p in routes if any(word in p for word in forbidden)]
+
+
+@pytest.mark.parametrize("path", ["/agents", "/agents/new"])
+def test_the_agents_screen_survives_a_refresh(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, path: str
+) -> None:
+    built = tmp_path / "built"
+    built.mkdir()
+    (built / "index.html").write_text("<!doctype html><title>QuantOS</title>", encoding="utf-8")
+    monkeypatch.setattr(paths, "spa_dir", lambda: built)
+    response = client.get(path)
+    assert response.status_code == 200 and "QuantOS" in response.text
