@@ -90,6 +90,23 @@ New owned paths (checked: no active record claims them; two records only mention
 - `agent_context/handoffs/20261006-claude-cloud-paper-and-kronos-handoff.md`: correct the line above.
 - Branch `claude/dazzling-brown-yn5qu3` pull request: opened on this instruction, **not merged**.
 
+## Added on founder instruction, 2026-10-06 (third request: "run Kronos biggest and best")
+
+Founder direction, in his words: the first priority is to test and finalise a model with the highest chance of profitability;
+run Kronos's biggest and best model; download it so it can be run locally; and run it on a third party like Kaggle if
+possible. This overrides, knowingly, the one-trial-only rule in `reports/kronos_trial/TRIAL-LEDGER.md` (which itself says
+"any further attempt is ordinal 11, with its own dated declaration"). Merged PR #4 (`0a22d7c9`) first, as asked.
+
+- **GOAL_LINE: G5** (honest evidence about any model). Trial 11 is declared before any forecast exists, deflated against 11,
+  scored once, with the same gate. It is not a search.
+- New owned paths: `reports/kronos_trial11/**` (declaration, README, inputs, package, forecasts, results),
+  `scripts/kronos_trial11.py` (runner), `scripts/score_kronos_trial11.py` (once-only scoring wrapper),
+  `tests/test_kronos_trial11.py`, `agent_context/work/active/20261006-NOTICE-kronos-trial-11-declared.md` (new, additive).
+- Read and run, never edited: `scripts/generate_kronos_forecasts.py`, `scripts/run_kronos_trial.py` (claimed by
+  `20260928-claude-kronos-trial.md`).
+- **Feasibility checked, not assumed:** no Kaggle credential exists here; `LIGHTNING_API_KEY` is set but empty (length 0);
+  no GPU. So no third-party run can be started from this container. A CPU run here is the fallback only.
+
 ## Decision rationale
 
 - **Separate state.** The laptop flagship's live state is `logs/paper_runs/portfolio_state.json` (untracked). A cloud run
