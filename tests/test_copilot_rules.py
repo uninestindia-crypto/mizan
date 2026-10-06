@@ -9,7 +9,7 @@ import pytest
 
 from quant_system.copilot.rules import AnswerContext, answer_without_ai
 from quant_system.copilot.tools import default_registry
-from tests.copilot_fakes import make_context
+from tests.copilot_fakes import FakeNews, FakeQuotes, make_context
 
 
 def _ask(text: str, page: str | None = None, ai: bool = False, **context: Any) -> Any:
@@ -68,17 +68,12 @@ def test_price_facts_say_how_old_they_are() -> None:
 
 
 def test_news_is_listed_with_a_warning_that_it_is_unverified() -> None:
-    class News:
-        def headlines(self, query: str) -> list[dict[str, Any]]:
-            return [
-                {
-                    "title": "Alpha wins a big order",
-                    "source": "Example Times",
-                    "link": "https://example.test/a",
-                }
-            ]
-
-    result = _ask("news on AAA", news=News())
+    headline = {
+        "title": "Alpha wins a big order",
+        "source": "Example Times",
+        "link": "https://example.test/a",
+    }
+    result = _ask("news on AAA", news=FakeNews([headline]))
     assert "Alpha wins a big order" in result.reply and "Example Times" in result.reply
     assert "unverified" in result.reply.lower()
 
@@ -89,17 +84,12 @@ def test_live_prices_without_a_token_tell_the_person_where_to_add_one() -> None:
 
 
 def test_live_prices_show_how_fresh_they_are() -> None:
-    class Quotes:
-        def quotes(self, symbols: Any) -> dict[str, Any]:
-            return {
-                "AAA": {
-                    "last_price": 130.5,
-                    "label": "LAST_CLOSE",
-                    "message": "Market closed; this is the last close.",
-                }
-            }
-
-    result = _ask("price of AAA", quotes=Quotes())
+    entry = {
+        "last_price": 130.5,
+        "label": "LAST_CLOSE",
+        "message": "Market closed; this is the last close.",
+    }
+    result = _ask("price of AAA", quotes=FakeQuotes(entry))
     assert "130.5" in result.reply and "last close" in result.reply.lower()
 
 

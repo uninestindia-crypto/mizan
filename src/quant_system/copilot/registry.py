@@ -24,7 +24,7 @@ class MarketReader(Protocol):
     def resolve(self, symbol: str) -> str: ...
     def symbol_info(self, symbol: str) -> dict[str, Any]: ...
     def stock_stats(self, symbol: str) -> dict[str, Any]: ...
-    def bars(self, symbol: str, start: str | None = None, end: str | None = None) -> Any: ...
+    def bars(self, symbol: str) -> Any: ...
 
 
 class ShariahSource(Protocol):
@@ -70,6 +70,10 @@ class ToolResult:
 
 def failure(summary: str, message: str) -> ToolResult:
     return ToolResult(False, summary, error=message)
+
+
+class UserFacingError(Exception):
+    """A refusal whose message is already written for the person. A tool passes it through as the reason."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -179,6 +183,8 @@ class ToolRegistry:
             return failure(f"{name}: bad arguments", problem)
         try:
             return spec.handler(args)
+        except UserFacingError as error:
+            return failure(f"{name}: could not run", str(error))
         except Exception:
             logger.exception("Copilot tool %s failed", name)
             return failure(

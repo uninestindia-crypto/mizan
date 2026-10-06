@@ -106,22 +106,32 @@ def make_context(**overrides: Any) -> ToolContext:
     return ToolContext(**base)
 
 
+DEFAULT_HEADLINES: list[dict[str, Any]] = [
+    {"title": "Alpha wins a large order", "source": "Wire", "link": "https://example.test/a"}
+]
+
+
 class FakeNews:
     def __init__(self, headlines: Sequence[dict[str, Any]] | None = None) -> None:
-        self.rows = (
-            list(headlines)
-            if headlines is not None
-            else [
-                {
-                    "title": "Alpha wins a large order",
-                    "source": "Wire",
-                    "link": "https://example.test/a",
-                }
-            ]
-        )
+        self.rows = list(DEFAULT_HEADLINES if headlines is None else headlines)
 
     def headlines(self, query: str) -> list[dict[str, Any]]:
         return list(self.rows)
+
+
+class BrokenNews:
+    def headlines(self, query: str) -> list[dict[str, Any]]:
+        raise OSError("no network")
+
+
+class FakeQuotes:
+    """A quote source that answers the same entry for AAA."""
+
+    def __init__(self, entry: dict[str, Any]) -> None:
+        self.entry = entry
+
+    def quotes(self, symbols: Sequence[str]) -> dict[str, Any]:
+        return {"AAA": dict(self.entry)}
 
 
 Reply = str | ChatReply

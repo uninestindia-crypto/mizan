@@ -49,6 +49,7 @@ from quant_system.server.v2.cli_bridge import (
     send_job_input,
     start_agent_job,
 )
+from quant_system.server.v2.copilot_routes import router as copilot_router
 from quant_system.server.v2.credentials import (
     AI_KEY_NAMES,
     CredentialError,
@@ -931,6 +932,7 @@ def ai_tools(refresh: bool = False) -> list[dict[str, Any]]:
 def register_api(app: FastAPI) -> None:
     app.add_exception_handler(V2Error, v2_error_handler)
     app.include_router(router)
+    app.include_router(copilot_router, prefix="/api/v2")
     try:
         from quant_system.shariah.api.v1.router import api_router as shariah_router
 

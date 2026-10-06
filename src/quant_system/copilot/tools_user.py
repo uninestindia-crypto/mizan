@@ -104,7 +104,7 @@ def evidence_status(_ctx: ToolContext, _: Mapping[str, Any]) -> ToolResult:
 
 
 _COST_ARGS = (
-    Param("segment", "str", "delivery, intraday or fno"),
+    Param("segment", "str", "delivery, intraday, futures or options"),
     Param("buy_price", "number", "rupees"),
     Param("sell_price", "number", "rupees"),
     Param("quantity", "number", "shares"),
