@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta, timezone
 from datetime import time as wall_time
@@ -32,6 +32,14 @@ class ProviderMalformedBody(ValueError):
 
 class ProviderSchemaDrift(ValueError):
     pass
+
+
+class ProviderQuoteUnavailable(ValueError):
+    """A well-formed quote reply in which one side of the book has nothing resting.
+
+    Seen live after the close: the best bid level was price 0.0, quantity 0. That is the absence of
+    a bid, not a bid of zero, and it is not a change in the provider's contract.
+    """
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,11 +199,47 @@ def get_authority_findings(request: HistoricalDailyRequest) -> tuple[QualityFind
     return tuple(findings)
 
 
+def _quote_entry(data: Any, *, instrument_key: str, symbol: str) -> Mapping[str, Any]:
+    """The one entry for `instrument_key`, bound to the instrument it claims to be.
+
+    Measured against the live provider on 2026-10-06: the request carries the instrument key
+    (`NSE_EQ|INE009A01021`) and the reply is keyed by the **symbol** form (`NSE_EQ:INFY`), each
+    entry repeating the instrument key in its own `instrument_token`. This looked up only the key
+    form, so against the real feed it always raised schema drift. Both forms are accepted because
+    the provider has not promised which it uses, and an entry that is found by neither is matched on
+    its own `instrument_token`.
+
+    Whatever the key, an entry that names a *different* instrument is refused. Matching the label
+    and not the data is how a quote for one name gets priced as another.
+    """
+    if not isinstance(data, Mapping):
+        raise TypeError("quote data must be an object")
+    exchange = instrument_key.split("|", 1)[0]
+    entry = data.get(instrument_key)
+    if entry is None:
+        entry = data.get(f"{exchange}:{symbol}")
+    if entry is None:
+        named = [item for item in data.values() if _names_instrument(item, instrument_key)]
+        if len(named) != 1:
+            raise KeyError(instrument_key)
+        entry = named[0]
+    if not isinstance(entry, Mapping):
+        raise TypeError("a quote entry must be an object")
+    token = entry.get("instrument_token")
+    if token is not None and token != instrument_key:
+        raise ValueError("the quote entry belongs to a different instrument")
+    return entry
+
+
+def _names_instrument(entry: Any, instrument_key: str) -> bool:
+    return isinstance(entry, Mapping) and entry.get("instrument_token") == instrument_key
+
+
 def parse_quote_payload(body: bytes, *, instrument_key: str, symbol: str) -> Quote:
     """Parse the existing V2 snapshot without manufacturing bid/ask values."""
     try:
         payload = json.loads(body.decode("utf-8"))
-        quote_data = payload["data"][instrument_key]
+        quote_data = _quote_entry(payload["data"], instrument_key=instrument_key, symbol=symbol)
         buy_depth = quote_data["depth"]["buy"]
         sell_depth = quote_data["depth"]["sell"]
         timestamp = datetime.fromisoformat(quote_data["timestamp"]).astimezone(UTC)
@@ -213,15 +257,20 @@ def parse_quote_payload(body: bytes, *, instrument_key: str, symbol: str) -> Quo
         json.JSONDecodeError,
     ) as error:
         raise ProviderSchemaDrift("provider quote shape changed") from error
-    return Quote(
-        symbol=symbol,
-        timestamp=timestamp,
-        bid=bid,
-        ask=ask,
-        bid_size=bid_size,
-        ask_size=ask_size,
-        last_price=last_price,
-    )
+    if bid <= 0 or ask <= 0 or bid_size <= 0 or ask_size <= 0:
+        raise ProviderQuoteUnavailable("a side of the book has nothing resting")
+    try:
+        return Quote(
+            symbol=symbol,
+            timestamp=timestamp,
+            bid=bid,
+            ask=ask,
+            bid_size=bid_size,
+            ask_size=ask_size,
+            last_price=last_price,
+        )
+    except ValueError as error:
+        raise ProviderSchemaDrift("provider quote is internally inconsistent") from error
 
 
 def _parse_candle_row(
