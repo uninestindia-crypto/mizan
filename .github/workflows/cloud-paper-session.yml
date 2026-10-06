@@ -1,0 +1,216 @@
+# Cloud paper session: the existing paper book's daily session, on a GitHub-hosted runner.
+#
+# Read docs/CLOUD_PAPER_RUNBOOK.md before enabling this. Four facts matter more than the YAML:
+#
+#   1. A GitHub-hosted job stops at 6 hours. The session wants 09:15-15:30 IST. This workflow therefore
+#      closes the session EARLY (about 14:05 IST with the defaults below) rather than let the host kill it
+#      mid-order. A host with no job limit runs to 15:30.
+#   2. The Upstox token must exist as a GitHub Actions secret, UPSTOX_ANALYTICS_TOKEN, if this host is
+#      used. A token in another cloud environment is invisible to GitHub. It is read-only market data.
+#   3. Scheduled runs are OFF until the repository variable CLOUD_PAPER_ENABLED is set to "true". This is a
+#      second paper book, separate from the laptop's two, and agent_context/work/active/
+#      20260924-NOTICE-paper-books-system-test-running.md forbids starting one without a written purpose,
+#      the decision its result could change, a benchmark and an end date. A manual run is always allowed,
+#      and only `mode: session` can start or continue a book.
+#   4. Nothing here changes what the book trades. It runs scripts/cloud_paper_session.py, which wraps
+#      run_scheduled_paper_session._run unmodified.
+#
+# Modes (workflow_dispatch input `mode`; a scheduled run is always `session`):
+#
+#   check            Prove the token reads live quotes. Places nothing, saves nothing. The default.
+#   rehearse-state   `check`, then prove the token-leak guard against the REAL secret, then exercise the
+#                    state branch mechanics (create, check out, save, commit, push) on a throwaway branch,
+#                    cloud-paper-state-rehearsal, with a labelled dummy file. No session, no book.
+#   session          The real paper session. Starts or continues the cloud book on `cloud-paper-state`.
+#
+# State: the flagship's state lives in logs/paper_runs, which is untracked, and a runner's disk is gone when
+# the job ends. State is kept on its own branch, one commit per session. Those branches only ever hold
+# paper-book state; main is never written.
+
+name: cloud-paper-session
+
+on:
+  schedule:
+    # 03:15 UTC = 08:45 IST, Monday to Friday. NSE holidays are refused by the session (exit 12) and the job
+    # ends green. GitHub may delay scheduled runs by many minutes under load.
+    - cron: "15 3 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "check (default, places nothing) | rehearse-state (no session, throwaway branch) | session (the real book)"
+        type: choice
+        options: [check, rehearse-state, session]
+        default: check
+      max_runtime_minutes:
+        description: "session only: host job limit the session must finish inside, minus setup (GitHub-hosted: 330)."
+        type: string
+        default: "330"
+      universe_name:
+        description: "session only: universe the session trades."
+        type: choice
+        options: [NIFTY500, NIFTY50]
+        default: NIFTY500
+
+# One run at a time. A second session would start from the same state and one would overwrite the other.
+concurrency:
+  group: cloud-paper-session
+  cancel-in-progress: false
+
+permissions:
+  contents: write # pushes the state branches, and nothing else
+
+env:
+  MODE: ${{ inputs.mode || (github.event_name == 'schedule' && 'session') || 'check' }}
+
+jobs:
+  session:
+    name: Paper session (cloud)
+    if: ${{ github.event_name != 'schedule' || vars.CLOUD_PAPER_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    # GitHub's hard limit is 360 minutes. Leave a margin so state can still be pushed after the session.
+    timeout-minutes: 355
+
+    steps:
+      - name: Say what this run is
+        run: |
+          echo "mode: $MODE (event: ${{ github.event_name }})"
+          if [ "$MODE" = session ]; then
+            echo "This run can start or continue the cloud paper book."
+          else
+            echo "This run places nothing and starts no book."
+          fi
+
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.13
+
+      - name: Install dependencies from the lock file
+        run: uv sync --frozen
+
+      - name: Check the token reads live quotes
+        # Fails the job (exit 10 no token, 11 rejected, 13 feed unreachable) so a dead credential is a red
+        # run the founder sees, not a quiet no-op.
+        timeout-minutes: 10
+        env:
+          UPSTOX_ANALYTICS_TOKEN: ${{ secrets.UPSTOX_ANALYTICS_TOKEN }}
+        run: uv run python scripts/cloud_paper_session.py check
+
+      - name: Prove the token cannot reach the state branch
+        # Writes the REAL secret into the state folder and requires `save-state` to refuse (exit 14) and copy
+        # nothing. The unit tests prove this with a fake token; this proves it with the one that matters.
+        # GitHub masks the secret in the log, and the file is deleted before anything is saved or pushed.
+        if: ${{ env.MODE == 'rehearse-state' }}
+        timeout-minutes: 10
+        env:
+          UPSTOX_ANALYTICS_TOKEN: ${{ secrets.UPSTOX_ANALYTICS_TOKEN }}
+        run: |
+          mkdir -p logs/paper_runs
+          printf '%s' "$UPSTOX_ANALYTICS_TOKEN" > logs/paper_runs/leak-rehearsal.txt
+          set +e
+          uv run python scripts/cloud_paper_session.py save-state --state-dir "$RUNNER_TEMP/leak-test"
+          code=$?
+          set -e
+          rm -f logs/paper_runs/leak-rehearsal.txt
+          if [ "$code" -ne 14 ]; then
+            echo "FAIL: expected exit 14 (token in state refused), got $code"
+            exit 1
+          fi
+          if [ -e "$RUNNER_TEMP/leak-test" ]; then
+            echo "FAIL: the refused save still copied files"
+            exit 1
+          fi
+          echo "OK: a state file holding the real token was refused and nothing was copied."
+
+      - name: Choose the state branch
+        if: ${{ env.MODE != 'check' }}
+        run: |
+          if [ "$MODE" = session ]; then
+            echo "STATE_BRANCH=cloud-paper-state" >> "$GITHUB_ENV"
+          else
+            echo "STATE_BRANCH=cloud-paper-state-rehearsal" >> "$GITHUB_ENV"
+          fi
+
+      - name: Make sure the state branch exists
+        id: prepare
+        if: ${{ env.MODE != 'check' }}
+        run: |
+          if ! git ls-remote --exit-code --heads origin "$STATE_BRANCH" >/dev/null 2>&1; then
+            empty_tree="$(git hash-object -t tree /dev/null)"
+            commit="$(git -c user.name=cloud-paper-session \
+              -c user.email=cloud-paper-session@users.noreply.github.com \
+              commit-tree "$empty_tree" -m "state: start the $STATE_BRANCH branch")"
+            git push origin "$commit:refs/heads/$STATE_BRANCH"
+          fi
+
+      - name: Check out the state branch
+        if: ${{ steps.prepare.outcome == 'success' }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.STATE_BRANCH }}
+          path: paper-state
+
+      - name: Write a labelled rehearsal file as the book's state
+        if: ${{ steps.prepare.outcome == 'success' && env.MODE == 'rehearse-state' }}
+        run: |
+          mkdir -p logs/paper_runs
+          {
+            echo "REHEARSAL. This is not a paper book and holds no positions."
+            echo "It exists only to prove the state branch mechanics work."
+            echo "run: ${{ github.run_id }}  attempt: ${{ github.run_attempt }}"
+          } > logs/paper_runs/REHEARSAL.txt
+
+      - name: Run the paper session
+        id: session
+        if: ${{ steps.prepare.outcome == 'success' && env.MODE == 'session' }}
+        env:
+          UPSTOX_ANALYTICS_TOKEN: ${{ secrets.UPSTOX_ANALYTICS_TOKEN }}
+          MAX_RUNTIME_MINUTES: ${{ inputs.max_runtime_minutes || '330' }}
+          UNIVERSE_NAME: ${{ inputs.universe_name || 'NIFTY500' }}
+        run: |
+          case "$MAX_RUNTIME_MINUTES" in *[!0-9]* | "") echo "max_runtime_minutes must be a whole number"; exit 2 ;; esac
+          set +e
+          uv run python scripts/cloud_paper_session.py run \
+            --state-dir paper-state/state \
+            --max-runtime-minutes "$MAX_RUNTIME_MINUTES" \
+            --universe-name "$UNIVERSE_NAME"
+          code=$?
+          set -e
+          # 12 is "not a trading day": a weekend or an NSE holiday. That is the schedule working, not a failure.
+          if [ "$code" -eq 12 ]; then
+            echo "Not a trading day. Nothing was run."
+            exit 0
+          fi
+          exit "$code"
+
+      - name: Save state again in case the session never reached its own save
+        # `run` copies state out in a `finally`. If the host kills the job first, that never happens, and
+        # this step is the only chance. `save-state` refuses (exit 14) if a state file holds the token.
+        if: ${{ always() && steps.prepare.outcome == 'success' }}
+        env:
+          UPSTOX_ANALYTICS_TOKEN: ${{ secrets.UPSTOX_ANALYTICS_TOKEN }}
+        run: uv run python scripts/cloud_paper_session.py save-state --state-dir paper-state/state
+
+      - name: Commit and push the state
+        if: ${{ always() && steps.prepare.outcome == 'success' }}
+        working-directory: paper-state
+        run: |
+          git config user.name cloud-paper-session
+          git config user.email cloud-paper-session@users.noreply.github.com
+          git add state
+          if git diff --cached --quiet; then
+            echo "State unchanged; nothing to commit."
+            exit 0
+          fi
+          git commit -m "state: cloud paper $MODE $(TZ=Asia/Kolkata date +%F) (run ${{ github.run_id }})"
+          for wait in 2 4 8 16; do
+            git push origin "HEAD:$STATE_BRANCH" && exit 0
+            echo "push failed; retrying in ${wait}s"
+            sleep "$wait"
+          done
+          git push origin "HEAD:$STATE_BRANCH"

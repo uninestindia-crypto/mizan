@@ -1,0 +1,89 @@
+{
+  "measured_at": "2026-10-05T20:39:40.109630+00:00",
+  "data": "synthetic random-walk bars only; no market data was read",
+  "decision_dates": 529,
+  "rule": "first of [('base', 5), ('base', 1), ('small', 5), ('small', 1)] projected <= 14.0 h",
+  "measurements": [
+    {
+      "model": "base",
+      "samples": 5,
+      "names_per_batch": 45,
+      "seconds_per_date": 694.509,
+      "repeats": [
+        676.94,
+        695.958,
+        710.627
+      ],
+      "projected_hours": 102.05
+    },
+    {
+      "model": "base",
+      "samples": 1,
+      "names_per_batch": 45,
+      "seconds_per_date": 116.09,
+      "repeats": [
+        118.736,
+        115.994,
+        113.54
+      ],
+      "projected_hours": 17.06
+    },
+    {
+      "model": "small",
+      "samples": 5,
+      "names_per_batch": 45,
+      "seconds_per_date": 195.595,
+      "repeats": [
+        195.835,
+        202.775,
+        188.176
+      ],
+      "projected_hours": 28.74
+    },
+    {
+      "model": "small",
+      "samples": 1,
+      "names_per_batch": 45,
+      "seconds_per_date": 36.743,
+      "repeats": [
+        37.459,
+        36.741,
+        36.029
+      ],
+      "projected_hours": 5.4
+    }
+  ],
+  "chosen": {
+    "model": "small",
+    "samples": 1,
+    "projected_hours": 5.4
+  },
+  "environment": {
+    "python": "3.12.3",
+    "machine": "x86_64",
+    "torch": "2.14.0+cpu",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "torch_threads": 4,
+    "kronos_code_commit": "67b630e67f6a18c9e9be918d9b4337c960db1e9a",
+    "kronos_code_sha256": {
+      "__init__.py": "f8f856ca3fedadcaac97e196be23d1aeda1c3c9ffe8903d66d43ea3bcac6240c",
+      "kronos.py": "0a5f90282e2039c2de0771473419715c845def154896dbd0f5747837e6241032",
+      "module.py": "a07edbadc0e96804c8158c021bbc6063bb7cc43b34d7fc470d5c8ff2005a409f"
+    }
+  },
+  "pinned_weights": {
+    "NeoQuasar/Kronos-Tokenizer-base": {
+      "revision": "0e0117387f39004a9016484a186a908917e22426",
+      "model_safetensors_sha256": "59d85f6af76a2c3b8240ea06cb21db4213b4eeca053f246b23e29cf832fc6bee"
+    },
+    "NeoQuasar/Kronos-small": {
+      "revision": "901c26c1332695a2a8f243eb2f37243a37bea320",
+      "model_safetensors_sha256": "b082dfcbd8e8c142a725c8bbb99781802f38fec81210e13479effb32b3c3e020"
+    },
+    "NeoQuasar/Kronos-base": {
+      "revision": "2b554741eca47781b64468546e77fef3e85130e6",
+      "model_safetensors_sha256": "abff193acab6db1a0368e9773e75799d11403b6d054ee6d5f0a11aeabc5f4b83"
+    }
+  }
+}

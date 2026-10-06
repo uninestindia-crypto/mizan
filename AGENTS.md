@@ -7,8 +7,10 @@ Cursor, and Antigravity.
 
 Before planning or editing:
 
-1. Read `agent_context/README.md`, `agent_context/CURRENT.md`, `agent_context/PROTOCOL.md`, and
-   `agent_context/DISK-LAYOUT.md`.
+1. Read `agent_context/GOAL.md` first (the final result we are building and the tripwires that say
+   you have missed it), then `agent_context/README.md`, `agent_context/CURRENT.md`,
+   `agent_context/PROTOCOL.md`, and `agent_context/DISK-LAYOUT.md`. Name your goal line in your
+   record's Objective as `GOAL_LINE: G<n>`.
 2. Read `.launch/STATE.md` and `.launch/SLICES.md` for the authoritative release state.
 3. Run `git status --short --branch` and inspect every existing change as someone else's work.
 4. Read every record in `agent_context/work/active/`.

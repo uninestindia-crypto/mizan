@@ -1,0 +1,359 @@
+{
+  "generated_at": "2026-10-06T01:40:28.973608+00:00",
+  "declaration": "reports/kronos_trial/TRIAL-LEDGER.md",
+  "trial": 10,
+  "held_sessions": 3,
+  "window_start": "2024-07-01",
+  "window_first_decision": "2024-07-01",
+  "window_last_decision": "2026-08-17",
+  "decisions": 23637,
+  "decision_dates": 529,
+  "missing_forecasts": 0,
+  "threshold": 0.00224,
+  "multiplicity_count": 10,
+  "periods_per_year": 84,
+  "candidate_dsr": 0.013394,
+  "gate": {
+    "policy_id": "kronos-trial-10",
+    "min_deflated_sharpe": "0.95",
+    "max_drawdown": "0.15",
+    "min_attributable_records": 5,
+    "passed": false
+  },
+  "checks": {
+    "gate_passed": false,
+    "beats_every_noise_seed": true,
+    "beats_always_trade": true
+  },
+  "verdict": "RESEARCH_ONLY",
+  "strategies": [
+    {
+      "strategy_id": "CANDIDATE",
+      "decisions": 23637,
+      "trades": 11725,
+      "exposure": 0.496044,
+      "mean_net_return_per_decision": "-0.0003668369861135507890172187672",
+      "total_net_return": "-0.06654764379049116",
+      "sharpe": -0.444311,
+      "max_drawdown": 0.129178,
+      "hit_rate": 0.471898,
+      "portfolio_periods": 176,
+      "dropped_dates": 1
+    },
+    {
+      "strategy_id": "CANDIDATE_ANY_POSITIVE",
+      "decisions": 23637,
+      "trades": 12459,
+      "exposure": 0.527097,
+      "mean_net_return_per_decision": "-0.0004163350156930236493632863731",
+      "total_net_return": "-0.07506871587499853",
+      "sharpe": -0.486734,
+      "max_drawdown": 0.136581,
+      "hit_rate": 0.472349,
+      "portfolio_periods": 176,
+      "dropped_dates": 1
+    },
+    {
+      "strategy_id": "CASH",
+      "decisions": 23637,
+      "trades": 0,
+      "exposure": 0.0,
+      "mean_net_return_per_decision": "0",
+      "total_net_return": "0.0",
+      "sharpe": 0.0,
+      "max_drawdown": 0.0,
+      "hit_rate": 0.0,
+      "portfolio_periods": 176,
+      "dropped_dates": 1
+    },
+    {
+      "strategy_id": "ALWAYS_TRADE",
+      "decisions": 23637,
+      "trades": 23637,
+      "exposure": 1.0,
+      "mean_net_return_per_decision": "-0.001359146557801286119219867157",
+      "total_net_return": "-0.22346443888338796",
+      "sharpe": -0.956009,
+      "max_drawdown": 0.290678,
+      "hit_rate": 0.465541,
+      "portfolio_periods": 176,
+      "dropped_dates": 1
+    },
+    {
+      "strategy_id": "PREVIOUS_SIGN",
+      "decisions": 23637,
+      "trades": 11838,
+      "exposure": 0.500825,
+      "mean_net_return_per_decision": "-0.0008741136610466218217201844566",
+      "total_net_return": "-0.14636057054159446",
+      "sharpe": -1.160125,
+      "max_drawdown": 0.178618,
+      "hit_rate": 0.455229,
+      "portfolio_periods": 176,
+      "dropped_dates": 1
+    }
+  ],
+  "noise_control": {
+    "seeds": 30,
+    "sharpe_max": -0.6060376511653389,
+    "sharpe_median": -0.954206814653719,
+    "dsr_min": 0.0006077453891781825,
+    "dsr_median": 0.0016207567151469982,
+    "dsr_max": 0.0072092329256751575,
+    "draws": [
+      {
+        "seed": 0,
+        "sharpe": -0.9995153028980098,
+        "dsr": 0.0013133828233493072,
+        "trades": 11195
+      },
+      {
+        "seed": 1,
+        "sharpe": -0.6831003663333034,
+        "dsr": 0.0052786557539850065,
+        "trades": 11022
+      },
+      {
+        "seed": 2,
+        "sharpe": -0.9447677146002024,
+        "dsr": 0.0016922019755150064,
+        "trades": 11075
+      },
+      {
+        "seed": 3,
+        "sharpe": -1.0107382976478485,
+        "dsr": 0.0012460784876645592,
+        "trades": 11076
+      },
+      {
+        "seed": 4,
+        "sharpe": -1.1468980654753542,
+        "dsr": 0.0006467184136560444,
+        "trades": 10942
+      },
+      {
+        "seed": 5,
+        "sharpe": -1.0095582271024888,
+        "dsr": 0.001253003059461355,
+        "trades": 11256
+      },
+      {
+        "seed": 6,
+        "sharpe": -0.8788226037560196,
+        "dsr": 0.0022801430243575838,
+        "trades": 11073
+      },
+      {
+        "seed": 7,
+        "sharpe": -1.1403144847824858,
+        "dsr": 0.0006680540970572246,
+        "trades": 10942
+      },
+      {
+        "seed": 8,
+        "sharpe": -1.1264044205879513,
+        "dsr": 0.000715298110057383,
+        "trades": 11042
+      },
+      {
+        "seed": 9,
+        "sharpe": -0.8405487295720347,
+        "dsr": 0.0027013999210837025,
+        "trades": 11195
+      },
+      {
+        "seed": 10,
+        "sharpe": -1.072375213027331,
+        "dsr": 0.0009297321915919254,
+        "trades": 11073
+      },
+      {
+        "seed": 11,
+        "sharpe": -0.8625282524264598,
+        "dsr": 0.0024515778440737934,
+        "trades": 11063
+      },
+      {
+        "seed": 12,
+        "sharpe": -1.098009420404194,
+        "dsr": 0.0008215018072366131,
+        "trades": 11035
+      },
+      {
+        "seed": 13,
+        "sharpe": -0.9422437882206057,
+        "dsr": 0.001711869285102141,
+        "trades": 11041
+      },
+      {
+        "seed": 14,
+        "sharpe": -0.9465485659813182,
+        "dsr": 0.0016784496836222962,
+        "trades": 11096
+      },
+      {
+        "seed": 15,
+        "sharpe": -0.6060376511653389,
+        "dsr": 0.0072092329256751575,
+        "trades": 11090
+      },
+      {
+        "seed": 16,
+        "sharpe": -1.061157908003243,
+        "dsr": 0.0009811166736767296,
+        "trades": 11002
+      },
+      {
+        "seed": 17,
+        "sharpe": -0.971962422683338,
+        "dsr": 0.001493033120466447,
+        "trades": 11013
+      },
+      {
+        "seed": 18,
+        "sharpe": -0.9012852000365332,
+        "dsr": 0.0020616939986642935,
+        "trades": 10951
+      },
+      {
+        "seed": 19,
+        "sharpe": -1.1261967519900105,
+        "dsr": 0.0007160263450847193,
+        "trades": 11184
+      },
+      {
+        "seed": 20,
+        "sharpe": -1.1249093309666403,
+        "dsr": 0.0007205563293777861,
+        "trades": 11131
+      },
+      {
+        "seed": 21,
+        "sharpe": -0.9419577735771542,
+        "dsr": 0.001714111160159515,
+        "trades": 11096
+      },
+      {
+        "seed": 22,
+        "sharpe": -0.9584893339021305,
+        "dsr": 0.0015888516833991728,
+        "trades": 11155
+      },
+      {
+        "seed": 23,
+        "sharpe": -0.65681195478555,
+        "dsr": 0.005877884261145494,
+        "trades": 11091
+      },
+      {
+        "seed": 24,
+        "sharpe": -0.9499242954053075,
+        "dsr": 0.0016526617468948235,
+        "trades": 11142
+      },
+      {
+        "seed": 25,
+        "sharpe": -0.8321694591737423,
+        "dsr": 0.002802571845887336,
+        "trades": 11121
+      },
+      {
+        "seed": 26,
+        "sharpe": -0.9820618229431188,
+        "dsr": 0.001424716524624503,
+        "trades": 11101
+      },
+      {
+        "seed": 27,
+        "sharpe": -0.9452315901010975,
+        "dsr": 0.001688609881727865,
+        "trades": 11035
+      },
+      {
+        "seed": 28,
+        "sharpe": -1.159462587354801,
+        "dsr": 0.0006077453891781825,
+        "trades": 11154
+      },
+      {
+        "seed": 29,
+        "sharpe": -0.8265452304134564,
+        "dsr": 0.002872394074787177,
+        "trades": 10964
+      }
+    ]
+  },
+  "diagnostics": {
+    "rank_ic": {
+      "dates": 529,
+      "mean_all_dates": 0.007329649458472943,
+      "non_overlapping_dates": 177,
+      "mean_non_overlapping": 0.01588447560581714,
+      "t_non_overlapping": 1.3175969792807651
+    },
+    "top_quintile_edge_vs_equal_weight": {
+      "dates": 529,
+      "mean_all_dates": 3.606012311992741e-05,
+      "non_overlapping_dates": 177,
+      "mean_non_overlapping": 0.00023607946152878078,
+      "t_non_overlapping": 0.44557366015109573
+    },
+    "note": "declared diagnostics (b) and (c); never verdict-bearing",
+    "candidate_any_positive": "see strategies: CANDIDATE_ANY_POSITIVE",
+    "missing_forecasts": 0
+  },
+  "harness": {
+    "subset": [
+      "RELIANCE",
+      "HDFCBANK",
+      "ICICIBANK",
+      "SBIN",
+      "INFY",
+      "AXISBANK",
+      "TCS",
+      "BAJFINANCE",
+      "TMPV",
+      "BHARTIARTL",
+      "MARUTI",
+      "TATASTEEL",
+      "KOTAKBANK",
+      "LT",
+      "ITC",
+      "HINDUNILVR",
+      "M&M",
+      "SUNPHARMA",
+      "HINDALCO",
+      "HCLTECH",
+      "TITAN",
+      "TECHM",
+      "ASIANPAINT",
+      "ADANIENT",
+      "ADANIPORTS",
+      "BAJAJFINSV",
+      "ULTRACEMCO",
+      "WIPRO",
+      "POWERGRID",
+      "DRREDDY",
+      "ONGC",
+      "SHRIRAMFIN",
+      "NTPC",
+      "INDIGO",
+      "JSWSTEEL",
+      "BAJAJ-AUTO",
+      "APOLLOHOSP",
+      "COALINDIA",
+      "CIPLA",
+      "EICHERMOT",
+      "BEL",
+      "GRASIM",
+      "TATACONSUM",
+      "NESTLEIND",
+      "TRENT"
+    ],
+    "refused": [],
+    "horizon_sessions": 4,
+    "all_decisions": 108503
+  },
+  "forecasts_file": "reports/kronos_cloud_run/kronos-forecasts.json",
+  "forecasts_sha256": "59170064241c2bf0d087530a635a617e106758e73d0f7c111c086f06b41a0a9c"
+}
