@@ -38,7 +38,7 @@ def live_quote(ctx: ToolContext, args: Mapping[str, Any]) -> ToolResult:
     if ctx.quotes is None:
         return failure(
             "live prices unavailable",
-            "Live prices are not available. Add an Upstox token in Settings, then Accounts and keys.",
+            "Live prices are not available. Add your Upstox key in Settings, then Accounts and keys.",
         )
     symbols = [s.strip().upper() for s in args["symbols"][:MAX_LIST]]
     return ToolResult(
@@ -126,7 +126,7 @@ _TEXT = {
     "live_quote": ToolText(
         "Live prices",
         "Shows a stock's latest price from your broker connection, and how fresh it is.",
-        "Live or last-close prices from the person's Upstox token, labelled with how fresh they are.",
+        "Live or last-close prices from the person's Upstox key, labelled with how fresh they are.",
     ),
     "news_headlines": ToolText(
         "News headlines",

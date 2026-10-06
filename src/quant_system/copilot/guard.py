@@ -49,6 +49,14 @@ _ADVICE = re.compile(
     | \bfair\s+value\b | \bintrinsic\s+value\b
     | \bexpected\s+to\s+(?:reach|hit|touch|rise\s+to)\b | \b(?:upside|downside)\s+of\b
     | \b(?:i|we)\s+(?:recommend|advise)\b | \brecommend(?:ation|ed)?\b
+    | (?<!\bno\s)(?<!\bnot\s)(?<!\bnever\s)(?<!cannot\s)(?<!n't\s)\bguarantee[sd]?\b   # a claim, not a disclaimer
+    | \bsure[\s-](?:thing|gain|shot|bet|profit|win)s?\b | \bsurefire\b | \brisk[\s-]?free\b | \bno[\s-]risk\b
+    | \b(?:can'?t|cannot|won'?t|will\s+not)\s+(?:lose|fail|go\s+wrong)\b
+    | \b(?:real|clear|proven|true|statistical|definite|strong)\s+edge\b | \bedge\s+(?:over|against|on)\s+the\s+market\b
+    | \bbeat(?:s|ing)?\s+the\s+market\b | \bmulti-?baggers?\b
+    | \bwill\s+(?:double|triple|multiply|soar|skyrocket|surge|rocket)\b
+    | \b(?:certain|bound|sure)\s+to\s+(?:rise|go\s+up|gain|grow|double|win|outperform)\b
+    | \balways\s+(?:rises?|goes?\s+up|wins?)\b
     | \bshould\s+(?:you\s+)?(?:invest|hold)\b | \bworth\s+(?:buying|investing)\b
     """,
     re.VERBOSE,

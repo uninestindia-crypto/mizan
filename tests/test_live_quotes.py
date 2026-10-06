@@ -422,7 +422,7 @@ def test_with_no_key_nothing_is_requested_and_the_message_says_what_to_click() -
     transport = FakeTransport(everyone())
     batch = build(transport, key="  ").fetch(["TCS", "INFY"])
     assert batch.connected is False
-    assert batch.message == "Add an Upstox token in Settings, then Accounts and keys."
+    assert batch.message == "Add your Upstox key in Settings, then Accounts and keys."
     assert {s: e.label for s, e in batch.quotes.items()} == {
         "TCS": "UNAVAILABLE",
         "INFY": "UNAVAILABLE",

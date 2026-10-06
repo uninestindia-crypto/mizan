@@ -164,7 +164,7 @@ def test_the_rules_catch_what_they_are_meant_to_catch(rule: str, text: str) -> N
         "Open Settings, then Accounts and keys.",
         "Show the facts about {symbol}.",
         "Close QuantOS, open it again and ask once more.",
-        "Add an Upstox token in Settings, then Accounts and keys.",
+        "Add your Upstox key in Settings, then Accounts and keys.",
     ],
 )
 def test_the_rules_leave_plain_sentences_alone(text: str) -> None:

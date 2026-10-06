@@ -90,7 +90,7 @@ def test_without_a_key_the_answer_says_not_connected_and_what_to_click() -> None
     client = app_with(real_service(transport, key=""))
     body = client.get(PATH, params={"symbols": "TCS,INFY"}).json()
     assert body["connected"] is False
-    assert body["message"] == "Add an Upstox token in Settings, then Accounts and keys."
+    assert body["message"] == "Add your Upstox key in Settings, then Accounts and keys."
     assert {s: e["label"] for s, e in body["quotes"].items()} == {
         "TCS": "UNAVAILABLE",
         "INFY": "UNAVAILABLE",

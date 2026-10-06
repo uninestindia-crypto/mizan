@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-NO_KEY = "Add an Upstox token in Settings, then Accounts and keys."
+NO_KEY = "Add your Upstox key in Settings, then Accounts and keys."
 KEY_EXPIRED = (
     "Your Upstox key has expired. Open Settings, then Accounts and keys, and sign in again."
 )
