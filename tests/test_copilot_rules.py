@@ -7,14 +7,14 @@ from typing import Any
 
 import pytest
 
-from quant_system.copilot.rules import answer_without_ai
+from quant_system.copilot.rules import AnswerContext, answer_without_ai
 from quant_system.copilot.tools import default_registry
 from tests.copilot_fakes import make_context
 
 
 def _ask(text: str, page: str | None = None, ai: bool = False, **context: Any) -> Any:
     return answer_without_ai(
-        text, default_registry(make_context(**context)), page=page, ai_available=ai
+        text, default_registry(make_context(**context)), AnswerContext(page=page, ai_available=ai)
     )
 
 

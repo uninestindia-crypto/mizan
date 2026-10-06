@@ -42,6 +42,21 @@ commands; every error names the next click.
 - `tests/test_copilot_*.py`, `tests/test_live_quotes.py` (new)
 - `reports/halal_docs_review/**` (new): the review deliverable
 
+### Parallel workers (founder asked for simultaneous agents, 2026-10-06)
+
+All run in this one checkout on **disjoint exact paths**, under the contract in
+`agent_context/decisions/20261006-copilot-api-contract.md`. No worker commits, stages, formats outside its own paths,
+or runs a repository-wide command; the coordinator (this session) stages explicit paths and commits.
+
+| Worker | Exact paths |
+|---|---|
+| Coordinator | `src/quant_system/copilot/**`, `tests/test_copilot_*.py`, `tests/copilot_fakes.py`, `src/quant_system/server/v2/copilot_routes.py`, `tests/test_copilot_routes.py`, `src/quant_system/server/v2/router.py` (include lines only) |
+| Live prices (backend) | `src/quant_system/live/**`, `src/quant_system/server/v2/live_routes.py`, `tests/test_live_quotes.py`, `tests/test_live_routes.py` |
+| Copilot screens | `frontend/src/components/copilot/**`, `frontend/src/lib/copilot.ts`, `frontend/src/lib/copilot.test.ts`, `frontend/src/components/Layout.tsx` (drawer mount and an Agents menu link), `frontend/src/pages/Stock.tsx` (one Second opinion button) |
+| Agents and live-price screens | `frontend/src/components/live/**`, `frontend/src/lib/live.ts`, `frontend/src/lib/agents.ts`, `frontend/src/lib/*.test.ts` for those, `frontend/src/pages/Agents.tsx`, `frontend/src/App.tsx` (the route), `frontend/src/pages/Home.tsx` (price chips), `frontend/src/pages/Stock.tsx` (price header only) |
+
+`frontend/src/pages/Stock.tsx` is shared by two workers: each re-reads it immediately before a small targeted edit.
+
 ## Non-goals
 
 - No order placement, no order tool, no account write. The Copilot is read-only and can only *propose* a screen to open.

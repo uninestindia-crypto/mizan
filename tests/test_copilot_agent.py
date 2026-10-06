@@ -191,7 +191,12 @@ def test_the_conversation_and_the_current_screen_reach_the_model() -> None:
 def test_the_instructions_of_a_saved_agent_are_added_to_the_prompt() -> None:
     model = _Scripted([_say("ok")])
     _agent(model).run([Message("user", "x")], instructions="Always answer in two lines.")
-    assert "Always answer in two lines." in model.calls[0][0]
+    system = model.calls[0][0]
+    assert "Always answer in two lines." in system
+    assert "never override the rules above" in system
+    assert system.index("Never invent") < system.index(
+        "Always answer in two lines."
+    )  # the rules come first
 
 
 @pytest.mark.parametrize(

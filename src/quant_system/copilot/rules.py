@@ -13,9 +13,9 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from quant_system.copilot.agent import AgentResult, Step
-from quant_system.copilot.registry import Proposal, ToolRegistry, ToolResult
+from quant_system.copilot.registry import Proposal, ToolRegistry, ToolResult, failure
 
-__all__ = ["answer_without_ai"]
+__all__ = ["AnswerContext", "answer_without_ai"]
 
 _STOP = frozenset(
     "A AN AND ARE AS AT BE BUY BY CAN CHECK DO DOES DOING FACTS FOR GET HALAL HARAM HI HELLO HELP HOW IF IS IT ITS "
@@ -32,6 +32,7 @@ _NEED_AI = (
     "open Settings, then Accounts and keys."
 )
 _ADD_KEY_BUTTON = Proposal("navigate", "Add an AI key", "/settings/accounts")
+_NOT_ALLOWED = "This assistant is not set up to look that up. Open Agents, edit it, and tick that item in its list."
 _MENU = """I can answer from what is inside QuantOS:
 - **Halal screening** for a stock ("is TCS halal?"), with every ratio and where the data comes from
 - **Price facts** ("how is INFY doing?")
@@ -44,14 +45,32 @@ _MENU = """I can answer from what is inside QuantOS:
 I cannot predict the market or tell you what to buy or sell."""
 
 
+@dataclass(frozen=True, slots=True)
+class AnswerContext:
+    """What the answer may depend on: the screen, whether an AI key exists, which tools may be used, the hint."""
+
+    page: str | None = None
+    ai_available: bool = False
+    allowed: frozenset[str] | None = None  # None means every tool; an agent's own list narrows it
+    hint: bool = True  # add the "add an AI key" line; a workflow adds it once, not after every step
+    symbol: str | None = (
+        None  # a stock already chosen (a workflow run); it wins over words in the text
+    )
+
+
 @dataclass(slots=True)
 class _Run:
     registry: ToolRegistry
+    allowed: frozenset[str] | None = None
+    symbol: str | None = None
     steps: list[Step] = field(default_factory=list)
     proposals: list[Proposal] = field(default_factory=list)
 
     def call(self, tool: str, args: dict[str, Any]) -> ToolResult:
-        result = self.registry.call(tool, args)
+        if self.allowed is not None and tool not in self.allowed:
+            result = failure(f"{tool}: not allowed", _NOT_ALLOWED)
+        else:
+            result = self.registry.call(tool, args)
         self.steps.append(Step(tool, self.registry.label(tool), result.summary, result.ok))
         self.offer(*result.proposals)
         return result
@@ -74,6 +93,8 @@ def _known_symbol(run: _Run, token: str) -> bool:
 
 
 def _find_symbol(run: _Run, text: str, page: str | None) -> str | None:
+    if run.symbol:
+        return run.symbol
     tokens = [str(t).upper() for t in re.findall(r"[A-Za-z][A-Za-z0-9&-]{1,14}", text)]
     for token in tokens:
         if token not in _STOP and _known_symbol(run, token):
@@ -130,13 +151,26 @@ def _render_facts(data: dict[str, Any]) -> str:
     )
 
 
+def _headline_line(item: dict[str, Any]) -> str:
+    title = str(item.get("title") or "").replace("[", "(").replace("]", ")")
+    link = item.get("link")
+    text = f"[{title}]({link})" if isinstance(link, str) and link.startswith("https://") else title
+    tone = str(item.get("tone") or "").lower()
+    return f"- {text} ({item.get('source') or 'unknown source'}{', ' + tone if tone else ''})"
+
+
 def _render_headlines(data: dict[str, Any]) -> str:
     items = data.get("headlines") or []
     if not items:
         return "I found no recent headlines."
-    lines = [f"- {h.get('title')} ({h.get('source') or 'unknown source'})" for h in items[:8]]
-    return "Recent headlines (unverified text from a public news feed, not facts):\n" + "\n".join(
-        lines
+    counts = data.get("tone_counts") or {}
+    tone = ", ".join(f"{n} {name.lower()}" for name, n in counts.items())
+    lines = [_headline_line(h) for h in items[:8]]
+    note = f"\nRough tone by keyword count, not a reading of the stories: {tone}." if tone else ""
+    return (
+        "Recent headlines (unverified text from a public news feed, not facts):\n"
+        + "\n".join(lines)
+        + note
     )
 
 
@@ -165,10 +199,6 @@ def _render_summary(title: str, data: dict[str, Any]) -> str:
 
 
 # ------------------------------------------------------------------------------------- questions
-
-
-def _which_stock() -> AgentResult:
-    return AgentResult("Which stock do you mean? Tell me its name or symbol, for example TCS.")
 
 
 def _stock_question(
@@ -242,11 +272,12 @@ def _route(run: _Run, text: str, page: str | None, ai_available: bool) -> str:
 
 
 def answer_without_ai(
-    text: str, registry: ToolRegistry, *, page: str | None = None, ai_available: bool = False
+    text: str, registry: ToolRegistry, context: AnswerContext | None = None
 ) -> AgentResult:
-    run = _Run(registry)
-    reply = _route(run, text, page, ai_available)
-    if not ai_available and "add an AI key" not in reply:
+    context = context or AnswerContext()
+    run = _Run(registry, context.allowed, context.symbol)
+    reply = _route(run, text, context.page, context.ai_available)
+    if context.hint and not context.ai_available and "add an AI key" not in reply:
         reply = f"{reply}\n\n{_NEED_AI}"
         run.offer(_ADD_KEY_BUTTON)
     return AgentResult(reply, run.steps, run.proposals, model=None)
