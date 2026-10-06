@@ -213,6 +213,11 @@ class CredentialStore:
         cleaned = value.strip()
         if not cleaned:
             raise CredentialError("The value is empty.")
+        if any(char.isspace() or not char.isprintable() or ord(char) > 126 for char in cleaned):
+            raise CredentialError(
+                "That value has a space, a line break or an unusual character in it. "
+                "Paste it again, exactly as you copied it, with nothing extra."
+            )
         if len(cleaned.encode("utf-8")) > MAX_SECRET_BYTES:
             raise CredentialError("The value is too long for Windows Credential Manager.")
         if self._api is None:

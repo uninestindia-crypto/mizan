@@ -13,7 +13,12 @@ from fastapi.testclient import TestClient
 from quant_system.config.env import parse_env_text
 from quant_system.server.app import app
 from quant_system.server.v2 import paths, router
-from quant_system.server.v2.credentials import MAX_SECRET_BYTES, SECRETS, CredentialStore
+from quant_system.server.v2.credentials import (
+    MAX_SECRET_BYTES,
+    SECRETS,
+    CredentialError,
+    CredentialStore,
+)
 from quant_system.server.v2.env_import import (
     EnvFile,
     ImportStatus,
@@ -352,3 +357,36 @@ def test_oversized_or_too_many_files_are_rejected_without_echoing_the_input(
     assert OPENAI not in reply.text
     many = {"files": [{"name": f".env{i}", "text": "A=1\n"} for i in range(25)]}
     assert client.post("/api/v2/credentials/import", json=many, headers=headers).status_code == 422
+
+
+# ------------------------------------------------------------------------------------- bad pastes
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["sk-first-half\nsecond-half", "sk-first sk-second", "sk-with\ttab", "sk-café", "sk-zero​width"],
+)
+def test_a_value_with_a_space_a_line_break_or_an_unusual_character_is_refused(value: str) -> None:
+    store = _store()
+    with pytest.raises(CredentialError) as raised:
+        store.set("OPENAI_API_KEY", value)
+    assert "Paste it again" in str(raised.value) and value not in str(raised.value)
+    assert store.get("OPENAI_API_KEY") is None
+
+
+def test_a_value_with_only_outer_whitespace_is_trimmed_and_saved() -> None:
+    store = _store()
+    store.set("OPENAI_API_KEY", "  sk-clean-value\n")
+    assert store.get("OPENAI_API_KEY") == "sk-clean-value"
+
+
+def test_the_screen_gets_the_plain_refusal_for_a_bad_paste(
+    client: TestClient, headers: dict[str, str]
+) -> None:
+    response = client.put(
+        "/api/v2/credentials/OPENAI_API_KEY", json={"value": "sk-first\nsk-second"}, headers=headers
+    )
+    assert response.status_code == 400 and response.json()["error"]["code"] == "CREDENTIAL_REFUSED"
+    assert (
+        "Paste it again" in response.json()["error"]["message"] and "sk-first" not in response.text
+    )
