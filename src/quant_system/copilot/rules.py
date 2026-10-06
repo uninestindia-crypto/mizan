@@ -15,7 +15,7 @@ from typing import Any
 from quant_system.copilot.agent import AgentResult, Step
 from quant_system.copilot.registry import Proposal, ToolRegistry, ToolResult, failure
 
-__all__ = ["AnswerContext", "answer_without_ai"]
+__all__ = ["AnswerContext", "answer_without_ai", "render_halal"]
 
 _STOP = frozenset(
     "A AN AND ARE AS AT BE BUY BY CAN CHECK DO DOES DOING FACTS FOR GET HALAL HARAM HI HELLO HELP HOW IF IS IT ITS "
@@ -106,7 +106,7 @@ def _find_symbol(run: _Run, text: str, page: str | None) -> str | None:
 # ------------------------------------------------------------------------------------- renderers
 
 
-def _render_halal(data: dict[str, Any]) -> str:
+def render_halal(data: dict[str, Any]) -> str:
     if not data.get("covered"):
         return str(data["message"])
     lines = [f"**{data['symbol']} ({data.get('company')})**: halal screening"]
@@ -261,7 +261,7 @@ def _costs(run: _Run) -> str:
 def _route(run: _Run, text: str, page: str | None, ai_available: bool) -> str:
     words = _words(text)
     if words & {"HALAL", "HARAM", "SHARIAH", "COMPLIANT"}:
-        return _stock_question(run, text, page, "shariah_check", _render_halal)
+        return _stock_question(run, text, page, "shariah_check", render_halal)
     if words & {"SECOND", "OPINION", "VERIFY", "CONFIRM", "RECHECK"}:
         return _second_opinion(run, text, page, ai_available)
     if words & {"NEWS", "HEADLINES", "SENTIMENT"}:
