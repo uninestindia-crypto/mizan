@@ -9,16 +9,22 @@ Three wire shapes cover all eight providers (OpenAI-style, Anthropic, Gemini). N
 is sent: some reasoning models refuse anything but their default, and a refusal costs a call.
 
 A key is held in a field excluded from ``repr`` and is stripped from every error text before it can leave
-this module.
+this module. A key that cannot be sent as it is (a space or line break inside it) is refused before any request is
+built, and a chat call never follows a redirect, so the key is sent to the provider's own address only.
+
+``ProviderChat.complete`` never raises: a provider that stalls, drops the connection or sends half a reply is a
+status and a plain sentence, so the Copilot always has something to say.
 """
 
 from __future__ import annotations
 
+import http.client
 import json
+import logging
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Final, Protocol
 
 from quant_system.alpha.direct_providers import (
@@ -34,6 +40,8 @@ from quant_system.alpha.direct_providers import (
 from quant_system.alpha.model_catalog import latest_model_id
 
 __all__ = [
+    "BAD_KEY_MESSAGE",
+    "BAD_KEY_STATUS",
     "ChatModel",
     "ChatReply",
     "LlmConfigurationError",
@@ -42,9 +50,17 @@ __all__ = [
     "supported_providers",
 ]
 
+logger = logging.getLogger(__name__)
+
 MAX_PROMPT_CHARS: Final = 120_000
 MAX_RESPONSE_BYTES: Final = 2_000_000
 _ERROR_CHARS: Final = 300
+# Never sent or received: the status of a reply made here when the saved key could not be sent as it is.
+BAD_KEY_STATUS: Final = 499
+BAD_KEY_MESSAGE: Final = (
+    "That AI key has a space, line break or unusual character in it. "
+    "Open Settings, then Accounts and keys, and paste it again."
+)
 
 # provider -> (wire style, endpoint, model-preference hints), read from the existing clients.
 _PROVIDERS: Final[dict[str, tuple[str, str, tuple[str, ...]]]] = {
@@ -100,23 +116,56 @@ Transport = Callable[[urllib.request.Request, float], RawResponse]
 ModelResolver = Callable[[str, str, tuple[str, ...]], str]
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """A provider never needs to send the call somewhere else, and a redirect would carry the key along."""
+
+    def redirect_request(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
+
+
+def build_opener(*extra: urllib.request.BaseHandler) -> urllib.request.OpenerDirector:
+    return urllib.request.build_opener(_NoRedirect, *extra)
+
+
+_OPENER = build_opener()
+
+
 def _read_error_body(error: urllib.error.HTTPError) -> bytes:
     return error.read(MAX_RESPONSE_BYTES) if error.fp else b""
 
 
-def urllib_transport(request: urllib.request.Request, timeout: float) -> RawResponse:
+def _send(request: urllib.request.Request, timeout: float) -> RawResponse:
     try:
-        response = urllib.request.urlopen(request, timeout=timeout)
+        response = _OPENER.open(request, timeout=timeout)
     except urllib.error.HTTPError as error:
         return RawResponse(error.code, _read_error_body(error), dict(error.headers or {}))
-    except TimeoutError:
-        return RawResponse(408, b"", {})
-    except urllib.error.URLError as error:
-        return RawResponse(503, str(error.reason).encode("utf-8", "replace"), {})
     with response:
         return RawResponse(
             response.status, response.read(MAX_RESPONSE_BYTES), dict(response.headers)
         )
+
+
+def urllib_transport(request: urllib.request.Request, timeout: float) -> RawResponse:
+    """One call to a provider. Whatever goes wrong on the way is a status, never an exception."""
+    try:
+        return _send(request, timeout)
+    except TimeoutError:
+        return RawResponse(408, b"", {})
+    except urllib.error.URLError as error:
+        status = 408 if isinstance(error.reason, TimeoutError) else 503
+        return RawResponse(status, str(error.reason).encode("utf-8", "replace"), {})
+    except (OSError, http.client.HTTPException):
+        return RawResponse(503, b"", {})
+
+
+def _sendable(key: str) -> bool:
+    """A key goes into a header as it is, so it must be one run of plain visible characters.
+
+    Quotes and backslashes are refused too: no real key has one, and with none the key reads the same however an
+    error message writes it down, so stripping it from that message is complete.
+    """
+    plain = key.isascii() and key.isprintable() and not any(ch.isspace() for ch in key)
+    return plain and not any(ch in "\\'\"" for ch in key)
 
 
 def _default_resolver(provider: str, api_key: str, prefer: tuple[str, ...]) -> str:
@@ -140,13 +189,16 @@ class ProviderChat:
     ) -> ChatReply:
         if len(system) + len(user) > MAX_PROMPT_CHARS:
             return ChatReply(None, 413, "The question is too long to send to a model.")
+        if not _sendable(self.api_key):
+            return ChatReply(None, BAD_KEY_STATUS, BAD_KEY_MESSAGE)
         style, endpoint, prefer = _PROVIDERS[self.provider]
         try:
             model = self.model or self.resolve_model(self.provider, self.api_key, prefer)
         except Exception as error:  # a catalogue failure is a plain reason, never a stack trace
             return ChatReply(None, 503, f"Could not choose a model: {self._clean(str(error))}")
-        request = self._request(style, endpoint, model, system, user, max_tokens)
-        raw = self.transport(request, timeout)
+        raw = self._call(self._request(style, endpoint, model, system, user, max_tokens), timeout)
+        if isinstance(raw, ChatReply):
+            return replace(raw, model=model)
         if raw.status != 200:
             return ChatReply(
                 None,
@@ -161,6 +213,18 @@ class ProviderChat:
         return ChatReply(text, 200, None, None, model)
 
     # ------------------------------------------------------------------------------------------
+
+    def _call(self, request: urllib.request.Request, timeout: float) -> RawResponse | ChatReply:
+        """The transport's answer, or a plain reply when it fails. Nothing the transport raises is repeated."""
+        try:
+            return self.transport(request, timeout)
+        except TimeoutError:
+            return ChatReply(None, 408, "The AI service did not answer in time.")
+        except ValueError:  # the key could not go into a header; its text may be in the message
+            return ChatReply(None, BAD_KEY_STATUS, BAD_KEY_MESSAGE)
+        except Exception as error:
+            logger.warning("An AI service call failed (%s).", type(error).__name__)
+            return ChatReply(None, 503, "The AI service could not be reached.")
 
     def _request(
         self, style: str, endpoint: str, model: str, system: str, user: str, max_tokens: int
@@ -198,7 +262,10 @@ class ProviderChat:
         except ValueError:
             return ""
         parse = {"anthropic": _anthropic_text, "gemini": _gemini_text}.get(style, _openai_text)
-        return parse(data)
+        try:
+            return parse(data)
+        except (AttributeError, TypeError, IndexError, KeyError):
+            return ""  # a reply shaped like nothing we know
 
     def _clean(self, text: str) -> str:
         return text.replace(self.api_key, "***")[:_ERROR_CHARS]

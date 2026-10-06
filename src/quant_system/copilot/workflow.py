@@ -7,7 +7,9 @@ A step that fails stops the run with a plain reason; nothing in here can place a
 
 from __future__ import annotations
 
+import logging
 import re
+import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
@@ -18,7 +20,17 @@ from quant_system.copilot.llm import ChatModel
 from quant_system.copilot.registry import Proposal, ToolRegistry
 from quant_system.copilot.rules import AnswerContext, answer_without_ai
 
-__all__ = ["RunOptions", "Runnable", "StepRun", "WorkflowResult", "run_workflow"]
+__all__ = [
+    "RunGate",
+    "RunOptions",
+    "Runnable",
+    "StepRun",
+    "WorkflowResult",
+    "built_in_answer",
+    "run_workflow",
+]
+
+logger = logging.getLogger(__name__)
 
 MAX_STEPS = 8
 SYMBOL_RULE = re.compile(r"^[A-Z0-9&-]{1,15}$")
@@ -36,6 +48,34 @@ _BAD_SYMBOL = (
     "That does not look like a stock symbol. Use letters and numbers only, for example TCS."
 )
 _TOO_SLOW = "Stopped early because this was taking too long. What finished is shown above."
+_ALREADY_RUNNING = "This assistant is already running. Wait for it to finish, then run it again."
+_TOO_MANY_RUNNING = (
+    "Several assistants are already running. Wait for one to finish, then try again."
+)
+_STEP_FAILED = "That step could not be finished. Try running this assistant again in a minute."
+
+
+class RunGate:
+    """A few runs at once, and never the same assistant twice: a run holds a server thread for up to minutes."""
+
+    def __init__(self, max_running: int = 3) -> None:
+        self._max = max_running
+        self._lock = threading.Lock()
+        self._running: set[str] = set()
+
+    def enter(self, key: str) -> str | None:
+        """None when the run may start (and now holds a place), else the plain reason it may not."""
+        with self._lock:
+            if key in self._running:
+                return _ALREADY_RUNNING
+            if len(self._running) >= self._max:
+                return _TOO_MANY_RUNNING
+            self._running.add(key)
+            return None
+
+    def leave(self, key: str) -> None:
+        with self._lock:
+            self._running.discard(key)
 
 
 class Runnable(Protocol):
@@ -107,19 +147,42 @@ def _fill(text: str, symbol: str | None) -> str:
     return text.replace("{symbol}", symbol) if symbol else text
 
 
-def _step_answer(
+def built_in_answer(
+    text: str, registry: ToolRegistry, context: AnswerContext, failed: str = _STEP_FAILED
+) -> AgentResult:
+    """The built-in answer. It never raises: a failure is the plain sentence ``failed``, flagged as an error."""
+    try:
+        return answer_without_ai(text, registry, context)
+    except Exception as error:
+        # A tool the answer leans on must not turn a question into a server error.
+        logger.warning("A built-in answer failed (%s).", type(error).__name__)
+        return AgentResult(failed, error="built_in_failed")
+
+
+def _answer_step(
     agent: Runnable, registry: ToolRegistry, history: list[Message], options: RunOptions
 ) -> AgentResult:
     text = history[-1].content
     if options.model is None:
         allowed = frozenset(agent.tools)
         context = AnswerContext(options.page, False, allowed, hint=False, symbol=options.symbol)
-        return answer_without_ai(text, registry, context)
+        return built_in_answer(text, registry, context)
     runner = CopilotAgent(options.model, registry)
     instructions = _fill(agent.instructions, options.symbol) or None
     return runner.run(
         history, page=options.page, instructions=instructions, allowed=set(agent.tools)
     )
+
+
+def _step_answer(
+    agent: Runnable, registry: ToolRegistry, history: list[Message], options: RunOptions
+) -> AgentResult:
+    """One step's answer. Whatever goes wrong inside it is a plain sentence flagged as an error, never a raise."""
+    try:
+        return _answer_step(agent, registry, history, options)
+    except Exception as error:
+        logger.warning("An assistant step failed (%s).", type(error).__name__)
+        return AgentResult(_STEP_FAILED, error="step_failed")
 
 
 def _refusal(agent: Runnable, options: RunOptions) -> WorkflowResult | None:
@@ -162,9 +225,7 @@ def run_workflow(
         text = _fill(step, symbol)
         history.append(Message("user", text))
         answer = _step_answer(agent, registry, history, options)
-        failure = (
-            answer.reply if answer.error else None
-        )  # the plain sentence, never the internal code
+        failure = answer.reply if answer.error else None  # the plain sentence, never the code
         result.steps.append(StepRun(number, text, answer.reply, answer.steps, failure))
         result.model = answer.model or result.model
         _merge(result.proposals, answer.proposals)

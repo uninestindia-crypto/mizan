@@ -8,35 +8,45 @@ and a provider that is down, is HTTP 200 with a plain-language reply; only a mal
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, StringConstraints
 
-from quant_system.copilot.agent import AgentResult, CopilotAgent, Message
+from quant_system.copilot.agent import AgentResult, CopilotAgent, Message, safe_page
 from quant_system.copilot.agent_store import AgentDraft, AgentRejectedError, AgentStore, SavedAgent
 from quant_system.copilot.factpack import build_fact_pack
+from quant_system.copilot.llm import ChatModel
+from quant_system.copilot.messages import explain_failure
 from quant_system.copilot.providers import build_models, default_model, provider_status
 from quant_system.copilot.recipes import RECIPES, Recipe, recipe
 from quant_system.copilot.registry import ToolRegistry
-from quant_system.copilot.rules import AnswerContext, answer_without_ai
+from quant_system.copilot.rules import AnswerContext
 from quant_system.copilot.tools import default_registry
 from quant_system.copilot.verify import VerifyOptions, verify_stock
 from quant_system.copilot.verify_jobs import TooBusyError, VerifyJobs
-from quant_system.copilot.workflow import RunOptions, run_workflow
+from quant_system.copilot.workflow import RunGate, RunOptions, built_in_answer, run_workflow
 from quant_system.server.security import format_error_response
 from quant_system.server.v2 import copilot_wiring
+from quant_system.server.v2.copilot_validation import CopilotRoute
 
-router = APIRouter(prefix="/copilot", tags=["Copilot"])
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/copilot", tags=["Copilot"], route_class=CopilotRoute)
 __all__ = ["router"]
 
 SYMBOL = r"^[A-Za-z0-9&-]{1,15}$"
 _jobs = VerifyJobs()
+_gate = RunGate()
 _store: AgentStore | None = None
 _NO_AI_KEY = "Add at least one AI key first. Open Settings, then Accounts and keys."
 _BUSY = "Several second opinions are already running. Wait for one to finish, then try again."
 _AI_FAILED = "\n\nMeanwhile, here is what QuantOS can tell you without the AI:\n\n"
+_NO_AGENT = "That agent no longer exists."
+_CHAT_FAILED = (
+    "I could not answer that just now. Try asking in a different way, or try again in a minute."
+)
 
 
 class ChatMessage(BaseModel):
@@ -46,7 +56,8 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1, max_length=40)
-    page: str | None = Field(default=None, max_length=200)
+    # Only a ceiling here: a path that does not look like a screen is ignored later, not refused.
+    page: str | None = Field(default=None, max_length=1000)
     agent_id: str | None = Field(default=None, max_length=40)
 
 
@@ -58,7 +69,9 @@ class VerifyRequest(BaseModel):
 
 
 class AgentBody(BaseModel):
-    name: str = Field(max_length=200)
+    """Only very generous ceilings here: the store's own plain messages are what a person should see."""
+
+    name: str = Field(default="", max_length=1000)
     description: str = Field(default="", max_length=2000)
     instructions: str = Field(default="", max_length=20000)
     tools: list[str] = Field(default_factory=list, max_length=40)
@@ -107,14 +120,15 @@ def _spec(agent_id: str) -> SavedAgent | Recipe | None:
 
 
 def _reply(result: AgentResult, mode: str, provider: str | None) -> dict[str, Any]:
+    ai = mode == "ai"  # a built-in answer carries no model and no error, even after the AI failed
     return {
         "reply": result.reply,
         "steps": [{"label": s.label, "summary": s.summary, "ok": s.ok} for s in result.steps],
         "proposals": [p.as_dict() for p in result.proposals],
         "mode": mode,
-        "provider": provider,
-        "model": result.model,
-        "error": result.error,
+        "provider": provider if ai else None,
+        "model": result.model if ai else None,
+        "error": result.error if ai else None,
     }
 
 
@@ -137,37 +151,58 @@ def models() -> dict[str, Any]:
     return {"models": provider_status(_lookup)}
 
 
-def _chat_scope(agent_id: str | None) -> tuple[frozenset[str] | None, str | None]:
-    spec = _spec(agent_id) if agent_id else None
-    return (frozenset(spec.tools), spec.instructions or None) if spec else (None, None)
+def _chat_scope(agent_id: str | None) -> tuple[frozenset[str] | None, str | None] | None:
+    """The tools and instructions a chat runs with, or None when it names an agent that does not exist."""
+    if not agent_id:
+        return None, None
+    spec = _spec(agent_id)
+    return None if spec is None else (frozenset(spec.tools), spec.instructions or None)
 
 
-@router.post("/chat")
-def chat(body: ChatRequest) -> dict[str, Any]:
-    registry = _registry()
-    allowed, instructions = _chat_scope(body.agent_id)
-    model = default_model(_lookup)
-    if model is not None:
-        history = [Message(m.role, m.content) for m in body.messages]
-        agent = CopilotAgent(model, registry)
-        result = agent.run(
+def _ask_ai(
+    model: ChatModel,
+    body: ChatRequest,
+    registry: ToolRegistry,
+    scope: tuple[frozenset[str] | None, str | None],
+) -> AgentResult:
+    allowed, instructions = scope
+    history = [Message(m.role, m.content) for m in body.messages]
+    try:
+        return CopilotAgent(model, registry).run(
             history,
-            page=body.page,
+            page=safe_page(body.page),
             instructions=instructions,
-            allowed=set(allowed) if allowed else None,
+            allowed=None if allowed is None else set(allowed),
         )
-        if not result.error:
-            return _reply(result, "ai", model.provider)
-        fallback = answer_without_ai(
-            body.messages[-1].content, registry, AnswerContext(body.page, True, allowed, False)
+    except Exception as error:
+        # A chat is never a server error: the person still gets the built-in answer below.
+        logger.warning("The Copilot chat failed (%s).", type(error).__name__)
+        return AgentResult(explain_failure(500), error="ai_unavailable")
+
+
+@router.post("/chat", response_model=None)
+def chat(body: ChatRequest) -> Any:
+    scope = _chat_scope(body.agent_id)
+    if scope is None:
+        return _fail(404, "NOT_FOUND", _NO_AGENT)
+    allowed = scope[0]
+    registry = _registry()
+    page = safe_page(body.page)
+    question = body.messages[-1].content
+    model = default_model(_lookup)
+    if model is None:
+        answer = built_in_answer(
+            question, registry, AnswerContext(page, False, allowed), _CHAT_FAILED
         )
-        result.reply = result.reply + _AI_FAILED + fallback.reply
-        result.steps, result.proposals = fallback.steps, fallback.proposals
-        return _reply(result, "built_in", None)
-    answer = answer_without_ai(
-        body.messages[-1].content, registry, AnswerContext(body.page, False, allowed)
-    )
-    return _reply(answer, "built_in", None)
+        return _reply(answer, "built_in", None)
+    result = _ask_ai(model, body, registry, scope)
+    if not result.error:
+        return _reply(result, "ai", model.provider)
+    context = AnswerContext(page, True, allowed, False)
+    fallback = built_in_answer(question, registry, context, _CHAT_FAILED)
+    result.reply = result.reply + _AI_FAILED + fallback.reply
+    result.steps, result.proposals = fallback.steps, fallback.proposals
+    return _reply(result, "built_in", None)
 
 
 # ------------------------------------------------------------------------------------- second opinion
@@ -237,13 +272,13 @@ def update_agent(agent_id: str, body: AgentBody) -> Any:
         saved = store().update(agent_id, body.draft(), _registry().names())
     except AgentRejectedError as error:
         return _rejected(error)
-    return saved.as_dict() if saved else _fail(404, "NOT_FOUND", "That agent no longer exists.")
+    return saved.as_dict() if saved else _fail(404, "NOT_FOUND", _NO_AGENT)
 
 
 @router.delete("/agents/{agent_id}", response_model=None)
 def delete_agent(agent_id: str) -> Any:
     if not store().delete(agent_id):
-        return _fail(404, "NOT_FOUND", "That agent no longer exists.")
+        return _fail(404, "NOT_FOUND", _NO_AGENT)
     return {"deleted": True}
 
 
@@ -251,10 +286,16 @@ def delete_agent(agent_id: str) -> Any:
 def run_agent(agent_id: str, body: RunBody) -> Any:
     spec = _spec(agent_id)
     if spec is None:
-        return _fail(404, "NOT_FOUND", "That agent no longer exists.")
-    options = RunOptions(
-        symbol=body.symbol,
-        model=default_model(_lookup),
-        needs_ai=bool(getattr(spec, "needs_ai", False)),
-    )
-    return run_workflow(spec, _registry(), options).as_dict()
+        return _fail(404, "NOT_FOUND", _NO_AGENT)
+    refusal = _gate.enter(agent_id)
+    if refusal is not None:
+        return _fail(429, "TOO_BUSY", refusal)
+    try:
+        options = RunOptions(
+            symbol=body.symbol,
+            model=default_model(_lookup),
+            needs_ai=bool(getattr(spec, "needs_ai", False)),
+        )
+        return run_workflow(spec, _registry(), options).as_dict()
+    finally:
+        _gate.leave(agent_id)

@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from quant_system.copilot.llm import BAD_KEY_MESSAGE, BAD_KEY_STATUS
+
 
 def explain_failure(status: int) -> str:
     """A person-readable reason for an AI provider's failure status. Never contains a code, key or raw error."""
+    if status == BAD_KEY_STATUS:
+        return BAD_KEY_MESSAGE
     if status in (401, 403):
         return "That AI service did not accept your key. Open Settings, then Accounts and keys, and check it."
     if status == 404:
