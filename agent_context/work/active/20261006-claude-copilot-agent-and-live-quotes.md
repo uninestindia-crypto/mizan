@@ -94,8 +94,10 @@ or runs a repository-wide command; the coordinator (this session) stages explici
 6. Saved agents and ready-made recipes. DONE
 7. Live Upstox prices, read-only. DONE (one real request while the market was open; after-hours only against invented replies)
 8. Frontend: Copilot drawer, Second opinion, Agents screen, live price chips. DONE, in review (see below)
-9. Gates, adversarial review, real-browser checks. Adversarial backend review DONE and its findings fixed; browser check of the Agents screen DONE (frontend findings queued); browser check of the Copilot panel IN PROGRESS.
-10. Push, PR. The founder decides on merge and release (the branch must receive `main` by merge, never rebase).
+9. Gates, adversarial review, real-browser checks. DONE: adversarial backend review fixed; browser checks of the Agents
+   screen, live chips, Copilot drawer and Second opinion dialog fixed and re-measured.
+10. Push, PR. PUSHED to `claude/wonderful-wozniak-6ek6zl`, `main` merged in (nothing new on `main` at the last check). No PR
+    opened: the founder decides on PR, merge and release (merge `main` in, never rebase).
 
 ## Workers
 
@@ -139,13 +141,20 @@ Same position as the earlier notices: edits proceed on the founder's explicit in
 
 ## Stop point
 
-All backend work and both feature sets are committed and pushed on `claude/wonderful-wozniak-6ek6zl`. Open: frontend
-findings from the browser checks (focus return after a confirmation, screen-reader links from a field to its problem,
-dark-theme contrast of the red delete button, top bar overflow at an 800 px window, an unlabelled end-of-day price
-beside a labelled live one, and smaller copy items) and the browser check of the Copilot panel.
+All work is committed and pushed on `claude/wonderful-wozniak-6ek6zl`; the working tree is clean. `python scripts/release_status.py`
+says a release is DUE (23 user-visible changes since v2.4.0, suggested minor, v2.5.0). It is cut from `main`, so it waits
+on the founder merging this branch.
+
+Known limits, stated rather than hidden (full list in `agent_context/decisions/20261006-copilot-design.md`): the advice
+and halal word lists are not a full defence and do not cover other languages; the fundamentals and halal data are the
+39-company hand-entered sample; after-hours and holiday price labelling was verified only against invented replies; the
+batch-splitting retry for one bad share was verified only against a stand-in transport; `live/` calls three private
+helpers in `data/upstox_parsing.py`; no real AI provider was called in any test (all scripted); real screen-reader
+output and the Windows desktop shell were not checked; one `mypy` message about the optional `webview` package appears
+only where it is not installed (unrelated to this branch).
 
 ## Next safe action
 
-Fix the frontend findings, re-run every gate and the whole backend suite, merge `main` into the branch, then ask the
-founder before opening a PR. Merge and release are the founder's call. Founder decisions still open are in
-`reports/halal_docs_review/REVIEW.md` and `agent_context/GOAL.md` section 7.
+Founder: say whether to open the PR, merge to `main`, and cut v2.5.0 (`powershell -ExecutionPolicy Bypass -File
+scripts/release.ps1 -DryRun` first). Open founder decisions are in `reports/halal_docs_review/REVIEW.md` and
+`agent_context/GOAL.md` section 7. When the work is accepted, move this record to `agent_context/work/completed/`.
