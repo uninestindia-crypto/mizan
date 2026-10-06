@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
 
+from quant_system.copilot.llm import ChatReply
 from quant_system.copilot.tools import ToolContext
 from quant_system.market.index import SymbolNotFoundError
 
@@ -101,3 +104,59 @@ def make_context(**overrides: Any) -> ToolContext:
     base: dict[str, Any] = {"index": FakeIndex(), "shariah": FakeShariah()}
     base.update(overrides)
     return ToolContext(**base)
+
+
+class FakeNews:
+    def __init__(self, headlines: Sequence[dict[str, Any]] | None = None) -> None:
+        self.rows = (
+            list(headlines)
+            if headlines is not None
+            else [
+                {
+                    "title": "Alpha wins a large order",
+                    "source": "Wire",
+                    "link": "https://example.test/a",
+                }
+            ]
+        )
+
+    def headlines(self, query: str) -> list[dict[str, Any]]:
+        return list(self.rows)
+
+
+Reply = str | ChatReply
+Responder = Callable[[str, str], Reply]
+
+
+class StubModel:
+    """A chat model that answers from a fixed reply or from a function of the prompt, and records every call."""
+
+    def __init__(self, provider: str, reply: Reply | Responder, model: str | None = None) -> None:
+        self.provider = provider
+        self.model: str | None = model or f"{provider}-model"
+        self._reply = reply
+        self.calls: list[tuple[str, str]] = []
+
+    def complete(
+        self, system: str, user: str, *, max_tokens: int = 900, timeout: float = 60.0
+    ) -> ChatReply:
+        self.calls.append((system, user))
+        item = self._reply(system, user) if callable(self._reply) else self._reply
+        return item if isinstance(item, ChatReply) else ChatReply(item, 200, model=self.model)
+
+
+def opinion_json(
+    reading: str = "MIXED",
+    tone: str = "NEUTRAL",
+    reasons: Sequence[str] = ("Steady returns",),
+    risks: Sequence[str] = ("Valuation is rich",),
+    missing: Sequence[str] = (),
+) -> str:
+    body = {
+        "reading": reading,
+        "news_tone": tone,
+        "reasons": list(reasons),
+        "risks": list(risks),
+        "missing": list(missing),
+    }
+    return json.dumps(body)
