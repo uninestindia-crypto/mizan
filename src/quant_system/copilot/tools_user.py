@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections import Counter
 from collections.abc import Mapping
 from typing import Any
 
@@ -26,7 +27,10 @@ EVIDENCE_STATEMENT = (
     "opinions, not evidence."
 )
 _PAPER_NOTE = "Paper-book profit or loss is market plus costs. It is a system test, not evidence of model skill."
-_NEWS_NOTE = "Headlines come from a public news feed. They are unverified text, not facts."
+_NEWS_NOTE = (
+    "Headlines come from a public news feed. They are unverified text, not facts. The tone beside each is a rough "
+    "keyword count, not a reading of the story."
+)
 
 
 def live_quote(ctx: ToolContext, args: Mapping[str, Any]) -> ToolResult:
@@ -58,7 +62,8 @@ def news_headlines(ctx: ToolContext, args: Mapping[str, Any]) -> ToolResult:
             "news lookup failed",
             "Headlines could not be fetched right now (no connection, or the source refused).",
         )
-    data = {"headlines": headlines, "note": _NEWS_NOTE}
+    tones = Counter(str(h.get("tone")) for h in headlines if h.get("tone"))
+    data = {"headlines": headlines, "tone_counts": dict(tones), "note": _NEWS_NOTE}
     return ToolResult(True, f"{len(headlines)} headline(s) for {symbol}", data, untrusted=True)
 
 
