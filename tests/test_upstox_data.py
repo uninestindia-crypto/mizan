@@ -1,11 +1,26 @@
 """Unit tests for Upstox API v2 market data connector."""
 
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 
 import pytest
 
 from quant_system.data.market_data import AcquisitionFailureCode
-from quant_system.data.upstox import UpstoxClient, UpstoxDataError
+from quant_system.data.upstox import UpstoxClient, UpstoxClientDependencies, UpstoxDataError
+from quant_system.data.upstox_http import HttpResponse
+from quant_system.data.upstox_parsing import (
+    ProviderQuoteUnavailable,
+    ProviderSchemaDrift,
+    parse_quote_payload,
+)
+
+INFY_KEY = "NSE_EQ|INE009A01021"
+RELIANCE_KEY = "NSE_EQ|INE002A01018"
 
 
 def test_upstox_client_initialization_and_auth_check() -> None:
@@ -44,13 +59,20 @@ def test_upstox_parse_candles_rejects_invalid_ohlc_instead_of_repairing_it() -> 
         client.parse_candles(symbol="INFY", candles=invalid_candles)
 
 
+def _without_ambient_upstox_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`UpstoxClient` falls back to these variables, so a test of the no-token path must clear them.
+
+    Without this, a machine that has a real token exported turns a credential-absence test into a
+    live authenticated request instead of the `PROVIDER_UNAUTHORIZED` it asserts.
+    """
+    for name in ("UPSTOX_ANALYTICS_TOKEN", "UPSTOX_ACCESS_TOKEN", "UPSTOX_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+
+
 def test_upstox_historical_request_without_token_raises_typed_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # `access_token=""` falls back to the environment. With a real token set (a cloud session, a
-    # developer shell) this test used to make a live provider request instead of testing "no token".
-    monkeypatch.delenv("UPSTOX_ANALYTICS_TOKEN", raising=False)
-    monkeypatch.delenv("UPSTOX_ACCESS_TOKEN", raising=False)
+    _without_ambient_upstox_credentials(monkeypatch)
     client = UpstoxClient(api_key="", access_token="")
 
     with pytest.raises(UpstoxDataError) as raised:
@@ -65,8 +87,7 @@ def test_upstox_historical_request_without_token_raises_typed_error(
 def test_upstox_quote_request_without_token_raises_typed_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("UPSTOX_ANALYTICS_TOKEN", raising=False)
-    monkeypatch.delenv("UPSTOX_ACCESS_TOKEN", raising=False)
+    _without_ambient_upstox_credentials(monkeypatch)
     client = UpstoxClient(api_key="", access_token="")
 
     with pytest.raises(UpstoxDataError) as raised:
@@ -103,201 +124,347 @@ def test_the_client_prefers_the_token_that_survives_the_night(monkeypatch) -> No
     assert UpstoxClient(access_token="explicit").access_token == "explicit"
 
 
-# --------------------------------------------------------------------------------------------------
-# The single-quote parse, against the shape the provider really returns
-#
-# Measured 2026-10-06 against the live `v2/market-quote/quotes` endpoint with a valid analytics
-# token: the request carries the instrument key (`NSE_EQ|INE009A01021`), HTTP 200, `status:
-# success`, and `data` is keyed by the **symbol** form (`NSE_EQ:INFY`). Each entry repeats the
-# instrument key in its own `instrument_token`. `parse_quote_payload` looked up only the key form,
-# so against the real feed `fetch_market_quote` always raised PROVIDER_SCHEMA_DRIFT. No test parsed
-# a quote body at all, which is how that survived: the success path was never exercised. The paper
-# session has its own parser that handles both forms and was never affected.
-#
-# The numbers below are invented. Only the shape is the provider's.
-# --------------------------------------------------------------------------------------------------
+def _quote_entry(**overrides: Any) -> dict[str, Any]:
+    """One `data` entry shaped like the live V2 `market-quote/quotes` reply.
 
-import json  # noqa: E402
-from datetime import UTC, datetime  # noqa: E402
-from typing import Any  # noqa: E402
-
-from quant_system.data.upstox import UpstoxClientDependencies  # noqa: E402
-from quant_system.data.upstox_http import HttpResponse  # noqa: E402
-
-INFY_KEY = "NSE_EQ|INE009A01021"
-
-
-def _entry(**overrides: Any) -> dict[str, Any]:
+    Only the fields the provider was measured to return are present: `instrument_token` (the ISIN
+    form), `last_price`, `timestamp` (ISO, +05:30), `depth.buy/sell` and `ohlc`.
+    """
     entry: dict[str, Any] = {
         "instrument_token": INFY_KEY,
-        "symbol": "INFY",
-        "last_price": 1500.5,
-        "timestamp": "2026-10-06T10:15:30.250+05:30",
+        "last_price": 1612.4,
+        "timestamp": "2026-10-01T14:05:10+05:30",
+        "ohlc": {"open": 1600.0, "high": 1620.0, "low": 1598.5, "close": 1605.0},
         "depth": {
-            "buy": [{"quantity": 120, "price": 1500.4, "orders": 3}],
-            "sell": [{"quantity": 80, "price": 1500.6, "orders": 2}],
+            "buy": [{"price": 1612.35, "quantity": 410}, {"price": 1612.3, "quantity": 95}],
+            "sell": [{"price": 1612.45, "quantity": 220}, {"price": 1612.5, "quantity": 60}],
         },
     }
     entry.update(overrides)
     return entry
 
 
-class _OneReply:
-    def __init__(self, body: dict[str, Any]) -> None:
-        self.body = body
-
-    def get(self, url: str, **_kwargs: Any) -> HttpResponse:
-        assert "market-quote/quotes" in url
-        return HttpResponse(status=200, body=json.dumps(self.body).encode(), headers={})
+def _body(data: Any, **envelope: Any) -> bytes:
+    return json.dumps({"status": "success", "data": data, **envelope}).encode("utf-8")
 
 
-def _client(body: dict[str, Any]) -> UpstoxClient:
+@dataclass(slots=True)
+class _QuoteTransport:
+    body: bytes
+    status: int = 200
+    urls: list[str] = field(default_factory=list)
+
+    def get(
+        self,
+        url: str,
+        *,
+        headers: dict[str, str],
+        timeout_seconds: float,
+        max_response_bytes: int,
+    ) -> HttpResponse:
+        self.urls.append(url)
+        return HttpResponse(status=self.status, body=self.body, headers={})
+
+
+def _quote_client(transport: _QuoteTransport) -> UpstoxClient:
     return UpstoxClient(
-        access_token="test_mock_token",
+        access_token="test-token",
         dependencies=UpstoxClientDependencies(
-            transport=_OneReply(body),
-            clock=lambda: datetime(2026, 10, 6, 5, 0, tzinfo=UTC),
-            sleeper=lambda _seconds: None,
+            transport=transport,
+            clock=lambda: datetime(2026, 10, 1, 9, 0, tzinfo=UTC),
+            sleeper=lambda _delay: None,
             jitter=lambda: 0.0,
         ),
     )
 
 
-def _quote(body: dict[str, Any]) -> Any:
-    return _client(body).fetch_market_quote(INFY_KEY, "INFY")
+def test_the_real_symbol_keyed_reply_parses_to_a_quote() -> None:
+    """The live reply is keyed `NSE_EQ:INFY`; the request carried `NSE_EQ|INE009A01021`."""
+    body = _body({"NSE_EQ:INFY": _quote_entry()})
 
-
-def test_a_quote_keyed_by_symbol_as_the_real_provider_returns_it_is_parsed() -> None:
-    quote = _quote({"status": "success", "data": {"NSE_EQ:INFY": _entry()}})
+    quote = parse_quote_payload(body, instrument_key=INFY_KEY, symbol="INFY")
 
     assert quote.symbol == "INFY"
-    assert quote.bid == Decimal("1500.4")
-    assert quote.ask == Decimal("1500.6")
-    assert quote.bid_size == 120
-    assert quote.ask_size == 80
-    assert quote.last_price == Decimal("1500.5")
-    assert quote.timestamp == datetime(2026, 10, 6, 4, 45, 30, 250000, tzinfo=UTC)
+    assert quote.bid == Decimal("1612.35")
+    assert quote.ask == Decimal("1612.45")
+    assert quote.bid_size == 410
+    assert quote.ask_size == 220
+    assert quote.last_price == Decimal("1612.4")
+    assert quote.timestamp == datetime(2026, 10, 1, 8, 35, 10, tzinfo=UTC)
 
 
-def test_a_quote_keyed_by_instrument_key_is_still_parsed() -> None:
-    """The provider is free to key either way and has not promised which."""
-    quote = _quote({"status": "success", "data": {INFY_KEY: _entry()}})
+def test_fetch_market_quote_accepts_the_real_reply_end_to_end() -> None:
+    transport = _QuoteTransport(_body({"NSE_EQ:INFY": _quote_entry()}))
 
-    assert quote.bid == Decimal("1500.4")
+    quote = _quote_client(transport).fetch_market_quote(INFY_KEY, "INFY")
 
-
-def test_an_entry_whose_own_instrument_token_is_a_different_instrument_is_refused() -> None:
-    """Bind the data, not the label: a quote under INFY's key that says it is TCS must not pass."""
-    body = {
-        "status": "success",
-        "data": {"NSE_EQ:INFY": _entry(instrument_token="NSE_EQ|INE467B01029")},
-    }
-
-    with pytest.raises(UpstoxDataError) as raised:
-        _quote(body)
-
-    assert raised.value.code == AcquisitionFailureCode.PROVIDER_SCHEMA_DRIFT
+    assert quote.bid == Decimal("1612.35")
+    assert len(transport.urls) == 1
+    assert "instrument_key=NSE_EQ%7CINE009A01021" in transport.urls[0]
 
 
-def test_a_reply_with_no_entry_for_the_instrument_is_refused() -> None:
-    body = {
-        "status": "success",
-        "data": {"NSE_EQ:TCS": _entry(instrument_token="NSE_EQ|INE467B01029")},
-    }
+def test_an_instrument_keyed_reply_is_still_accepted() -> None:
+    """The provider has not promised a key form, so the instrument-key form keeps working."""
+    body = _body({INFY_KEY: _quote_entry()})
 
-    with pytest.raises(UpstoxDataError) as raised:
-        _quote(body)
+    quote = parse_quote_payload(body, instrument_key=INFY_KEY, symbol="INFY")
 
-    assert raised.value.code == AcquisitionFailureCode.PROVIDER_SCHEMA_DRIFT
+    assert quote.ask == Decimal("1612.45")
+
+
+def test_a_symbol_keyed_entry_whose_token_disagrees_is_refused() -> None:
+    """The label matches (`NSE_EQ:INFY`) but the entry says it is another ISIN: price the wrong
+    security and the quote would be wrong in a way nothing downstream can see."""
+    body = _body({"NSE_EQ:INFY": _quote_entry(instrument_token=RELIANCE_KEY)})
+
+    with pytest.raises(ProviderSchemaDrift, match="not for the requested instrument"):
+        parse_quote_payload(body, instrument_key=INFY_KEY, symbol="INFY")
+
+
+def test_an_instrument_keyed_entry_whose_token_disagrees_is_refused() -> None:
+    body = _body({INFY_KEY: _quote_entry(instrument_token=RELIANCE_KEY)})
+
+    with pytest.raises(ProviderSchemaDrift, match="not for the requested instrument"):
+        parse_quote_payload(body, instrument_key=INFY_KEY, symbol="INFY")
+
+
+def test_a_symbol_keyed_entry_with_no_token_is_refused() -> None:
+    """Found by label alone, with nothing in the entry to say which security it is."""
+    entry = _quote_entry()
+    del entry["instrument_token"]
+
+    with pytest.raises(ProviderSchemaDrift, match="not for the requested instrument"):
+        parse_quote_payload(_body({"NSE_EQ:INFY": entry}), instrument_key=INFY_KEY, symbol="INFY")
+
+
+def test_an_instrument_keyed_entry_with_no_token_is_accepted() -> None:
+    """Keyed by the very instrument key requested, so the key itself is the binding."""
+    entry = _quote_entry()
+    del entry["instrument_token"]
+
+    quote = parse_quote_payload(_body({INFY_KEY: entry}), instrument_key=INFY_KEY, symbol="INFY")
+
+    assert quote.bid == Decimal("1612.35")
+
+
+def test_an_entry_under_another_label_is_found_by_its_token() -> None:
+    """The caller's display symbol need not equal the provider's trading symbol."""
+    body = _body({"NSE_EQ:INFOSYS-RENAMED": _quote_entry()})
+
+    quote = parse_quote_payload(body, instrument_key=INFY_KEY, symbol="INFY")
+
+    assert quote.symbol == "INFY"
+    assert quote.last_price == Decimal("1612.4")
+
+
+def test_two_unlabelled_entries_claiming_one_token_are_refused_as_ambiguous() -> None:
+    body = _body({"NSE_EQ:AAA": _quote_entry(), "NSE_EQ:BBB": _quote_entry()})
+
+    with pytest.raises(ProviderSchemaDrift, match="absent"):
+        parse_quote_payload(body, instrument_key=INFY_KEY, symbol="INFY")
+
+
+def test_a_reply_that_only_contains_another_instrument_is_refused() -> None:
+    body = _body({"NSE_EQ:RELIANCE": _quote_entry(instrument_token=RELIANCE_KEY)})
+
+    with pytest.raises(ProviderSchemaDrift, match="absent"):
+        parse_quote_payload(body, instrument_key=INFY_KEY, symbol="INFY")
+
+
+def test_the_segment_comes_from_the_requested_key_not_a_hardcoded_exchange() -> None:
+    """A BSE request must not be answered by an NSE-labelled entry for the same symbol."""
+    nse_entry = _quote_entry()
+    bse_key = "BSE_EQ|INE009A01021"
+
+    with pytest.raises(ProviderSchemaDrift, match="absent"):
+        parse_quote_payload(
+            _body({"NSE_EQ:INFY": nse_entry}), instrument_key=bse_key, symbol="INFY"
+        )
+
+    bse_entry = _quote_entry(instrument_token=bse_key)
+    quote = parse_quote_payload(
+        _body({"BSE_EQ:INFY": bse_entry}), instrument_key=bse_key, symbol="INFY"
+    )
+    assert quote.bid == Decimal("1612.35")
+
+
+_AFTER_HOURS_EMPTY_LEVEL = [{"price": 0.0, "quantity": 0}]
 
 
 @pytest.mark.parametrize(
-    "depth",
+    "overrides",
     [
-        {
-            "buy": [{"quantity": 0, "price": 0.0, "orders": 0}],
-            "sell": [{"quantity": 80, "price": 1500.6}],
-        },
-        {
-            "buy": [{"quantity": 120, "price": 1500.4}],
-            "sell": [{"quantity": 0, "price": 0.0, "orders": 0}],
-        },
-        {"buy": [{"quantity": 0, "price": 1500.4}], "sell": [{"quantity": 80, "price": 1500.6}]},
-        {"buy": [{"quantity": 120, "price": 1500.4}], "sell": [{"quantity": 0, "price": 1500.6}]},
-    ],
-    ids=[
-        "no-bid-resting",
-        "no-ask-resting",
-        "priced-bid-zero-quantity",
-        "priced-ask-zero-quantity",
+        pytest.param(
+            {
+                "depth": {
+                    "buy": _AFTER_HOURS_EMPTY_LEVEL,
+                    "sell": [{"price": 1612.45, "quantity": 5}],
+                }
+            },
+            id="zero-bid",
+        ),
+        pytest.param(
+            {
+                "depth": {
+                    "buy": [{"price": 1612.35, "quantity": 5}],
+                    "sell": _AFTER_HOURS_EMPTY_LEVEL,
+                }
+            },
+            id="zero-ask",
+        ),
+        pytest.param(
+            {"depth": {"buy": _AFTER_HOURS_EMPTY_LEVEL, "sell": _AFTER_HOURS_EMPTY_LEVEL}},
+            id="both-sides-empty",
+        ),
+        pytest.param({"last_price": 0.0}, id="zero-last-price"),
+        pytest.param(
+            {
+                "depth": {
+                    "buy": [{"price": 1612.35, "quantity": 0}],
+                    "sell": [{"price": 1612.45, "quantity": 5}],
+                }
+            },
+            id="bid-priced-but-nothing-resting",
+        ),
+        pytest.param(
+            {
+                "depth": {
+                    "buy": [{"price": 1612.35, "quantity": 5}],
+                    "sell": [{"price": 1612.45, "quantity": 0}],
+                }
+            },
+            id="ask-priced-but-nothing-resting",
+        ),
     ],
 )
-def test_a_side_with_nothing_resting_is_not_manufactured_into_a_zero_price(
-    depth: dict[str, Any],
+def test_a_book_with_no_priced_side_is_refused_rather_than_quoted_as_zero(
+    overrides: dict[str, Any],
 ) -> None:
-    """Seen live after the close: the best bid level was price 0.0, quantity 0.
+    """After hours the best bid can be `{price: 0.0, quantity: 0}`. A zero bid would give a mid of
+    half the ask and a 200% spread, and `Quote` has no way to say "no bid", so this fails closed --
+    as unavailable, not as drift."""
+    body = _body({"NSE_EQ:INFY": _quote_entry(**overrides)})
 
-    That is the absence of a bid, not a bid of zero. It is refused rather than turned into a
-    two-sided quote with a price nobody offered, and it is not mislabelled schema drift.
-    """
-    body = {"status": "success", "data": {"NSE_EQ:INFY": _entry(depth=depth)}}
+    with pytest.raises(ProviderQuoteUnavailable):
+        parse_quote_payload(body, instrument_key=INFY_KEY, symbol="INFY")
 
     with pytest.raises(UpstoxDataError) as raised:
-        _quote(body)
+        _quote_client(_QuoteTransport(body)).fetch_market_quote(INFY_KEY, "INFY")
 
     assert raised.value.code == AcquisitionFailureCode.DATASET_EMPTY
+    assert raised.value.code != AcquisitionFailureCode.PROVIDER_SCHEMA_DRIFT
+    assert raised.value.retryable is True
 
 
 @pytest.mark.parametrize(
     "body",
     [
-        {"status": "success", "data": {}},
-        {"status": "success"},
-        {"status": "success", "data": {"NSE_EQ:INFY": {"instrument_token": INFY_KEY}}},
-        {"status": "success", "data": {"NSE_EQ:INFY": _entry(timestamp="not a time")}},
+        pytest.param(b"not json", id="not-json"),
+        pytest.param(b"\xff\xfe", id="not-utf8"),
+        pytest.param(b"[]", id="top-level-list"),
+        pytest.param(b'{"status": "success"}', id="no-data"),
+        pytest.param(b'{"status": "success", "data": []}', id="data-not-an-object"),
+        pytest.param(b'{"status": "success", "data": {}}', id="data-empty"),
+        pytest.param(_body({"NSE_EQ:INFY": []}), id="entry-not-an-object"),
+        pytest.param(_body({"NSE_EQ:INFY": {"instrument_token": INFY_KEY}}), id="entry-bare"),
+        pytest.param(
+            _body({"NSE_EQ:INFY": _quote_entry(depth={"buy": [], "sell": []})}),
+            id="empty-ladders",
+        ),
+        pytest.param(
+            _body({"NSE_EQ:INFY": _quote_entry(depth={"sell": [{"price": 1.0, "quantity": 1}]})}),
+            id="no-buy-side",
+        ),
+        pytest.param(_body({"NSE_EQ:INFY": _quote_entry(last_price="abc")}), id="text-price"),
+        pytest.param(_body({"NSE_EQ:INFY": _quote_entry(last_price=None)}), id="null-price"),
+        pytest.param(_body({"NSE_EQ:INFY": _quote_entry(last_price=True)}), id="boolean-price"),
+        pytest.param(
+            _body({"NSE_EQ:INFY": _quote_entry(last_price=-1612.4)}), id="negative-last-price"
+        ),
+        pytest.param(
+            _body(
+                {
+                    "NSE_EQ:INFY": _quote_entry(
+                        depth={
+                            "buy": [{"price": -0.02, "quantity": 5}],
+                            "sell": [{"price": 1612.45, "quantity": 5}],
+                        }
+                    )
+                }
+            ),
+            id="negative-bid",
+        ),
+        pytest.param(
+            _body(
+                {
+                    "NSE_EQ:INFY": _quote_entry(
+                        depth={
+                            "buy": [{"price": 1612.50, "quantity": 5}],
+                            "sell": [{"price": 1612.45, "quantity": 5}],
+                        }
+                    )
+                }
+            ),
+            id="crossed-book",
+        ),
+        pytest.param(
+            _body(
+                {
+                    "NSE_EQ:INFY": _quote_entry(
+                        depth={
+                            "buy": [{"price": 1612.35, "quantity": True}],
+                            "sell": [{"price": 1612.45, "quantity": 5}],
+                        }
+                    )
+                }
+            ),
+            id="boolean-quantity",
+        ),
+        pytest.param(
+            _body(
+                {
+                    "NSE_EQ:INFY": _quote_entry(
+                        depth={
+                            "buy": [{"price": 1612.35, "quantity": 2.5}],
+                            "sell": [{"price": 1612.45, "quantity": 5}],
+                        }
+                    )
+                }
+            ),
+            id="fractional-quantity",
+        ),
+        pytest.param(
+            _body({"NSE_EQ:INFY": _quote_entry(timestamp="2026-10-01T14:05:10")}),
+            id="timestamp-without-a-zone",
+        ),
+        pytest.param(_body({"NSE_EQ:INFY": _quote_entry(timestamp=1759307110)}), id="numeric-time"),
+        pytest.param(_body({"NSE_EQ:INFY": _quote_entry(timestamp="soon")}), id="garbled-time"),
+        pytest.param(
+            b'{"status": "success", "data": {"NSE_EQ:INFY": {"last_price": NaN}}}',
+            id="nan-literal",
+        ),
     ],
-    ids=["empty-data", "no-data", "no-fields", "bad-timestamp"],
 )
-def test_a_malformed_reply_still_fails_closed_as_schema_drift(body: dict[str, Any]) -> None:
+def test_a_genuinely_malformed_reply_still_fails_closed_as_schema_drift(body: bytes) -> None:
+    with pytest.raises(ProviderSchemaDrift):
+        parse_quote_payload(body, instrument_key=INFY_KEY, symbol="INFY")
+
     with pytest.raises(UpstoxDataError) as raised:
-        _quote(body)
+        _quote_client(_QuoteTransport(body)).fetch_market_quote(INFY_KEY, "INFY")
 
     assert raised.value.code == AcquisitionFailureCode.PROVIDER_SCHEMA_DRIFT
 
 
-def test_an_entry_keyed_by_neither_form_is_found_by_its_own_instrument_token() -> None:
-    """The caller's label need not equal the provider's trading symbol (`M&M`, `BAJAJ-AUTO`)."""
-    quote = _quote({"status": "success", "data": {"NSE_EQ:SOME-OTHER-LABEL": _entry()}})
+def test_a_nan_price_is_schema_drift_not_an_uncaught_arithmetic_error() -> None:
+    """`Quote.__post_init__` compares prices, and comparing a NaN `Decimal` raises
+    `InvalidOperation` -- which is not a `ValueError` and used to escape the parser untyped."""
+    body = b"".join(
+        [
+            b'{"status": "success", "data": {"NSE_EQ:INFY": ',
+            json.dumps(_quote_entry(last_price="NaN")).encode("utf-8"),
+            b"}}",
+        ]
+    )
 
-    assert quote.bid == Decimal("1500.4")
-
-
-def test_two_entries_claiming_the_instrument_are_refused_as_ambiguous() -> None:
-    body = {"status": "success", "data": {"NSE_EQ:A": _entry(), "NSE_EQ:B": _entry()}}
-
-    with pytest.raises(UpstoxDataError) as raised:
-        _quote(body)
-
-    assert raised.value.code == AcquisitionFailureCode.PROVIDER_SCHEMA_DRIFT
-
-
-def test_a_crossed_book_is_a_typed_failure_not_a_raw_value_error() -> None:
-    depth = {
-        "buy": [{"quantity": 10, "price": 1500.9, "orders": 1}],
-        "sell": [{"quantity": 10, "price": 1500.1, "orders": 1}],
-    }
-
-    with pytest.raises(UpstoxDataError) as raised:
-        _quote({"status": "success", "data": {"NSE_EQ:INFY": _entry(depth=depth)}})
-
-    assert raised.value.code == AcquisitionFailureCode.PROVIDER_SCHEMA_DRIFT
-
-
-def test_an_entry_with_no_instrument_token_is_found_by_the_symbol_form_of_its_key() -> None:
-    """With no token to match on, the symbol-form key is the only way to find it."""
-    entry = _entry()
-    del entry["instrument_token"]
-
-    quote = _quote({"status": "success", "data": {"NSE_EQ:INFY": entry}})
-
-    assert quote.bid == Decimal("1500.4")
+    with pytest.raises(ProviderSchemaDrift):
+        parse_quote_payload(body, instrument_key=INFY_KEY, symbol="INFY")
