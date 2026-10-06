@@ -1,6 +1,7 @@
 import { Command } from "cmdk";
 import {
   BookOpenCheck,
+  Bot,
   Briefcase,
   Calculator,
   CandlestickChart,
@@ -19,6 +20,10 @@ import { NavLink, useLocation, useNavigate } from "react-router";
 import { ageLabel, date, daysSince } from "../lib/format";
 import { usePaperOrders, useSearch, useStatus, useUpdate, useUpdateSettings } from "../lib/queries";
 import type { Theme } from "../lib/types";
+import { CopilotButton } from "./copilot/CopilotButton";
+import { CopilotDrawer } from "./copilot/CopilotDrawer";
+import { CopilotProvider } from "./copilot/CopilotProvider";
+import { SecondOpinionHost } from "./copilot/SecondOpinionHost";
 import { Logo } from "./Logo";
 import { Badge, cx } from "./ui";
 
@@ -28,6 +33,7 @@ const NAV = [
   { to: "/lab", label: "Strategy Lab", icon: FlaskConical },
   { to: "/portfolio", label: "Portfolio", icon: Briefcase },
   { to: "/paper", label: "Paper trading", icon: BookOpenCheck },
+  { to: "/agents", label: "Agents", icon: Bot },
   { to: "/tools", label: "Tools", icon: Calculator },
 ];
 
@@ -52,23 +58,27 @@ export function Layout({ children }: { children: ReactNode }) {
   }, [location.pathname]);
 
   return (
-    <div className="flex h-full">
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2">
-        Skip to content
-      </a>
-      <Sidebar onSearch={() => setPaletteOpen(true)} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <MobileBar onSearch={() => setPaletteOpen(true)} />
-        <TopHeader onSearch={() => setPaletteOpen(true)} />
-        <UpdateNotice />
-        <main id="main" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto outline-none">
-          <div className="q-fade-in mx-auto w-full max-w-[1320px] px-6 py-7 lg:px-10" key={location.pathname}>
-            {children}
-          </div>
-        </main>
+    <CopilotProvider>
+      <div className="flex h-full">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2">
+          Skip to content
+        </a>
+        <Sidebar onSearch={() => setPaletteOpen(true)} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <MobileBar onSearch={() => setPaletteOpen(true)} />
+          <TopHeader onSearch={() => setPaletteOpen(true)} />
+          <UpdateNotice />
+          <main id="main" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto outline-none">
+            <div className="q-fade-in mx-auto w-full max-w-[1320px] px-6 py-7 lg:px-10" key={location.pathname}>
+              {children}
+            </div>
+          </main>
+        </div>
+        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       </div>
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
-    </div>
+      <CopilotDrawer />
+      <SecondOpinionHost />
+    </CopilotProvider>
   );
 }
 
@@ -320,6 +330,8 @@ function TopHeader({ onSearch }: { onSearch: () => void }) {
           </div>
         )}
 
+        <CopilotButton />
+
         <button
           type="button"
           onClick={onSearch}
@@ -383,6 +395,7 @@ function MobileBar({ onSearch }: { onSearch: () => void }) {
             {isShariah ? <Scale className="size-3" /> : <LayoutDashboard className="size-3" />}
             <span>{isShariah ? "Shariah" : "Quant"}</span>
           </button>
+          <CopilotButton compact />
           <button type="button" onClick={onSearch} aria-label="Search stocks" className="rounded-lg p-2 text-ink-2 hover:bg-surface-2">
             <Search className="size-5" aria-hidden />
           </button>
