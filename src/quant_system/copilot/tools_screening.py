@@ -58,6 +58,13 @@ def _number(value: Any) -> float | None:
     return number if math.isfinite(number) else None
 
 
+_STATUS_WORDS = {
+    "COMPLIANT": "compliant",
+    "NON_COMPLIANT": "not compliant",
+    "QUESTIONABLE": "questionable",
+}
+
+
 def _ratio(meter: Any) -> dict[str, Any]:
     return {
         "name": meter.metric_name,
@@ -85,8 +92,9 @@ def _standard(evaluation: Any) -> dict[str, Any]:
 
 
 def _not_covered(symbol: str, count: int) -> ToolResult:
+    noun = "company" if count == 1 else "companies"
     message = (
-        f"QuantOS cannot screen {symbol}: its screening data is an illustrative sample of {count} companies "
+        f"QuantOS cannot screen {symbol}: its screening data is an illustrative sample of {count} {noun} "
         f"and {symbol} is not one of them."
     )
     data = {
@@ -129,7 +137,9 @@ def _covered(symbol: str, row: Mapping[str, Any]) -> ToolResult:
         "data_notice": SAMPLE_DATA_NOTICE,
         "disclaimer": SCREENING_DISCLAIMER,
     }
-    verdicts = ", ".join(f"{s['standard']} {s['status']}" for s in standards)
+    verdicts = ", ".join(
+        f"{s['standard']} {_STATUS_WORDS.get(s['status'], s['status'])}" for s in standards
+    )
     return ToolResult(True, f"{symbol}: {verdicts} (sample data)", data)
 
 

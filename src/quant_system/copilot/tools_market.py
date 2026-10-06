@@ -125,7 +125,7 @@ def suggest_screen(ctx: ToolContext, args: Mapping[str, Any]) -> ToolResult:
         return failure("unknown screen", f"Screens I can suggest: stock, {', '.join(SCREENS)}.")
     name = SCREEN_NAMES[screen]
     proposal = Proposal("navigate", f"Open {name}", path)
-    return ToolResult(True, f"suggest opening {name}", {"screen": screen}, proposals=[proposal])
+    return ToolResult(True, f"Suggested opening {name}", {"screen": screen}, proposals=[proposal])
 
 
 def _suggest_stock(ctx: ToolContext, symbol: str) -> ToolResult:
@@ -137,7 +137,7 @@ def _suggest_stock(ctx: ToolContext, symbol: str) -> ToolResult:
     name = found[0]
     proposal = Proposal("navigate", f"Open {name}", f"/stock/{name}", name)
     return ToolResult(
-        True, f"suggest opening {name}", {"screen": "stock", "symbol": name}, proposals=[proposal]
+        True, f"Suggested opening {name}", {"screen": "stock", "symbol": name}, proposals=[proposal]
     )
 
 
@@ -150,7 +150,7 @@ def suggest_second_opinion(ctx: ToolContext, args: Mapping[str, Any]) -> ToolRes
     name = found[0]
     proposal = Proposal("second_opinion", f"Get independent second opinions on {name}", None, name)
     return ToolResult(
-        True, f"suggest a second opinion on {name}", {"symbol": name}, proposals=[proposal]
+        True, f"Suggested a second opinion on {name}", {"symbol": name}, proposals=[proposal]
     )
 
 

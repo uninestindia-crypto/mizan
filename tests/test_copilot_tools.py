@@ -19,6 +19,7 @@ from tests.copilot_fakes import (
     FakeIndex,
     FakeNews,
     FakeQuotes,
+    FakeShariah,
     make_context,
 )
 
@@ -401,3 +402,23 @@ def test_the_number_of_watchlist_stocks_is_written_as_a_plain_count(
 ) -> None:
     context = make_context(watchlist=lambda: symbols)
     assert _call("watchlist", {}, context).summary == summary
+
+
+class _OneCompany(FakeShariah):
+    def company_count(self) -> int:
+        return 1
+
+
+def test_summaries_read_as_plain_sentences_not_codes() -> None:
+    summary = _call("shariah_check", {"symbol": "AAA"}).summary
+    assert "COMPLIANT" not in summary and "compliant" in summary and "(sample data)" in summary
+    suggestion = _call("suggest_second_opinion", {"symbol": "AAA"}).summary
+    assert suggestion == "Suggested a second opinion on AAA"
+
+
+def test_a_sample_of_one_company_is_not_called_companies() -> None:
+    result = _call("shariah_check", {"symbol": "BBB"}, make_context(shariah=_OneCompany()))
+    assert (
+        "sample of 1 company " in result.data["message"]
+        and "1 companies" not in result.data["message"]
+    )
