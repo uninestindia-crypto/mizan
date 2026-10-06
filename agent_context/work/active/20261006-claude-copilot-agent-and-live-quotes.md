@@ -86,24 +86,50 @@ or runs a repository-wide command; the coordinator (this session) stages explici
 
 ## Plan
 
-1. Record and notice. IN PROGRESS
-2. Halal docs review (findings file). 
-3. Copilot engine, test-first (fake LLM). 
-4. Multi-model verification, test-first.
-5. News and sentiment (injectable fetcher).
-6. Saved agents and built-in recipes.
-7. Live Upstox quotes (B).
-8. Frontend.
-9. Gates, real-browser run, minimal live smoke with the environment's keys (names only logged, never values).
-10. Commit explicit paths, push, PR. Merge and release are the founder's call.
+1. Record and notice. DONE
+2. Halal docs review (`reports/halal_docs_review/REVIEW.md`). DONE; founder decisions listed there are still open.
+3. Copilot engine, test-first with a fake LLM. DONE
+4. Independent multi-model second opinions, test-first. DONE
+5. News and tone (injectable fetcher). DONE
+6. Saved agents and ready-made recipes. DONE
+7. Live Upstox prices, read-only. DONE (one real request while the market was open; after-hours only against invented replies)
+8. Frontend: Copilot drawer, Second opinion, Agents screen, live price chips. DONE, in review (see below)
+9. Gates, adversarial review, real-browser checks. Adversarial backend review DONE and its findings fixed; browser check of the Agents screen DONE (frontend findings queued); browser check of the Copilot panel IN PROGRESS.
+10. Push, PR. The founder decides on merge and release (the branch must receive `main` by merge, never rebase).
+
+## Workers
+
+Parallel workers ran on disjoint paths under one coordinator (this session), as the founder asked on 2026-10-06:
+live-price backend, Copilot screens, Agents and live-chip screens, an independent adversarial reviewer (read-only), three
+fix workers (transport/guard/routes; verify/news/live honesty; rules/units/copy/wiring) and two browser QA workers.
+No worker committed; the coordinator verified each report by re-running its gates and committed explicit paths.
 
 ## Commands and outcomes
 
-(updated at checkpoints)
+- Backend: `uv run --frozen pytest tests -q` with the Upstox variables unset and an isolated `--basetemp`:
+  3866 passed, 17 skipped (Windows-only), 0 failed, at `b643eefca`, before the last small fixes. Re-run before PR.
+- Copilot and live subset after the last fixes: `pytest tests/test_copilot_*.py tests/test_live_*.py tests/test_no_terminal_copy.py`
+  1203 passed.
+- Static gates on every changed Python file: `ruff check`, `ruff format --check`, `mypy --platform win32`, `vulture
+  --min-confidence 80`, `detect-secrets scan`, `node scripts/check-code.mjs`, `node scripts/check-tests.mjs`: clean.
+- Frontend (from `frontend/`): `npx tsc --noEmit -p .` clean, `npx vitest run` 27 files / 335 tests passed, `npm run build` OK.
+- Adversarial review: 4 P1, 13 P2 and a set of P3 findings, all but the unreproducible ones fixed and test-proven.
+- Live smoke: one read-only request for one symbol through the live service while the market was open returned a
+  `LIVE` price with a time. No key, header or body was printed.
+- Browser QA (Chromium, fake AI, fake Upstox, no real network): Agents screen and live chips checked; findings below.
 
 ## Files changed
 
-(updated at checkpoints)
+- Engine: `src/quant_system/copilot/**` (new: loop, tools, rules, guard, finalise, verify, news, agents, workflow),
+  `src/quant_system/live/**` (new), `src/quant_system/server/v2/{copilot_routes,copilot_validation,copilot_wiring,live_routes}.py`
+  (new), `router.py` (include lines and one import), `spa.py` (the `/agents` route), `credentials.py` (refuse a key with
+  a space or line break).
+- Screens: `frontend/src/components/{copilot,agents,live}/**`, `frontend/src/lib/{copilot,agents,live}.ts`,
+  `frontend/src/pages/Agents.tsx`, edits to `Layout.tsx`, `Home.tsx`, `Stock.tsx`, `App.tsx`.
+- Tests: `tests/test_copilot_*.py`, `tests/test_live_*.py`, `tests/copilot_fakes.py`, `tests/live_fakes.py`,
+  `tests/test_no_terminal_copy.py`, `tests/test_credentials_import.py`, frontend tests beside the code.
+- Records: `agent_context/decisions/20261006-{no-terminal-law,copilot-api-contract,copilot-design}.md`,
+  `reports/halal_docs_review/REVIEW.md`, `AGENTS.md` (one bullet), `agent_context/GOAL.md` (tripwire 9).
 
 ## Blockers and conflicts
 
@@ -113,8 +139,13 @@ Same position as the earlier notices: edits proceed on the founder's explicit in
 
 ## Stop point
 
-Record filed; no product code edited yet.
+All backend work and both feature sets are committed and pushed on `claude/wonderful-wozniak-6ek6zl`. Open: frontend
+findings from the browser checks (focus return after a confirmation, screen-reader links from a field to its problem,
+dark-theme contrast of the red delete button, top bar overflow at an 800 px window, an unlabelled end-of-day price
+beside a labelled live one, and smaller copy items) and the browser check of the Copilot panel.
 
 ## Next safe action
 
-Halal docs review, then the Copilot engine tests.
+Fix the frontend findings, re-run every gate and the whole backend suite, merge `main` into the branch, then ask the
+founder before opening a PR. Merge and release are the founder's call. Founder decisions still open are in
+`reports/halal_docs_review/REVIEW.md` and `agent_context/GOAL.md` section 7.
