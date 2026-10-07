@@ -94,6 +94,7 @@ from quant_system.server.v2.tools import (
     position_size,
     trade_costs,
 )
+from quant_system.server.v2.update_routes import router as update_router
 from quant_system.server.v2.updates import UpdateChecker
 
 logger = logging.getLogger(__name__)
@@ -1043,6 +1044,7 @@ def register_api(app: FastAPI) -> None:
     app.include_router(router)
     app.include_router(copilot_router, prefix="/api/v2")
     app.include_router(live_router, prefix="/api/v2")
+    app.include_router(update_router, prefix="/api/v2")
     try:
         from quant_system.shariah.api.v1.router import api_router as shariah_router
 

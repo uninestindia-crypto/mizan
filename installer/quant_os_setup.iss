@@ -133,6 +133,8 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDi
 Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "Setting up the Microsoft component QuantOS uses to show its window..."; Flags: waituntilterminated runhidden; Check: WebView2Missing
 #endif
 Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+; An update started from inside QuantOS ("Update and restart") runs this installer silently with /RELAUNCH=1, so it opens QuantOS again.
+Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Flags: nowait runasoriginaluser; Check: WantsRelaunch
 
 [UninstallDelete]
 ; Caches only. data\ and logs\ (research data and evidence) are kept.
@@ -196,4 +198,10 @@ function WebView2Missing: Boolean;
 begin
   Result := not (WebView2VersionIn(HKLM32, WebView2Key) or WebView2VersionIn(HKLM64, WebView2Key) or
                  WebView2VersionIn(HKCU, WebView2Key));
+end;
+
+{ True when QuantOS started this installer to update itself (it passes /RELAUNCH=1): open QuantOS again afterwards. }
+function WantsRelaunch: Boolean;
+begin
+  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
 end;
