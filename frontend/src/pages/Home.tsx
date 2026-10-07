@@ -3,12 +3,11 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { Sparkline } from "../components/charts";
 import { AsOf, DataGate, Illustration } from "../components/common";
-import { LiveChip, LiveConnectNote } from "../components/live/LivePrice";
-import { Badge, Button, Card, CardHeader, Delta, EmptyState, PageHeader, Segmented, Skeleton, Stat } from "../components/ui";
+import { ModeFilterNote, SymbolLine, useModeFilter } from "../components/mode";
+import { Watchlist } from "../components/Watchlist";
+import { Badge, Button, Card, CardHeader, Delta, PageHeader, Segmented, Skeleton, Stat } from "../components/ui";
 import { ageLabel, date, daysSince, inr, inrCompact, inrSigned, num, pct, tone } from "../lib/format";
-import { type LiveQuotes, useLiveQuotes } from "../lib/live";
-import { useOverview, usePaperBooks, usePaperMine, usePaperOrders, usePortfolio, useStatus, useWatchlist } from "../lib/queries";
-import type { WatchRow } from "../lib/types";
+import { useOverview, usePaperBooks, usePaperMine, usePaperOrders, usePortfolio, useStatus } from "../lib/queries";
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -170,7 +169,8 @@ function PortfolioCard() {
 function Movers() {
   const overview = useOverview();
   const [side, setSide] = useState<"gainers" | "losers">("gainers");
-  const rows = overview.data?.[side] ?? [];
+  const filter = useModeFilter(overview.data?.[side] ?? [], "home-movers");
+  const rows = filter.visible;
   return (
     <Card padded={false}>
       <div className="flex items-center justify-between gap-3 px-5 pt-5">
@@ -189,6 +189,7 @@ function Movers() {
           ]}
         />
       </div>
+      <ModeFilterNote filter={filter} className="px-5 pt-3" />
       <ul className="mt-3 divide-y divide-line">
         {overview.isPending &&
           Array.from({ length: 5 }, (_, i) => (
@@ -204,7 +205,7 @@ function Movers() {
                   {side === "gainers" ? <TrendingUp className="size-4" aria-hidden /> : <TrendingDown className="size-4" aria-hidden />}
                 </span>
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold text-ink">{m.symbol}</div>
+                  <SymbolLine symbol={m.symbol} status={filter.statusOf(m.symbol)} />
                   <div className="truncate text-[12.5px] text-ink-3">{m.name}</div>
                 </div>
               </div>
@@ -218,64 +219,6 @@ function Movers() {
           </li>
         ))}
       </ul>
-    </Card>
-  );
-}
-
-function WatchlistRow({ w, quotes }: { w: WatchRow; quotes: LiveQuotes | undefined }) {
-  return (
-    <li>
-      <Link to={`/stock/${w.symbol}`} className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-surface-2">
-        <div className="min-w-0">
-          <div className="text-sm font-semibold text-ink">{w.symbol}</div>
-          <div className="truncate text-[12.5px] text-ink-3">{w.name ?? "Not in data"}</div>
-          <LiveChip symbol={w.symbol} quotes={quotes} />
-        </div>
-        <Sparkline values={w.spark ?? []} width={84} height={28} />
-        <div className="w-24 shrink-0 text-right">
-          <div className="num text-sm font-medium text-ink">{inr(w.close)}</div>
-          <Delta value={w.chg_1d} className="text-[12.5px]">{pct(w.chg_1d, 2)}</Delta>
-          <div className="text-[11.5px] text-ink-3">End of day</div>
-        </div>
-      </Link>
-    </li>
-  );
-}
-
-function Watchlist() {
-  const watch = useWatchlist();
-  const rows = watch.data ?? [];
-  const live = useLiveQuotes(rows.map((w) => w.symbol));
-  return (
-    <Card padded={false} className="h-full">
-      <div className="px-5 pt-5">
-        <h2 className="text-[15px] font-semibold text-ink">Watchlist</h2>
-        <p className="mt-0.5 text-[13px] text-ink-3">Three-month trend</p>
-        <LiveConnectNote quotes={live.data} className="mt-2" />
-      </div>
-      {watch.isPending ? (
-        <div className="p-5">
-          <Skeleton className="h-32" />
-        </div>
-      ) : rows.length === 0 ? (
-        <EmptyState
-          title="Nothing on your watchlist"
-          body="Open any stock and choose Watch to follow it here."
-          action={
-            <Link to="/markets">
-              <Button variant="secondary" size="sm">
-                Browse markets
-              </Button>
-            </Link>
-          }
-        />
-      ) : (
-        <ul className="mt-3 divide-y divide-line">
-          {rows.map((w) => (
-            <WatchlistRow key={w.symbol} w={w} quotes={live.data} />
-          ))}
-        </ul>
-      )}
     </Card>
   );
 }

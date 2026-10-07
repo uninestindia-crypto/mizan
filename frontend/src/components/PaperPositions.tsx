@@ -2,7 +2,11 @@ import { Link } from "react-router";
 import { inr, inrSigned, int, pct } from "../lib/format";
 import { paperBookPickNote } from "../lib/picks";
 import type { PaperPosition } from "../lib/types";
+import type { ShariahStatus } from "../lib/shariahStatus";
 import { PickSecondOpinion } from "./copilot/PickSecondOpinion";
+import { PaperBookNote } from "./mode/PaperBookNote";
+import { ShariahBadge } from "./mode/ShariahBadge";
+import { type ModeLabels, useModeLabels } from "./mode/useModeLabels";
 import { Card, CardHeader, Delta } from "./ui";
 
 const HEAD = "px-3 py-2";
@@ -21,21 +25,29 @@ const COLUMNS: Array<[string, boolean]> = [
 
 /** What a paper book holds today, each stock with a button to get an independent second opinion on it. */
 export function PaperPositionsCard({ positions, bookName }: { positions: PaperPosition[]; bookName: string }) {
+  const labels = useModeLabels(positions.map((p) => p.symbol));
   return (
     <Card>
       <CardHeader title="What it holds" />
       {positions.length === 0 ? (
         <p className="text-sm text-ink-3">It holds no shares yet.</p>
       ) : (
-        <PositionsTable positions={positions} bookName={bookName} />
+        <PositionsTable positions={positions} bookName={bookName} labels={labels} />
       )}
     </Card>
   );
 }
 
-function PositionsTable({ positions, bookName }: { positions: PaperPosition[]; bookName: string }) {
+interface TableProps {
+  positions: PaperPosition[];
+  bookName: string;
+  labels: ModeLabels;
+}
+
+function PositionsTable({ positions, bookName, labels }: TableProps) {
   return (
     <div className="overflow-x-auto">
+      <PaperBookNote labels={labels} className="mb-3" />
       <table className="w-full min-w-[640px] text-sm">
         <thead>
           <tr className={HEAD_ROW}>
@@ -48,7 +60,7 @@ function PositionsTable({ positions, bookName }: { positions: PaperPosition[]; b
         </thead>
         <tbody className="divide-y divide-line">
           {positions.map((p) => (
-            <PositionRow key={p.symbol} position={p} bookName={bookName} />
+            <PositionRow key={p.symbol} position={p} bookName={bookName} status={labels.statusOf(p.symbol)} />
           ))}
         </tbody>
       </table>
@@ -56,13 +68,22 @@ function PositionsTable({ positions, bookName }: { positions: PaperPosition[]; b
   );
 }
 
-function PositionRow({ position: p, bookName }: { position: PaperPosition; bookName: string }) {
+interface RowProps {
+  position: PaperPosition;
+  bookName: string;
+  status: ShariahStatus | null;
+}
+
+function PositionRow({ position: p, bookName, status }: RowProps) {
   return (
     <tr>
       <td className="px-3 py-2 font-medium text-ink">
-        <Link to={`/stock/${p.symbol}`} className="hover:underline">
-          {p.symbol}
-        </Link>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Link to={`/stock/${p.symbol}`} className="hover:underline">
+            {p.symbol}
+          </Link>
+          <ShariahBadge compact symbol={p.symbol} status={status} />
+        </div>
       </td>
       <td className="num px-3 py-2 text-right text-ink-2">{int(p.quantity)}</td>
       <td className="num px-3 py-2 text-right text-ink-2">{inr(p.average_price)}</td>

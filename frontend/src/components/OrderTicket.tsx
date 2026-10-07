@@ -6,6 +6,9 @@ import { paperBookPickNote } from "../lib/picks";
 import { DASH, date, inr, int } from "../lib/format";
 import type { OrdersFreshness, PaperQueuedOrder, Placement } from "../lib/types";
 import { PickSecondOpinion } from "./copilot/PickSecondOpinion";
+import { PaperBookNote } from "./mode/PaperBookNote";
+import { ShariahBadge } from "./mode/ShariahBadge";
+import { useModeLabels } from "./mode/useModeLabels";
 import { PlacementDialog, type PlacementTarget } from "./PlacementDialog";
 import { Badge, Button, Callout, Card, CardHeader, Field, Input } from "./ui";
 
@@ -63,6 +66,7 @@ export function OrderTicket({
   const [recording, setRecording] = useState<PlacementTarget | null>(null);
   const yourCapital = Number(mine);
   const ticket = useMemo(() => buildTicket(queued, bookCapital, yourCapital), [queued, bookCapital, yourCapital]);
+  const labels = useModeLabels(queued.map((o) => o.symbol));
   const asOf = orders.as_of;
   const noteFor = (symbol: string, side: "BUY" | "SELL") =>
     placements.find((p) => p.as_of === asOf && p.symbol === symbol && p.side === side) ?? null;
@@ -172,6 +176,7 @@ export function OrderTicket({
             </p>
           )}
 
+          <PaperBookNote labels={labels} />
           <div className="overflow-x-auto">
             <table className="w-full min-w-[480px] text-sm">
               <caption className="sr-only">Orders to place, scaled to your account size</caption>
@@ -197,6 +202,7 @@ export function OrderTicket({
                         <Link to={`/stock/${row.symbol}`} className="hover:underline">
                           {row.symbol}
                         </Link>
+                        <ShariahBadge compact symbol={row.symbol} status={labels.statusOf(row.symbol)} />
                         <PickSecondOpinion symbol={row.symbol} note={pickNoteFor(bookName, row)} />
                       </div>
                     </td>

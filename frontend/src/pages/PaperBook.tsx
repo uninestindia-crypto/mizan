@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { EquityChart, type EquitySeries } from "../components/charts";
 import { DataGate } from "../components/common";
+import { PaperBookNote } from "../components/mode/PaperBookNote";
+import { ShariahBadge } from "../components/mode/ShariahBadge";
+import { useModeLabels } from "../components/mode/useModeLabels";
 import { OrderTicket } from "../components/OrderTicket";
 import { PaperPositionsCard } from "../components/PaperPositions";
 import { PlacementTrackingCard } from "../components/PlacementTrackingCard";
@@ -142,6 +145,7 @@ function PaperBookDetailView({
     ];
   }, [book.curve]);
 
+  const labels = useModeLabels(book.trades.map((t) => t.symbol));
   const targetWhat =
     book.scope.kind === "stocks"
       ? (book.scope.symbols ?? []).join(", ") || "None"
@@ -264,6 +268,7 @@ function PaperBookDetailView({
       {/* Card: Trades so far */}
       <Card>
         <CardHeader title="Trades so far" />
+        {book.trades.length > 0 && <PaperBookNote labels={labels} className="mb-3" />}
         {book.trades.length === 0 ? (
           <p className="text-sm text-ink-3">No trades yet. The first orders fill at the next session's open.</p>
         ) : (
@@ -287,9 +292,12 @@ function PaperBookDetailView({
                       <Badge tone={t.side === "BUY" ? "up" : "down"}>{t.side}</Badge>
                     </td>
                     <td className="px-3 py-2 font-medium text-ink">
-                      <Link to={`/stock/${t.symbol}`} className="hover:underline">
-                        {t.symbol}
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <Link to={`/stock/${t.symbol}`} className="hover:underline">
+                          {t.symbol}
+                        </Link>
+                        <ShariahBadge compact symbol={t.symbol} status={labels.statusOf(t.symbol)} />
+                      </div>
                     </td>
                     <td className="num px-3 py-2 text-right text-ink-2">{int(t.quantity)}</td>
                     <td className="num px-3 py-2 text-right text-ink-2">{inr(t.price)}</td>

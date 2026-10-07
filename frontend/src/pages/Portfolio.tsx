@@ -4,6 +4,9 @@ import { Link } from "react-router";
 import { Donut } from "../components/charts";
 import { DataGate, Illustration } from "../components/common";
 import { type HoldingDraft, HoldingDialog } from "../components/HoldingDialog";
+import { ModeFilterNote } from "../components/mode/ModeFilterNote";
+import { ShariahBadge } from "../components/mode/ShariahBadge";
+import { useModeFilter } from "../components/mode/useModeFilter";
 import { Button, Callout, Card, CardHeader, Delta, Dialog, EmptyState, PageHeader, Skeleton, Stat } from "../components/ui";
 import { date, inr, inrCompact, inrSigned, int, num, pct, tone } from "../lib/format";
 import { useDeleteHolding, usePortfolio } from "../lib/queries";
@@ -34,6 +37,7 @@ function PortfolioContent({ onEdit, onAdd }: { onEdit: (initial: Partial<Holding
   const portfolio = usePortfolio();
   const remove = useDeleteHolding();
   const [deleting, setDeleting] = useState<PortfolioRow | null>(null);
+  const filter = useModeFilter(portfolio.data?.holdings ?? [], "portfolio");
 
   if (portfolio.isPending) return <Skeleton className="h-96" />;
   const data = portfolio.data;
@@ -90,6 +94,7 @@ function PortfolioContent({ onEdit, onAdd }: { onEdit: (initial: Partial<Holding
         <Card padded={false} className="xl:col-span-2">
           <div className="px-5 pt-5">
             <CardHeader title="Holdings" subtitle={`${int(data.holdings.length)} positions`} />
+            <ModeFilterNote filter={filter} extra="The totals above still include them." className="-mt-2 mb-3" />
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-sm">
@@ -107,12 +112,15 @@ function PortfolioContent({ onEdit, onAdd }: { onEdit: (initial: Partial<Holding
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {data.holdings.map((h) => (
+                {filter.visible.map((h) => (
                   <tr key={h.id} className="group">
                     <td className="px-5 py-3">
-                      <Link to={`/stock/${h.symbol}`} className="font-semibold text-ink hover:underline">
-                        {h.symbol}
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <Link to={`/stock/${h.symbol}`} className="font-semibold text-ink hover:underline">
+                          {h.symbol}
+                        </Link>
+                        <ShariahBadge compact symbol={h.symbol} status={filter.statusOf(h.symbol)} />
+                      </div>
                       <div className="text-[12px] text-ink-3">
                         {h.error ?? `Bought ${date(h.buy_date)}`}
                         {h.note ? ` · ${h.note}` : ""}
