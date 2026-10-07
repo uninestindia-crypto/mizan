@@ -69,6 +69,16 @@ def live_prices_status() -> dict[str, Any]:
     return key_readiness(services().credentials)
 
 
+def shariah_mode() -> bool:
+    """Whether the person has switched the app to Shariah mode (the saved setting). Unreadable means off."""
+    from quant_system.server.v2.router import services
+
+    try:
+        return bool(services().state.settings().shariah_mode)
+    except Exception:
+        return False
+
+
 def _quotes() -> Any:
     from quant_system.server.v2.live_routes import quote_service
 

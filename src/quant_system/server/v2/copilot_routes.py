@@ -165,6 +165,7 @@ def _ask_ai(
     body: ChatRequest,
     registry: ToolRegistry,
     scope: tuple[frozenset[str] | None, str | None],
+    shariah_mode: bool,
 ) -> AgentResult:
     allowed, instructions = scope
     history = [Message(m.role, m.content) for m in body.messages]
@@ -174,6 +175,7 @@ def _ask_ai(
             page=safe_page(body.page),
             instructions=instructions,
             allowed=None if allowed is None else set(allowed),
+            shariah_mode=shariah_mode,
         )
     except Exception as error:
         # A chat is never a server error: the person still gets the built-in answer below.
@@ -190,16 +192,16 @@ def chat(body: ChatRequest) -> Any:
     registry = _registry()
     page = safe_page(body.page)
     question = body.messages[-1].content
+    mode = copilot_wiring.shariah_mode()
     model = default_model(_lookup)
     if model is None:
-        answer = built_in_answer(
-            question, registry, AnswerContext(page, False, allowed), _CHAT_FAILED
-        )
+        context = AnswerContext(page, False, allowed, shariah_mode=mode)
+        answer = built_in_answer(question, registry, context, _CHAT_FAILED)
         return _reply(answer, "built_in", None)
-    result = _ask_ai(model, body, registry, scope)
+    result = _ask_ai(model, body, registry, scope, mode)
     if not result.error:
         return _reply(result, "ai", model.provider)
-    context = AnswerContext(page, True, allowed, False)
+    context = AnswerContext(page, True, allowed, False, shariah_mode=mode)
     fallback = built_in_answer(question, registry, context, _CHAT_FAILED)
     result.reply = result.reply + _AI_FAILED + fallback.reply
     result.steps, result.proposals = fallback.steps, fallback.proposals
@@ -304,6 +306,7 @@ def run_agent(agent_id: str, body: RunBody) -> Any:
             symbol=body.symbol,
             model=default_model(_lookup),
             needs_ai=bool(getattr(spec, "needs_ai", False)),
+            shariah_mode=copilot_wiring.shariah_mode(),
         )
         return run_workflow(spec, _registry(), options).as_dict()
     finally:

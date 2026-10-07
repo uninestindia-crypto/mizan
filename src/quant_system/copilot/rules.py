@@ -16,7 +16,7 @@ from quant_system.copilot.agent import AgentResult, Step
 from quant_system.copilot.guard import is_advice
 from quant_system.copilot.registry import Proposal, ToolRegistry, ToolResult, failure
 
-__all__ = ["AnswerContext", "answer_without_ai", "render_halal"]
+__all__ = ["AnswerContext", "answer_without_ai", "render_halal", "verdict_word"]
 
 _STOP = frozenset(
     "A AN AND ARE AS AT BE BUY BY CAN CHECK DO DOES DOING FACTS FOR GET HALAL HARAM HI HELLO HELP HOW IF IS IT ITS "
@@ -39,6 +39,7 @@ _WHICH_FOR_OPINION = "Which stock should the AI models look at? Write its symbol
 _NO_ADVICE = "I can't tell you whether to buy or sell."
 _NO_ADVICE_WITH_FACTS = f"{_NO_ADVICE} Here are the facts to look at yourself:"
 _MAX_SYMBOL_LOOKUPS = 12  # capital-letter words checked in one question
+_MAX_WATCHLIST_LABELS = 30
 _MENU = """I can answer from what is inside QuantOS:
 - **Halal screening** for a stock ("is TCS halal?"), with every ratio and where the data comes from
 - **Price facts** ("how is INFY doing?")
@@ -62,6 +63,7 @@ class AnswerContext:
     symbol: str | None = (
         None  # a stock already chosen (a workflow run); it wins over words in the text
     )
+    shariah_mode: bool = False  # every answer about a stock opens with the screener's verdict
 
 
 @dataclass(slots=True)
@@ -69,6 +71,7 @@ class _Run:
     registry: ToolRegistry
     allowed: frozenset[str] | None = None
     symbol: str | None = None
+    shariah_mode: bool = False
     steps: list[Step] = field(default_factory=list)
     proposals: list[Proposal] = field(default_factory=list)
     looked_up: dict[str, bool] = field(default_factory=dict)  # word -> is it a stock symbol
@@ -259,6 +262,24 @@ def _render_portfolio(data: dict[str, Any]) -> str:
 # ------------------------------------------------------------------------------------- questions
 
 
+def verdict_word(data: dict[str, Any]) -> str:
+    """One plain word for a screener result: compliant, not compliant, questionable or not screened."""
+    if not data.get("covered"):
+        return "not screened"
+    statuses = {str(s["status"]) for s in data["standards"]}
+    if not data.get("sector_compliant", True) or "NON_COMPLIANT" in statuses:
+        return "not compliant"
+    return "compliant" if statuses == {"COMPLIANT"} else "questionable"
+
+
+def _screener_lead(run: _Run, symbol: str) -> str:
+    """In Shariah mode, the screener's own block, to put before anything else said about a stock."""
+    if not run.shariah_mode or (run.allowed is not None and "shariah_check" not in run.allowed):
+        return ""
+    result = run.call("shariah_check", {"symbol": symbol})
+    return f"{render_halal(result.data) if result.ok else result.error}\n\n"
+
+
 def _stock_question(
     run: _Run, text: str, page: str | None, tool: str, render: Callable[[dict[str, Any]], str]
 ) -> str:
@@ -266,9 +287,10 @@ def _stock_question(
     if len(named) != 1:
         return _which(run, named, _WHICH_STOCK)
     symbol = named[0]
+    lead = "" if tool == "shariah_check" else _screener_lead(run, symbol)
     key = "symbols" if tool == "live_quote" else "symbol"
     result = run.call(tool, {key: [symbol] if tool == "live_quote" else symbol})
-    return render(result.data) if result.ok else str(result.error)
+    return lead + (render(result.data) if result.ok else str(result.error))
 
 
 def _second_opinion(run: _Run, text: str, page: str | None, ai_available: bool) -> str:
@@ -290,7 +312,10 @@ def _portfolio(run: _Run, kind: str) -> str:
     if not result.ok:
         return str(result.error)
     if kind == "watchlist":
-        return "Your watchlist: " + (", ".join(result.data["symbols"]) or "it is empty.")
+        symbols = list(result.data["symbols"])
+        if run.shariah_mode and symbols and "shariah_check" in (run.allowed or {"shariah_check"}):
+            return _labelled_watchlist(run, symbols)
+        return "Your watchlist: " + (", ".join(symbols) or "it is empty.")
     if kind == "paper_books":
         names = [str(b.get("name", "Paper book")) for b in result.data["books"]]
         return (
@@ -300,6 +325,21 @@ def _portfolio(run: _Run, kind: str) -> str:
             + str(result.data["note"])
         )
     return _render_portfolio(result.data)
+
+
+def _labelled_watchlist(run: _Run, symbols: list[str]) -> str:
+    lines = []
+    for symbol in symbols[:_MAX_WATCHLIST_LABELS]:
+        screened = run.registry.call("shariah_check", {"symbol": symbol})
+        lines.append(
+            f"- {symbol}: {verdict_word(screened.data) if screened.ok else 'not screened'}"
+        )
+    run.steps.append(
+        Step("shariah_check", run.registry.label("shariah_check"), f"{len(lines)} checked", True)
+    )
+    more = len(symbols) - len(lines)
+    tail = [f"- and {more} more not checked here"] if more > 0 else []
+    return "\n".join(["Your watchlist, with each stock's halal screening result:", *lines, *tail])
 
 
 def _costs(run: _Run) -> str:
@@ -335,7 +375,7 @@ def answer_without_ai(
     text: str, registry: ToolRegistry, context: AnswerContext | None = None
 ) -> AgentResult:
     context = context or AnswerContext()
-    run = _Run(registry, context.allowed, context.symbol)
+    run = _Run(registry, context.allowed, context.symbol, context.shariah_mode)
     reply = _route(run, text, context.page, context.ai_available)
     # The menu already says it cannot tell anyone what to buy or sell; every other answer says so first.
     if reply != _MENU and is_advice(text):

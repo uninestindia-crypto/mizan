@@ -97,6 +97,7 @@ class RunOptions:
     model: ChatModel | None = None
     page: str | None = None
     needs_ai: bool = False
+    shariah_mode: bool = False
     deadline_seconds: float = 300.0
     clock: Callable[[], float] = time.monotonic
 
@@ -165,12 +166,23 @@ def _answer_step(
     text = history[-1].content
     if options.model is None:
         allowed = frozenset(agent.tools)
-        context = AnswerContext(options.page, False, allowed, hint=False, symbol=options.symbol)
+        context = AnswerContext(
+            options.page,
+            False,
+            allowed,
+            hint=False,
+            symbol=options.symbol,
+            shariah_mode=options.shariah_mode,
+        )
         return built_in_answer(text, registry, context)
     runner = CopilotAgent(options.model, registry)
     instructions = _fill(agent.instructions, options.symbol) or None
     return runner.run(
-        history, page=options.page, instructions=instructions, allowed=set(agent.tools)
+        history,
+        page=options.page,
+        instructions=instructions,
+        allowed=set(agent.tools),
+        shariah_mode=options.shariah_mode,
     )
 
 

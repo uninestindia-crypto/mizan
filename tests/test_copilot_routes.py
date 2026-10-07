@@ -427,3 +427,24 @@ def test_an_expired_broker_key_is_not_reported_as_ready(
     body = client.get("/api/v2/copilot/status").json()
     assert body["live_prices"]["ready"] is False and "expired" in body["live_prices"]["message"]
     assert CANARY not in json.dumps(body)
+
+
+# ------------------------------------------------------------------------------------- Shariah mode
+
+
+def test_in_shariah_mode_a_plain_question_about_a_stock_opens_with_the_screener(
+    ready: TestClient, headers: dict[str, str]
+) -> None:
+    router.services().state.update_settings({"shariah_mode": True})
+    body = _chat(ready, headers, "how is AAA doing?")
+    assert body["reply"].startswith("**From QuantOS's halal screener: AAA")
+    assert "Halal screening" in [s["label"] for s in body["steps"]]
+
+
+def test_switching_the_mode_off_takes_effect_on_the_very_next_question(
+    ready: TestClient, headers: dict[str, str]
+) -> None:
+    router.services().state.update_settings({"shariah_mode": True})
+    assert "halal screener" in _chat(ready, headers, "how is AAA doing?")["reply"]
+    router.services().state.update_settings({"shariah_mode": False})
+    assert "halal screener" not in _chat(ready, headers, "how is AAA doing?")["reply"]
