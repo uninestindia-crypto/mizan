@@ -149,7 +149,7 @@ def test_a_job_that_crashes_reports_a_plain_failure_and_not_the_exception() -> N
     jobs = VerifyJobs(spawn=_Inline())
     found = jobs.get(jobs.start(crash, 3))
     assert found is not None and found["status"] == "failed" and "/secret/path" not in str(found)
-    assert "Accounts and keys" in str(found["error"])
+    assert "Settings, then AI" in str(found["error"])
 
 
 def test_an_unknown_job_is_none() -> None:

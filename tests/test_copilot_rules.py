@@ -25,7 +25,7 @@ def _ask(text: str, page: str | None = None, ai: bool = False, **context: Any) -
 def test_a_greeting_explains_what_it_can_do_and_how_to_add_ai() -> None:
     result = _ask("hi")
     assert "halal" in result.reply.lower() and "facts" in result.reply.lower()
-    assert "Settings" in result.reply and "AI key" in result.reply
+    assert "Settings" in result.reply and "Settings, then AI" in result.reply
     assert result.model is None
 
 

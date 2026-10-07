@@ -29,10 +29,10 @@ _STATUS = {
     "QUESTIONABLE": "Questionable (close to a limit)",
 }
 _NEED_AI = (
-    "To ask open-ended questions or get independent second opinions, add an AI key: "
-    "open Settings, then Accounts and keys."
+    "To ask open-ended questions or get independent second opinions, set up an AI: open Settings, then AI assistants. "
+    "You can use an AI app you are already signed in to, or add a key under Accounts and keys."
 )
-_ADD_KEY_BUTTON = Proposal("navigate", "Add an AI key", "/settings/accounts")
+_ADD_KEY_BUTTON = Proposal("navigate", "Choose an AI", "/settings/ai")
 _NOT_ALLOWED = "This assistant is not set up to look that up. Open Agents, edit it, and tick that item in its list."
 _WHICH_STOCK = "Which stock do you mean? Write its symbol in capital letters, for example TCS."
 _WHICH_FOR_OPINION = "Which stock should the AI models look at? Write its symbol in capital letters, for example TCS."

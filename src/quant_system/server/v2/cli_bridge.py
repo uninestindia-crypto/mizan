@@ -26,6 +26,7 @@ import sys
 import threading
 import time
 import uuid
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
@@ -321,6 +322,23 @@ def list_cli_status(force: bool = False) -> list[dict[str, Any]]:
             _cache = (time.monotonic(), [_inspect_cli(agent) for agent in SUPPORTED_AGENTS])
         inspected = _cache[1]
     return [{**item, "job": job_snapshot(str(item["id"]))} for item in inspected]
+
+
+def installed_chat_clis(ids: Iterable[str]) -> dict[str, str]:
+    """Where each named app is installed (id -> program path). A quick lookup: nothing is started."""
+    wanted = set(ids)
+    found: dict[str, str] = {}
+    for agent in SUPPORTED_AGENTS:
+        path = next((hit for cmd in agent.commands if (hit := _find(cmd))), None)
+        if agent.id in wanted and path:
+            found[agent.id] = path
+    return found
+
+
+def record_probe(agent_id: str, signed_in: bool) -> None:
+    """Remember what a real test of this app showed, for the apps that cannot say whether they are signed in."""
+    _probe_results[agent_id] = (time.monotonic(), signed_in)
+    invalidate_cache()
 
 
 def invalidate_cache() -> None:

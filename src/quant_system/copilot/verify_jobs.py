@@ -33,10 +33,7 @@ MAX_RUNNING = 3
 MAX_KEPT = 20
 KEEP_SECONDS = 1800.0
 MAX_SECONDS = 600.0
-FAILED_TEXT = (
-    "The second opinion could not be finished. "
-    "Check your AI keys in Settings, then Accounts and keys, and try again."
-)
+FAILED_TEXT = "The second opinion could not be finished. Check your AI in Settings, then AI assistants, and try again."
 # The work is handed a way to report each answer and a check it must make before it starts any new AI call.
 Work = Callable[[Callable[[Opinion], None], Callable[[], bool]], VerificationResult]
 Spawn = Callable[[Callable[[], None]], None]

@@ -16,7 +16,14 @@ from quant_system.copilot.llm import ChatReply
 from quant_system.copilot.sources import SqliteShariahSource
 from quant_system.copilot.verify_jobs import VerifyJobs
 from quant_system.server.app import app
-from quant_system.server.v2 import copilot_routes, copilot_wiring, paths, router
+from quant_system.server.v2 import (
+    cli_bridge,
+    copilot_ai,
+    copilot_routes,
+    copilot_wiring,
+    paths,
+    router,
+)
 from quant_system.server.v2.credentials import CredentialStore
 from tests.copilot_fakes import SAMPLE_ROW, FakeNews, FakeQuotes, StubModel, opinion_json
 from tests.market_fixtures import build_standard_store
@@ -68,13 +75,11 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, lab: Lab) -> Iterato
     )
     monkeypatch.setattr(copilot_wiring, "key_lookup", lambda provider: lab.keys.get(provider))
     monkeypatch.setattr(
-        copilot_routes,
-        "build_models",
-        lambda _lookup, providers: [lab.models[p] for p in providers if p in lab.models],
+        copilot_routes, "verify_models", lambda ids: [lab.models[p] for p in ids if p in lab.models]
     )
-    monkeypatch.setattr(
-        copilot_routes, "default_model", lambda _lookup: next(iter(lab.models.values()), None)
-    )
+    monkeypatch.setattr(copilot_routes, "chat_model", lambda: next(iter(lab.models.values()), None))
+    monkeypatch.setattr(copilot_ai, "installed_apps", lambda: {})  # no AI app on the test computer
+    monkeypatch.setattr(cli_bridge, "list_cli_status", lambda force=False: [])
     router.reset_services()
     test_store = CredentialStore(prefix=f"QuantOS-test-{uuid.uuid4().hex[:8]}:")
     router.services().credentials = test_store
@@ -136,7 +141,7 @@ def test_without_an_ai_key_a_halal_question_is_answered_from_the_screener(
     assert body["mode"] == "built_in" and body["provider"] is None and body["model"] is None
     assert "AAOIFI" in body["reply"] and "not a religious ruling" in body["reply"].lower()
     assert [s["label"] for s in body["steps"]][-1] == "Halal screening"
-    assert any(p["path"] == "/settings/accounts" for p in body["proposals"])
+    assert any(p["path"] == "/settings/ai" for p in body["proposals"])
 
 
 def test_with_an_ai_key_the_model_answers_and_says_which_one(
@@ -328,7 +333,7 @@ def test_a_ready_made_agent_runs_with_no_ai_key(ready: TestClient, headers: dict
         "/api/v2/copilot/agents/recipe-check-stock/run", json={"symbol": "AAA"}, headers=headers
     ).json()
     assert result["completed"] is True and result["symbol"] == "AAA" and len(result["steps"]) == 4
-    assert "AAOIFI" in result["steps"][1]["reply"] and "No AI key is set up" in result["note"]
+    assert "AAOIFI" in result["steps"][1]["reply"] and "No AI is set up" in result["note"]
     assert any(p["kind"] == "second_opinion" for p in result["proposals"])
 
 

@@ -22,7 +22,7 @@ from quant_system.copilot.conversations import ConversationError, ConversationSt
 from quant_system.copilot.factpack import build_fact_pack
 from quant_system.copilot.llm import ChatModel
 from quant_system.copilot.messages import explain_failure
-from quant_system.copilot.providers import build_models, default_model, provider_status
+from quant_system.copilot.providers import provider_status
 from quant_system.copilot.recipes import RECIPES, Recipe, recipe
 from quant_system.copilot.registry import ToolRegistry
 from quant_system.copilot.rules import AnswerContext
@@ -31,7 +31,8 @@ from quant_system.copilot.verify import VerifyOptions, verify_stock
 from quant_system.copilot.verify_jobs import TooBusyError, VerifyJobs
 from quant_system.copilot.workflow import RunGate, RunOptions, built_in_answer, run_workflow
 from quant_system.server.security import format_error_response
-from quant_system.server.v2 import copilot_wiring
+from quant_system.server.v2 import copilot_ai, copilot_wiring
+from quant_system.server.v2.copilot_ai import chat_model, verify_models
 from quant_system.server.v2.copilot_validation import CopilotRoute
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ _gate = RunGate()
 _store: AgentStore | None = None
 _conversations: ConversationStore | None = None
 _NO_CHAT = "That chat no longer exists. Start a new chat."
-_NO_AI_KEY = "Add at least one AI key first. Open Settings, then Accounts and keys."
+_NO_AI_KEY = "No AI is set up yet. Open Settings, then AI assistants, and pick one, or add a key under Accounts and keys."
 _BUSY = "Several second opinions are already running. Wait for one to finish, then try again."
 _NO_SECOND_OPINION = "That second opinion is no longer available. Start it again."
 _AI_FAILED = "\n\nMeanwhile, here is what QuantOS can tell you without the AI:\n\n"
@@ -105,6 +106,11 @@ class RunBody(BaseModel):
     symbol: str | None = Field(default=None, max_length=15)
 
 
+class TestAiBody(BaseModel):
+    # An app is "cli:claude", a saved key is its provider name. Left out, the AI the Copilot would use is tested.
+    model: str | None = Field(default=None, max_length=40)
+
+
 # ------------------------------------------------------------------------------------- helpers
 
 
@@ -162,18 +168,22 @@ def _reply(result: AgentResult, mode: str, provider: str | None) -> dict[str, An
 
 @router.get("/status")
 def status() -> dict[str, Any]:
-    providers = provider_status(_lookup)
-    live = copilot_wiring.live_prices_status()
     return {
-        "ai_ready": any(p["ready"] for p in providers),
-        "providers": providers,
-        "live_prices": live,
+        **copilot_ai.ai_overview(),
+        "providers": provider_status(_lookup),
+        "live_prices": copilot_wiring.live_prices_status(),
     }
 
 
 @router.get("/models")
 def models() -> dict[str, Any]:
-    return {"models": provider_status(_lookup)}
+    return {"models": copilot_ai.model_rows()}
+
+
+@router.post("/ai/test")
+def test_ai(body: TestAiBody) -> dict[str, Any]:
+    """One tiny question to the chosen AI, so Settings can say plainly whether it works."""
+    return copilot_ai.run_test(body.model)
 
 
 def _chat_scope(agent_id: str | None) -> tuple[frozenset[str] | None, str | None] | None:
@@ -216,7 +226,7 @@ def _answer_chat(body: ChatRequest) -> Any:
     page = safe_page(body.page)
     question = body.messages[-1].content
     mode = copilot_wiring.shariah_mode()
-    model = default_model(_lookup)
+    model = chat_model()
     if model is None:
         context = AnswerContext(page, False, allowed, shariah_mode=mode)
         answer = built_in_answer(question, registry, context, _CHAT_FAILED)
@@ -315,7 +325,7 @@ def clear_conversations() -> dict[str, Any]:
 
 @router.post("/verify", status_code=202, response_model=None)
 def start_verify(body: VerifyRequest) -> Any:
-    chosen = build_models(_lookup, body.providers)
+    chosen = verify_models(body.providers)
     if not chosen:
         return _fail(422, "NO_AI_KEY", _NO_AI_KEY)
     registry = _registry()
@@ -406,7 +416,7 @@ def run_agent(agent_id: str, body: RunBody) -> Any:
     try:
         options = RunOptions(
             symbol=body.symbol,
-            model=default_model(_lookup),
+            model=chat_model(),
             needs_ai=bool(getattr(spec, "needs_ai", False)),
             shariah_mode=copilot_wiring.shariah_mode(),
         )

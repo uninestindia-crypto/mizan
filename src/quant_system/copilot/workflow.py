@@ -34,13 +34,13 @@ logger = logging.getLogger(__name__)
 
 MAX_STEPS = 8
 SYMBOL_RULE = re.compile(r"^[A-Z0-9&-]{1,15}$")
-_ADD_KEY = Proposal("navigate", "Add an AI key", "/settings/accounts")
+_ADD_KEY = Proposal("navigate", "Choose an AI", "/settings/ai")
 _NO_AI_NOTE = (
-    "No AI key is set up, so each step used only the built-in answers. Add an AI key in Settings, then Accounts "
-    "and keys, to let this assistant work through open-ended steps."
+    "No AI is set up, so each step used only the built-in answers. Open Settings, then AI assistants, and pick one "
+    "to let this assistant work through open-ended steps."
 )
 _NEEDS_AI = (
-    "This assistant needs an AI key to work through its steps. Open Settings, then Accounts and keys, add one, "
+    "This assistant needs an AI to work through its steps. Open Settings, then AI assistants, pick one, "
     "and run it again."
 )
 _NEEDS_SYMBOL = "Tell me which stock to run this on, for example TCS."

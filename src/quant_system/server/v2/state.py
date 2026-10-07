@@ -109,6 +109,11 @@ class Settings(BaseModel):
     auto_update_paper_books: bool = True
     disclaimer_accepted_at: str | None = None
     shariah_mode: bool = False
+    # Which AI answers the Copilot. The AI app already signed in on this computer comes first; a saved key backs it up.
+    ai_source: Literal["cli", "api"] = "cli"
+    ai_cli: Literal["claude", "codex", "gemini"] | None = None
+    ai_api: str | None = Field(default=None, max_length=40)
+    ai_fallback: bool = True
 
 
 class Holding(BaseModel):

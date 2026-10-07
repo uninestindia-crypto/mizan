@@ -55,6 +55,12 @@ CREATE TABLE IF NOT EXISTS conversation_messages(
 );
 CREATE INDEX IF NOT EXISTS conversation_messages_by_chat ON conversation_messages(conversation_id, id);
 """
+_LIST_ALL = "SELECT * FROM conversations ORDER BY updated_at DESC, rowid DESC LIMIT ?"
+_LIST_MATCHING = (
+    "SELECT * FROM conversations WHERE title LIKE ? ESCAPE '\\' OR id IN "
+    "(SELECT conversation_id FROM conversation_messages WHERE content LIKE ? ESCAPE '\\') "
+    "ORDER BY updated_at DESC, rowid DESC LIMIT ?"
+)
 
 
 class ConversationError(ValueError):
@@ -186,15 +192,8 @@ class ConversationStore:
 
     def list(self, query: str = "", limit: int = 100) -> list[Conversation]:
         """Newest first. With ``query``, only chats whose title or any message contains it."""
-        sql = "SELECT * FROM conversations"
-        args: list[Any] = []
-        if query.strip():
-            sql += (
-                " WHERE title LIKE ? ESCAPE '\\' OR id IN "
-                "(SELECT conversation_id FROM conversation_messages WHERE content LIKE ? ESCAPE '\\')"
-            )
-            args += [_like(query.strip())] * 2
-        sql += " ORDER BY updated_at DESC, rowid DESC LIMIT ?"
+        text = query.strip()
+        sql, args = (_LIST_MATCHING, [_like(text)] * 2) if text else (_LIST_ALL, [])
         with self._connect() as conn:
             return [
                 self._summary(conn, row) for row in conn.execute(sql, [*args, limit]).fetchall()
