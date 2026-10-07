@@ -43,6 +43,7 @@ def tracked_files() -> list[str]:
         ["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8", check=False
     )
     if result.returncode != 0:
+        # test-allow: skipped-test — a source download without Git history has no file list to check
         pytest.skip("not a Git checkout")
     return [line for line in result.stdout.splitlines() if line]
 

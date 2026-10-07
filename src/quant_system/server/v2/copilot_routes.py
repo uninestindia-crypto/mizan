@@ -9,6 +9,7 @@ and an AI service that is down, is HTTP 200 with a plain-language reply; only a 
 from __future__ import annotations
 
 import logging
+import sqlite3
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter
@@ -17,6 +18,7 @@ from pydantic import BaseModel, Field, StringConstraints
 
 from quant_system.copilot.agent import AgentResult, CopilotAgent, Message, safe_page
 from quant_system.copilot.agent_store import AgentDraft, AgentRejectedError, AgentStore, SavedAgent
+from quant_system.copilot.conversations import ConversationError, ConversationStore
 from quant_system.copilot.factpack import build_fact_pack
 from quant_system.copilot.llm import ChatModel
 from quant_system.copilot.messages import explain_failure
@@ -40,6 +42,8 @@ SYMBOL = r"^[A-Za-z0-9&-]{1,15}$"
 _jobs = VerifyJobs()
 _gate = RunGate()
 _store: AgentStore | None = None
+_conversations: ConversationStore | None = None
+_NO_CHAT = "That chat no longer exists. Start a new chat."
 _NO_AI_KEY = "Add at least one AI key first. Open Settings, then Accounts and keys."
 _BUSY = "Several second opinions are already running. Wait for one to finish, then try again."
 _NO_SECOND_OPINION = "That second opinion is no longer available. Start it again."
@@ -60,6 +64,17 @@ class ChatRequest(BaseModel):
     # Only a ceiling here: a path that does not look like a screen is ignored later, not refused.
     page: str | None = Field(default=None, max_length=1000)
     agent_id: str | None = Field(default=None, max_length=40)
+    # "new" starts a saved chat, an id carries one on, and leaving it out keeps the chat unsaved (as before).
+    conversation_id: str | None = Field(default=None, max_length=40)
+
+
+class NewChatBody(BaseModel):
+    title: str = Field(default="", max_length=1000)
+    agent_id: str | None = Field(default=None, max_length=40)
+
+
+class RenameChatBody(BaseModel):
+    title: str = Field(default="", max_length=1000)
 
 
 class VerifyRequest(BaseModel):
@@ -104,6 +119,15 @@ def store() -> AgentStore:
 
         _store = AgentStore(paths.state_dir() / "copilot.sqlite")
     return _store
+
+
+def conversations() -> ConversationStore:
+    global _conversations
+    if _conversations is None:
+        from quant_system.server.v2 import paths
+
+        _conversations = ConversationStore(paths.state_dir() / "copilot.sqlite")
+    return _conversations
 
 
 def _registry() -> ToolRegistry:
@@ -183,8 +207,7 @@ def _ask_ai(
         return AgentResult(explain_failure(500), error="ai_unavailable")
 
 
-@router.post("/chat", response_model=None)
-def chat(body: ChatRequest) -> Any:
+def _answer_chat(body: ChatRequest) -> Any:
     scope = _chat_scope(body.agent_id)
     if scope is None:
         return _fail(404, "NOT_FOUND", _NO_AGENT)
@@ -206,6 +229,85 @@ def chat(body: ChatRequest) -> Any:
     result.reply = result.reply + _AI_FAILED + fallback.reply
     result.steps, result.proposals = fallback.steps, fallback.proposals
     return _reply(result, "built_in", None)
+
+
+def _open_chat(body: ChatRequest) -> str | None:
+    """The saved chat this message belongs to: a new one for "new", the named one if it exists, else None."""
+    if body.conversation_id is None:
+        return None
+    if body.conversation_id == "new":
+        return conversations().create(agent_id=body.agent_id).id
+    return body.conversation_id if conversations().get(body.conversation_id) else ""
+
+
+def _remember(chat_id: str, question: str, reply: dict[str, Any]) -> None:
+    """Save the question and the answer. A failure to save never costs the person their answer."""
+    meta = {k: reply.get(k) for k in ("mode", "provider", "model", "error", "steps", "proposals")}
+    try:
+        store = conversations()
+        store.append(chat_id, "user", question, {})
+        store.append(chat_id, "assistant", str(reply["reply"]), meta)
+        reply["saved"] = True
+    except ConversationError as error:
+        reply.update(saved=False, saved_note=str(error))
+    except sqlite3.Error as error:
+        logger.warning("A chat could not be saved (%s).", type(error).__name__)
+        reply.update(
+            saved=False, saved_note="This chat could not be saved on this computer just now."
+        )
+
+
+@router.post("/chat", response_model=None)
+def chat(body: ChatRequest) -> Any:
+    chat_id = _open_chat(body)
+    if chat_id == "":
+        return _fail(404, "NOT_FOUND", _NO_CHAT)
+    answer = _answer_chat(body)
+    if chat_id is None or not isinstance(answer, dict):
+        return answer
+    answer["conversation_id"] = chat_id
+    _remember(chat_id, body.messages[-1].content, answer)
+    return answer
+
+
+# ------------------------------------------------------------------------------------- saved chats
+
+
+@router.get("/conversations")
+def list_conversations(q: str = "") -> dict[str, Any]:
+    return {"conversations": [c.as_dict() for c in conversations().list(q)]}
+
+
+@router.post("/conversations", status_code=201)
+def new_conversation(body: NewChatBody) -> dict[str, Any]:
+    return conversations().create(body.title, body.agent_id).as_dict()
+
+
+@router.get("/conversations/{chat_id}", response_model=None)
+def get_conversation(chat_id: str) -> Any:
+    found = conversations().get(chat_id)
+    return found.as_dict() if found else _fail(404, "NOT_FOUND", _NO_CHAT)
+
+
+@router.put("/conversations/{chat_id}", response_model=None)
+def rename_conversation(chat_id: str, body: RenameChatBody) -> Any:
+    try:
+        renamed = conversations().rename(chat_id, body.title)
+    except ConversationError as error:
+        return _fail(400, "BAD_REQUEST", str(error))
+    return renamed.as_dict() if renamed else _fail(404, "NOT_FOUND", _NO_CHAT)
+
+
+@router.delete("/conversations/{chat_id}", response_model=None)
+def delete_conversation(chat_id: str) -> Any:
+    if not conversations().delete(chat_id):
+        return _fail(404, "NOT_FOUND", _NO_CHAT)
+    return {"deleted": True}
+
+
+@router.delete("/conversations")
+def clear_conversations() -> dict[str, Any]:
+    return {"cleared": conversations().clear()}
 
 
 # ------------------------------------------------------------------------------------- second opinion

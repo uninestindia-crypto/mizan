@@ -59,6 +59,7 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, lab: Lab) -> Iterato
     monkeypatch.setattr(paths, "_user_folders", lambda: [])
     monkeypatch.setattr(paths, "data_scan", paths.DataFolderScan())
     monkeypatch.setattr(copilot_routes, "_store", None)
+    monkeypatch.setattr(copilot_routes, "_conversations", None)
     monkeypatch.setattr(copilot_routes, "_jobs", VerifyJobs(spawn=_Inline()))
     monkeypatch.setattr(copilot_wiring, "_NEWS", FakeNews())
     database = _shariah_db(tmp_path)
