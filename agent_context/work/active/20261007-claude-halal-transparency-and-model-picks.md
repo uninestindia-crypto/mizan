@@ -35,9 +35,11 @@ as the code has them; the review's open question on the AAOIFI text is a founder
 1. Shared pieces: pick note wording and a compact second-opinion button. DONE
 2. Backend honesty and transparency, test-first. 
 3. Shariah screen: remove assumed numbers, data status on verdicts, "How this verdict was reached" panel, order-sheet wording, second opinion on basket stocks. 
-4. Paper book: second opinion on held and queued stocks. 
+4. Paper book: second opinion on held and queued stocks. DONE (`97dd569a1`: `PaperPositions.tsx`, `OrderTicket.tsx`, 6 tests)
 5. Docs. 
-6. Gates, a browser check, push after PR 9 is merged, PR, release when the founder says.
+6. Gates, a browser check, push after PR 9 is merged, PR. Note: PR 9 merged 2026-10-07 (`960de0ac3`) on the founder's
+   instruction; the v2.5.0 release commit is PR 10, cut from a scratch clone so the Shariah workers' checkout was not
+   disturbed. This work ships in the next release.
 
 ## Blockers and conflicts
 
@@ -46,7 +48,9 @@ Shariah audit lines (`UNVERIFIED_SAMPLE`); this work keeps that meaning.
 
 ## Stop point
 
-Started.
+Steps 1 and 4 committed on local branch `wip/halal-transparency`. Steps 2 and 3 are with two workers in this checkout
+(backend `aa33983ac23e4b8aa`, Shariah screen `aadb19e5dbd719b1a`); nothing of theirs is staged or committed until the
+coordinator has re-run the gates on it.
 
 ## Next safe action
 
