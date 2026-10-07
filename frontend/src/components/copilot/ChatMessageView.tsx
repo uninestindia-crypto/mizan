@@ -9,7 +9,7 @@ import {
   visibleProposals,
 } from "./chatState";
 import { useCopilot } from "./CopilotProvider";
-import { Markdown } from "./Markdown";
+import { Markdown } from "./MarkdownView";
 
 // A word with no gaps, such as a pasted address, breaks at the edge of the panel instead of widening the page.
 const WRAP = "[overflow-wrap:anywhere]";
