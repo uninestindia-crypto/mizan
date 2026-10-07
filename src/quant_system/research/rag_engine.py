@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from quant_system.research.arxiv_client import ArxivClient, PaperMetadata
+from quant_system.research.embedding_gemma import EmbeddingGemmaProvider
 
 
 @dataclass(frozen=True, slots=True)
@@ -207,9 +208,22 @@ class QuantPaperRAG:
         "using",
     }
 
-    def __init__(self, arxiv_client: ArxivClient | None = None) -> None:
+    def __init__(
+        self,
+        arxiv_client: ArxivClient | None = None,
+        embedding_provider: EmbeddingGemmaProvider | None = None,
+        use_embeddings: bool = True,
+        dense_weight: float = 0.65,
+    ) -> None:
         self.arxiv_client = arxiv_client or ArxivClient()
+        self.embedding_provider = (
+            embedding_provider
+            if embedding_provider is not None
+            else (EmbeddingGemmaProvider() if use_embeddings else None)
+        )
+        self.dense_weight = max(0.0, min(1.0, dense_weight))
         self.papers: list[PaperMetadata] = []
+        self.dense_vectors: list[list[float]] = []
         self.doc_vectors: list[dict[str, float]] = []
         self.doc_lengths: list[float] = []
         self.idf: dict[str, float] = {}
@@ -223,16 +237,26 @@ class QuantPaperRAG:
         return [w for w in words if w not in cls.STOPWORDS]
 
     def index_papers(self, papers: Sequence[PaperMetadata]) -> None:
-        """Indexes paper titles, abstracts, and categories into a TF-IDF vector space."""
+        """Indexes paper titles, abstracts, and categories into dense & sparse vector spaces."""
+        new_papers: list[PaperMetadata] = []
         for p in papers:
             if not any(existing.arxiv_id == p.arxiv_id for existing in self.papers):
                 self.papers.append(p)
+                new_papers.append(p)
 
         n_docs = len(self.papers)
         if n_docs == 0:
             return
 
-        # 1. Compute Document Frequencies
+        # 1. Update dense embeddings if provider is active
+        if self.embedding_provider is not None and new_papers:
+            paper_texts = [
+                f"{p.title}. {p.summary} Category: {p.primary_category}" for p in new_papers
+            ]
+            new_dense = self.embedding_provider.embed_texts(paper_texts)
+            self.dense_vectors.extend(new_dense)
+
+        # 2. Compute Document Frequencies
         df_counts: Counter[str] = Counter()
         tokenized_docs: list[list[str]] = []
 
@@ -245,13 +269,13 @@ class QuantPaperRAG:
             tokenized_docs.append(doc_tokens)
             df_counts.update(set(doc_tokens))
 
-        # 2. Compute IDF: log((N + 1) / (DF + 1)) + 1
+        # 3. Compute IDF: log((N + 1) / (DF + 1)) + 1
         self.idf = {
             term: math.log((n_docs + 1.0) / (count + 1.0)) + 1.0
             for term, count in df_counts.items()
         }
 
-        # 3. Compute normalized TF-IDF vectors
+        # 4. Compute normalized TF-IDF vectors
         self.doc_vectors = []
         self.doc_lengths = []
 
@@ -274,9 +298,9 @@ class QuantPaperRAG:
         return len(self.papers) - initial_count
 
     def query(self, question: str, top_k: int = 3) -> RAGResult:
-        """Performs semantic cosine similarity search over indexed quantitative research papers."""
+        """Performs dense / hybrid semantic similarity search over indexed quantitative research papers."""
         q_tokens = self.tokenize(question)
-        if not q_tokens or not self.doc_vectors:
+        if (not q_tokens and self.embedding_provider is None) or not self.papers:
             return RAGResult(
                 query=question,
                 top_papers=[],
@@ -284,21 +308,50 @@ class QuantPaperRAG:
                 citations=[],
             )
 
-        q_tf = Counter(q_tokens)
-        q_vec: dict[str, float] = {}
-        for term, count in q_tf.items():
-            tfidf = (1.0 + math.log(count)) * self.idf.get(term, 1.0)
-            q_vec[term] = tfidf
+        # 1. Sparse TF-IDF Scores
+        tfidf_scores: list[float] = [0.0] * len(self.papers)
+        if q_tokens and self.doc_vectors:
+            q_tf = Counter(q_tokens)
+            q_vec: dict[str, float] = {}
+            for term, count in q_tf.items():
+                tfidf = (1.0 + math.log(count)) * self.idf.get(term, 1.0)
+                q_vec[term] = tfidf
 
-        q_norm = math.sqrt(sum(v * v for v in q_vec.values()))
-        if q_norm == 0:
-            q_norm = 1.0
+            q_norm = math.sqrt(sum(v * v for v in q_vec.values()))
+            if q_norm == 0:
+                q_norm = 1.0
 
+            for idx, doc_vec in enumerate(self.doc_vectors):
+                dot_product = sum(doc_vec.get(t, 0.0) * w for t, w in q_vec.items())
+                sim = dot_product / (q_norm * self.doc_lengths[idx])
+                tfidf_scores[idx] = max(0.0, sim)
+
+        # 2. Dense EmbeddingGemma Scores
+        dense_scores: list[float] = [0.0] * len(self.papers)
+        retrieval_mode = "tfidf"
+        if self.embedding_provider is not None and self.dense_vectors:
+            q_dense = self.embedding_provider.embed_text(question)
+            for idx, d_vec in enumerate(self.dense_vectors):
+                # Normalized vectors: dot product equals cosine similarity
+                dense_sim = sum(q_dense[k] * d_vec[k] for k in range(min(len(q_dense), len(d_vec))))
+                dense_scores[idx] = max(0.0, dense_sim)
+            retrieval_mode = (
+                "embedding_gemma_hybrid"
+                if any(s > 0 for s in tfidf_scores)
+                else "embedding_gemma_dense"
+            )
+
+        # 3. Combine scores
         scores: list[tuple[int, float]] = []
-        for idx, doc_vec in enumerate(self.doc_vectors):
-            dot_product = sum(doc_vec.get(t, 0.0) * w for t, w in q_vec.items())
-            sim = dot_product / (q_norm * self.doc_lengths[idx])
-            scores.append((idx, sim))
+        for idx in range(len(self.papers)):
+            if self.embedding_provider is not None and self.dense_vectors:
+                combined = (
+                    self.dense_weight * dense_scores[idx]
+                    + (1.0 - self.dense_weight) * tfidf_scores[idx]
+                )
+            else:
+                combined = tfidf_scores[idx]
+            scores.append((idx, combined))
 
         # Sort by similarity
         scores.sort(key=lambda x: x[1], reverse=True)
@@ -308,8 +361,8 @@ class QuantPaperRAG:
             (self.papers[i], round(score, 4)) for i, score in top_indices if score > 0.0
         ]
 
-        if not matched_papers:
-            # Fallback to first available papers if exact keywords had low overlap
+        if not matched_papers and top_indices:
+            # Fallback to first available papers if scores are zero
             matched_papers = [(self.papers[i], round(score, 4)) for i, score in top_indices]
 
         # Synthesize context
@@ -331,6 +384,19 @@ class QuantPaperRAG:
             top_papers=matched_papers,
             synthesized_context=synthesized,
             citations=citations,
+            metadata={
+                "retrieval_mode": retrieval_mode,
+                "dense_weight": self.dense_weight if self.embedding_provider else 0.0,
+                "embedding_model": (
+                    self.embedding_provider.model_name if self.embedding_provider else None
+                ),
+                "embedding_dimension": (
+                    self.embedding_provider.dimensions if self.embedding_provider else None
+                ),
+                "backend": (
+                    self.embedding_provider.active_backend if self.embedding_provider else None
+                ),
+            },
         )
 
     def format_advisor_context(self, question: str, top_k: int = 2) -> str:
