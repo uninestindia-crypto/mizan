@@ -86,7 +86,7 @@ def build_notes(version: str, subjects: list[str], previous_tag: str | None) -> 
     if previous_tag:
         lines.append("")
         lines.append(
-            f"Full changelog: https://github.com/uninestindia-crypto/quant-system/compare/{previous_tag}...v{ver}"
+            f"Full changelog: https://github.com/uninestindia-crypto/mizan/compare/{previous_tag}...v{ver}"
         )
 
     return "\n".join(lines)

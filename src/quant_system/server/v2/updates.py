@@ -25,7 +25,7 @@ import urllib.request
 from collections.abc import Callable
 from typing import Any
 
-REPOSITORY = os.environ.get("QUANTOS_UPDATE_REPO", "uninestindia-crypto/quant-system")
+REPOSITORY = os.environ.get("QUANTOS_UPDATE_REPO", "uninestindia-crypto/mizan")
 CACHE_SECONDS = 6 * 3600
 _NOTES_LIMIT = 1500
 _VERSION = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")

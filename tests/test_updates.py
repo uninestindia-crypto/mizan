@@ -142,3 +142,18 @@ def test_changelog_api_endpoint(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) 
         assert data[0]["is_current"] is True
         assert any("Second opinions" in item for item in data[0]["whats_new"])
     router.reset_services()
+
+
+def test_the_update_check_asks_the_repository_the_releases_are_published_in(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """It once asked an older repository, so an installed app could never see a new release."""
+    asked: list[str] = []
+
+    def fake_urlopen(request: Any, timeout: float = 0) -> Any:
+        asked.append(request.full_url)
+        raise OSError("no network in tests")
+
+    monkeypatch.setattr(updates.urllib.request, "urlopen", fake_urlopen)
+    assert updates._public_api(updates.REPOSITORY) is None
+    assert asked == ["https://api.github.com/repos/uninestindia-crypto/mizan/releases/latest"]
