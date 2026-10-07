@@ -1127,10 +1127,38 @@ function ChangelogCard() {
 
   const fallbackEntries: ChangelogEntry[] = [
     {
+        version: "2.5.0",
+        date: "2026-10-07",
+        title: "Copilot Assistant, Independent Second Opinions, Your Own Agents & Live Prices",
+        is_current: true,
+        whats_new: [
+            "Copilot: ask a question from any screen with the Copilot button at the top (or Ctrl+J). It works with no AI key, answering from QuantOS's own data, and takes open-ended questions once you add an AI key in Settings. It can suggest a screen to open and can never place an order",
+            "Second opinions: have several AI models read the same facts about a stock, each on its own, and see where they agree, where they differ and why. Agreement between AI models is not evidence that a stock will do well",
+            "Agents: create, edit, run and delete your own saved agents on the new Agents screen, with four ready-made ones that need no AI key",
+            "Live prices from your Upstox key, read-only: every price says whether it is Live, Delayed, Last close or Not available",
+            "News headlines for a stock, with a rough keyword tone that is clearly labelled as rough",
+        ],
+        fixes: [
+            "A key pasted with a space or a line break is refused with a plain message instead of failing later",
+            "The Copilot button and panel fit every window width, from a phone-sized window to a wide monitor",
+            "Pop-up windows return you to where you were when they close, and form fields are read out with their hints",
+        ],
+        improvements: [
+            "Home shows an End of day label on prices when the market is closed",
+            "Danger buttons are easier to read in dark mode",
+        ],
+        unchanged_protections: [
+            "Keys stay in Windows Credential Manager and are sent only to the provider they belong to",
+            "QuantOS still never places orders with any broker, and neither can the Copilot",
+            "Halal results come only from the QuantOS screener, never from an AI model",
+            "Nothing in QuantOS has shown an edge that survives real trading costs, and AI opinions do not change that",
+        ],
+    },
+    {
       version: "2.4.0",
       date: "2026-10-05",
       title: "Import All Your Keys From a .env File, Paper-Book Order Inbox & Health Checks",
-      is_current: true,
+      is_current: false,
       whats_new: [
         "Import all your keys at once: choose your .env or .env.local files in Settings, review what was found, and save them in one step",
         "Paper books say when their orders are out of date and offer a copy-ready order ticket",
@@ -1275,7 +1303,7 @@ function ChangelogCard() {
     : fallbackEntries;
 
   const [expandedVersions, setExpandedVersions] = useState<Record<string, boolean>>({
-    "2.4.0": true,
+    "2.5.0": true,
   });
 
   const toggleVersion = (ver: string) => {

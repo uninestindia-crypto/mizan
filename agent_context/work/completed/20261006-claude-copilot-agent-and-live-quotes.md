@@ -1,6 +1,6 @@
 # Active work: agentic Copilot in the new app, independent multi-model second opinions, live Upstox prices
 
-STATUS: ACTIVE  
+STATUS: COMPLETED  
 OWNER: Claude Code (cloud session)  
 TOOL: Claude Code  
 STARTED_UTC: 2026-10-06T05:09Z  
@@ -141,9 +141,10 @@ Same position as the earlier notices: edits proceed on the founder's explicit in
 
 ## Stop point
 
-All work is committed and pushed on `claude/wonderful-wozniak-6ek6zl`; the working tree is clean. `python scripts/release_status.py`
-says a release is DUE (23 user-visible changes since v2.4.0, suggested minor, v2.5.0). It is cut from `main`, so it waits
-on the founder merging this branch.
+Merged to `main` as PR 9 (merge commit `960de0ac3`) on 2026-10-07, after the founder's instruction "Do it merge it and
+release" and a green CI run on the exact head (`212c26bc3`). The release commit for v2.5.0 (every version file through
+`scripts/bump_version.py`, plus the in-app changelog entry) is the follow-up PR; the release workflow runs from `main`
+after it merges.
 
 Known limits, stated rather than hidden (full list in `agent_context/decisions/20261006-copilot-design.md`): the advice
 and halal word lists are not a full defence and do not cover other languages; the fundamentals and halal data are the
@@ -155,6 +156,5 @@ only where it is not installed (unrelated to this branch).
 
 ## Next safe action
 
-Founder: say whether to open the PR, merge to `main`, and cut v2.5.0 (`powershell -ExecutionPolicy Bypass -File
-scripts/release.ps1 -DryRun` first). Open founder decisions are in `reports/halal_docs_review/REVIEW.md` and
-`agent_context/GOAL.md` section 7. When the work is accepted, move this record to `agent_context/work/completed/`.
+None for this record. Open founder decisions are in `reports/halal_docs_review/REVIEW.md` and `agent_context/GOAL.md` section 7.
+The halal transparency and model-picks work continues under `20261007-claude-halal-transparency-and-model-picks.md`.
