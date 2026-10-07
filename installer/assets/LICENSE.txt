@@ -1,0 +1,55 @@
+QUANTOS DESKTOP STUDIO & MIZAN SHARIAH WEALTH ENGINE
+END USER LICENSE AGREEMENT AND TERMS OF USE
+
+Version 2.0 (Last Updated: October 2026)
+
+IMPORTANT — READ CAREFULLY BEFORE INSTALLING:
+This End User License Agreement ("Agreement") is a legal agreement between you ("User" or "you") and QuantOS Quantitative Technologies ("Licensor", "we", or "us") regarding your installation and use of QuantOS Desktop Studio, including the QuantOS Quantitative Trading Suite and the Mizan Shariah Wealth Engine (collectively, the "Software").
+
+BY SELECTING "I ACCEPT THE AGREEMENT" AND PROCEEDING WITH INSTALLATION, YOU EXPRESSLY AGREE TO BE BOUND BY ALL TERMS AND CONDITIONS OF THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, SELECT "I DO NOT ACCEPT THE AGREEMENT" AND DO NOT INSTALL OR USE THE SOFTWARE.
+
+--------------------------------------------------------------------------------
+1. GRANT OF LICENSE
+--------------------------------------------------------------------------------
+Licensor grants you a personal, non-exclusive, non-transferable, revocable license to install and use the Software on devices owned or controlled by you solely for research, educational analysis, self-directed quantitative backtesting, paper trading, and Shariah equity screening.
+
+--------------------------------------------------------------------------------
+2. RESEARCH AND SIMULATION PLATFORM (NOT INVESTMENT ADVICE)
+--------------------------------------------------------------------------------
+2.1 The Software is strictly a quantitative research, backtesting, and algorithmic simulation platform.
+2.2 QuantOS and its creators are NOT registered with the Securities and Exchange Board of India (SEBI), the U.S. Securities and Exchange Commission (SEC), or any other financial regulatory authority as an Investment Adviser, Research Analyst, or Portfolio Manager.
+2.3 The Software DOES NOT provide personalized investment advice, financial planning, portfolio management, or recommendations to buy, sell, or hold any security, commodity, derivative, or financial instrument.
+2.4 All quantitative metrics, strategy backtests, factor screens, signals, and simulated ledger balances represent historical mathematical calculations or statistical simulations. Past performance is no guarantee of future returns. Actual market execution involves slippage, liquidity gaps, fees, taxes, and psychological stress that simulations cannot replicate.
+
+--------------------------------------------------------------------------------
+3. MIZAN SHARIAH SCREENING & WEALTH ENGINE
+--------------------------------------------------------------------------------
+3.1 The Mizan Shariah Wealth Engine provides screening benchmarks and mathematical calculations (including AAOIFI and TASIS screening rules, zakat estimation, and dividend purification tracking).
+3.2 The Software does not issue religious rulings (fatwas). Shariah compliance status is determined algorithmically from published company financial filings and third-party data sources. Users should consult qualified Shariah scholars and independent financial advisors prior to executing capital transactions.
+
+--------------------------------------------------------------------------------
+4. USER RESPONSIBILITIES & DATA PRIVACY
+--------------------------------------------------------------------------------
+4.1 Local Drive Isolation: The Software is designed to execute locally with drive-isolated storage. Your trading credentials, broker API keys (e.g., Upstox), TOTP secrets, and AI keys remain stored locally on your machine and are never transmitted to QuantOS servers.
+4.2 You are solely responsible for securing your machine, operating system, and local configuration files (.env, SQLite databases).
+4.3 Live-money trading is outside the governed scope of this Software release. Any configuration of external broker connections for real-capital transactions is performed solely at your own risk.
+
+--------------------------------------------------------------------------------
+5. THIRD-PARTY DATA AND SERVICES
+--------------------------------------------------------------------------------
+Market data, corporate actions, and historical pricing feeds are obtained from third-party exchanges (such as the National Stock Exchange of India / NSE) and broker APIs. Licensor does not guarantee the timeliness, completeness, accuracy, or uninterrupted availability of any market data feed.
+
+--------------------------------------------------------------------------------
+6. DISCLAIMER OF WARRANTIES
+--------------------------------------------------------------------------------
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. LICENSOR DOES NOT WARRANT THAT THE SOFTWARE WILL BE ERROR-FREE, SECURE, ACCURATE, OR UNINTERRUPTED.
+
+--------------------------------------------------------------------------------
+7. LIMITATION OF LIABILITY
+--------------------------------------------------------------------------------
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL LICENSOR, ITS DIRECTORS, EMPLOYEES, CONTRIBUTORS, OR AFFILIATES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, FINANCIAL TRADING LOSSES, LOSS OF CAPITAL, LOSS OF PROFITS, DATA LOSS, OR BUSINESS INTERRUPTION) ARISING IN ANY WAY OUT OF THE USE OF, OR INABILITY TO USE, THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+--------------------------------------------------------------------------------
+8. GOVERNING LAW & SEVERABILITY
+--------------------------------------------------------------------------------
+If any provision of this Agreement is held invalid or unenforceable, that provision will be enforced to the maximum extent permissible and the remaining provisions will remain in full force and effect.

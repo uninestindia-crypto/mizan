@@ -64,6 +64,27 @@ def test_installer_branding_assets_exist(iss: str) -> None:
             assert (INSTALLER_DIR / relative).is_file(), relative
 
 
+def test_installer_requires_eula_and_terms_acceptance(iss: str) -> None:
+    license_file = _setup_directive(iss, "LicenseFile")
+    assert license_file == r"assets\LICENSE.txt"
+    license_path = INSTALLER_DIR / license_file
+    assert license_path.is_file()
+    text = license_path.read_text(encoding="utf-8")
+    assert "END USER LICENSE AGREEMENT" in text
+    assert "NOT INVESTMENT ADVICE" in text
+    assert "MIZAN SHARIAH" in text
+    assert "LIMITATION OF LIABILITY" in text
+
+
+def test_installer_checks_and_provisions_webview2_prerequisite(iss: str) -> None:
+    code = iss.split("[Code]", 1)[1]
+    assert "WEBVIEW2_GUID = '{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'" in code
+    assert "MicrosoftEdgeWebview2Setup.exe" in code
+    assert "IsWebView2Installed" in code
+    assert "CreateDownloadPage" in code
+    assert "PrepareToInstall" in code
+
+
 def test_installer_registers_start_menu_and_real_desktop(iss: str) -> None:
     # {autoprograms}/{autodesktop} resolve through the shell, so a OneDrive-redirected
     # desktop gets the shortcut instead of the unused %USERPROFILE%\Desktop folder.

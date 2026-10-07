@@ -51,6 +51,7 @@ AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 AppCopyright=Copyright (C) {#MyAppPublisher}
+LicenseFile=assets\LICENSE.txt
 
 VersionInfoVersion={#MyAppNumericVersion}
 VersionInfoProductVersion={#MyAppNumericVersion}
@@ -133,6 +134,11 @@ Type: filesandordirs; Name: "{app}\tmp"
 const
   DRIVE_FIXED = 3;
   MinFreeBytes = 2147483648; { 2 GB: room for market-data caches to grow }
+  WEBVIEW2_GUID = '{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
+  WEBVIEW2_BOOTSTRAPPER_URL = 'https://go.microsoft.com/fwlink/p/?LinkId=2124703';
+
+var
+  DownloadPage: TDownloadWizardPage;
 
 function GetDriveType(lpRootPathName: String): Cardinal;
   external 'GetDriveTypeW@kernel32.dll stdcall';
@@ -170,3 +176,87 @@ begin
     end;
   end;
 end;
+
+{ Checks if Microsoft Edge WebView2 Runtime is installed via standard registry keys }
+function IsWebView2Installed(): Boolean;
+var
+  Version: String;
+begin
+  Result := False;
+  if RegQueryStringValue(HKLM64, 'SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\' + WEBVIEW2_GUID, 'pv', Version) or
+     RegQueryStringValue(HKLM32, 'SOFTWARE\Microsoft\EdgeUpdate\Clients\' + WEBVIEW2_GUID, 'pv', Version) or
+     RegQueryStringValue(HKCU, 'Software\Microsoft\EdgeUpdate\Clients\' + WEBVIEW2_GUID, 'pv', Version) then
+  begin
+    if (Trim(Version) <> '') and (Trim(Version) <> '0.0.0.0') then
+      Result := True;
+  end;
+end;
+
+procedure InitializeWizard;
+begin
+  DownloadPage := CreateDownloadPage(SetupMessage(msgWizardPreparing), SetupMessage(msgPreparingDesc), nil);
+  DownloadPage.ShowBaseNameInsteadOfUrl := True;
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+var
+  ResultCode: Integer;
+  BootstrapperExe: String;
+begin
+  Result := True;
+  if CurPageID = wpReady then
+  begin
+    if not IsWebView2Installed() then
+    begin
+      Log('WebView2 Runtime not found. Attempting to download Evergreen Bootstrapper.');
+      DownloadPage.Clear;
+      DownloadPage.Add(WEBVIEW2_BOOTSTRAPPER_URL, 'MicrosoftEdgeWebview2Setup.exe', '');
+      DownloadPage.Show;
+      try
+        try
+          DownloadPage.Download;
+          BootstrapperExe := ExpandConstant('{tmp}\MicrosoftEdgeWebview2Setup.exe');
+          if FileExists(BootstrapperExe) then
+          begin
+            Log('Executing WebView2 silent installer: ' + BootstrapperExe);
+            Exec(BootstrapperExe, '/silent /install', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+            Log('WebView2 installation completed with code: ' + IntToStr(ResultCode));
+          end;
+        except
+          if DownloadPage.AbortedByUser then
+            Log('WebView2 download was cancelled by user.')
+          else
+            Log('WebView2 download skipped or machine is offline: ' + GetExceptionMessage);
+        end;
+      finally
+        DownloadPage.Hide;
+      end;
+    end
+    else
+      Log('WebView2 Runtime verified present on system.');
+  end;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+  BootstrapperExe: String;
+begin
+  Result := '';
+  if WizardSilent and (not IsWebView2Installed()) then
+  begin
+    Log('Silent install: WebView2 Runtime missing. Attempting silent download.');
+    try
+      DownloadTemporaryFile(WEBVIEW2_BOOTSTRAPPER_URL, 'MicrosoftEdgeWebview2Setup.exe', '', nil);
+      BootstrapperExe := ExpandConstant('{tmp}\MicrosoftEdgeWebview2Setup.exe');
+      if FileExists(BootstrapperExe) then
+      begin
+        Exec(BootstrapperExe, '/silent /install', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+        Log('Silent WebView2 install completed with code: ' + IntToStr(ResultCode));
+      end;
+    except
+      Log('Silent WebView2 install skipped or offline: ' + GetExceptionMessage);
+    end;
+  end;
+end;
+
