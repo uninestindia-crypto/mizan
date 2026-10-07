@@ -66,6 +66,17 @@ class HoldingRequest(BaseModel):
     avg_price: Decimal = Field(gt=0, le=Decimal("100000000"))
     buy_date: date
     note: str = Field(default="", max_length=200)
+    # Which account holds it. Left out, a new stock goes to the first account and an edited one stays where it is.
+    account_id: int | None = None
+
+
+class AccountRequest(BaseModel):
+    """Only generous ceilings here: the account rules in ``accounts.py`` give the plain messages a person reads."""
+
+    name: str = Field(default="", max_length=1000)
+    owner: str = Field(default="Me", max_length=1000)
+    kind: str = Field(default="Demat account", max_length=1000)
+    broker: str = Field(default="", max_length=1000)
 
 
 class CostsRequest(BaseModel):

@@ -19,6 +19,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from quant_system.server.v2.accounts import ACCOUNT_SCHEMA, AccountsMixin, migrate_accounts
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS watchlist(symbol TEXT PRIMARY KEY, added_at TEXT NOT NULL);
@@ -29,7 +31,8 @@ CREATE TABLE IF NOT EXISTS holdings(
     avg_price TEXT NOT NULL,
     buy_date TEXT NOT NULL,
     note TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    account_id INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS lab_runs(
     id TEXT PRIMARY KEY,
@@ -115,19 +118,22 @@ class Holding(BaseModel):
     avg_price: Decimal
     buy_date: str
     note: str = ""
+    account_id: int = 0
 
 
 def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
-class AppState:
+class AppState(AccountsMixin):
     def __init__(self, path: Path) -> None:
         self.path = path
         self._lock = threading.Lock()
         path.parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as conn:
             conn.executescript(_SCHEMA)
+            conn.executescript(ACCOUNT_SCHEMA)
+            migrate_accounts(conn)
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
@@ -196,28 +202,46 @@ class AppState:
                 avg_price=Decimal(str(r["avg_price"])),
                 buy_date=str(r["buy_date"]),
                 note=str(r["note"]),
+                account_id=int(r["account_id"]),
             )
             for r in rows
         ]
 
     def add_holding(
-        self, symbol: str, quantity: int, avg_price: Decimal, buy_date: str, note: str
+        self,
+        symbol: str,
+        quantity: int,
+        avg_price: Decimal,
+        buy_date: str,
+        note: str,
+        account_id: int | None = None,
     ) -> Holding:
+        account = self.require_account(account_id)
         with self._lock, self._connect() as conn:
             cursor = conn.execute(
-                "INSERT INTO holdings(symbol, quantity, avg_price, buy_date, note, created_at) VALUES (?,?,?,?,?,?)",
-                (symbol.strip().upper(), quantity, str(avg_price), buy_date, note, _now()),
+                "INSERT INTO holdings(symbol, quantity, avg_price, buy_date, note, created_at, account_id) "
+                "VALUES (?,?,?,?,?,?,?)",
+                (symbol.strip().upper(), quantity, str(avg_price), buy_date, note, _now(), account),
             )
             holding_id = int(cursor.lastrowid or 0)
         return next(h for h in self.holdings() if h.id == holding_id)
 
     def update_holding(
-        self, holding_id: int, quantity: int, avg_price: Decimal, buy_date: str, note: str
+        self,
+        holding_id: int,
+        quantity: int,
+        avg_price: Decimal,
+        buy_date: str,
+        note: str,
+        account_id: int | None = None,
     ) -> Holding | None:
+        """Change a holding. With ``account_id`` it moves to that account; without, it stays where it is."""
+        moved_to = None if account_id is None else self.require_account(account_id)
         with self._lock, self._connect() as conn:
             changed = conn.execute(
-                "UPDATE holdings SET quantity = ?, avg_price = ?, buy_date = ?, note = ? WHERE id = ?",
-                (quantity, str(avg_price), buy_date, note, holding_id),
+                "UPDATE holdings SET quantity = ?, avg_price = ?, buy_date = ?, note = ?, "
+                "account_id = COALESCE(?, account_id) WHERE id = ?",
+                (quantity, str(avg_price), buy_date, note, moved_to, holding_id),
             ).rowcount
         if not changed:
             return None

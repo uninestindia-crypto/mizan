@@ -43,6 +43,7 @@ def portfolio_summary(
     for holding in holdings:
         row: dict[str, Any] = {
             "id": holding.id,
+            "account_id": holding.account_id,
             "symbol": holding.symbol,
             "quantity": holding.quantity,
             "avg_price": float(holding.avg_price),
