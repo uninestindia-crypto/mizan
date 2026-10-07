@@ -62,13 +62,19 @@ reports both pairs. Workers were stopped by a session limit and resumed at 09:45
 
 ## Stop point
 
-Contract written; Copilot Shariah-mode awareness committed (`d6d138032`); business-activity test and proof builder written
-test-first and passing (52 tests, uncommitted: `services/{activity_check,proof_*}.py`, `tests/shariah/{proof_fixtures,
-test_proof_*}.py`); filings-engine worker and mode-screens worker resumed. Still to do on my side: the proof service and
-endpoints (`GET /stocks/{symbol}/proof`, `GET /status`, filing jobs, coverage), the price-history market value, the
-snapshot build, then gates, a real-browser check of the whole flow, and the PR.
+UPDATED 2026-10-07 19:55 UTC. Committed and pushed to `claude/wonderful-wozniak-6ek6zl`: Copilot Shariah-mode awareness;
+the proof builder; the filings engine; the bundled real-filings snapshot (413 companies, newest period Dec 2024, so every
+verdict from it is labelled out of date until the app fetches newer filings: NSE's feed as seen from this cloud machine
+ends in Jan 2025); the AI-source backend (`cli_chat`, `ai_choice`, `copilot_ai`, settings fields, `20261007-ai-source-cli-default.md`);
+the one-click updater backend (`updater.py`, `update_routes.py`, installer relaunch); the Shariah mode screens and proof panel.
+Six helpers were stopped by a usage limit at 19:40 UTC and resumed at 19:53 UTC, each with a work record of its own:
+proof service and endpoints (`afb3ed9`), fundamentals backend (`af9f045`), chat-history screen (`a95ee07`), "Which AI answers"
+settings screen (`a032d6e`), top bar and Update button (`a73b644`), Portfolio accounts screens (`af8649e`).
+Their files are uncommitted and are committed by me only after I re-run their gates. Hourly routine
+"Keep QuantOS agents moving" resumes any helper that a limit stops.
 
 ## Next safe action
 
-When both workers report: re-run their gates myself, commit their paths, write `proof_service.py` over the filings store and
-the market index, then the endpoints.
+For each helper report: re-run its gates, commit only its own paths, push. Then: full fundamentals snapshot build
+(`scripts/build_fundamentals_snapshot.py`, polite, about an hour), Fundamentals tab on the Portfolio screens,
+`scripts/release_status.py`, and ask the founder before the pull request, merge and release.
