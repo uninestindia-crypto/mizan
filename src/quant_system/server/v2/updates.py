@@ -140,10 +140,16 @@ class UpdateChecker:
     def changelog(self) -> list[dict[str, Any]]:
         curr_ver = self._current.lstrip("v")
         results: list[dict[str, Any]] = []
+        found_current = False
         for item in OFFLINE_CHANGELOG:
             entry = dict(item)
-            entry["is_current"] = entry["version"] == curr_ver
+            is_cur = entry["version"] == curr_ver
+            if is_cur:
+                found_current = True
+            entry["is_current"] = is_cur
             results.append(entry)
+        if results and not found_current:
+            results[0]["is_current"] = True
         return results
 
 
