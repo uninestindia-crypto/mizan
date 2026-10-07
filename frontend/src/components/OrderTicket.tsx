@@ -2,8 +2,10 @@ import { Check, ClipboardCopy, Download } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { buildTicket, ticketToCsv, ticketToText } from "../lib/orderTicket";
+import { paperBookPickNote } from "../lib/picks";
 import { DASH, date, inr, int } from "../lib/format";
 import type { OrdersFreshness, PaperQueuedOrder, Placement } from "../lib/types";
+import { PickSecondOpinion } from "./copilot/PickSecondOpinion";
 import { PlacementDialog, type PlacementTarget } from "./PlacementDialog";
 import { Badge, Button, Callout, Card, CardHeader, Field, Input } from "./ui";
 
@@ -29,6 +31,10 @@ function download(filename: string, text: string) {
  * copy or export is offered. Second, QuantOS never connects to a broker: it hands over numbers and
  * the person places the orders themselves.
  */
+function pickNoteFor(bookName: string, row: { symbol: string; side: "BUY" | "SELL" }): string {
+  return paperBookPickNote(bookName, row.symbol, row.side === "BUY" ? "queued_buy" : "queued_sell");
+}
+
 export function OrderTicket({
   orders,
   queued,
@@ -187,9 +193,12 @@ export function OrderTicket({
                       <Badge tone={row.side === "BUY" ? "up" : "down"}>{row.side}</Badge>
                     </td>
                     <td className="px-3 py-2 font-medium text-ink">
-                      <Link to={`/stock/${row.symbol}`} className="hover:underline">
-                        {row.symbol}
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link to={`/stock/${row.symbol}`} className="hover:underline">
+                          {row.symbol}
+                        </Link>
+                        <PickSecondOpinion symbol={row.symbol} note={pickNoteFor(bookName, row)} />
+                      </div>
                     </td>
                     <td className="num px-3 py-2 text-right font-semibold text-ink">{int(row.yourQuantity)}</td>
                     <td className="num px-3 py-2 text-right text-ink-3">{int(row.quantity)}</td>
