@@ -276,30 +276,31 @@ def _catalog_local_models(effective_target: str) -> list[LocalModelInfo]:
     target_badge = effective_target.upper()
     return [
         LocalModelInfo(
+            id="cand_mizan_v1",
+            name="Mīzān Flagship Alpha (cand_mizan_v1)",
+            category="Pooled Cross-Sectional Ridge",
+            size="~15 MB",
+            recommended_hardware="CPU / NPU",
+            status=f"ACTIVE ({target_badge})",
+            description="Flagship QuantOS pooled cross-sectional equity ranking and alpha model (frozen weights trial_mizan_h11_002, 11-day horizon).",
+        ),
+        LocalModelInfo(
+            id="cand_ridge_v1",
+            name="Governed Single-Instrument Ridge",
+            category="L2-Regularized Linear Alpha",
+            size="~5 MB",
+            recommended_hardware="CPU SIMD",
+            status="READY",
+            description="Single-instrument rolling walk-forward models evaluated across 101 governed trial evaluations with next-bar execution.",
+        ),
+        LocalModelInfo(
             id="embeddinggemma-270m",
             name="EmbeddingGemma 2 (270M)",
-            category="Semantic RAG & Search",
+            category="Semantic Embeddings & Search",
             size="~300 MB",
-            recommended_hardware="NPU",
-            status=f"ACTIVE ({target_badge})",
-            description="Dense mathematical vector embeddings for AAOIFI Shariah standards, compliance guidelines, and market research retrieval.",
-        ),
-        LocalModelInfo(
-            id="mizan-shariah-3b",
-            name="Mīzān Shariah Financial Engine (3B)",
-            category="Islamic Finance & Compliance Reasoning",
-            size="~2.1 GB",
-            recommended_hardware="NPU / GPU",
+            recommended_hardware="NPU / CPU",
             status="READY",
-            description="Institutional Islamic finance reasoning, dividend purification ledger auditing, fatwa evaluation, and Shariah portfolio governance.",
-        ),
-        LocalModelInfo(
-            id="llama-3-2-3b",
-            name="Llama 3.2 Advisory Copilot (3B)",
-            category="Quantitative Strategy Copilot",
-            size="~2.0 GB",
-            recommended_hardware="GPU / NPU",
-            status="READY",
-            description="On-device conversational assistant for stock factor explanations, risk governor metrics, and portfolio optimization.",
+            description="Dense vector embeddings for AAOIFI Shariah standards, compliance guidelines, and market research retrieval.",
         ),
     ]
+

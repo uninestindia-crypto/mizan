@@ -136,6 +136,11 @@ At completion, move the record from `agent_context/work/active/` to
   - Zero reliance on untracked local paths or developer machine absolute paths (e.g. `D:\quant_system_workspaces\...`).
   - **Zero-Dependency Fallback**: The codebase must run 100% functionally in `SYNTHETIC_MODE` without
     requiring live external broker or LLM API credentials, allowing full verification in isolated cloud environments.
+- **No Fabricated Model Law (Honest Model Inventory)**:
+  QuantOS/Mizan never claims, advertises, or presents an AI or quantitative model that does not genuinely exist in the codebase:
+  - Agents must NEVER invent, hallucinate, mock up, or display placeholder model cards (such as fictional "3B" LLMs, unbuilt SLMs, or fake reasoning engines) in any UI, catalog, documentation, or hardware accelerator screen.
+  - Every model displayed in the product must map 1:1 to a real, verifiable, tracked artifact in the repository (e.g. `MizanModel` `cand_mizan_v1` in `src/quant_system/modeling/mizan_model.py`, `cand_ridge_v1`, `EmbeddingGemmaProvider`, or pre-declared benchmark models in frozen trial ledgers).
+  - Capabilities must only be attributed to genuine, implemented engines (such as the deterministic Shariah screener, zakat calculator, or purification ledger). Inventing fake models violates G1 and G5. Founder instruction, 2026-10-07.
 
 ## Context safety and secret leak prevention
 
