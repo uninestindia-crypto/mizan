@@ -352,3 +352,21 @@ def test_the_response_is_plain_json() -> None:
     client = app_with(real_service(FakeTransport(everyone())))
     text = client.get(PATH, params={"symbols": "TCS"}).text
     assert json.loads(text)["quotes"]["TCS"]["source"] == "Upstox"
+
+
+def test_seed_resolver_resolves_common_symbols_without_index() -> None:
+    res = live_routes.seed_resolver()
+    assert res("INFY") == "NSE_EQ|INE009A01021"
+    assert res("TCS") == "NSE_EQ|INE467B01029"
+    assert res("UNKNOWN_XYZ") is None
+
+
+def test_combined_resolver_falls_back_to_seed_instruments_when_index_is_empty() -> None:
+    res = live_routes.combined_resolver(FakeIndex())
+    assert res("INFY") == "NSE_EQ|INE009A01021"
+    assert res("UNKNOWN_XYZ") is None
+
+
+def test_combined_resolver_prefers_index_over_seed() -> None:
+    res = live_routes.combined_resolver(FakeIndex(INFY="CUSTOM_KEY"))
+    assert res("INFY") == "CUSTOM_KEY"
