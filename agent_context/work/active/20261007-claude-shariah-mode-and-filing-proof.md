@@ -52,13 +52,23 @@ Thresholds unchanged. Stage 2 (daily recompute) and 3 (intraday) are not part of
 
 ## Blockers and conflicts
 
-The Stage 0 workers hold the screener, schemas and Shariah screen files (see above). Steps 4 starts when they report.
-Release v2.5.0 is blocked on GitHub giving no runners (account side); tracked in the Copilot record and a retry trigger.
+The Stage 0 workers finished and were verified and committed (`48aa24b6d`, `e23ab6da8`); the screener, schemas and Shariah
+screen files are free again.
+Release v2.5.0 is PUBLISHED (2026-10-07 09:35 UTC, tag on `aaf41e472`). GitHub gave no runners for about four hours after
+04:53 UTC (account side, cause unconfirmed), then the first release run failed on a Windows-only bug of mine: the Copilot
+folder held `Markdown.tsx` beside `markdown.ts`, which are one name on Windows. It was fixed on `main` by renaming to
+`MarkdownView.tsx`. `tests/test_repo_hygiene.py` now fails on any such pair; run against the tree that shipped the bug it
+reports both pairs. Workers were stopped by a session limit and resumed at 09:45 UTC.
 
 ## Stop point
 
-Started; contract written.
+Contract written; Copilot Shariah-mode awareness committed (`d6d138032`); business-activity test and proof builder written
+test-first and passing (52 tests, uncommitted: `services/{activity_check,proof_*}.py`, `tests/shariah/{proof_fixtures,
+test_proof_*}.py`); filings-engine worker and mode-screens worker resumed. Still to do on my side: the proof service and
+endpoints (`GET /stocks/{symbol}/proof`, `GET /status`, filing jobs, coverage), the price-history market value, the
+snapshot build, then gates, a real-browser check of the whole flow, and the PR.
 
 ## Next safe action
 
-Spawn the filings-engine worker and the mode-screens worker on their disjoint new paths.
+When both workers report: re-run their gates myself, commit their paths, write `proof_service.py` over the filings store and
+the market index, then the endpoints.
