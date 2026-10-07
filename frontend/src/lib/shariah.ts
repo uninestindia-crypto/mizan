@@ -34,6 +34,8 @@ interface ShariahStockRow {
   aaoifi_debt_ratio: number;
   aaoifi_cash_ratio: number;
   purification_ratio: number;
+  /** New: what a check backs. An older response lacks it and the screen says "Not verified". */
+  data_status?: string | null;
 }
 
 /** Both standards must pass; any failure fails the share, any doubt leaves it questionable. */
@@ -58,6 +60,7 @@ export function toCompliance(row: ShariahStockRow): ShariahCompliance {
     cash_ratio: row.aaoifi_cash_ratio,
     purification_ratio: row.purification_ratio,
     compliance_status: status,
+    data_status: row.data_status ?? null,
   };
 }
 

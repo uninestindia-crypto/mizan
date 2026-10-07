@@ -34,6 +34,12 @@ describe("paperBookPickNote", () => {
 });
 
 describe("basketPickNote", () => {
+  it("never says the listed stocks passed the screener, because some of them do not", () => {
+    const note = basketPickNote("Tech Leaders", "tcs").toLowerCase();
+    expect(note).not.toContain("passed");
+    expect(note).toContain("not necessarily");
+  });
+
   it("names the basket and says it is not a recommendation", () => {
     const note = basketPickNote("Tech Leaders", "tcs");
     expect(note).toContain('TCS is listed in the "Tech Leaders" basket');

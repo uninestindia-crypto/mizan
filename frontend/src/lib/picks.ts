@@ -13,7 +13,9 @@ const PAPER_WORDS: Record<PaperPickKind, string> = {
 };
 
 const CLOSING = "This is a rule's selection in a system test, not evidence the stock will do well.";
-const BASKET_CLOSING = "It lists stocks that passed the halal screener's sample data; it is not a recommendation.";
+const BASKET_CLOSING =
+  "It is a list in the app's sample data, not a recommendation, and a stock on it " +
+  "is not necessarily Shariah-compliant.";
 
 function clip(text: string): string {
   return text.length <= MAX_NOTE_CHARS ? text : `${text.slice(0, MAX_NOTE_CHARS - 1).trimEnd()}…`;
