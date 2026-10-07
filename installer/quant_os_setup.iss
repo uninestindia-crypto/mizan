@@ -23,7 +23,7 @@
 
 #define MyAppName "QuantOS"
 #define MyAppPublisher "QuantOS Quantitative Technologies"
-#define MyAppURL "https://github.com/quant-system/quantos"
+#define MyAppURL "https://github.com/uninestindia-crypto/mizan"
 #define MyAppExeName "quantos-studio.exe"
 
 #ifndef SourceDir
@@ -113,6 +113,11 @@ Type: files; Name: "{%USERPROFILE}\Desktop\QuantOS Studio.lnk"
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\data\shariah\*"; DestDir: "{app}\data\shariah"; Flags: ignoreversion onlyifdoesntexist recursesubdirs createallsubdirs
+#ifdef WebView2Setup
+; Microsoft's own small installer for the component QuantOS draws its window with. It is copied and run only on a
+; computer that does not have the component yet (a brand-new laptop that has not run Windows Update).
+Source: "{#WebView2Setup}"; DestDir: "{tmp}"; DestName: "MicrosoftEdgeWebview2Setup.exe"; Flags: deleteafterinstall; Check: WebView2Missing
+#endif
 
 [Dirs]
 Name: "{app}\data"; Flags: uninsneveruninstall
@@ -123,6 +128,10 @@ Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingD
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon; IconFilename: "{app}\assets\quantos.ico"; IconIndex: 0; AppUserModelID: "QuantOS.Desktop.Studio.2.0"
 
 [Run]
+#ifdef WebView2Setup
+; If this cannot finish (for example there is no internet), QuantOS still installs and opens in an Edge window.
+Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "Setting up the Microsoft component QuantOS uses to show its window..."; Flags: waituntilterminated runhidden; Check: WebView2Missing
+#endif
 Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
@@ -169,4 +178,22 @@ begin
       Exit;
     end;
   end;
+end;
+
+const
+  WebView2Key = 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
+
+function WebView2VersionIn(const Root: Integer; const Key: String): Boolean;
+var
+  Version: String;
+begin
+  Result := RegQueryStringValue(Root, Key, 'pv', Version) and (Version <> '') and (Version <> '0.0.0.0');
+end;
+
+{ Microsoft registers the installed WebView2 runtime under this key: for everyone on the machine (32-bit view on a
+  64-bit Windows) or for the current user. }
+function WebView2Missing: Boolean;
+begin
+  Result := not (WebView2VersionIn(HKLM32, WebView2Key) or WebView2VersionIn(HKLM64, WebView2Key) or
+                 WebView2VersionIn(HKCU, WebView2Key));
 end;
