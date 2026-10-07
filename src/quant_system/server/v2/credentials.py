@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-TARGET_PREFIX = "QuantOS:"
+TARGET_PREFIX = os.getenv("QUANTOS_CREDENTIALS_PREFIX", "QuantOS:")
 MAX_SECRET_BYTES = 5 * 512  # CRED_MAX_CREDENTIAL_BLOB_SIZE for generic credentials
 
 
@@ -252,7 +252,7 @@ class CredentialStore:
         """Copy stored secrets into ``os.environ`` where not already set. Returns the names applied."""
         applied: list[str] = []
         for spec in SECRETS:
-            if os.environ.get(spec.name):
+            if spec.name in os.environ:
                 continue
             value = self.get(spec.name)
             if value:

@@ -310,6 +310,7 @@ def test_dataset_idempotency_replays_the_same_operation_after_supervisor_restart
     tmp_path: Path,
 ) -> None:
     monkeypatch.delenv(ACCESS_TOKEN_ENV_VAR, raising=False)
+    monkeypatch.delenv("UPSTOX_ANALYTICS_TOKEN", raising=False)
     monkeypatch.setenv(_EVIDENCE_ROOT_ENV, str(tmp_path / "runtime-evidence"))
     headers = {**auth_headers, "Idempotency-Key": "durable-dataset-intent"}
     request = {

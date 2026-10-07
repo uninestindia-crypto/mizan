@@ -22,6 +22,9 @@ os.environ["TMP"] = str(_TMP_DIR)
 os.environ["TMPDIR"] = str(_TMP_DIR)
 tempfile.tempdir = str(_TMP_DIR)
 
+# Ensure test processes never read ambient machine secrets from Windows Credential Manager
+os.environ.setdefault("QUANTOS_CREDENTIALS_PREFIX", "QuantOS-test-isolation:")
+
 
 @pytest.fixture
 def sample_bars() -> list[PriceBar]:

@@ -413,6 +413,7 @@ def test_dataset_acquisition_reports_missing_provider_credentials_without_publis
     evidence_root = tmp_path / "runtime-evidence"
     monkeypatch.setenv(_EVIDENCE_ROOT_ENV, str(evidence_root))
     monkeypatch.delenv(ACCESS_TOKEN_ENV_VAR, raising=False)
+    monkeypatch.delenv("UPSTOX_ANALYTICS_TOKEN", raising=False)
     headers = {**auth_headers, "Idempotency-Key": "dataset-without-credentials"}
 
     created = client.post(
@@ -453,6 +454,7 @@ def test_dataset_acquisition_binds_an_idempotency_key_to_one_request(
 ) -> None:
     monkeypatch.setenv(_EVIDENCE_ROOT_ENV, str(tmp_path / "runtime-evidence"))
     monkeypatch.delenv(ACCESS_TOKEN_ENV_VAR, raising=False)
+    monkeypatch.delenv("UPSTOX_ANALYTICS_TOKEN", raising=False)
     headers = {**auth_headers, "Idempotency-Key": "one-dataset-intent"}
     request = {
         "instrument_key": "NSE_EQ|INE009A01021",
