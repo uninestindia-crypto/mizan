@@ -260,3 +260,26 @@ def test_studio_contains_hard_exit_and_zombie_cleanup() -> None:
     )
     assert "cleanup_zombie_instances" in source
     assert "os._exit(0)" in source
+    assert "release_single_instance" in source
+    assert "hard_exit" in source
+
+
+@windows_only
+def test_release_single_instance_allows_immediate_reacquisition() -> None:
+    from quant_system.shell.native_window import release_single_instance
+
+    name = f"Local\\QuantOS.Test.Release.{uuid.uuid4().hex}"
+    assert acquire_single_instance(name) is True
+    # Second acquisition fails while held
+    assert acquire_single_instance(name) is False
+
+    # After explicit release, reacquisition succeeds immediately
+    release_single_instance()
+    assert acquire_single_instance(name) is True
+    release_single_instance()
+
+
+def test_focus_existing_window_returns_false_for_missing_window() -> None:
+    from quant_system.shell.native_window import focus_existing_window
+
+    assert focus_existing_window("NonexistentQuantOSWindow_xyz12345") is False

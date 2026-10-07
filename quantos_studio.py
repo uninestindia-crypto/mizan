@@ -242,6 +242,25 @@ def find_app_icon(app_root: Path) -> str | None:
     return None
 
 
+def hard_exit(code: int = 0) -> None:
+    """Terminate the process unconditionally without getting stuck in DLL detaches or loader locks."""
+    try:
+        from quant_system.shell.native_window import hard_exit as _shell_hard_exit
+
+        _shell_hard_exit(code)
+    except Exception:
+        pass
+    if sys.platform == "win32":
+        try:
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel32.TerminateProcess(kernel32.GetCurrentProcess(), code)
+        except Exception:
+            pass
+    if code == 0:
+        os._exit(0)
+    os._exit(code)
+
+
 def run_studio() -> None:
     app_root = configure_drive_isolation()
     ensure_safe_std_streams(app_root)
@@ -254,6 +273,7 @@ def run_studio() -> None:
         acquire_single_instance,
         cleanup_zombie_instances,
         focus_existing_window,
+        release_single_instance,
         run_native_window,
     )
 
@@ -273,12 +293,29 @@ def run_studio() -> None:
 
         # If still no window, the process holding the mutex is an orphaned headless zombie.
         logger.warning("Orphaned instance detected. Terminating headless zombie processes...")
-        cleanup_zombie_instances(("quantos-studio.exe",))
-        time.sleep(0.5)
-        if not acquire_single_instance():
-            logger.error("Could not acquire single-instance lock after zombie cleanup; exiting.")
-            sys.exit(1)
-        logger.info("Successfully acquired single-instance lock after cleaning orphaned process.")
+        exe_names = ["quantos-studio.exe"]
+        current_name = Path(sys.executable).name.lower()
+        if current_name not in [n.lower() for n in exe_names]:
+            exe_names.append(current_name)
+        cleanup_zombie_instances(tuple(exe_names))
+
+        # Retry acquiring the mutex with polling for up to 3 seconds
+        acquired = False
+        for _ in range(15):
+            if acquire_single_instance():
+                acquired = True
+                break
+            time.sleep(0.2)
+
+        if not acquired:
+            logger.warning(
+                "Single-instance lock could not be cleanly reacquired after zombie cleanup; "
+                "continuing startup because no visible window exists."
+            )
+        else:
+            logger.info(
+                "Successfully acquired single-instance lock after cleaning orphaned process."
+            )
 
     # Load environment variables
     load_env_file()
@@ -364,9 +401,10 @@ def run_studio() -> None:
 
     # Clean Graceful Shutdown on Window Close
     logger.info("Initiating graceful server shutdown...")
+    release_single_instance()
     try:
         server.should_exit = True
-        server_thread.join(timeout=1.5)
+        server_thread.join(timeout=1.0)
     except Exception as err:
         logger.warning("Error waiting for server shutdown: %s", err)
     finally:
@@ -377,7 +415,7 @@ def run_studio() -> None:
             except Exception:
                 pass
         # Hard OS-level exit to guarantee zero lingering zombie threads or held mutexes
-        os._exit(0)
+        hard_exit(0)
 
 
 if __name__ == "__main__":
