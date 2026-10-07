@@ -59,6 +59,7 @@ from quant_system.server.v2.credentials import (
     with_saved_credentials,
 )
 from quant_system.server.v2.env_import import EnvFile, apply_plan, build_plan
+from quant_system.server.v2.hardware import detect_hardware_topology, topology_to_dict
 from quant_system.server.v2.jobs import IndexJob
 from quant_system.server.v2.live_routes import router as live_router
 from quant_system.server.v2.notify import OrdersNotifier
@@ -73,6 +74,7 @@ from quant_system.server.v2.schemas import (
     DataFolderRequest,
     DownloadRequest,
     FolderPickRequest,
+    HardwareAcceleratorRequest,
     HoldingRequest,
     LabRunRequest,
     OptionsPayoffRequest,
@@ -378,6 +380,22 @@ def pick_a_folder(body: FolderPickRequest) -> dict[str, Any]:
         return {"path": pick_folder(body.title, body.initial)}
     except FolderPickerError as err:
         raise V2Error(503, "FOLDER_DIALOG_UNAVAILABLE", str(err)) from err
+
+
+@router.get("/system/hardware")
+def get_hardware_info() -> dict[str, Any]:
+    """Detect available hardware accelerators (NPU, GPU, CPU) and active acceleration mode."""
+    settings = services().state.settings()
+    topo = detect_hardware_topology(settings.ai_accelerator)
+    return topology_to_dict(topo)
+
+
+@router.post("/system/hardware")
+def set_hardware_accelerator(body: HardwareAcceleratorRequest) -> dict[str, Any]:
+    """Switch hardware acceleration target ('auto', 'npu', 'gpu', 'cpu')."""
+    services().state.update_settings({"ai_accelerator": body.target})
+    topo = detect_hardware_topology(body.target)
+    return topology_to_dict(topo)
 
 
 @router.post("/data/index/build")

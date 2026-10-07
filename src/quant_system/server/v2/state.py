@@ -106,6 +106,7 @@ class Settings(BaseModel):
     auto_update_paper_books: bool = True
     disclaimer_accepted_at: str | None = None
     shariah_mode: bool = False
+    ai_accelerator: Literal["auto", "npu", "gpu", "cpu"] = "auto"
 
 
 class Holding(BaseModel):

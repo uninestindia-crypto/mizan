@@ -24,6 +24,7 @@ import { AsOf } from "../components/common";
 import { AgentCliBridge } from "../components/AgentCliBridge";
 import { DataFolderPicker } from "../components/DataFolderPicker";
 import { EnvImport } from "../components/EnvImport";
+import { HardwareAcceleratorCard } from "../components/HardwareAcceleratorCard";
 import { Badge, Button, Callout, Card, CardHeader, cx, Field, Input, PageHeader, ProgressBar, Segmented, Skeleton, Switch } from "../components/ui";
 import { errorMessage } from "../lib/api";
 import { MONEY_LIMITS, moneyProblems } from "../lib/rules";
@@ -1037,7 +1038,12 @@ function Accounts() {
 }
 
 function AiAssistants() {
-  return <AgentCliBridge />;
+  return (
+    <div className="space-y-6">
+      <HardwareAcceleratorCard />
+      <AgentCliBridge />
+    </div>
+  );
 }
 
 /** The newest models this key can use, read live from the provider. */

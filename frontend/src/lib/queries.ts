@@ -27,6 +27,8 @@ import type {
   UpdateInfo,
   WatchRow,
   ChangelogEntry,
+  AcceleratorTarget,
+  HardwareTopology,
 } from "./types";
 
 const MARKET = 5 * 60_000;
@@ -467,3 +469,25 @@ export function useChangelog() {
     retry: false,
   });
 }
+
+/** Detected hardware accelerators (NPU, GPU, CPU) and active acceleration topology. */
+export function useHardwareInfo() {
+  return useQuery({
+    queryKey: ["hardware"],
+    queryFn: () => api<HardwareTopology>("/api/v2/system/hardware"),
+    staleTime: 60_000,
+  });
+}
+
+/** Switch active hardware acceleration mode ('auto', 'npu', 'gpu', 'cpu'). */
+export function useSetHardwareAccelerator() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (target: AcceleratorTarget) => api<HardwareTopology>("/api/v2/system/hardware", "POST", { target }),
+    onSuccess: (data) => {
+      qc.setQueryData(["hardware"], data);
+      qc.invalidateQueries({ queryKey: keys.status });
+    },
+  });
+}
+

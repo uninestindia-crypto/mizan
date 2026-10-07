@@ -253,6 +253,9 @@ def hard_exit(code: int = 0) -> None:
     if sys.platform == "win32":
         try:
             kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel32.GetCurrentProcess.restype = ctypes.c_void_p
+            kernel32.TerminateProcess.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+            kernel32.TerminateProcess.restype = ctypes.c_bool
             kernel32.TerminateProcess(kernel32.GetCurrentProcess(), code)
         except Exception:
             pass

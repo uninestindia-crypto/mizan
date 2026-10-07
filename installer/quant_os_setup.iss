@@ -116,8 +116,8 @@ Type: files; Name: "{autodesktop}\QuantOS Studio.lnk"
 Type: files; Name: "{%USERPROFILE}\Desktop\QuantOS Studio.lnk"
 
 [Files]
-Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
+Source: "assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 Source: "..\data\shariah\*"; DestDir: "{app}\data\shariah"; Flags: ignoreversion onlyifdoesntexist recursesubdirs createallsubdirs
 
 [Dirs]
@@ -248,6 +248,10 @@ var
   BootstrapperExe: String;
 begin
   Result := '';
+  Exec('taskkill.exe', '/F /T /IM quantos-studio.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /T /IM quantos.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(500);
+
   if WizardSilent and (not IsWebView2Installed()) then
   begin
     Log('Silent install: WebView2 Runtime missing. Attempting silent download.');

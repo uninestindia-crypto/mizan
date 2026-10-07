@@ -25,6 +25,7 @@ import { CopilotDrawer } from "./copilot/CopilotDrawer";
 import { CopilotProvider } from "./copilot/CopilotProvider";
 import { SecondOpinionHost } from "./copilot/SecondOpinionHost";
 import { SecondOpinionReady } from "./copilot/SecondOpinionReady";
+import { HistoryNav } from "./HistoryNav";
 import { Logo } from "./Logo";
 import { Badge, cx } from "./ui";
 
@@ -357,7 +358,10 @@ function TopHeader({ onSearch }: { onSearch: () => void }) {
   const status = useStatus();
   return (
     <header className={BAR_STYLE}>
-      <ModeSwitch />
+      <div className="flex shrink-0 items-center gap-2.5">
+        <HistoryNav />
+        <ModeSwitch />
+      </div>
       <div className="flex min-w-0 items-center justify-end gap-2 @min-[900px]:gap-3">
         {status.data && <MarketPill status={status.data} />}
         <SecondOpinionReady />
@@ -426,6 +430,7 @@ function MobileBar({ onSearch }: { onSearch: () => void }) {
     <div className="border-b border-line bg-surface md:hidden">
       <div className="flex h-14 items-center justify-between gap-2 px-4">
         <div className="flex min-w-0 items-center gap-2">
+          <HistoryNav compact />
           <Logo className="size-7 shrink-0" />
           <span className="truncate text-[15px] font-semibold">QuantOS</span>
         </div>

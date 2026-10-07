@@ -144,6 +144,9 @@ def hard_exit(code: int = 0) -> None:
     if sys.platform == "win32":
         try:
             kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel32.GetCurrentProcess.restype = ctypes.c_void_p
+            kernel32.TerminateProcess.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+            kernel32.TerminateProcess.restype = ctypes.c_bool
             kernel32.TerminateProcess(kernel32.GetCurrentProcess(), code)
         except Exception:
             pass
@@ -157,6 +160,21 @@ def focus_existing_window(title: str = DEFAULT_TITLE) -> bool:
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     user32.FindWindowW.restype = ctypes.c_void_p
     user32.FindWindowW.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p]
+    user32.IsWindowVisible.argtypes = [ctypes.c_void_p]
+    user32.IsWindowVisible.restype = ctypes.c_bool
+    user32.GetWindowTextLengthW.argtypes = [ctypes.c_void_p]
+    user32.GetWindowTextLengthW.restype = ctypes.c_int
+    user32.GetWindowTextW.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_int]
+    user32.GetWindowTextW.restype = ctypes.c_int
+    user32.ShowWindow.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    user32.ShowWindow.restype = ctypes.c_bool
+    user32.ShowWindowAsync.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    user32.ShowWindowAsync.restype = ctypes.c_bool
+    user32.SetForegroundWindow.argtypes = [ctypes.c_void_p]
+    user32.SetForegroundWindow.restype = ctypes.c_bool
+    user32.BringWindowToTop.argtypes = [ctypes.c_void_p]
+    user32.BringWindowToTop.restype = ctypes.c_bool
+
     hwnd = user32.FindWindowW(None, title)
 
     if not hwnd:
@@ -181,9 +199,7 @@ def focus_existing_window(title: str = DEFAULT_TITLE) -> bool:
     if not hwnd:
         return False
 
-    user32.ShowWindow.argtypes = [ctypes.c_void_p, ctypes.c_int]
-    user32.SetForegroundWindow.argtypes = [ctypes.c_void_p]
-    user32.BringWindowToTop.argtypes = [ctypes.c_void_p]
+    user32.ShowWindowAsync(hwnd, _SW_RESTORE)
     user32.ShowWindow(hwnd, _SW_RESTORE)
     user32.BringWindowToTop(hwnd)
     user32.SetForegroundWindow(hwnd)
@@ -204,6 +220,15 @@ def cleanup_zombie_instances(process_names: tuple[str, ...] = ("quantos-studio.e
     current_pid = os.getpid()
     cleaned = 0
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.OpenProcess.argtypes = [ctypes.c_uint, ctypes.c_bool, ctypes.c_uint]
+    kernel32.OpenProcess.restype = ctypes.c_void_p
+    kernel32.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+    kernel32.WaitForSingleObject.restype = ctypes.c_uint
+    kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+    kernel32.CloseHandle.restype = ctypes.c_bool
+    kernel32.TerminateProcess.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+    kernel32.TerminateProcess.restype = ctypes.c_bool
+    process_terminate = 0x0001
     synchronize = 0x00100000
 
     for name in process_names:
@@ -219,21 +244,21 @@ def cleanup_zombie_instances(process_names: tuple[str, ...] = ("quantos-studio.e
                     try:
                         pid = int(parts[1])
                         if pid != current_pid:
-                            # Terminate process tree (/T) to ensure child WebView2 processes are cleaned
+                            # Terminate directly via OpenProcess + TerminateProcess
+                            h_term = kernel32.OpenProcess(
+                                process_terminate | synchronize, False, pid
+                            )
+                            if h_term:
+                                kernel32.TerminateProcess(h_term, 1)
+                                kernel32.WaitForSingleObject(h_term, 1500)
+                                kernel32.CloseHandle(h_term)
+                            # Also run taskkill as process tree fallback
                             subprocess.run(
                                 f"taskkill /F /T /PID {pid}",
                                 shell=True,
                                 stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL,
                             )
-                            # Wait for kernel to finalize process termination
-                            try:
-                                h_proc = kernel32.OpenProcess(synchronize, False, pid)
-                                if h_proc:
-                                    kernel32.WaitForSingleObject(h_proc, 1500)
-                                    kernel32.CloseHandle(h_proc)
-                            except Exception:
-                                pass
                             cleaned += 1
                     except (ValueError, OSError):
                         pass
