@@ -16,19 +16,34 @@ During initial setup or anytime in **Settings**, users can select their preferre
    - Rigorous Decimal accounting, pre-trade risk governor, and cost-aware execution models.
 
 2. **Mizan Shariah Mode (Ethical / Halal)**:
-   - **Deterministic Dual-Standard Shariah Screener**:
-     - **AAOIFI Standard** (Global): Debt, cash & receivables ratios $< 33\%$, non-operating interest income $< 5\%$.
-     - **TASIS Standard** (Domestic India): Total assets denominator aligned with Indian scholarly consensus.
+   - **Status: working prototype on a 39-company illustrative sample. Not live, not audited.** The figures are
+     hand-entered, every result is labelled `UNVERIFIED_SAMPLE`, no scholar has reviewed the rules, and a result is a
+     screening aid, not a fatwa. How it works, with every threshold: [docs/HALAL_METHODOLOGY.md](docs/HALAL_METHODOLOGY.md).
+     What exists and what is only a vision: [docs/HALAL_WHITE_PAPER.md](docs/HALAL_WHITE_PAPER.md).
+   - **Deterministic Dual-Standard Shariah Screener** (AAOIFI-style and TASIS-style):
+     - **AAOIFI-style** (market-value basis): debt, cash & receivables each under 33% of the 36-month average market
+       capitalisation, impermissible income under 5% of revenue. Which published standard text these limits come from
+       is an open question (see the methodology page).
+     - **TASIS-style** (book-value basis): the same limits against total assets.
+     - A sector test: banking and insurance, alcohol, tobacco, gambling and cinemas are screened out. Pork and weapons
+       are **not** screened.
    - **Curated Thematic Halal Baskets**:
-     - *Halal Tech Giants*, *Shariah High-Growth Champions*, *Ethical Infrastructure*, and *NIFTY Shariah 25*.
-     - 1-Click order sheet exports formatted for **Zerodha CNC**, **Upstox**, **Groww**, and **AngelOne**.
-   - **Cryptographic Dividend Purification Ledger**:
-     - Calculates exact Rupee charity deductions from non-operating interest income.
-     - Sequential **SHA-256 cryptographic hash chaining** ensuring immutable audit receipts.
+     - *Halal Tech Giants*, *Shariah High-Growth Champions*, *Green & Ethical Infrastructure*, and *NIFTY Shariah 25*.
+     - They list stocks, weights and each stock's sample screening. No return, risk figure or rebalance history is
+       shown, because none has been computed or recorded.
+     - Order-sheet export formatted for **Zerodha CNC**, **Upstox**, **Groww**, and **AngelOne**. QuantOS does not
+       place orders, and the sheet uses sample prices.
+   - **Hash-chained Dividend Purification Ledger**:
+     - Calculates the Rupee amount to give away from the sample's non-operating income ratio.
+     - Each entry is chained to the one before it with SHA-256, so an edit made after the entry was written is
+       detected. New entries (hash version 2) cover the id, ticker, gross dividend, ratio, payable
+       amount and time; older entries cover only the id and the amount.
    - **Equity Zakat Calculator**:
-     - Dual-method calculation: Active Trader ($100\%$ NLV) vs Long-term Investor (Zakatable net working assets) calibrated to the Indian Silver Nisab ($\text{₹}53,550.00$).
+     - Two methods: active trader (portfolio value plus cash) and long-term investor (zakatable net working assets
+       per share). The nisab is a fixed, undated figure of Rs 53,550 (595 g of silver at Rs 90 a gram); you can
+       enter your own.
    - **Halal Wealth Academy & Demat Guides**:
-     - Foundational Fiqh modules (Musharakah/Mudarabah) and zero-interest, cash-only Demat account setup instructions.
+     - Foundational fiqh modules and cash-only Demat setup steps. A scholar has not reviewed the content.
 
 ---
 
@@ -40,7 +55,7 @@ mizan/
 ├── client/                      # Cross-platform Flutter client (Android, iOS, Windows, Web)
 ├── data/
 │   ├── cuantos2/                # QuantOS state and SQLite market index
-│   └── shariah/                 # Pre-audited halal_stocks.db & DuckDB analytics
+│   └── shariah/                 # Sample halal_stocks.db (39 hand-entered companies, UNVERIFIED_SAMPLE) & DuckDB analytics
 ├── frontend/                    # Apple-grade React 19 + Vite + Tailwind desktop/web UI
 ├── installer/                   # Inno Setup Windows installer definitions
 ├── src/quant_system/
@@ -53,7 +68,7 @@ mizan/
 │   ├── shariah/                 # Shariah compliance, screening, baskets, zakat, purification
 │   └── strategies/              # Quant strategies & backtest engine
 └── tests/
-    ├── shariah/                 # 160/160 Shariah test suite
+    ├── shariah/                 # Shariah test suite
     └── unit & integration/      # Comprehensive QuantOS test suites
 ```
 

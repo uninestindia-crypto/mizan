@@ -32,7 +32,7 @@ async def search_companies_fts(
     standard: str = "aaoifi",
     limit: int = 15,
 ) -> list[SearchSuggestion]:
-    """Execute sub-50ms instant search using SQLite FTS5 index with prefix matching."""
+    """Search by name or symbol using the SQLite full-text index with prefix matching."""
     fts_match = sanitize_fts_query(query)
 
     if not fts_match:

@@ -379,7 +379,7 @@ async def test_audit_breakdown_balance_sheet_lines(client: AsyncClient):
     bs_lines = data["balance_sheet_lines"]
     assert len(bs_lines) >= 8
     line_names = [line["line_item"] for line in bs_lines]
-    assert "Total Audited Assets" in line_names
+    assert "Total Assets" in line_names
     assert "Total Interest-Bearing Debt" in line_names
     assert "Cash and Cash Equivalents" in line_names
 
@@ -456,12 +456,10 @@ def test_baskets_constituent_weights_sum_to_100(oracle: DomainOracle):
             assert abs(weight_sum - 1.0) < 1e-4, f"Basket {b['id']} weights sum to {weight_sum}"
 
 
-def test_baskets_performance_metrics_cagr_and_sharpe(oracle: DomainOracle):
-    """Verifies historical CAGR and Sharpe ratios are positive for all baskets."""
-    baskets = oracle.get_thematic_baskets()
-    for b in baskets:
-        assert b["expected_cagr"] > 0.10, f"CAGR for {b['id']} should be > 10%"
-        assert b["expected_sharpe"] > 1.0, f"Sharpe for {b['id']} should be > 1.0"
+@pytest.mark.parametrize("key", ["expected_cagr", "expected_sharpe"])
+def test_baskets_spec_carries_no_assumed_performance(oracle: DomainOracle, key: str):
+    """No basket is specified with a return or risk figure: none has been computed from real data."""
+    assert [b["id"] for b in oracle.get_thematic_baskets() if key in b] == []
 
 
 def test_baskets_zerodha_cnc_order_format(oracle: DomainOracle):

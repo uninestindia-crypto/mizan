@@ -14,6 +14,7 @@ from quant_system.shariah.services.screener_service import (
     build_audit_evidence_lines,
     evaluate_company_shariah,
 )
+from quant_system.shariah.services.transparency import build_screening_transparency
 
 router = APIRouter()
 
@@ -77,6 +78,7 @@ async def screen_stock(
             overall_status = ComplianceStatus.COMPLIANT
 
     return ScreeningResponse(
+        **build_screening_transparency(company).model_dump(),
         ticker=company["ticker"],
         symbol=company["symbol"],
         company_name=company["company_name"],
@@ -100,7 +102,7 @@ async def get_shariah_audit(
     ticker: str,
     db: aiosqlite.Connection = Depends(get_async_db),
 ) -> ShariahAuditResponse:
-    """Retrieve verified line-item audit trail with balance sheet schedules, note numbers, and filing citations."""
+    """Retrieve the line items behind a verdict. Each one is marked as an unverified sample."""
     company = await fetch_company_by_ticker(db, ticker)
 
     aaoifi_eval, tasis_eval, divergence, div_reason = evaluate_company_shariah(company)
@@ -109,13 +111,14 @@ async def get_shariah_audit(
     purif_pct = round(float(company["purification_ratio"]) * 100.0, 4)
 
     return ShariahAuditResponse(
+        **build_screening_transparency(company).model_dump(),
         ticker=company["ticker"],
         symbol=company["symbol"],
         company_name=company["company_name"],
         isin=company["isin"],
         filing_date=company["filing_date"],
         reporting_period=company["reporting_period"],
-        source_document=company.get("source_document", "Audited Financial Statements"),
+        source_document=company.get("source_document", "Not recorded"),
         sector=company["sector"],
         sector_compliant=bool(company["sector_compliant"]),
         sector_failure_reason=company.get("sector_failure_reason"),

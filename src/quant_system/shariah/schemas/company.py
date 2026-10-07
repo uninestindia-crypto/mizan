@@ -9,6 +9,14 @@ class ComplianceStatus(StrEnum):
     QUESTIONABLE = "QUESTIONABLE"
 
 
+class DataStatus(StrEnum):
+    """How far the figures behind a verdict have been checked. Never stronger than a check backs."""
+
+    UNVERIFIED_SAMPLE = "UNVERIFIED_SAMPLE"
+    VERIFIED_FILING = "VERIFIED_FILING"
+    STALE = "STALE"
+
+
 class ScreeningStandard(StrEnum):
     AAOIFI = "AAOIFI"
     TASIS = "TASIS"
@@ -89,6 +97,10 @@ class CompanySummary(BaseModel):
     avg_36m_market_cap: float
     aaoifi_status: ComplianceStatus
     tasis_status: ComplianceStatus
+    data_status: DataStatus = Field(
+        default=DataStatus.UNVERIFIED_SAMPLE,
+        description="How far the figures behind these results are checked",
+    )
     purification_ratio: float
     is_nifty_50: bool = False
     is_nifty_500: bool = True
@@ -110,6 +122,7 @@ class SearchSuggestion(BaseModel):
     current_price: float
     aaoifi_status: ComplianceStatus
     tasis_status: ComplianceStatus
+    data_status: DataStatus = DataStatus.UNVERIFIED_SAMPLE
 
 
 class CompanyProfile(BaseModel):
@@ -149,6 +162,8 @@ class CompanyDetail(BaseModel):
 
     sector_compliant: bool
     sector_failure_reason: str | None = None
+
+    data_status: DataStatus = DataStatus.UNVERIFIED_SAMPLE
 
     aaoifi_status: ComplianceStatus
     aaoifi_debt_ratio: float
