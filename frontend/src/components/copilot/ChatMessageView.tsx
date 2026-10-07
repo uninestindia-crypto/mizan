@@ -1,10 +1,13 @@
 import { ArrowRight, UsersRound } from "lucide-react";
 import { useNavigate } from "react-router";
-import { type ChatProposal, type ChatStep, friendlyProvider, openSecondOpinion } from "../../lib/copilot";
+import { type ChatProposal, type ChatStep, openSecondOpinion } from "../../lib/copilot";
+import { answeredBy } from "../../lib/copilotHistory";
 import {
-  ACCOUNTS_PATH,
+  AI_PATH,
   type AssistantMessage,
+  CHOOSE_AI,
   type ChatMessage,
+  keyButton,
   keyHelp,
   visibleProposals,
 } from "./chatState";
@@ -83,17 +86,17 @@ function Proposals({ proposals }: { proposals: readonly ChatProposal[] }) {
   );
 }
 
-/** One button to the place where AI keys are kept, for a reply that talks about keys but offered none. */
+/** One button to where an AI is chosen or its key checked, for a reply that talks about that but offered none. */
 function KeyButton({ message }: { message: AssistantMessage }) {
   const openPage = useOpenPage();
-  const label = /add an AI key/i.test(message.content) ? "Add an AI key" : "Check your AI keys";
-  const proposal: ChatProposal = { kind: "navigate", label, path: ACCOUNTS_PATH, symbol: null };
-  return <ProposalButton proposal={proposal} onChoose={() => openPage(ACCOUNTS_PATH)} />;
+  const proposal = keyButton(message);
+  return <ProposalButton proposal={proposal} onChoose={() => openPage(proposal.path ?? AI_PATH)} />;
 }
 
 /**
- * Where the answer came from. Only the company is named, never a model's own id. A built-in answer gets no note when
- * its own words already say what to do about an AI key, so the same advice is never given twice.
+ * Which AI answered, by the name of the AI app or company, never a model's own id; an AI it cannot name gets no line.
+ * A built-in answer gets no note when its own words already say what to do about choosing an AI, so the same advice
+ * is never given twice.
  */
 function SourceNote({ message }: { message: AssistantMessage }) {
   const openPage = useOpenPage();
@@ -104,16 +107,20 @@ function SourceNote({ message }: { message: AssistantMessage }) {
     return (
       <p className="text-[12.5px] text-ink-3">
         Answered from QuantOS&apos;s built-in answers.{" "}
-        <button type="button" onClick={() => openPage(ACCOUNTS_PATH)} className={LINK_BUTTON}>
-          Add an AI key
+        <button type="button" onClick={() => openPage(AI_PATH)} className={LINK_BUTTON}>
+          {CHOOSE_AI}
         </button>{" "}
         for open-ended questions.
       </p>
     );
   }
-  const company = friendlyProvider(message.provider);
-  const said = company ? `Answered by an AI model from ${company}.` : "Answered by an AI model.";
-  return <p className="text-[12.5px] text-ink-3">{said}</p>;
+  const said = answeredBy(message.provider);
+  return said ? <p className="text-[12.5px] text-ink-3">{said}</p> : null;
+}
+
+/** The engine's own sentence when this answer could not be saved. The answer is still here; this is a heads-up. */
+function SavedNote({ note }: { note: string | null | undefined }) {
+  return note ? <p className="text-[12.5px] text-ink-3">{note}</p> : null;
 }
 
 function AssistantBubble({ message }: { message: AssistantMessage }) {
@@ -126,6 +133,7 @@ function AssistantBubble({ message }: { message: AssistantMessage }) {
       <Proposals proposals={visibleProposals(message)} />
       {message.error && <p className="text-[12.5px] text-warn">{message.error}</p>}
       <SourceNote message={message} />
+      <SavedNote note={message.savedNote} />
     </div>
   );
 }

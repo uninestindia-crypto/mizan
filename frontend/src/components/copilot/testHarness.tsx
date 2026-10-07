@@ -40,5 +40,11 @@ export function routeApi(routes: Record<string, Route>) {
   }) as typeof api);
 }
 
+/** Answers every call with one function, for an engine whose paths carry an id or a search. */
+export function serveApi(handler: (method: string, path: string, body: unknown) => unknown) {
+  vi.mocked(api).mockImplementation((async (path: string, method: string = "GET", body?: unknown) =>
+    handler(method, path, body)) as typeof api);
+}
+
 export const callsTo = (method: string, path: string) =>
   vi.mocked(api).mock.calls.filter(([p, m = "GET"]) => p === path && m === method);

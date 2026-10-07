@@ -31,11 +31,11 @@ function Starters({ onPick }: { onPick: (text: string) => void }) {
   );
 }
 
-function Thinking() {
+function Waiting({ children }: { children: string }) {
   return (
     <p role="status" className="flex items-center gap-2 text-[13px] text-ink-3">
       <Loader2 className="size-4 animate-spin" aria-hidden />
-      Thinking…
+      {children}
     </p>
   );
 }
@@ -64,7 +64,7 @@ function CouldNotAnswer({ sentence, onRetry }: { sentence: string | null; onRetr
 }
 
 export function ChatThread() {
-  const { messages, thinking, failed, failure, send, retry } = useCopilot();
+  const { messages, thinking, failed, failure, send, retry, openingChat } = useCopilot();
   const scroller = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const box = scroller.current;
@@ -74,12 +74,13 @@ export function ChatThread() {
   const empty = messages.length === 0 && !thinking && !failed;
   return (
     <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 [overflow-wrap:anywhere]">
-      {empty && <Starters onPick={send} />}
+      {empty && !openingChat && <Starters onPick={send} />}
+      {empty && openingChat && <Waiting>Opening your chat…</Waiting>}
       <div role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions" className="space-y-4">
         {messages.map((message) => (
           <ChatMessageView key={message.id} message={message} />
         ))}
-        {thinking && <Thinking />}
+        {thinking && <Waiting>Thinking…</Waiting>}
         {failed && <CouldNotAnswer sentence={failure} onRetry={retry} />}
       </div>
     </div>
