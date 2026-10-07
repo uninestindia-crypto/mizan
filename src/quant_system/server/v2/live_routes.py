@@ -70,6 +70,10 @@ def seed_resolver() -> Callable[[str], str | None]:
                 from quant_system.server.v2 import paths
 
                 seed_file = paths.app_root() / "configs" / "nse_seed_instruments.json"
+                if not seed_file.is_file():
+                    seed_file = (
+                        paths.app_root() / "_internal" / "configs" / "nse_seed_instruments.json"
+                    )
                 if seed_file.is_file():
                     seed_cache = json.loads(seed_file.read_text(encoding="utf-8"))
             except Exception:

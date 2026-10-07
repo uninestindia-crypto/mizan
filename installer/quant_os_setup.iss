@@ -118,6 +118,7 @@ Type: files; Name: "{%USERPROFILE}\Desktop\QuantOS Studio.lnk"
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 Source: "assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
+Source: "..\configs\*"; DestDir: "{app}\configs"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 Source: "..\data\shariah\*"; DestDir: "{app}\data\shariah"; Flags: ignoreversion onlyifdoesntexist recursesubdirs createallsubdirs
 
 [Dirs]

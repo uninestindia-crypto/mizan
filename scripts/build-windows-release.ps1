@@ -95,6 +95,13 @@ try {
             Copy-Item -Path (Join-Path $srcShariah "*") -Destination $distShariah -Recurse -Force
             Write-Host "  -> Staged shariah seed data into dist\quantos\data\shariah." -ForegroundColor Green
         }
+        $distConfigs = Join-Path $distDir "configs"
+        $srcConfigs = Join-Path $projectRoot "configs"
+        if (Test-Path $srcConfigs) {
+            if (-not (Test-Path $distConfigs)) { New-Item -ItemType Directory -Path $distConfigs -Force | Out-Null }
+            Copy-Item -Path (Join-Path $srcConfigs "*") -Destination $distConfigs -Recurse -Force
+            Write-Host "  -> Staged configuration data into dist\quantos\configs." -ForegroundColor Green
+        }
     }
 
     # 3. Generate SBOM and Cryptographic Release Manifest
