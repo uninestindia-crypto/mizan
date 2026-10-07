@@ -411,16 +411,17 @@ function Accounts() {
 
   const getSecret = (name: string) => allSecrets.find((s) => s.name === name);
 
-  const handleTest = (provider: string, creds: Record<string, string>) => {
-    setTestResults((prev) => ({ ...prev, [provider]: { testing: true } }));
+  const handleTest = (provider: string, creds: Record<string, string>, resultKey?: string) => {
+    const key = resultKey ?? provider;
+    setTestResults((prev) => ({ ...prev, [key]: { testing: true } }));
     testMutation.mutate(
       { provider, credentials: creds },
       {
         onSuccess: (res) => {
-          setTestResults((prev) => ({ ...prev, [provider]: { testing: false, valid: res.valid, message: res.message } }));
+          setTestResults((prev) => ({ ...prev, [key]: { testing: false, valid: res.valid, message: res.message } }));
         },
         onError: (err) => {
-          setTestResults((prev) => ({ ...prev, [provider]: { testing: false, valid: false, message: errorMessage(err) } }));
+          setTestResults((prev) => ({ ...prev, [key]: { testing: false, valid: false, message: errorMessage(err) } }));
         },
       }
     );
@@ -658,7 +659,7 @@ function Accounts() {
                 variant="secondary"
                 disabled={!(drafts["UPSTOX_ANALYTICS_TOKEN"] || upstoxAnalytics?.active || upstoxAnalytics?.stored)}
                 loading={testResults["upstox_analytics"]?.testing}
-                onClick={() => handleTest("upstox", { UPSTOX_ANALYTICS_TOKEN: drafts["UPSTOX_ANALYTICS_TOKEN"] || "" })}
+                onClick={() => handleTest("upstox", { UPSTOX_ANALYTICS_TOKEN: drafts["UPSTOX_ANALYTICS_TOKEN"] || "" }, "upstox_analytics")}
               >
                 Test Connection
               </Button>

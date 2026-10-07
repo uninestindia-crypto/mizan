@@ -173,7 +173,9 @@ AI_KEY_NAMES: dict[str, str] = {
 }
 
 
-def with_saved_credentials(provided: dict[str, str]) -> dict[str, str]:
+def with_saved_credentials(
+    provided: dict[str, str], store: CredentialStore | None = None
+) -> dict[str, str]:
     """Fill in any secret the caller left blank from what is already saved (or in the environment).
 
     The Test Connection button is enabled for a key that is already saved, but the page never holds
@@ -181,9 +183,15 @@ def with_saved_credentials(provided: dict[str, str]) -> dict[str, str]:
     be tested.
     """
     merged = {name: value for name, value in provided.items() if value and value.strip()}
+    cs = store or CredentialStore()
     for spec in SECRETS:
         if spec.name not in merged:
             saved = os.environ.get(spec.name, "").strip()
+            if not saved and cs.available:
+                try:
+                    saved = (cs.get(spec.name) or "").strip()
+                except Exception:
+                    saved = ""
             if saved:
                 merged[spec.name] = saved
     return merged
