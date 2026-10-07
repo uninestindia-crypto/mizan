@@ -63,7 +63,7 @@ interface RowProps {
   agent: Agent;
   tools: AgentTool[] | undefined;
   handlers: Handlers;
-  /** True only once the engine has said that no AI key is saved. */
+  /** True only once the engine has said that no AI is set up. */
   noAiKey: boolean;
 }
 
