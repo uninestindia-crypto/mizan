@@ -19,7 +19,9 @@ import sys
 import threading
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 DEFAULT_TITLE = "QuantOS"
 MUTEX_NAME = "Local\\QuantOS.Desktop.SingleInstance"
@@ -214,6 +216,33 @@ def default_icon_path() -> str | None:
     return None
 
 
+@dataclass(frozen=True, slots=True)
+class LoadingPage:
+    """What the window shows while the engine starts, and what it shows if the engine cannot.
+
+    ``ready`` blocks until the app can be shown and says whether it can. It runs after the window exists, on the
+    window toolkit's own helper thread, so the person sees the loading screen at once.
+    """
+
+    html: str
+    ready: Callable[[], bool]
+    failure_html: str
+
+
+def _open_when_ready(window: Any, url: str, loading: LoadingPage, log: logging.Logger) -> None:
+    """Wait for the engine, then replace the loading screen with the app (or with the failure page)."""
+    try:
+        ready = bool(loading.ready())
+    except Exception as err:
+        log.warning("Waiting for the engine failed (%s: %s).", type(err).__name__, err)
+        ready = False
+    if ready:
+        window.load_url(url)
+    else:
+        log.error("The engine did not become ready; showing the failure page.")
+        window.load_html(loading.failure_html)
+
+
 def run_native_window(
     url: str,
     *,
@@ -225,11 +254,13 @@ def run_native_window(
     height: int = 900,
     min_size: tuple[int, int] = (1024, 700),
     start: Callable[..., object] | None = None,
+    loading: LoadingPage | None = None,
 ) -> bool:
     """Show ``url`` in a native window and block until it is closed.
 
-    Returns True if a native window was shown and then closed by the user, False if none could be
-    shown (the caller should fall back). ``start`` is injectable for tests.
+    With ``loading`` the window opens at once on the loading screen and moves to ``url`` when the engine is ready;
+    without it the window opens straight on ``url``. Returns True if a native window was shown and then closed by
+    the user, False if none could be shown (the caller should fall back). ``start`` is injectable for tests.
     """
     ensure_app_user_model_id()
     log = logger or logging.getLogger("quantos.shell")
@@ -256,9 +287,10 @@ def run_native_window(
         except Exception:
             screen_size = None
         (width, height), min_size = fit_to_screen(screen_size, (width, height), min_size)
+        first_page: dict[str, str] = {"html": loading.html} if loading else {"url": url}
         win = webview.create_window(
             title=title,
-            url=url,
+            **first_page,
             width=width,
             height=height,
             min_size=min_size,
@@ -287,24 +319,18 @@ def run_native_window(
 
         launcher = start or webview.start
         resolved_icon = icon or default_icon_path()
-        storage = storage_path or os.environ.get("WEBVIEW2_USER_DATA_FOLDER")
-
+        options: dict[str, Any] = {
+            "gui": "edgechromium",
+            "private_mode": False,
+            "storage_path": storage_path or os.environ.get("WEBVIEW2_USER_DATA_FOLDER"),
+            "debug": False,
+        }
         if resolved_icon and os.path.isfile(resolved_icon):
             log.info("Applying QuantOS icon: %s", resolved_icon)
-            launcher(
-                gui="edgechromium",
-                private_mode=False,
-                storage_path=storage,
-                debug=False,
-                icon=resolved_icon,
-            )
-        else:
-            launcher(
-                gui="edgechromium",
-                private_mode=False,
-                storage_path=storage,
-                debug=False,
-            )
+            options["icon"] = resolved_icon
+        if loading is not None:
+            options.update(func=_open_when_ready, args=(win, url, loading, log))
+        launcher(**options)
     except Exception as err:
         log.warning("Native window failed (%s: %s); falling back.", type(err).__name__, err)
         return False

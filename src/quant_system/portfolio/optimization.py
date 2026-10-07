@@ -5,9 +5,17 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
-from scipy.optimize import minimize  # type: ignore[import-untyped]
+
+
+def minimize(*args: Any, **kwargs: Any) -> Any:
+    """SciPy's optimiser, loaded the first time it is used: SciPy takes about a second to import, and only the
+    portfolio optimiser needs it, so the app must not pay for it every time it opens."""
+    from scipy.optimize import minimize as scipy_minimize  # type: ignore[import-untyped]
+
+    return scipy_minimize(*args, **kwargs)
 
 
 @dataclass(frozen=True, slots=True)

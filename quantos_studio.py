@@ -19,7 +19,9 @@ import sys
 import threading
 import time
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import uvicorn
 
@@ -184,6 +186,74 @@ def wait_for_server_ready(url: str, timeout_sec: float = 10.0) -> bool:
     return False
 
 
+# A slow laptop (an older processor, or an x64 program emulated on an ARM one, with antivirus checking every file on
+# the first start) can need much longer than a fast one. The window is already on screen while this wait runs.
+READY_TIMEOUT_SECONDS = 90.0
+
+
+def _build_server(port: int) -> uvicorn.Server:
+    """Load the engine and prepare its server. The slow part of starting QuantOS happens here, on a helper thread."""
+    from quant_system.server.app import app
+
+    config = uvicorn.Config(
+        app=app,
+        host="127.0.0.1",
+        port=port,
+        log_level="warning",
+        access_log=False,
+        log_config=None,
+        use_colors=False,
+    )
+    return uvicorn.Server(config)
+
+
+class EngineBoot:
+    """Starts the engine on a background thread so the window can open while it loads."""
+
+    def __init__(
+        self,
+        port: int,
+        logger: logging.Logger,
+        make_server: Callable[[int], Any] | None = None,
+    ) -> None:
+        self._port = port
+        self._logger = logger
+        self._make_server = make_server or _build_server
+        self.server: Any = None
+        self.error: BaseException | None = None
+        self._thread = threading.Thread(target=self._run, name="QuantOS-Engine", daemon=True)
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def _run(self) -> None:
+        try:
+            self.server = self._make_server(self._port)
+            self._logger.info("Engine loaded; serving on port %d.", self._port)
+            self.server.run()
+        except (
+            BaseException
+        ) as err:  # a failed start must reach the window as a plain page, never vanish
+            self.error = err
+            self._logger.exception("The engine could not start.")
+
+    def wait_ready(self, url: str, timeout_sec: float = READY_TIMEOUT_SECONDS) -> bool:
+        """True once the engine answers; False at once if it failed to start, or after ``timeout_sec``."""
+        deadline = time.monotonic() + timeout_sec
+        while time.monotonic() < deadline:
+            if self.error is not None:
+                return False
+            if wait_for_server_ready(url, timeout_sec=0.6):
+                return True
+        return False
+
+    def stop(self) -> None:
+        if self.server is not None:
+            self.server.should_exit = True
+        if self._thread.is_alive():
+            self._thread.join(timeout=1.5)
+
+
 def find_app_browser() -> str | None:
     """Finds an installed browser supporting dedicated --app mode (Edge or Chrome)."""
     candidates = [
@@ -287,45 +357,33 @@ def run_studio() -> None:
     url = f"http://127.0.0.1:{port}"
     logger.info("Allocated port %d. Target URL: %s", port, url)
 
-    # Import and configure FastAPI application
-    from quant_system.server.app import app
+    # Load the engine in the background, and open the window now: the person sees QuantOS at once, on a loading
+    # screen, instead of an empty desktop for as long as the engine takes to load.
+    boot = EngineBoot(port, logger)
+    boot.start()
+    logger.info("Engine is loading in the background.")
 
-    config = uvicorn.Config(
-        app=app,
-        host="127.0.0.1",
-        port=port,
-        log_level="warning",
-        access_log=False,
-        log_config=None,
-        use_colors=False,
+    from quant_system.shell.native_window import LoadingPage, system_prefers_dark
+    from quant_system.shell.splash import failure_html, splash_html
+
+    dark = system_prefers_dark()
+    loading = LoadingPage(
+        html=splash_html(dark=dark, version=__version__),
+        ready=lambda: boot.wait_ready(url),
+        failure_html=failure_html(dark=dark),
     )
-    server = uvicorn.Server(config)
 
-    # Run Uvicorn in background thread
-    server_thread = threading.Thread(
-        target=server.run,
-        name="QuantOS-UvicornServer",
-        daemon=True,
-    )
-    server_thread.start()
-    logger.info("Background Uvicorn thread started.")
-
-    # Wait for local server to become responsive
-    if not wait_for_server_ready(url, timeout_sec=12.0):
-        logger.error("Server failed to respond within timeout.")
-        server.should_exit = True
-        server_thread.join(timeout=3.0)
-        sys.exit(1)
-
-    logger.info("Server is healthy and ready on %s", url)
-
-    # Launch UI Window
     # Strategy 1: a native window (Windows WebView2 through pywebview)
     logger.info("Opening the native QuantOS window.")
     icon_path = find_app_icon(app_root)
-    opened_via_webview = run_native_window(url, title="QuantOS", icon=icon_path, logger=logger)
+    opened_via_webview = run_native_window(
+        url, title="QuantOS", icon=icon_path, logger=logger, loading=loading
+    )
     if not opened_via_webview:
         logger.info("No native window available; using an Edge/Chrome app window instead.")
+        if not boot.wait_ready(url):
+            logger.error("The engine did not become ready.")
+            sys.exit(1)
 
     # Strategy 2: Dedicated Windows App Mode Shell (Isolated Edge/Chrome window)
     if not opened_via_webview:
@@ -365,8 +423,7 @@ def run_studio() -> None:
     # Clean Graceful Shutdown on Window Close
     logger.info("Initiating graceful server shutdown...")
     try:
-        server.should_exit = True
-        server_thread.join(timeout=1.5)
+        boot.stop()
     except Exception as err:
         logger.warning("Error waiting for server shutdown: %s", err)
     finally:
