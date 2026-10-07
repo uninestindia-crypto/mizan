@@ -50,6 +50,7 @@ def test_installer_keeps_stable_app_id_for_upgrades(iss: str) -> None:
 
 def test_installer_is_per_user_without_admin_prompt(iss: str) -> None:
     assert _setup_directive(iss, "PrivilegesRequired") == "lowest"
+    assert _setup_directive(iss, "DisableDirPage") == "no"
 
 
 def test_installer_uses_native_windows11_style_following_system_theme(iss: str) -> None:

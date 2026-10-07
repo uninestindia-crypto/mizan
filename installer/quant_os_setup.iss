@@ -67,6 +67,7 @@ PrivilegesRequired=lowest
 DefaultDirName={code:DefaultInstallDir}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
+DisableDirPage=no
 UsePreviousAppDir=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -99,6 +100,10 @@ SignedUninstaller=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Messages]
+SelectDirLabel3=Select the drive and folder where QuantOS, its research databases, and AI model data will be installed:
+SelectDirBrowseLabel=To continue, click Next. To choose a different drive or folder, click Browse:
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
