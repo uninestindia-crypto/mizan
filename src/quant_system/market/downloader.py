@@ -236,10 +236,21 @@ def _marked(market_cache: Path, prefix: str) -> list[Path]:
 
 
 def baseline_exists(data_folder: Path) -> bool:
-    """Whether a ten-year baseline made by this download is already on disk (so an update is enough)."""
+    """Whether a ten-year baseline made by this download or seeded is already on disk (so an update is enough)."""
+    market_cache = data_folder / "evidence" / "market-cache"
+    if not market_cache.is_dir():
+        return False
+    marked = [
+        cache
+        for cache in _marked(market_cache, "all-market-")
+        if (cache / "store" / "datasets").is_dir()
+    ]
+    if marked:
+        return True
     return any(
-        (cache / "store" / "datasets").is_dir()
-        for cache in _marked(data_folder / "evidence" / "market-cache", "all-market-")
+        (child / "store" / "datasets").is_dir()
+        for child in market_cache.iterdir()
+        if child.is_dir() and child.name.startswith("all-market-")
     )
 
 
@@ -451,13 +462,29 @@ class MarketDownload:
         market_cache = data_folder / "evidence" / "market-cache"
         history_name, refresh_name = cache_names(today)
         baseline = _marked(market_cache, "all-market-")
+        if not baseline and market_cache.is_dir():
+            seeded = [
+                c
+                for c in market_cache.iterdir()
+                if c.is_dir()
+                and c.name.startswith("all-market-")
+                and (c / "store" / "datasets").is_dir()
+            ]
+            if seeded:
+                baseline = sorted(seeded, key=lambda path: path.name, reverse=True)
+                marker = baseline[0] / MARKER
+                if not marker.exists():
+                    marker.write_text(
+                        json.dumps({"kind": "HISTORY", "created": datetime.now(UTC).isoformat()}),
+                        encoding="utf-8",
+                    )
         # Same-day re-run of a full download is a resume (finish what is missing); a baseline from an
         # earlier day only needs the recent window refreshed.
         newer_baseline = bool(baseline) and baseline[0].name != history_name
         updating = baseline_exists(data_folder) and (
             mode == "update" or (mode == "auto" and newer_baseline)
         )
-        if updating:
+        if updating and baseline:
             history_name = baseline[0].name  # keep the baseline that is already there
         hist_start, end = window(today)
         ref_start, _ = refresh_window(today)
