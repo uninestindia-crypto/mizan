@@ -122,6 +122,13 @@ body {
   border-radius: 6px;
 }
 
+/* The search palette's box is the whole panel, so the field inside it needs no ring of its own. Keyboard focus is
+   still obvious: the caret blinks in it and the first result is highlighted. */
+[cmdk-input]:focus-visible {
+  outline: none;
+  border-radius: 0;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--q-brand) 25%, transparent);
 }
