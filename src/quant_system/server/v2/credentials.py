@@ -517,16 +517,44 @@ def verify_credential_connection(provider: str, credentials: dict[str, str]) -> 
                 }
 
         elif prov == "upstox":
+            from datetime import UTC, datetime
+
+            from quant_system.live.upstox_key import key_problem
+
             access_token = credentials.get("UPSTOX_ACCESS_TOKEN", "").strip()
             analytics_token = credentials.get("UPSTOX_ANALYTICS_TOKEN", "").strip()
-            token = access_token or analytics_token
-            if not token:
+            if not access_token and not analytics_token:
                 return {
                     "valid": False,
                     "message": "UPSTOX_ACCESS_TOKEN or UPSTOX_ANALYTICS_TOKEN is required to test connection.",
                 }
-            if analytics_token and not access_token:
-                # Analytics token authenticates quote feeds
+
+            now = datetime.now(UTC)
+            # Try valid access token first if not expired
+            if access_token and key_problem(access_token, now) is None:
+                try:
+                    req = urllib.request.Request(
+                        "https://api.upstox.com/v2/user/profile",
+                        headers={
+                            "Authorization": f"Bearer {access_token}",
+                            "Accept": "application/json",
+                            "User-Agent": "QuantOS/2.0",
+                        },
+                    )
+                    with urllib.request.urlopen(req, timeout=timeout) as resp:
+                        data = json.loads(resp.read().decode("utf-8")).get("data", {})
+                        user_name = data.get("user_name", "Upstox User")
+                        return {
+                            "valid": True,
+                            "provider": "Upstox",
+                            "message": f"Connected as {user_name}!",
+                        }
+                except urllib.error.HTTPError:
+                    if not analytics_token:
+                        raise
+
+            # If access_token is absent, expired, or rejected, test analytics token if available
+            if analytics_token and key_problem(analytics_token, now) is None:
                 req = urllib.request.Request(
                     "https://api.upstox.com/v2/market-quote/ltp?instrument_key=NSE_EQ|INE002A01018",
                     headers={
@@ -541,22 +569,16 @@ def verify_credential_connection(provider: str, credentials: dict[str, str]) -> 
                         "provider": "Upstox Analytics",
                         "message": "Connected! Analytics quote feed is active.",
                     }
-            req = urllib.request.Request(
-                "https://api.upstox.com/v2/user/profile",
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Accept": "application/json",
-                    "User-Agent": "QuantOS/2.0",
-                },
+
+            # If we reach here, neither token is usable
+            prob = (key_problem(access_token, now) if access_token else None) or (
+                key_problem(analytics_token, now) if analytics_token else None
             )
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8")).get("data", {})
-                user_name = data.get("user_name", "Upstox User")
-                return {
-                    "valid": True,
-                    "provider": "Upstox",
-                    "message": f"Connected as {user_name}!",
-                }
+            return {
+                "valid": False,
+                "provider": "Upstox",
+                "message": prob or "Provided Upstox tokens are invalid or expired.",
+            }
 
         elif prov in ("kite", "zerodha"):
             api_key = credentials.get("KITE_API_KEY", "").strip()

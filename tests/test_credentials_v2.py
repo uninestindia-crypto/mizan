@@ -98,3 +98,52 @@ def test_test_credential_api_endpoint(client: TestClient, headers: dict[str, str
     res_data = resp.json()
     assert res_data["valid"] is False
     assert "Unknown provider" in res_data["message"]
+
+
+@patch("urllib.request.urlopen")
+def test_credential_verify_upstox_fallback_to_analytics_when_access_expired(
+    mock_urlopen: MagicMock,
+) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from tests.live_fakes import make_jwt
+
+    now = datetime.now(UTC)
+    expired_access = make_jwt(now - timedelta(days=5))
+    valid_analytics = make_jwt(now + timedelta(days=30))
+
+    mock_resp = MagicMock()
+    mock_resp.read.return_value = json.dumps({"status": "success", "data": {}}).encode("utf-8")
+    mock_resp.__enter__.return_value = mock_resp
+    mock_urlopen.return_value = mock_resp
+
+    res = verify_credential_connection(
+        "upstox",
+        {
+            "UPSTOX_ACCESS_TOKEN": expired_access,
+            "UPSTOX_ANALYTICS_TOKEN": valid_analytics,
+        },
+    )
+    assert res["valid"] is True
+    assert res["provider"] == "Upstox Analytics"
+    assert "Analytics quote feed is active" in res["message"]
+
+
+def test_credential_verify_upstox_both_expired() -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from tests.live_fakes import make_jwt
+
+    now = datetime.now(UTC)
+    expired_access = make_jwt(now - timedelta(days=5))
+    expired_analytics = make_jwt(now - timedelta(days=1))
+
+    res = verify_credential_connection(
+        "upstox",
+        {
+            "UPSTOX_ACCESS_TOKEN": expired_access,
+            "UPSTOX_ANALYTICS_TOKEN": expired_analytics,
+        },
+    )
+    assert res["valid"] is False
+    assert "expired" in res["message"].lower()

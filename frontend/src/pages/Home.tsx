@@ -1,10 +1,10 @@
-import { ArrowRight, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowRight, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 import { Sparkline } from "../components/charts";
 import { AsOf, DataGate, Illustration } from "../components/common";
 import { LiveChip, LiveConnectNote } from "../components/live/LivePrice";
-import { Badge, Button, Card, CardHeader, Delta, EmptyState, PageHeader, Segmented, Skeleton, Stat } from "../components/ui";
+import { Badge, Button, Card, CardHeader, cx, Delta, EmptyState, PageHeader, Segmented, Skeleton, Stat } from "../components/ui";
 import { ageLabel, date, daysSince, inr, inrCompact, inrSigned, num, pct, tone } from "../lib/format";
 import { type LiveQuotes, useLiveQuotes } from "../lib/live";
 import { useOverview, usePaperBooks, usePaperMine, usePaperOrders, usePortfolio, useStatus, useWatchlist } from "../lib/queries";
@@ -249,9 +249,26 @@ function Watchlist() {
   return (
     <Card padded={false} className="h-full">
       <div className="px-5 pt-5">
-        <h2 className="text-[15px] font-semibold text-ink">Watchlist</h2>
-        <p className="mt-0.5 text-[13px] text-ink-3">Three-month trend</p>
-        <LiveConnectNote quotes={live.data} className="mt-2" />
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-[15px] font-semibold text-ink">Watchlist</h2>
+            <p className="mt-0.5 text-[13px] text-ink-3">Three-month trend</p>
+          </div>
+          {rows.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void live.refetch()}
+              disabled={live.isFetching}
+              className="inline-flex items-center gap-1.5 text-[12px] text-ink-3 hover:text-ink transition-colors disabled:opacity-50"
+              title="Click to fetch live prices"
+              aria-label="Refresh live prices"
+            >
+              <RefreshCw className={cx("size-3", live.isFetching && "animate-spin")} aria-hidden />
+              <span>{live.isFetching ? "Fetching…" : "Fetch live"}</span>
+            </button>
+          )}
+        </div>
+        <LiveConnectNote quotes={live.data} className="mt-2" onRetry={() => void live.refetch()} isRetrying={live.isFetching} />
       </div>
       {watch.isPending ? (
         <div className="p-5">
