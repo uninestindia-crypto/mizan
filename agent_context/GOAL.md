@@ -69,6 +69,9 @@ Stop and write it into your record, then ask the founder, if your work would do 
 6. Put a credential, token, key or machine identifier in the repository.
 7. Reach for live money, a broker order, or an account write.
 8. Change what a running paper book trades while its system test stands.
+9. Require a trader or investor to use a terminal, a command, a file edit, an environment variable or a
+   backend or developer tool to use any feature. Everything a user needs is done from the app's own
+   screens (founder instruction, 2026-10-06; `AGENTS.md` "No-Terminal Law").
 
 ## 5. How to use this file
 

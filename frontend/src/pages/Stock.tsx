@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { PriceChart, type PriceRange } from "../components/charts";
 import { AsOf, DataGate } from "../components/common";
+import { SecondOpinionButton } from "../components/copilot/SecondOpinionButton";
 import { HoldingDialog } from "../components/HoldingDialog";
+import { LivePrice } from "../components/live/LivePrice";
 import { Badge, Button, Callout, Card, CardHeader, Delta, EmptyState, Input, Segmented, Skeleton, Stat, Switch } from "../components/ui";
 import { ApiError } from "../lib/api";
 import { date, inr, int, num, pct, tone } from "../lib/format";
@@ -83,6 +85,9 @@ function StockPage({ symbol }: { symbol: string }) {
           ) : (
             <Skeleton className="mt-3 h-9 w-64" />
           )}
+          <div className="mt-2">
+            <LivePrice symbol={symbol} />
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
@@ -96,6 +101,7 @@ function StockPage({ symbol }: { symbol: string }) {
           <Button variant="secondary" icon={<Plus className="size-4" aria-hidden />} onClick={() => setAdding(true)}>
             Add to portfolio
           </Button>
+          <SecondOpinionButton symbol={symbol} />
           <Link to={`/lab/new/trend?symbols=${symbol}`}>
             <Button icon={<FlaskConical className="size-4" aria-hidden />}>Test a strategy</Button>
           </Link>

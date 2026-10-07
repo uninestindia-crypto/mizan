@@ -2,8 +2,8 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { clsx } from "clsx";
 import { AlertTriangle, CheckCircle2, Info, Loader2, X, XCircle } from "lucide-react";
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
-import { forwardRef, useId } from "react";
+import type { AriaAttributes, ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
+import { createContext, forwardRef, useContext, useId, useRef } from "react";
 import { type Tone, tone as toneOf } from "../lib/format";
 
 export { clsx as cx };
@@ -24,7 +24,8 @@ const buttonVariants: Record<ButtonVariant, string> = {
   primary: "bg-brand text-on-brand hover:bg-brand-strong shadow-sm",
   secondary: "bg-surface text-ink border border-line hover:bg-surface-2 hover:border-line-strong",
   ghost: "text-ink-2 hover:text-ink hover:bg-surface-2",
-  danger: "bg-down text-white hover:opacity-90",
+  // White on the light theme's red; the dark theme's red is a light pink, where white is only 2.7 to 1, so dark text.
+  danger: "bg-down text-white hover:opacity-90 dark:text-on-brand",
 };
 
 const buttonSizes: Record<ButtonSize, string> = {
@@ -145,15 +146,55 @@ export function Stat({ label, value, sub, tone, hint }: { label: ReactNode; valu
 
 // --------------------------------------------------------------------------- form fields
 
-export function Field({ label, hint, error, children, htmlFor }: { label: ReactNode; hint?: ReactNode; error?: ReactNode; children: ReactNode; htmlFor?: string }) {
+interface FieldInfo {
+  htmlFor?: string;
+  /** The id of the line under the control (its problem, else its hint). Undefined when there is none. */
+  messageId?: string;
+  invalid: boolean;
+}
+
+const FieldContext = createContext<FieldInfo | null>(null);
+
+type ControlAria = Pick<AriaAttributes, "aria-describedby" | "aria-invalid">;
+
+/**
+ * What a control inside a Field carries so a screen reader reads the line under it: the line's id, and "invalid" when
+ * that line is a problem. Only the control the label points at (its id is the Field's `htmlFor`) is tied, and anything
+ * the control already says for itself is kept.
+ */
+export function useFieldAria(own: ControlAria & { id?: string }): ControlAria {
+  const field = useContext(FieldContext);
+  const tied = field !== null && own.id !== undefined && own.id === field.htmlFor ? field : null;
+  const ids = [own["aria-describedby"], tied?.messageId].filter(Boolean).join(" ");
+  return { "aria-describedby": ids || undefined, "aria-invalid": own["aria-invalid"] ?? (tied?.invalid ? true : undefined) };
+}
+
+interface FieldProps {
+  label: ReactNode;
+  hint?: ReactNode;
+  error?: ReactNode;
+  children: ReactNode;
+  htmlFor?: string;
+}
+
+export function Field({ label, hint, error, children, htmlFor }: FieldProps) {
+  const messageId = useId();
+  const message = error || hint;
+  const info = { htmlFor, messageId: message ? messageId : undefined, invalid: Boolean(error) };
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={htmlFor} className="text-[13px] font-medium text-ink-2">
-        {label}
-      </label>
-      {children}
-      {error ? <p className="text-[12.5px] text-down">{error}</p> : hint ? <p className="text-[12.5px] text-ink-3">{hint}</p> : null}
-    </div>
+    <FieldContext.Provider value={info}>
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <label htmlFor={htmlFor} className="text-[13px] font-medium text-ink-2">
+          {label}
+        </label>
+        {children}
+        {message ? (
+          <p id={messageId} className={error ? "text-[12.5px] text-down" : "text-[12.5px] text-ink-3"}>
+            {message}
+          </p>
+        ) : null}
+      </div>
+    </FieldContext.Provider>
   );
 }
 
@@ -164,19 +205,21 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
   { className, prefix, suffix, ...rest },
   ref,
 ) {
-  if (!prefix && !suffix) return <input ref={ref} className={clsx(controlClass, className)} {...rest} />;
+  const aria = useFieldAria(rest);
+  if (!prefix && !suffix) return <input ref={ref} className={clsx(controlClass, className)} {...rest} {...aria} />;
   return (
     <div className="relative">
       {prefix && <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-ink-3">{prefix}</span>}
-      <input ref={ref} className={clsx(controlClass, "num", prefix && "pl-7", suffix && "pr-9", className)} {...rest} />
+      <input ref={ref} className={clsx(controlClass, "num", prefix && "pl-7", suffix && "pr-9", className)} {...rest} {...aria} />
       {suffix && <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-3">{suffix}</span>}
     </div>
   );
 });
 
 export function Select({ className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
+  const aria = useFieldAria(rest);
   return (
-    <select className={clsx(controlClass, "appearance-none bg-[length:16px] bg-[right_10px_center] bg-no-repeat pr-9", className)} style={{ backgroundImage: "var(--q-select-arrow)" }} {...rest}>
+    <select className={clsx(controlClass, "appearance-none bg-[length:16px] bg-[right_10px_center] bg-no-repeat pr-9", className)} style={{ backgroundImage: "var(--q-select-arrow)" }} {...rest} {...aria}>
       {children}
     </select>
   );
@@ -331,6 +374,43 @@ export function HelpTip({ text }: { text: string }) {
 
 // -------------------------------------------------------------------------------- dialog
 
+/**
+ * A window opened by state has no Radix trigger, so Radix has nothing to give focus back to and focus fell to the page.
+ * Remember the control the person was on when the window opened, and hand focus back to it when it closes.
+ */
+function useReturnFocus(fallback?: () => HTMLElement | null) {
+  const openedFrom = useRef<Element | null>(null);
+  const remember = () => {
+    openedFrom.current = document.activeElement;
+  };
+  const giveBack = (event: Event) => {
+    event.preventDefault();
+    const was = openedFrom.current;
+    openedFrom.current = null;
+    const stillThere = was instanceof HTMLElement && was.isConnected && was !== document.body;
+    (stillThere ? was : fallback?.())?.focus();
+  };
+  return { remember, giveBack };
+}
+
+function DialogHeading({ title, description }: { title: ReactNode; description?: ReactNode }) {
+  return (
+    <div className="mb-4 flex items-start justify-between gap-4">
+      <div>
+        <DialogPrimitive.Title className="text-lg font-semibold text-ink">{title}</DialogPrimitive.Title>
+        {description ? (
+          <DialogPrimitive.Description className="mt-1 text-sm text-ink-2">{description}</DialogPrimitive.Description>
+        ) : (
+          <DialogPrimitive.Description className="sr-only">{title}</DialogPrimitive.Description>
+        )}
+      </div>
+      <DialogPrimitive.Close className="rounded-lg p-1 text-ink-3 hover:bg-surface-2 hover:text-ink" aria-label="Close">
+        <X className="size-5" aria-hidden />
+      </DialogPrimitive.Close>
+    </div>
+  );
+}
+
 export function Dialog({
   open,
   onOpenChange,
@@ -339,6 +419,7 @@ export function Dialog({
   children,
   footer,
   wide = false,
+  fallbackFocus,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -347,30 +428,23 @@ export function Dialog({
   children: ReactNode;
   footer?: ReactNode;
   wide?: boolean;
+  /** Where focus goes when the control that opened this window no longer exists (for example, a deleted card). */
+  fallbackFocus?: () => HTMLElement | null;
 }) {
+  const focus = useReturnFocus(fallbackFocus);
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]" />
         <DialogPrimitive.Content
+          onOpenAutoFocus={focus.remember}
+          onCloseAutoFocus={focus.giveBack}
           className={clsx(
             "q-fade-in fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-line bg-surface p-6 shadow-[var(--shadow-pop)]",
             wide ? "max-w-2xl" : "max-w-md",
           )}
         >
-          <div className="mb-4 flex items-start justify-between gap-4">
-            <div>
-              <DialogPrimitive.Title className="text-lg font-semibold text-ink">{title}</DialogPrimitive.Title>
-              {description ? (
-                <DialogPrimitive.Description className="mt-1 text-sm text-ink-2">{description}</DialogPrimitive.Description>
-              ) : (
-                <DialogPrimitive.Description className="sr-only">{title}</DialogPrimitive.Description>
-              )}
-            </div>
-            <DialogPrimitive.Close className="rounded-lg p-1 text-ink-3 hover:bg-surface-2 hover:text-ink" aria-label="Close">
-              <X className="size-5" aria-hidden />
-            </DialogPrimitive.Close>
-          </div>
+          <DialogHeading title={title} description={description} />
           {children}
           {footer && <div className="mt-6 flex justify-end gap-2">{footer}</div>}
         </DialogPrimitive.Content>
