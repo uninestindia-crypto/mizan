@@ -112,9 +112,21 @@ class UpstoxClient:
         if access_token is not None:
             self.access_token = access_token
         else:
-            self.access_token = os.getenv("UPSTOX_ANALYTICS_TOKEN", "") or os.getenv(
-                "UPSTOX_ACCESS_TOKEN", ""
-            )
+            token = os.getenv("UPSTOX_ANALYTICS_TOKEN", "") or os.getenv("UPSTOX_ACCESS_TOKEN", "")
+            if not token:
+                try:
+                    from quant_system.server.v2.credentials import CredentialStore
+
+                    store = CredentialStore()
+                    if store.available:
+                        token = (
+                            store.get("UPSTOX_ANALYTICS_TOKEN")
+                            or store.get("UPSTOX_ACCESS_TOKEN")
+                            or ""
+                        )
+                except Exception:
+                    token = ""
+            self.access_token = token
         self.dependencies = dependencies or _default_dependencies()
         self.config = config or UpstoxClientConfig()
 
