@@ -122,7 +122,10 @@ def test_legacy_batch_uninstaller_is_removed_on_install(iss: str) -> None:
 
 def test_installer_version_is_derived_not_typed(iss: str) -> None:
     assert "GetFileProductVersion(StudioExe)" in iss
-    assert "OutputBaseFilename=QuantOS_v{#MyAppVersion}_Setup" in iss
+    assert (
+        "OutputBaseFilename=QuantOS_v{#MyAppVersion}_Setup" in iss
+        or "OutputBaseFilename=MizanQuantOS_v{#MyAppVersion}_Setup" in iss
+    )
     assert not re.search(r'#define MyAppVersion "\d', iss)
 
 

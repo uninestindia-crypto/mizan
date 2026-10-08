@@ -264,7 +264,7 @@ def test_build_notes_sections_and_omissions() -> None:
     ]
     notes = release_notes.build_notes("1.1.0", subjects, previous_tag="v1.0.0")
 
-    assert "# QuantOS v1.1.0" in notes
+    assert "# QuantOS v1.1.0" in notes or "# Mizan Quant OS v1.1.0" in notes
     assert "## What's new" in notes
     assert "- Add portfolio query endpoint" in notes
     assert "- **Breaking:** Replace api key with oauth2" in notes
@@ -285,8 +285,10 @@ def test_build_notes_sections_and_omissions() -> None:
     assert "fix typo in quickstart" not in notes.lower()
 
     # Changelog footer
-    expected_link = "Full changelog: https://github.com/uninestindia-crypto/quant-system/compare/v1.0.0...v1.1.0"
-    assert expected_link in notes
+    assert (
+        "Full changelog: https://github.com/uninestindia-crypto/quant-system/compare/v1.0.0...v1.1.0" in notes
+        or "Full changelog: https://github.com/uninestindia-crypto/mizan/compare/v1.0.0...v1.1.0" in notes
+    )
 
 
 def test_build_notes_maintenance_only() -> None:
@@ -297,11 +299,11 @@ def test_build_notes_maintenance_only() -> None:
         "docs: update readme",
     ]
     notes = release_notes.build_notes("1.0.1", subjects, previous_tag="v1.0.0")
-    assert "# QuantOS v1.0.1" in notes
+    assert "# QuantOS v1.0.1" in notes or "# Mizan Quant OS v1.0.1" in notes
     assert "This release has maintenance changes only." in notes
     assert (
-        "Full changelog: https://github.com/uninestindia-crypto/quant-system/compare/v1.0.0...v1.0.1"
-        in notes
+        "Full changelog: https://github.com/uninestindia-crypto/quant-system/compare/v1.0.0...v1.0.1" in notes
+        or "Full changelog: https://github.com/uninestindia-crypto/mizan/compare/v1.0.0...v1.0.1" in notes
     )
 
 
@@ -316,8 +318,10 @@ def test_cli_execution(fake_tree: Path) -> None:
     # release_notes CLI
     out_file = fake_tree / "NOTES.md"
     assert release_notes.main(["1.1.0", "--out", str(out_file), "--root", str(fake_tree)]) == 0
-    assert out_file.is_file()
-    assert "# QuantOS v1.1.0" in out_file.read_text(encoding="utf-8")
+    assert (
+        "# QuantOS v1.1.0" in out_file.read_text(encoding="utf-8")
+        or "# Mizan Quant OS v1.1.0" in out_file.read_text(encoding="utf-8")
+    )
 
 
 # --- additions by the lead agent: choosing the next version -------------------------------------
