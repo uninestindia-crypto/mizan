@@ -1,10 +1,10 @@
 {
   "model_name": "Mizan Quant-SLM (Neural Attention Alpha Engine)",
-  "timestamp_utc": "2026-10-08T08:39:27.175830+00:00",
+  "timestamp_utc": "2026-10-08T08:48:41.375264+00:00",
   "universe_size": 1,
   "train_samples": 45,
   "train_time_seconds": 0.0,
-  "inference_ms": 0.3,
+  "inference_ms": 0.37,
   "initial_loss": 0.905272,
   "final_loss": 0.905272,
   "orders_count": 0,
