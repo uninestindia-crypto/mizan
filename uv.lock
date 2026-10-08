@@ -1244,7 +1244,7 @@ wheels = [
 
 [[package]]
 name = "mizan"
-version = "2.5.3"
+version = "3.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
