@@ -145,7 +145,7 @@ $($lines -join "`n")
 
     # ------------------------------------------------------------------ 6. tag and publish
     Step "Tagging $tag"
-    git tag -a $tag -m "QuantOS v$Version"; Native "git tag"
+    git tag -a $tag -m "Mizan Quant OS v$Version"; Native "git tag"
     if ($NoPublish) {
         Write-Host "`n-NoPublish: built and tagged locally. To publish: git push origin main $tag ; then gh release create." -ForegroundColor Yellow
         Pop-Location; exit 0
@@ -153,9 +153,9 @@ $($lines -join "`n")
     Step "Publishing"
     git push origin main; Native "git push main"
     git push origin $tag; Native "git push tag"
-    gh release create $tag $setup $zip $sbom $sums --title "QuantOS v$Version" --notes-file $notesFile --latest; Native "gh release create"
+    gh release create $tag $setup $zip $sbom $sums --title "Mizan Quant OS v$Version" --notes-file $notesFile --latest; Native "gh release create"
     $url = (gh release view $tag --json url -q .url)
-    Write-Host "`nReleased QuantOS v$Version  $url" -ForegroundColor Green
+    Write-Host "`nReleased Mizan Quant OS v$Version  $url" -ForegroundColor Green
     Write-Host "Installed apps will offer the update within hours, or at once from Settings > About > Check now."
 }
 catch {
