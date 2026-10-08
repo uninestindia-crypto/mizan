@@ -29,7 +29,7 @@ if str(PROJECT_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 import numpy as np  # noqa: E402
-from scipy.stats import norm, spearmanr  # noqa: E402  # type: ignore[import-untyped]
+from scipy.stats import norm, spearmanr  # type: ignore[import-untyped]  # noqa: E402
 
 from quant_system.research.arxiv_client import ArxivClient  # noqa: E402
 from quant_system.research.embedding_gemma import EmbeddingGemmaProvider  # noqa: E402
