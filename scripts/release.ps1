@@ -102,7 +102,8 @@ try {
     Step "Bumping every version file to $Version"
     & $python scripts/bump_version.py $Version; Native "bump_version"
     $carriers = @("pyproject.toml", "src/quant_system/__init__.py", "frontend/package.json", "frontend/package-lock.json",
-                  "src/quant_system/server/static/index.html", "uv.lock") | Where-Object { Test-Path -LiteralPath $_ }
+                  "src/quant_system/server/static/index.html", "uv.lock", "installer/assets/LICENSE.txt", "LICENSE.txt",
+                  "CHANGELOG.md", "src/quant_system/server/v2/updates.py", "frontend/src/pages/Settings.tsx") | Where-Object { Test-Path -LiteralPath $_ }
     git add -- @carriers
     $message = "chore(release): v$Version`n`nRelease $Version. See the GitHub release notes for what changed."
     if ($CoAuthor) { $message += "`n`n$CoAuthor" }

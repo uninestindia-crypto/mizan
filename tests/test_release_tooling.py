@@ -350,3 +350,24 @@ def test_every_file_that_carries_the_version_agrees_in_this_repository() -> None
     """The guard against drift: the 2.0.1 bump once updated two files and left four on older numbers,
     and the classic console page kept saying 2.0.0. `scripts/bump_version.py` changes all of them."""
     assert bump_version.check(SCRIPTS_DIR.parent) == []
+
+
+def test_bump_updates_license_files(fake_tree: Path) -> None:
+    """Verify bump rewrites the version numbering in license files."""
+    lic_dir = fake_tree / "installer" / "assets"
+    lic_dir.mkdir(parents=True, exist_ok=True)
+    lic_file = lic_dir / "LICENSE.txt"
+    lic_file.write_text(
+        "Product EULA\nVersion 1.0.0 (October 2026)\nAll rights reserved.", encoding="utf-8"
+    )
+
+    root_lic = fake_tree / "LICENSE.txt"
+    root_lic.write_text(
+        "Product EULA\nVersion 1.0.0 (October 2026)\nAll rights reserved.", encoding="utf-8"
+    )
+
+    changed = bump_version.bump(fake_tree, "1.1.0")
+    assert "installer/assets/LICENSE.txt" in changed
+    assert "LICENSE.txt" in changed
+    assert "Version 1.1.0" in lic_file.read_text(encoding="utf-8")
+    assert "Version 1.1.0" in root_lic.read_text(encoding="utf-8")
