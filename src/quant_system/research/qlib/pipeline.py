@@ -54,7 +54,14 @@ def get_default_cache_store() -> Path:
     from quant_system.server.v2 import paths
 
     app_root = paths.app_root()
-    return app_root / "data" / "evidence" / "market-cache" / "nifty50-refresh-20230828-20260827" / "store"
+    return (
+        app_root
+        / "data"
+        / "evidence"
+        / "market-cache"
+        / "nifty50-refresh-20230828-20260827"
+        / "store"
+    )
 
 
 def compute_indian_statutory_friction(gross_value: float) -> dict[str, float]:
@@ -358,8 +365,8 @@ def run_live_slm_pipeline(
 
     print(
         f"\n[SUMMARY] Orders: {len(paper_orders)} | Capital Committed: INR {total_gross:,.2f} "
-        f"({total_gross/portfolio_capital*100:.1f}%) | Total Friction: INR {total_friction:,.2f} "
-        f"({total_friction/max(1.0, total_gross)*100:.3f}%)"
+        f"({total_gross / portfolio_capital * 100:.1f}%) | Total Friction: INR {total_friction:,.2f} "
+        f"({total_friction / max(1.0, total_gross) * 100:.3f}%)"
     )
 
     # 9. Save Weights & Latest Signals

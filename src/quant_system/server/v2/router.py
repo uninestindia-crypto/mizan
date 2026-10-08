@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from fastapi import APIRouter, FastAPI, Query, Request
 from fastapi.responses import JSONResponse
@@ -1001,7 +1001,7 @@ def quant_slm_signals() -> dict[str, Any]:
     signals_path = Path("data/evidence/models/quant_slm_latest_signals.json")
     if signals_path.is_file():
         try:
-            return json.loads(signals_path.read_text(encoding="utf-8"))
+            return cast(dict[str, Any], json.loads(signals_path.read_text(encoding="utf-8")))
         except Exception as err:
             raise V2Error(500, "SIGNALS_READ_FAILED", f"Could not read signals: {err}") from err
 

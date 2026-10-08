@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
-from typing import Final
+from typing import Any, Final
 
 import numpy as np
 
@@ -85,7 +85,7 @@ class QlibAlpha158Extractor:
             )
         return tuple(names)
 
-    def extract_features(self, bars: Sequence[PointInTimeBar]) -> dict[str, float]:
+    def extract_features(self, bars: Sequence[Any]) -> dict[str, float]:
         """Compute the factor map for the latest bar in the sequence.
 
         Parameters

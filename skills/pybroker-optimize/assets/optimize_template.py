@@ -5,6 +5,7 @@ score function, and execution rules to the user's strategy.
 """
 
 import numpy as np
+
 import pybroker
 from pybroker import (
     ExecContext,
@@ -76,9 +77,7 @@ def build_strategy() -> Strategy:
         exit_on_last_bar=True,
     )
     strategy = Strategy(YFinance(), START_DATE, END_DATE, config)
-    strategy.add_execution(
-        exec_fn, SYMBOLS, indicators=[sma_ind], hyperparams=[stop_pct]
-    )
+    strategy.add_execution(exec_fn, SYMBOLS, indicators=[sma_ind], hyperparams=[stop_pct])
     return strategy
 
 

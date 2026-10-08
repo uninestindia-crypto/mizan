@@ -5,8 +5,9 @@ dates, and execution rules to the user's indicators.
 """
 
 import numpy as np
-import pybroker
 from numba import njit
+
+import pybroker
 from pybroker import (
     ExecContext,
     Strategy,
@@ -86,9 +87,7 @@ def build_strategy() -> Strategy:
         exit_on_last_bar=True,
     )
     strategy = Strategy(YFinance(), START_DATE, END_DATE, config)
-    strategy.add_execution(
-        exec_fn, SYMBOLS, indicators=[roc_63, sma_20, cmma_20]
-    )
+    strategy.add_execution(exec_fn, SYMBOLS, indicators=[roc_63, sma_20, cmma_20])
     return strategy
 
 

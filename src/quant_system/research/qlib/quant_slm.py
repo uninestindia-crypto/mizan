@@ -20,7 +20,8 @@ import numpy as np
 
 def _gelu(x: np.ndarray) -> np.ndarray:
     """Fast, smooth GELU activation function."""
-    return 0.5 * x * (1.0 + np.tanh(np.sqrt(2.0 / np.pi) * (x + 0.044715 * np.power(x, 3))))
+    res = 0.5 * x * (1.0 + np.tanh(np.sqrt(2.0 / np.pi) * (x + 0.044715 * np.power(x, 3))))
+    return np.asarray(res, dtype=np.float64)
 
 
 def _sigmoid(x: np.ndarray) -> np.ndarray:
@@ -85,7 +86,8 @@ class QuantSLM:
 
         def xavier(din: int, dout: int) -> np.ndarray:
             scale = np.sqrt(2.0 / (din + dout))
-            return rng.randn(din, dout).astype(np.float64) * scale
+            res = rng.randn(din, dout).astype(np.float64) * scale
+            return np.asarray(res, dtype=np.float64)
 
         # Input projection
         self.weights["W_in"] = xavier(c.input_dim, c.d_model)
@@ -182,7 +184,9 @@ class QuantSLM:
         # Combined Loss: MSE (Alpha) + BCE (Direction)
         err = alpha_pred - y
         loss_mse = float(np.mean(err**2))
-        loss_bce = float(-np.mean(y_dir * np.log(p_up + 1e-9) + (1.0 - y_dir) * np.log(1.0 - p_up + 1e-9)))
+        loss_bce = float(
+            -np.mean(y_dir * np.log(p_up + 1e-9) + (1.0 - y_dir) * np.log(1.0 - p_up + 1e-9))
+        )
         total_loss = loss_mse + 0.5 * loss_bce
 
         # Compute gradient wrt output heads
@@ -235,7 +239,9 @@ class QuantSLM:
 
         return total_loss
 
-    def fit(self, X: np.ndarray, y: np.ndarray, epochs: int = 15, batch_size: int = 64) -> list[float]:
+    def fit(
+        self, X: np.ndarray, y: np.ndarray, epochs: int = 15, batch_size: int = 64
+    ) -> list[float]:
         """Train the Quant-SLM model over multiple epochs."""
         N = X.shape[0]
         losses: list[float] = []
@@ -271,7 +277,9 @@ class QuantSLM:
 
         for i, sym in enumerate(symbols):
             prob = float(p_up[i])
-            action = "BUY" if prob >= buy_threshold else ("SELL" if prob <= sell_threshold else "HOLD")
+            action = (
+                "BUY" if prob >= buy_threshold else ("SELL" if prob <= sell_threshold else "HOLD")
+            )
             predictions.append(
                 QuantSLMPrediction(
                     symbol=sym,

@@ -303,4 +303,3 @@ def _catalog_local_models(effective_target: str) -> list[LocalModelInfo]:
             description="Dense vector embeddings for AAOIFI Shariah standards, compliance guidelines, and market research retrieval.",
         ),
     ]
-

@@ -4,13 +4,13 @@ Copy this file into a project and adapt the symbols, dates, features,
 training function, and execution rules to the user's model.
 """
 
+from sklearn.linear_model import LinearRegression
+
 import pybroker
 
 # Not PyBroker dependencies: pip install yfinance scikit-learn
 from pybroker import ExecContext, Strategy, StrategyConfig, YFinance
 from pybroker.indicator import close_minus_ma
-from sklearn.linear_model import LinearRegression
-
 
 SYMBOLS = ["AAPL", "MSFT"]
 START_DATE = "1/1/2020"

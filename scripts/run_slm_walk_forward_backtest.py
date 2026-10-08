@@ -29,7 +29,7 @@ if str(PROJECT_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 import numpy as np  # noqa: E402
-from scipy.stats import norm, spearmanr  # noqa: E402
+from scipy.stats import norm, spearmanr  # noqa: E402  # type: ignore[import-untyped]
 
 from quant_system.research.arxiv_client import ArxivClient  # noqa: E402
 from quant_system.research.embedding_gemma import EmbeddingGemmaProvider  # noqa: E402
@@ -125,7 +125,9 @@ def run_walk_forward_backtest(
         test_sessions = usable_sessions[train_end_idx + 2 : test_end_idx]
 
         print(f"\n[*] Evaluating Fold {fold + 1}/{num_folds}:")
-        print(f"    Train window: {len(train_sessions)} sessions | OOS Test: {len(test_sessions)} sessions")
+        print(
+            f"    Train window: {len(train_sessions)} sessions | OOS Test: {len(test_sessions)} sessions"
+        )
 
         # Build train matrix
         X_train_list: list[np.ndarray] = []
@@ -148,7 +150,9 @@ def run_walk_forward_backtest(
         cfg = QuantSLMConfig(input_dim=80, d_model=64, d_ff=128, learning_rate=0.005)
         model = QuantSLM(config=cfg)
         losses = model.fit(X_train, y_train, epochs=epochs_per_fold, batch_size=64)
-        print(f"    - Training loss: {losses[0]:.4f} -> {losses[-1]:.4f} (Finished in {epochs_per_fold} epochs)")
+        print(
+            f"    - Training loss: {losses[0]:.4f} -> {losses[-1]:.4f} (Finished in {epochs_per_fold} epochs)"
+        )
 
         # Test on Out-of-Sample sessions
         fold_gross_rets: list[float] = []
@@ -207,7 +211,9 @@ def run_walk_forward_backtest(
                 "fold": fold + 1,
                 "train_samples": len(X_train),
                 "test_sessions": len(test_sessions),
-                "fold_mean_gross_return": float(np.mean(fold_gross_rets)) if fold_gross_rets else 0.0,
+                "fold_mean_gross_return": float(np.mean(fold_gross_rets))
+                if fold_gross_rets
+                else 0.0,
                 "fold_mean_net_return": float(np.mean(fold_net_rets)) if fold_net_rets else 0.0,
             }
         )
@@ -231,8 +237,16 @@ def run_walk_forward_backtest(
     max_drawdown = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0.0
 
     # Deflated Sharpe Ratio
-    skewness = float(np.mean(((np.array(all_oos_returns_net) - mean_net) / std_net) ** 3)) if std_net > 1e-6 else 0.0
-    kurtosis = float(np.mean(((np.array(all_oos_returns_net) - mean_net) / std_net) ** 4)) if std_net > 1e-6 else 3.0
+    skewness = (
+        float(np.mean(((np.array(all_oos_returns_net) - mean_net) / std_net) ** 3))
+        if std_net > 1e-6
+        else 0.0
+    )
+    kurtosis = (
+        float(np.mean(((np.array(all_oos_returns_net) - mean_net) / std_net) ** 4))
+        if std_net > 1e-6
+        else 3.0
+    )
     dsr = compute_deflated_sharpe_ratio(
         sharpe=sharpe_ratio,
         num_trials=10,
@@ -277,11 +291,19 @@ def run_walk_forward_backtest(
     print(f"  - Annualized Net Return:         {report['annualized_net_return']:+.2f}%")
     print(f"  - Annualized Volatility:         {report['annualized_volatility']:.2f}%")
     print(f"  - Out-of-Sample Sharpe Ratio:    {report['sharpe_ratio']:.2f}")
-    print(f"  - Deflated Sharpe Ratio (DSR):   {report['deflated_sharpe_ratio']:.4f} (Bailey & Lopez de Prado 2014)")
+    print(
+        f"  - Deflated Sharpe Ratio (DSR):   {report['deflated_sharpe_ratio']:.4f} (Bailey & Lopez de Prado 2014)"
+    )
     print(f"  - Maximum Drawdown (MDD):        {report['max_drawdown']:.2f}%")
     print("=" * 75)
 
-    report_path = PROJECT_ROOT / "data" / "evidence" / "models" / "quant_slm_walk_forward_backtest_report.json"
+    report_path = (
+        PROJECT_ROOT
+        / "data"
+        / "evidence"
+        / "models"
+        / "quant_slm_walk_forward_backtest_report.json"
+    )
     report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"[+] Full walk-forward tearsheet saved to: {report_path}")
 

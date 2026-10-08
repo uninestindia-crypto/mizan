@@ -53,9 +53,13 @@ def main() -> int:
         print("[!] NEW UPDATE DETECTED!")
         print(f"    Release URL: {result['release'].get('html_url')}")
         print(f"    AI Agent Handoff Ticket generated at: {ticket_file}")
-        print("\n[>>] Owner Action: Assign this ticket file to your AI agent (Antigravity/Claude) to learn and adapt.")
+        print(
+            "\n[>>] Owner Action: Assign this ticket file to your AI agent (Antigravity/Claude) to learn and adapt."
+        )
     else:
-        print(f"[-] Upstream is up to date (last seen: {result.get('last_seen_tag')}). No new ticket needed.")
+        print(
+            f"[-] Upstream is up to date (last seen: {result.get('last_seen_tag')}). No new ticket needed."
+        )
 
     return 0
 

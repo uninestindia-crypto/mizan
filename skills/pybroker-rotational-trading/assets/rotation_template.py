@@ -5,6 +5,7 @@ indicator, position cap, hold band, and sizer to the user's strategy.
 """
 
 import numpy as np
+
 import pybroker
 from pybroker import (
     ExecContext,
@@ -93,9 +94,7 @@ def build_strategy() -> Strategy:
     strategy.set_max_long_positions(MAX_LONG_POSITIONS)
     # Hold the top-ranked symbols; liquidate any holding whose rank
     # falls below WORST_RANK_HELD (band must be >= every position cap).
-    strategy.enable_rotation(
-        worst_rank_held=WORST_RANK_HELD, sizer=size_by_rank
-    )
+    strategy.enable_rotation(worst_rank_held=WORST_RANK_HELD, sizer=size_by_rank)
     strategy.add_execution(rank_by_momentum, UNIVERSE, indicators=roc_20)
     return strategy
 

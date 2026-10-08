@@ -4,9 +4,10 @@ Copy this file into a project and adapt the symbols, dates, intervals,
 indicator, model, and execution rules to the user's strategy.
 """
 
+from sklearn.linear_model import LinearRegression
+
 import pybroker
 from pybroker import ExecContext, Strategy, StrategyConfig, YFinance, sumv
-from sklearn.linear_model import LinearRegression
 
 # Cache downloaded data, indicators, and trained models across runs, and
 # disable the progress bar so backtest output stays out of agent context.

@@ -55,7 +55,9 @@ def run_scheduled_iteration(universe: list[str], epochs: int, force: bool = Fals
         sample_step=15,
     )
     elapsed = time.time() - t0
-    print(f"[+] Iteration completed in {elapsed:.2f}s! Orders generated: {result.get('orders_count', 0)}")
+    print(
+        f"[+] Iteration completed in {elapsed:.2f}s! Orders generated: {result.get('orders_count', 0)}"
+    )
     return True
 
 

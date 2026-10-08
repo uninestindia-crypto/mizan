@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
-from scipy.stats import spearmanr
+from scipy.stats import spearmanr  # type: ignore[import-untyped]
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,7 +82,8 @@ class QlibModelAdapter:
         if self.weights is None:
             raise RuntimeError("Model has not been fitted")
         X_arr = np.asarray(X, dtype=np.float64)
-        return (X_arr @ self.weights) + self.intercept
+        res = (X_arr @ self.weights) + self.intercept
+        return np.asarray(res, dtype=np.float64)
 
     def evaluate(self, dataset: QlibRankDataset) -> QlibEvaluationReport:
         """Compute standard Qlib evaluation metrics: IC, Rank IC, and Top Decile Excess."""

@@ -60,7 +60,9 @@ def generate_synthetic_universe(
             ret = np.random.normal(drift, vol)
             close_val = max(10.0, price * (1.0 + ret))
             open_val = max(10.0, (price + close_val) / 2.0)
-            high_val = max(open_val, close_val) * (1.0 + abs(np.random.normal(0.006, 0.002)) + 0.001)
+            high_val = max(open_val, close_val) * (
+                1.0 + abs(np.random.normal(0.006, 0.002)) + 0.001
+            )
             low_val = min(open_val, close_val) * (1.0 - abs(np.random.normal(0.006, 0.002)) - 0.001)
             volume = int(np.random.lognormal(12.0, 0.4))
 
@@ -110,7 +112,9 @@ def run_pipeline(
         try:
             client = ArxivClient()
             papers = client.search_papers(query=query, max_results=max_papers)
-            print(f"[+] Retrieved {len(papers)} peer-reviewed papers from arXiv API ({time.time() - t0:.2f}s).")
+            print(
+                f"[+] Retrieved {len(papers)} peer-reviewed papers from arXiv API ({time.time() - t0:.2f}s)."
+            )
         except Exception as e:
             print(f"[!] arXiv API offline or rate-limited ({e}). Falling back to cached papers.")
             papers = []
@@ -141,7 +145,9 @@ def run_pipeline(
                 primary_category="q-fin.PM",
             ),
         ]
-        print(f"[+] Loaded {len(papers)} canonical peer-reviewed reference papers ({time.time() - t0:.2f}s).")
+        print(
+            f"[+] Loaded {len(papers)} canonical peer-reviewed reference papers ({time.time() - t0:.2f}s)."
+        )
 
     for p in papers:
         print(f"    - {p.citation}")
@@ -157,7 +163,9 @@ def run_pipeline(
 
     rag_result = rag.query(question=query, top_k=2)
     print(f"[+] Semantic indexing complete in {time.time() - t0:.2f}s.")
-    print(f"[+] Primary Grounding Citation: {rag_result.citations[0] if rag_result.citations else 'N/A'}")
+    print(
+        f"[+] Primary Grounding Citation: {rag_result.citations[0] if rag_result.citations else 'N/A'}"
+    )
 
     # -------------------------------------------------------------------------
     # STAGE 3: Qlib Alpha158 Factor Extraction
@@ -191,7 +199,9 @@ def run_pipeline(
 
     X = np.array(feature_matrix, dtype=np.float64)
     y = np.array(labels, dtype=np.float64)
-    print(f"[+] Feature matrix assembled: {X.shape[0]} samples x {X.shape[1]} features in {time.time() - t0:.2f}s.")
+    print(
+        f"[+] Feature matrix assembled: {X.shape[0]} samples x {X.shape[1]} features in {time.time() - t0:.2f}s."
+    )
 
     # -------------------------------------------------------------------------
     # STAGE 4: Model Training & Out-of-Sample Evaluation
