@@ -6,15 +6,15 @@
   ],
   "cpu_baseline": {
     "available": true,
-    "gflops": 45.22,
+    "gflops": 34.74,
     "matrix_size": 512,
-    "milliseconds_each": 5.9367,
+    "milliseconds_each": 7.7276,
     "numpy_version": "2.5.2",
     "repeats": 20,
     "result_finite": true,
-    "seconds_total": 0.118734
+    "seconds_total": 0.154553
   },
-  "generated_at": "2026-09-10T13:57:14.352363+00:00",
+  "generated_at": "2026-10-08T06:53:05.237453+00:00",
   "hardware": {
     "npu_devices": [
       {
@@ -24,10 +24,10 @@
       }
     ],
     "processor": "ARMv8 (64-bit) Family 8 Model 1 Revision 201, Qualcomm Technologies Inc",
-    "reported_machine": "AMD64"
+    "reported_machine": "ARM64"
   },
   "interpreter": {
-    "executable": "D:/quant_system/.venv/Scripts/python.exe",
+    "executable": "D:/Quant OS Project/Mizan/.venv/Scripts/python.exe",
     "pe_machine": "AMD64",
     "processor_architecture_env": "AMD64",
     "sysconfig_platform": "win-amd64",

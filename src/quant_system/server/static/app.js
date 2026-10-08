@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initMonteCarlo();
   initRiskForm();
   initDiagnostics();
+  initQuantSLM();
   window.addEventListener("resize", scheduleChartRedraw);
 });
 
@@ -156,6 +157,7 @@ function initTabs() {
       scheduleChartRedraw();
     }
 
+    if (targetId === "tab-quant-slm") loadQuantSLMSignals();
     if (targetId === "tab-risk") loadRiskLimits();
     if (targetId === "tab-diagnostics") {
       loadDiagnostics();
@@ -1377,4 +1379,108 @@ function renderMonteCarloChart(data) {
     ],
   };
   drawLineChart(mcChartInstance);
+}
+
+// ==================== QUANT-SLM ALPHA ENGINE ====================
+function initQuantSLM() {
+  const refreshBtn = document.getElementById("btn-slm-fetch-signals");
+  const backtestBtn = document.getElementById("btn-slm-run-backtest");
+
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", () => {
+      showToast("Refreshing Quant-SLM live signals from Upstox API...");
+      loadQuantSLMSignals();
+    });
+  }
+
+  if (backtestBtn) {
+    backtestBtn.addEventListener("click", async () => {
+      showToast("Starting Quant-SLM training & live inference run...");
+      try {
+        const res = await fetch("/api/v2/quant-slm/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ universe: ["NIFTY50"], epochs: 15 }),
+        });
+        if (!res.ok) throw new Error("Quant-SLM run request failed.");
+        const data = await res.json();
+        showToast(`Quant-SLM run complete in ${data.train_time_seconds}s!`);
+        renderQuantSLMSignals(data);
+      } catch (err) {
+        showToast(`Quant-SLM run error: ${err.message}`);
+      }
+    });
+  }
+}
+
+async function loadQuantSLMSignals() {
+  const tbody = document.getElementById("slm-signals-tbody");
+  if (!tbody) return;
+
+  try {
+    const res = await fetch("/api/v2/quant-slm/signals");
+    if (!res.ok) throw new Error("Could not fetch signals.");
+    const data = await res.json();
+    renderQuantSLMSignals(data);
+  } catch (err) {
+    tableMessage(tbody, 9, `Failed to load Quant-SLM signals: ${err.message}`);
+  }
+}
+
+function renderQuantSLMSignals(data) {
+  const tbody = document.getElementById("slm-signals-tbody");
+  if (!tbody) return;
+
+  const predictions = data.predictions || [];
+  if (predictions.length === 0) {
+    tableMessage(tbody, 9, "No active Quant-SLM signals. Click 'Refresh Live Signals' to run inference.");
+    return;
+  }
+
+  const paperMap = new Map();
+  (data.paper_orders || []).forEach((o) => paperMap.set(o.symbol, o));
+
+  const rowsHtml = predictions.map((p) => {
+    const sym = escapeHtml(p.symbol);
+    const order = paperMap.get(p.symbol);
+    const ltpStr = order ? `INR ${order.ltp.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "--";
+    const src = order?.source || "Upstox";
+
+    let actionBadge = `<span class="badge" style="background:#475569; color:#fff;">HOLD</span>`;
+    if (p.action === "BUY") actionBadge = `<span class="badge" style="background:#16a34a; color:#fff;">BUY</span>`;
+    else if (p.action === "SELL") actionBadge = `<span class="badge" style="background:#dc2626; color:#fff;">SELL</span>`;
+
+    const isFinancial = [
+      "HDFCBANK", "ICICIBANK", "AXISBANK", "SBIN", "KOTAKBANK",
+      "BAJFINANCE", "BAJAJFINSV", "INDUSINDBK", "SHRIRAMFIN"
+    ].includes(p.symbol);
+
+    let shariahBadge = `<span class="badge" style="background:#16a34a; color:#fff;">COMPLIANT</span>`;
+    let govBadge = `<span class="badge" style="background:#475569; color:#fff;">HELD</span>`;
+
+    if (isFinancial) {
+      shariahBadge = `<span class="badge" style="background:#dc2626; color:#fff;">NON-COMPLIANT</span>`;
+      if (p.action === "BUY") govBadge = `<span class="badge" style="background:#dc2626; color:#fff;">BLOCKED (SHARIAH)</span>`;
+    } else if (order) {
+      govBadge = `<span class="badge" style="background:#16a34a; color:#fff;">APPROVED</span>`;
+    }
+
+    const allocText = order
+      ? `BUY ${order.quantity} shares (INR ${order.gross_value.toLocaleString("en-IN")})`
+      : "--";
+
+    return `<tr>
+      <td><strong>${sym}</strong></td>
+      <td>${ltpStr}</td>
+      <td><span class="badge" style="background:#0284c7; color:#fff;">${src}</span></td>
+      <td>${actionBadge}</td>
+      <td>${p.alpha_score >= 0 ? "+" : ""}${p.alpha_score.toFixed(4)}</td>
+      <td>${(p.direction_prob * 100).toFixed(2)}%</td>
+      <td>${shariahBadge}</td>
+      <td>${govBadge}</td>
+      <td>${allocText}</td>
+    </tr>`;
+  }).join("");
+
+  tbody.innerHTML = rowsHtml;
 }

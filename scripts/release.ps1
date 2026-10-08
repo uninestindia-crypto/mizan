@@ -113,7 +113,10 @@ try {
     # ------------------------------------------------------------------ 5. build from the release commit
     Step "Building the installer (this takes several minutes)"
     & (Join-Path $PSScriptRoot "build-windows-release.ps1"); Native "build-windows-release"
-    $setup = "dist\QuantOS_v${Version}_Setup.exe"
+    $setup = "dist\MizanQuantOS_v${Version}_Setup.exe"
+    if (-not (Test-Path -LiteralPath $setup)) {
+        $setup = "dist\QuantOS_v${Version}_Setup.exe"
+    }
     $zip = "dist\quantos-v${Version}-windows-x86_64.zip"
     $sbom = "dist\quantos-sbom.json"
     foreach ($artifact in @($setup, $zip, $sbom)) {

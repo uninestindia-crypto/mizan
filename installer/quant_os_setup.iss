@@ -21,8 +21,8 @@
   #error "Inno Setup 6.7 or newer is required (windows11 wizard style, dark mode)."
 #endif
 
-#define MyAppName "QuantOS"
-#define MyAppPublisher "QuantOS Quantitative Technologies"
+#define MyAppName "Mizan Quant OS"
+#define MyAppPublisher "Mizan Quant OS Quantitative Technologies"
 #define MyAppURL "https://github.com/quant-system/quantos"
 #define MyAppExeName "quantos-studio.exe"
 
@@ -88,7 +88,7 @@ SetupLogging=yes
 
 ; Output
 OutputDir=..\dist
-OutputBaseFilename=QuantOS_v{#MyAppVersion}_Setup
+OutputBaseFilename=MizanQuantOS_v{#MyAppVersion}_Setup
 Compression=lzma2/ultra64
 SolidCompression=yes
 
@@ -102,7 +102,7 @@ SignedUninstaller=yes
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
-SelectDirLabel3=Select the drive and folder where QuantOS, its research databases, and AI model data will be installed:
+SelectDirLabel3=Select the drive and folder where Mizan Quant OS, its research databases, and AI model data will be installed:
 SelectDirBrowseLabel=To continue, click Next. To choose a different drive or folder, click Browse:
 
 [Tasks]
@@ -120,6 +120,7 @@ Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs 
 Source: "assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 Source: "..\configs\*"; DestDir: "{app}\configs"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 Source: "..\data\shariah\*"; DestDir: "{app}\data\shariah"; Flags: ignoreversion onlyifdoesntexist recursesubdirs createallsubdirs
+Source: "..\data\evidence\models\*"; DestDir: "{app}\data\evidence\models"; Flags: ignoreversion onlyifdoesntexist recursesubdirs createallsubdirs
 
 [Dirs]
 Name: "{app}\data"; Flags: uninsneveruninstall

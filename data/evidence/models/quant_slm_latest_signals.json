@@ -1,0 +1,24 @@
+{
+  "model_name": "Mizan Quant-SLM (Neural Attention Alpha Engine)",
+  "timestamp_utc": "2026-10-08T08:27:51.308108+00:00",
+  "universe_size": 1,
+  "train_samples": 45,
+  "train_time_seconds": 0.0,
+  "inference_ms": 0.38,
+  "initial_loss": 0.905272,
+  "final_loss": 0.905272,
+  "orders_count": 0,
+  "total_gross_inr": 0,
+  "total_friction_inr": 0,
+  "paper_orders": [],
+  "predictions": [
+    {
+      "symbol": "TCS",
+      "alpha_score": -0.714802,
+      "direction_prob": 0.4019,
+      "volatility_est": 0.86503,
+      "action": "SELL"
+    }
+  ],
+  "weights_path": "D:\\Quant OS Project\\Mizan\\data\\evidence\\models\\quant_slm_v1.json"
+}

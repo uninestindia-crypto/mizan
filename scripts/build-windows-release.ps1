@@ -102,6 +102,13 @@ try {
             Copy-Item -Path (Join-Path $srcConfigs "*") -Destination $distConfigs -Recurse -Force
             Write-Host "  -> Staged configuration data into dist\quantos\configs." -ForegroundColor Green
         }
+        $distModels = Join-Path $distDir "data\evidence\models"
+        $srcModels = Join-Path $projectRoot "data\evidence\models"
+        if (Test-Path $srcModels) {
+            if (-not (Test-Path $distModels)) { New-Item -ItemType Directory -Path $distModels -Force | Out-Null }
+            Copy-Item -Path (Join-Path $srcModels "*") -Destination $distModels -Recurse -Force
+            Write-Host "  -> Staged pre-trained neural models into dist\quantos\data\evidence\models." -ForegroundColor Green
+        }
     }
 
     # 3. Generate SBOM and Cryptographic Release Manifest

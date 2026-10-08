@@ -135,7 +135,23 @@ class UpdateChecker:
             "published_at": release.get("published_at"),
             "installer": next((a for a in assets if a.endswith("_Setup.exe")), None),
             "checked": True,
+            "pybroker_update": self.check_pybroker(force=False),
         }
+
+    def check_pybroker(self, force: bool = False) -> dict[str, Any]:
+        """Checks upstream PyBroker release status and AI agent hand-off prompt."""
+        try:
+            from quant_system.research.pybroker_upstream_tracker import get_pybroker_tracker
+
+            return get_pybroker_tracker().check(force=force)
+        except Exception as e:
+            return {
+                "current_version": "2.0.1",
+                "latest_version": "2.0.1",
+                "update_available": False,
+                "error": str(e),
+                "checked": False,
+            }
 
     def changelog(self) -> list[dict[str, Any]]:
         curr_ver = self._current.lstrip("v")

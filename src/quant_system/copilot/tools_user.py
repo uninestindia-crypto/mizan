@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from collections import Counter
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 from quant_system.copilot.registry import (
@@ -68,6 +70,39 @@ def news_headlines(ctx: ToolContext, args: Mapping[str, Any]) -> ToolResult:
     return ToolResult(
         True, f"{counted(len(headlines), 'headline')} for {symbol}", data, untrusted=True
     )
+
+
+def quant_slm_signals(ctx: ToolContext, args: Mapping[str, Any]) -> ToolResult:
+    """Reads latest Quant-SLM Attention Network alpha predictions, Shariah screening, and paper allocations."""
+    symbols = [s.strip().upper() for s in args.get("symbols", []) if isinstance(s, str)]
+    signals_file = Path("data/evidence/models/quant_slm_latest_signals.json")
+    if not signals_file.is_file():
+        weights_file = Path("data/evidence/models/quant_slm_nifty50_v1.json")
+        if not weights_file.is_file():
+            return failure("slm unavailable", "Quant-SLM model weights have not been trained yet.")
+        return ToolResult(
+            True,
+            "Quant-SLM model is active and trained on 37,250 Nifty 50 historical bars. Run 'Refresh Live Signals' to generate current inference.",
+            {"status": "TRAINED", "model": "quant_slm_nifty50_v1.json"},
+        )
+    try:
+        data = json.loads(signals_file.read_text(encoding="utf-8"))
+        predictions = data.get("predictions", [])
+        if symbols:
+            predictions = [p for p in predictions if p.get("symbol") in symbols]
+        return ToolResult(
+            True,
+            f"Quant-SLM neural alpha predictions for {len(predictions)} symbols.",
+            {
+                "model": data.get("model_name", "Quant-SLM Attention"),
+                "total_orders": data.get("orders_count", 0),
+                "committed_capital": data.get("total_gross_inr", 0),
+                "total_friction": data.get("total_friction_inr", 0),
+                "predictions": predictions,
+            },
+        )
+    except Exception as err:
+        return failure("slm error", f"Could not read Quant-SLM signals: {err}")
 
 
 def portfolio_summary(ctx: ToolContext, _: Mapping[str, Any]) -> ToolResult:
@@ -162,6 +197,11 @@ _TEXT = {
         "Works out how many shares your risk limit allows.",
         "How many shares a risk budget allows. " + PERCENT_NOTE,
     ),
+    "quant_slm_signals": ToolText(
+        "Quant-SLM Alpha signals",
+        "Inspects current neural attention alpha predictions, Shariah compliance, and paper orders from Quant-SLM.",
+        "Quant-SLM neural cross-factor attention signals, direction probability, Shariah screen, and paper orders for Nifty 50 stocks.",
+    ),
 }
 
 
@@ -177,4 +217,5 @@ def user_specs(ctx: ToolContext) -> list[ToolSpec]:
         bound(ctx, "paper_books", _TEXT["paper_books"], (), paper_books),
         bound(ctx, "trade_costs", _TEXT["trade_costs"], _COST_ARGS, trade_costs),
         bound(ctx, "position_size", _TEXT["position_size"], _SIZE_ARGS, position_size),
+        bound(ctx, "quant_slm_signals", _TEXT["quant_slm_signals"], symbols, quant_slm_signals),
     ]

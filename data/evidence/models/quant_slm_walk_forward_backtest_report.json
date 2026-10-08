@@ -1,0 +1,33 @@
+{
+  "model_name": "Mizan Quant-SLM (Neural Attention Alpha Engine)",
+  "backtest_type": "Walk-Forward Out-of-Sample Cross-Validation (Purged & Embargoed)",
+  "num_folds": 2,
+  "total_oos_periods": 14,
+  "mean_pearson_ic": -0.0775,
+  "mean_rank_ic": -0.0615,
+  "icir": -0.5079,
+  "cumulative_gross_return": -24.7,
+  "cumulative_net_return": -26.75,
+  "annualized_net_return": -113.9,
+  "annualized_volatility": 9.3,
+  "sharpe_ratio": -12.25,
+  "deflated_sharpe_ratio": 0.0,
+  "max_drawdown": -24.85,
+  "statutory_friction_per_trade_bps": 19.3,
+  "fold_breakdown": [
+    {
+      "fold": 1,
+      "train_samples": 450,
+      "test_sessions": 7,
+      "fold_mean_gross_return": -0.012440475845621763,
+      "fold_mean_net_return": -0.014370475845621764
+    },
+    {
+      "fold": 2,
+      "train_samples": 900,
+      "test_sessions": 7,
+      "fold_mean_gross_return": -0.027507834521726417,
+      "fold_mean_net_return": -0.02943783452172641
+    }
+  ]
+}
