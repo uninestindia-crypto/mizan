@@ -26,6 +26,7 @@ import { AiSource } from "../components/settings/AiSource";
 import { APPS_ANCHOR } from "../lib/aiSource";
 import { DataFolderPicker } from "../components/DataFolderPicker";
 import { EnvImport } from "../components/EnvImport";
+import { UpdateNowButton } from "../components/update/UpdateNowButton";
 import { Badge, Button, Callout, Card, CardHeader, cx, Field, Input, PageHeader, ProgressBar, Segmented, Skeleton, Switch } from "../components/ui";
 import { errorMessage } from "../lib/api";
 import { MONEY_LIMITS, moneyProblems } from "../lib/rules";
@@ -1087,6 +1088,7 @@ function UpdateLine() {
           See what is new and download <ExternalLink className="size-3.5" aria-hidden />
         </a>
       )}
+      <UpdateNowButton />
       <Button size="sm" variant="ghost" icon={<RefreshCw className="size-3.5" aria-hidden />} loading={check.isPending} onClick={() => check.mutate()}>
         Check now
       </Button>

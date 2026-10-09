@@ -17,8 +17,8 @@ import {
 import { type ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
 import { ageLabel, date, daysSince } from "../lib/format";
-import { usePaperOrders, useSearch, useStatus, useUpdate, useUpdateSettings } from "../lib/queries";
-import type { Status, Theme } from "../lib/types";
+import { usePaperOrders, useSearch, useStatus, useUpdateSettings } from "../lib/queries";
+import type { Theme } from "../lib/types";
 import { CopilotButton } from "./copilot/CopilotButton";
 import { CopilotDrawer } from "./copilot/CopilotDrawer";
 import { CopilotProvider } from "./copilot/CopilotProvider";
@@ -26,9 +26,11 @@ import { SecondOpinionHost } from "./copilot/SecondOpinionHost";
 import { SecondOpinionReady } from "./copilot/SecondOpinionReady";
 import { Logo } from "./Logo";
 import { ModeFilterNote } from "./mode/ModeFilterNote";
-import { ModeNotice, ModeSwitch, PhoneModeButton } from "./mode/ModeSwitch";
+import { ModeNotice, PhoneModeButton } from "./mode/ModeSwitch";
 import { ShariahBadge } from "./mode/ShariahBadge";
 import { useModeFilter } from "./mode/useModeFilter";
+import { StatusArea } from "./topbar/StatusArea";
+import { TopBar } from "./topbar/TopBar";
 import { Badge, cx } from "./ui";
 
 const NAV = [
@@ -69,11 +71,10 @@ export function Layout({ children }: { children: ReactNode }) {
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2">
           Skip to content
         </a>
-        <Sidebar onSearch={() => setPaletteOpen(true)} />
+        <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <MobileBar onSearch={() => setPaletteOpen(true)} />
-          <TopHeader onSearch={() => setPaletteOpen(true)} />
-          <UpdateNotice />
+          <TopBar onSearch={() => setPaletteOpen(true)} />
           <ModeNotice />
           <main id="main" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto outline-none">
             <div className="q-fade-in mx-auto w-full max-w-[1320px] px-6 py-7 lg:px-10" key={location.pathname}>
@@ -86,45 +87,6 @@ export function Layout({ children }: { children: ReactNode }) {
       <CopilotDrawer />
       <SecondOpinionHost />
     </CopilotProvider>
-  );
-}
-
-/** A new release exists. Says what it is and links to it; installing is the person's decision. */
-function UpdateNotice() {
-  const update = useUpdate();
-  const info = update.data;
-  const [dismissed, setDismissed] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem("quantos.update.dismissed");
-    } catch {
-      return null;
-    }
-  });
-  if (!info?.update_available || !info.latest || dismissed === info.latest) return null;
-  const hide = () => {
-    setDismissed(info.latest);
-    try {
-      localStorage.setItem("quantos.update.dismissed", info.latest ?? "");
-    } catch {
-      /* the notice just comes back next time */
-    }
-  };
-  return (
-    <div role="status" className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-brand/25 bg-brand-soft px-6 py-2.5 text-[13.5px] text-ink lg:px-10">
-      <span>
-        <strong className="font-semibold">QuantOS {info.latest} is available.</strong> You have {info.current}.
-      </span>
-      <span className="flex items-center gap-4">
-        {info.url && (
-          <a href={info.url} target="_blank" rel="noreferrer" className="font-medium text-brand hover:underline">
-            See what is new and download
-          </a>
-        )}
-        <button type="button" onClick={hide} className="text-ink-3 hover:text-ink">
-          Not now
-        </button>
-      </span>
-    </div>
   );
 }
 
@@ -147,7 +109,7 @@ function OrdersPill({ count }: { count: number }) {
   );
 }
 
-function Sidebar({ onSearch }: { onSearch: () => void }) {
+function Sidebar() {
   const waiting = useOrdersWaiting();
   const status = useStatus();
   const latest = status.data?.index.latest_session;
@@ -161,17 +123,6 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
           <div className="text-[15px] font-semibold tracking-tight text-ink">QuantOS</div>
           <div className="text-[11px] text-ink-3">Test before you trade</div>
         </div>
-      </div>
-      <div className="px-3 pb-2">
-        <button
-          type="button"
-          onClick={onSearch}
-          className="flex h-9 w-full items-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3 text-[13px] text-ink-3 transition-colors hover:border-line-strong hover:text-ink-2"
-        >
-          <Search className="size-4" aria-hidden />
-          <span className="flex-1 text-left">Search stocks</span>
-          <kbd className="rounded border border-line bg-surface px-1.5 font-sans text-[10.5px] text-ink-3">Ctrl K</kbd>
-        </button>
       </div>
       <nav aria-label="Main" className="flex-1 space-y-0.5 px-3 py-2">
         {(status.data?.settings?.shariah_mode
@@ -237,79 +188,6 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
   );
 }
 
-// The top bar measures itself (a container), and each piece decides from the bar's own width how much to say. Below
-// the widths named here a piece drops its key hint, then its words, and becomes an icon with a tooltip, so nothing
-// wraps onto a second line and the bar never grows wider than the window.
-const BAR_STYLE =
-  "@container hidden h-14 shrink-0 items-center justify-between gap-3 border-b border-line bg-surface/90 px-6 " +
-  "backdrop-blur-[6px] md:flex";
-const SEARCH_BUTTON =
-  "flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-line " +
-  "bg-surface-2 px-2.5 text-[12.5px] text-ink-3 transition-colors hover:border-line-strong hover:text-ink " +
-  "@min-[780px]:px-3";
-const KEY_HINT =
-  "hidden rounded border border-line bg-surface px-1.5 font-sans text-[10px] text-ink-3 @min-[900px]:inline";
-const PILL_STYLE =
-  "flex min-w-0 items-center gap-2 whitespace-nowrap rounded-lg border border-line/60 bg-surface-2/60 px-2 " +
-  "py-1 text-[12px] text-ink-3 @min-[820px]:px-2.5";
-
-function marketWords(status: Status): string {
-  const latest = status.index.latest_session;
-  if (status.download.state === "RUNNING") return `Syncing (${status.download.done}/${status.download.total})`;
-  if (status.index.job.state === "RUNNING") return "Indexing NSE...";
-  if (status.index.ready) return `NSE: ${latest ? date(latest) : "Ready"}`;
-  return "NSE: Local Cache";
-}
-
-function marketDot(status: Status): string {
-  const busy = status.download.state === "RUNNING" || status.index.job.state === "RUNNING";
-  if (busy) return "animate-pulse bg-amber-500";
-  return status.index.ready ? "bg-emerald-500" : "bg-amber-500";
-}
-
-/** How fresh the market data is. It shortens with an ellipsis, never onto a second line, when the bar is tight. */
-function MarketPill({ status }: { status: Status }) {
-  const words = marketWords(status);
-  return (
-    <div className={PILL_STYLE} title={words}>
-      <span className={cx("size-2 shrink-0 rounded-full", marketDot(status))} />
-      <span className="truncate">{words}</span>
-    </div>
-  );
-}
-
-function SearchButton({ onSearch }: { onSearch: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onSearch}
-      aria-label="Search stocks"
-      aria-keyshortcuts="Control+K"
-      title="Search stocks (Ctrl K)"
-      className={SEARCH_BUTTON}
-    >
-      <Search className="size-3.5" aria-hidden />
-      <span className="hidden @min-[780px]:inline">Search stocks</span>
-      <kbd className={KEY_HINT}>Ctrl K</kbd>
-    </button>
-  );
-}
-
-function TopHeader({ onSearch }: { onSearch: () => void }) {
-  const status = useStatus();
-  return (
-    <header className={BAR_STYLE}>
-      <ModeSwitch />
-      <div className="flex min-w-0 items-center justify-end gap-2 @min-[900px]:gap-3">
-        {status.data && <MarketPill status={status.data} />}
-        <SecondOpinionReady />
-        <CopilotButton />
-        <SearchButton onSearch={onSearch} />
-      </div>
-    </header>
-  );
-}
-
 function phoneNavStyle({ isActive }: { isActive: boolean }): string {
   const base = "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium";
   return cx(base, isActive ? "bg-brand-soft text-brand" : "text-ink-2 hover:bg-surface-2");
@@ -348,16 +226,17 @@ function PhoneNav() {
 function MobileBar({ onSearch }: { onSearch: () => void }) {
   const searchStyle = "rounded-lg p-2 text-ink-2 hover:bg-surface-2";
   return (
-    <div className="border-b border-line bg-surface md:hidden">
+    <div className="relative z-20 border-b border-line bg-surface md:hidden">
       <div className="flex h-14 items-center justify-between gap-2 px-4">
         <div className="flex min-w-0 items-center gap-2">
           <Logo className="size-7 shrink-0" />
-          <span className="truncate text-[15px] font-semibold">QuantOS</span>
+          <span className="hidden truncate text-[15px] font-semibold min-[380px]:inline">QuantOS</span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <PhoneModeButton />
           <SecondOpinionReady />
           <CopilotButton compact />
+          <StatusArea layout="phone" />
           <button type="button" onClick={onSearch} aria-label="Search stocks" className={searchStyle}>
             <Search className="size-5" aria-hidden />
           </button>
