@@ -7,6 +7,7 @@ counted, because the first is advice the platform does not give and the second m
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -15,7 +16,15 @@ from quant_system.copilot.guard import scrub_points
 from quant_system.copilot.llm import ChatModel
 from quant_system.copilot.messages import explain_failure
 
-__all__ = ["READINGS", "SYSTEM_PROMPT", "Opinion", "Question", "ask_for_opinion", "build_question"]
+__all__ = [
+    "READINGS",
+    "SYSTEM_PROMPT",
+    "Opinion",
+    "Question",
+    "ask_for_opinion",
+    "build_chained_question",
+    "build_question",
+]
 
 READINGS = ("POSITIVE", "MIXED", "NEGATIVE", "UNCLEAR")
 _TONES = ("POSITIVE", "NEUTRAL", "NEGATIVE", "NONE")
@@ -91,6 +100,61 @@ def build_question(symbol: str, facts: str, *, pick_context: str | None = None) 
         note = " ".join(pick_context.split())[:MAX_PICK_CHARS]
         parts.append(
             f"Context: QuantOS's own model picked this stock as a candidate. Its note: {note}"
+        )
+    parts.append("Give your reading as the JSON object described.")
+    return "\n\n".join(parts)
+
+
+def build_chained_question(
+    symbol: str,
+    facts: str,
+    prior_opinions: Sequence[Opinion] = (),
+    *,
+    pick_context: str | None = None,
+    stage_index: int = 1,
+    total_stages: int = 1,
+) -> str:
+    """Constructs the prompt for sequential chained recheck where model rechecks prior models' findings."""
+    parts = [f"Stock: {symbol}", f"Facts:\n{facts}"]
+    if pick_context:
+        note = " ".join(pick_context.split())[:MAX_PICK_CHARS]
+        parts.append(
+            f"Context: QuantOS's own model picked this stock as a candidate. Its note: {note}"
+        )
+    if prior_opinions:
+        prior_lines = []
+        for i, op in enumerate(prior_opinions, 1):
+            prov = op.provider
+            mdl = op.model or "model"
+            if op.ok:
+                reasons_str = "; ".join(op.reasons) if op.reasons else "None stated"
+                risks_str = "; ".join(op.risks) if op.risks else "None stated"
+                prior_lines.append(
+                    f"--- Stage {i} Opinion from Analyst {i} ({prov} / {mdl}) ---\n"
+                    f"Verdict / Reading: {op.reading}\n"
+                    f"Key Reasons: {reasons_str}\n"
+                    f"Identified Risks: {risks_str}"
+                )
+            else:
+                prior_lines.append(
+                    f"--- Stage {i} from Analyst {i} ({prov} / {mdl}) ---\n"
+                    f"Could not produce an opinion ({op.error})"
+                )
+        history_str = "\n\n".join(prior_lines)
+        parts.append(
+            f"PREVIOUS OPINIONS IN VERIFICATION CHAIN (Stage {stage_index} of {total_stages}):\n"
+            f"{history_str}\n\n"
+            f"INSTRUCTIONS FOR STAGE {stage_index}:\n"
+            f"You are the next independent reviewer in this priority verification pipeline. "
+            f"Thoroughly recheck and critique the previous analyst(s)' opinion(s) and verdict against the stock facts. "
+            f"Do you agree or disagree with their reading and risks? What did they overlook or get right? "
+            f"Synthesize your verified critique and provide your own reading, reasons, and risks."
+        )
+    else:
+        parts.append(
+            f"VERIFICATION CHAIN (Stage 1 of {total_stages}):\n"
+            "You are the initial reviewer in this priority verification pipeline. "
+            "Give your baseline reading, reasons, and risks based strictly on the facts."
         )
     parts.append("Give your reading as the JSON object described.")
     return "\n\n".join(parts)

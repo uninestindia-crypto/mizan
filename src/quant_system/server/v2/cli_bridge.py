@@ -26,6 +26,7 @@ import time
 import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
@@ -168,6 +169,78 @@ _probe_results: dict[str, tuple[float, bool]] = {}
 JOB_MAX_SECONDS = {"install": 900.0, "signin": 420.0, "update": 900.0}
 
 
+def _custom_agents() -> list[AgentCliDef]:
+    """Reads custom company CLIs from AppState and turns them into AgentCliDef instances."""
+    try:
+        from quant_system.server.v2.router import services
+
+        raw_custom = services().state.list_custom_clis()
+    except Exception:
+        raw_custom = []
+
+    res: list[AgentCliDef] = []
+    for item in raw_custom:
+        cli_id = str(item["id"])
+        cmd = str(item.get("command") or cli_id)
+        install_steps: list[InstallStep] = []
+        if item.get("install_cmd"):
+            install_steps.append(
+                InstallStep(f"Installing {item.get('name', cli_id)}", "powershell", str(item["install_cmd"]))
+            )
+        update_steps: list[InstallStep] = []
+        if item.get("update_cmd"):
+            update_steps.append(
+                InstallStep(f"Updating {item.get('name', cli_id)}", "powershell", str(item["update_cmd"]))
+            )
+        elif item.get("install_cmd"):
+            update_steps.append(
+                InstallStep(f"Updating {item.get('name', cli_id)}", "powershell", str(item["install_cmd"]))
+            )
+        status_raw = item.get("status_args", "--version")
+        status_args = tuple(status_raw.split()) if status_raw else None
+        res.append(
+            AgentCliDef(
+                id=cli_id,
+                name=str(item.get("name") or cli_id),
+                maker=str(item.get("maker") or "Company"),
+                commands=(cmd,),
+                extra_dirs=(r"%LOCALAPPDATA%\bin", r"%APPDATA%\npm"),
+                install=tuple(install_steps),
+                update=tuple(update_steps),
+                signin_mode="browser",
+                signin_args=(),
+                status_args=status_args,
+                run_cmd=cmd,
+                auth_env_var="",
+                auth_file_hints=(),
+                description=str(
+                    item.get("description") or f"{item.get('name', cli_id)} by {item.get('maker', 'Company')}"
+                ),
+                docs_url=str(item.get("docs_url") or ""),
+            )
+        )
+    return res
+
+
+def all_agents() -> tuple[AgentCliDef, ...]:
+    return SUPPORTED_AGENTS + tuple(_custom_agents())
+
+
+def get_agent(agent_id: str) -> AgentCliDef | None:
+    for agent in all_agents():
+        if agent.id == agent_id:
+            return agent
+    return None
+
+
+def is_custom_agent(agent_id: str) -> bool:
+    return any(a.id == agent_id for a in _custom_agents())
+
+
+def all_chat_cli_ids() -> list[str]:
+    return [a.id for a in all_agents()]
+
+
 def get_workspace_root() -> Path:
     """Returns the root directory of the QuantOS project/workspace."""
     if getattr(sys, "frozen", False):
@@ -204,7 +277,7 @@ def search_path() -> str:
             winreg.HKEY_LOCAL_MACHINE,
             r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
         )
-    for agent in SUPPORTED_AGENTS:
+    for agent in all_agents():
         parts += [os.path.expandvars(d) for d in agent.extra_dirs]
     seen: set[str] = set()
     unique: list[str] = []
@@ -311,6 +384,7 @@ def _inspect_cli(agent: AgentCliDef) -> dict[str, Any]:
         "can_update": resolved_path is not None,
         "update_available": False,
         "run_cmd": agent.run_cmd,
+        "is_custom": is_custom_agent(agent.id),
     }
 
 
@@ -319,7 +393,7 @@ def list_cli_status(force: bool = False) -> list[dict[str, Any]]:
     global _cache
     with _lock:
         if force or _cache is None or time.monotonic() - _cache[0] >= _CACHE_SECONDS:
-            _cache = (time.monotonic(), [_inspect_cli(agent) for agent in SUPPORTED_AGENTS])
+            _cache = (time.monotonic(), [_inspect_cli(agent) for agent in all_agents()])
         inspected = _cache[1]
     return [{**item, "job": job_snapshot(str(item["id"]))} for item in inspected]
 
@@ -328,7 +402,7 @@ def installed_chat_clis(ids: Iterable[str]) -> dict[str, str]:
     """Where each named app is installed (id -> program path). A quick lookup: nothing is started."""
     wanted = set(ids)
     found: dict[str, str] = {}
-    for agent in SUPPORTED_AGENTS:
+    for agent in all_agents():
         path = next((hit for cmd in agent.commands if (hit := _find(cmd))), None)
         if agent.id in wanted and path:
             found[agent.id] = path
@@ -572,7 +646,7 @@ def start_agent_job(
     agent_id: str, action: Literal["install", "signin", "update"]
 ) -> dict[str, Any]:
     """Start (or join) a background install, sign-in, or update and return its snapshot straight away."""
-    agent = _AGENTS.get(agent_id)
+    agent = get_agent(agent_id)
     if agent is None:
         raise ValueError(f"Unknown AI app: {agent_id}")
     with _jobs_lock:
@@ -614,7 +688,7 @@ def start_agent_job(
 def auto_update_all_clis() -> list[dict[str, Any]]:
     """Checks all installed CLIs and triggers background updates."""
     started: list[dict[str, Any]] = []
-    for agent in SUPPORTED_AGENTS:
+    for agent in all_agents():
         resolved_path = next((found for c in agent.commands if (found := _find(c))), None)
         if resolved_path:
             try:
@@ -626,7 +700,7 @@ def auto_update_all_clis() -> list[dict[str, Any]]:
 
 def fetch_cli_capabilities(agent_id: str, force_refresh: bool = False) -> dict[str, Any]:
     """Fetch live models and features for the given CLI."""
-    agent = _AGENTS.get(agent_id)
+    agent = get_agent(agent_id)
     if agent is None:
         raise ValueError(f"Unknown AI app: {agent_id}")
 
@@ -638,6 +712,33 @@ def fetch_cli_capabilities(agent_id: str, force_refresh: bool = False) -> dict[s
 
     models: list[dict[str, Any]] = []
     features: list[dict[str, Any]] = []
+
+    if is_custom_agent(agent_id):
+        models = [
+            {
+                "id": f"{agent_id}-default",
+                "name": f"{agent.name} Model",
+                "provider": agent.maker,
+                "description": f"Custom Company Model via {agent.name}",
+                "context_window": "128,000+ tokens",
+                "recommended": True,
+            }
+        ]
+        features = [
+            {"name": "Company CLI Integration", "description": "Custom enterprise CLI agent bridge"},
+            {"name": "Automatic Updates", "description": "Automated update via company pipeline"},
+        ]
+        return {
+            "agent_id": agent_id,
+            "agent_name": agent.name,
+            "installed": installed,
+            "authenticated": authenticated,
+            "version": version or None,
+            "models": models,
+            "features": features,
+            "latest_version": version or None,
+            "last_fetched": datetime.now(UTC).isoformat(),
+        }
 
     if agent_id == "antigravity":
         # Check if user has GEMINI_API_KEY saved to query live model catalog
@@ -835,8 +936,6 @@ def fetch_cli_capabilities(agent_id: str, force_refresh: bool = False) -> dict[s
             },
         ]
 
-    from datetime import datetime, timezone
-
     return {
         "agent_id": agent_id,
         "name": agent.name,
@@ -848,7 +947,7 @@ def fetch_cli_capabilities(agent_id: str, force_refresh: bool = False) -> dict[s
         "features": features,
         "update_available": False,
         "latest_version": version or None,
-        "last_fetched": datetime.now(timezone.utc).isoformat(),
+        "last_fetched": datetime.now(UTC).isoformat(),
     }
 
 
@@ -895,9 +994,9 @@ def launch_agent_session(
         target_cmd = custom_command
         title = f"QuantOS - {custom_command[:25]}"
     else:
-        if agent_id not in _AGENTS:
+        agent = get_agent(agent_id)
+        if agent is None:
             raise ValueError(f"Unknown AI app: {agent_id}")
-        agent = _AGENTS[agent_id]
         title = f"QuantOS - {agent.name}"
         target_cmd = agent.run_cmd
 

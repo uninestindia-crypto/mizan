@@ -188,3 +188,60 @@ def test_cli_auto_update_endpoints(client: TestClient, headers: dict[str, str]) 
     assert post_res.status_code == 200
     assert post_res.json()["auto_update_cli"] is True
 
+
+def test_custom_cli_endpoints_crud(client: TestClient, headers: dict[str, str]) -> None:
+    # 1. Initial list
+    res = client.get("/api/v2/cli/custom")
+    assert res.status_code == 200
+    initial_items = res.json()
+    assert isinstance(initial_items, list)
+
+    # 2. Add custom CLI
+    new_cli = {
+        "id": "acme-copilot",
+        "name": "Acme Copilot",
+        "maker": "Acme Corp",
+        "command": "acme-cli",
+        "install_cmd": "curl -sL https://acme.test/install.sh | bash",
+        "update_cmd": "acme-cli update",
+        "description": "Enterprise trading assistant CLI",
+        "docs_url": "https://acme.test/docs",
+        "status_args": "--version",
+        "auto_update": True,
+    }
+    create_res = client.post("/api/v2/cli/custom", json=new_cli, headers=headers)
+    assert create_res.status_code == 200
+    created = create_res.json()
+    assert created["id"] == "acme-copilot"
+    assert created["name"] == "Acme Copilot"
+
+    # 3. Check listed in custom endpoint
+    list_res = client.get("/api/v2/cli/custom")
+    assert list_res.status_code == 200
+    ids = [c["id"] for c in list_res.json()]
+    assert "acme-copilot" in ids
+
+    # 4. Check included in /cli/status with is_custom=True
+    status_res = client.get("/api/v2/cli/status")
+    assert status_res.status_code == 200
+    status_agents = {a["id"]: a for a in status_res.json()}
+    assert "acme-copilot" in status_agents
+    assert status_agents["acme-copilot"]["is_custom"] is True
+
+    # 5. Toggle auto update
+    toggle_res = client.post(
+        "/api/v2/cli/custom/acme-copilot/auto-update", json={"enabled": False}, headers=headers
+    )
+    assert toggle_res.status_code == 200
+    assert toggle_res.json()["auto_update"] == 0
+
+    # 6. Delete custom CLI
+    del_res = client.delete("/api/v2/cli/custom/acme-copilot", headers=headers)
+    assert del_res.status_code == 200
+    assert del_res.json()["deleted"] is True
+
+    # 7. Confirm deleted
+    after_del = client.get("/api/v2/cli/custom")
+    assert "acme-copilot" not in [c["id"] for c in after_del.json()]
+
+

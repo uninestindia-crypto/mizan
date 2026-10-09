@@ -11,7 +11,6 @@ from typing import Any
 
 from quant_system.copilot.ai_choice import CLI_PREFIX, AiChoice, FallbackChat, plan_models
 from quant_system.copilot.cli_chat import (
-    CHAT_CLIS,
     CLI_LABELS,
     CLI_NOT_FOUND,
     CLI_NOT_SIGNED_IN,
@@ -49,7 +48,7 @@ def _lookup(provider: str) -> str | None:
 
 def installed_apps() -> dict[str, str]:
     """The apps on this computer that can answer a chat: id -> where they are."""
-    return cli_bridge.installed_chat_clis(CHAT_CLIS)
+    return cli_bridge.installed_chat_clis(cli_bridge.all_chat_cli_ids())
 
 
 def current_choice() -> AiChoice:
@@ -60,7 +59,13 @@ def current_choice() -> AiChoice:
         saved = services().state.settings()
     except Exception:
         return AiChoice()
-    return AiChoice(saved.ai_source, saved.ai_cli, saved.ai_api, saved.ai_fallback)
+    return AiChoice(
+        source=saved.ai_source,
+        cli=saved.ai_cli,
+        api=saved.ai_api,
+        fallback=saved.ai_fallback,
+        cli_priority=tuple(saved.cli_priority),
+    )
 
 
 def _keyed() -> list[str]:
@@ -102,19 +107,22 @@ def verify_models(ids: list[str]) -> list[ChatModel]:
 
 def _app_row(row: dict[str, Any]) -> dict[str, Any]:
     state = str(row["state"])
+    row_id = str(row["id"])
+    label = CLI_LABELS.get(row_id) or f"{row.get('name', row_id)} ({row.get('maker', 'Company')})"
     return {
-        "id": row["id"],
+        "id": row_id,
         "name": row["name"],
-        "label": CLI_LABELS[row["id"]],
+        "label": label,
         "state": state,
         "installed": bool(row["installed"]),
         "ready": state in _READY_STATES,
+        "is_custom": bool(row.get("is_custom")),
     }
 
 
 def ai_overview() -> dict[str, Any]:
     """The apps that can chat, the saved keys, the person's choice, and whether anything is ready to answer."""
-    apps = [_app_row(r) for r in cli_bridge.list_cli_status() if r["id"] in CHAT_CLIS]
+    apps = [_app_row(r) for r in cli_bridge.list_cli_status()]
     choice = current_choice()
     usable = [a for a in apps if a["ready"] or a["state"] in _UNKNOWN_STATES]
     return {
@@ -124,6 +132,7 @@ def ai_overview() -> dict[str, Any]:
             "cli": choice.cli,
             "api": choice.api,
             "fallback": choice.fallback,
+            "cli_priority": list(choice.cli_priority),
         },
         "ai_ready": bool(usable) or bool(_keyed()),
     }
@@ -132,13 +141,14 @@ def ai_overview() -> dict[str, Any]:
 def model_rows() -> list[dict[str, Any]]:
     """Every AI a second opinion can use: the apps and the key providers, each with an id and whether it is ready."""
     apps = {a["id"]: a for a in ai_overview()["apps"]}
+    chat_ids = cli_bridge.all_chat_cli_ids()
     rows = [
         {
             "id": CLI_PREFIX + name,
-            "label": CLI_LABELS[name],
+            "label": apps[name]["label"] if name in apps else CLI_LABELS.get(name, name.title()),
             "ready": name in apps and apps[name]["ready"],
         }
-        for name in CHAT_CLIS
+        for name in chat_ids
     ]
     keyed = set(_keyed())
     return rows + [

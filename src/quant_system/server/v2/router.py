@@ -48,6 +48,7 @@ from quant_system.server.v2.auto_update import AutoUpdater
 from quant_system.server.v2.cli_bridge import (
     auto_update_all_clis,
     fetch_cli_capabilities,
+    invalidate_cache,
     launch_agent_session,
     list_cli_status,
     send_job_input,
@@ -1063,6 +1064,39 @@ def post_cli_auto_update(body: dict[str, Any]) -> dict[str, Any]:
     if enabled:
         started = auto_update_all_clis()
     return {"auto_update_cli": enabled, "jobs_started": started}
+
+
+@router.get("/cli/custom")
+def get_custom_clis() -> list[dict[str, Any]]:
+    return services().state.list_custom_clis()
+
+
+@router.post("/cli/custom")
+def add_custom_cli_endpoint(body: dict[str, Any]) -> dict[str, Any]:
+    if not body.get("name") or not body.get("command"):
+        raise V2Error(400, "INVALID_CUSTOM_CLI", "name and command are required.")
+    created = services().state.add_custom_cli(body)
+    invalidate_cache()
+    return created
+
+
+@router.delete("/cli/custom/{cli_id}")
+def delete_custom_cli_endpoint(cli_id: str) -> dict[str, Any]:
+    deleted = services().state.delete_custom_cli(cli_id)
+    if not deleted:
+        raise V2Error(404, "NOT_FOUND", f"Custom CLI {cli_id} not found.")
+    invalidate_cache()
+    return {"deleted": True, "id": cli_id}
+
+
+@router.post("/cli/custom/{cli_id}/auto-update")
+def set_custom_cli_auto_update_endpoint(cli_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    enabled = bool(body.get("enabled", True))
+    updated = services().state.set_custom_cli_auto_update(cli_id, enabled)
+    if not updated:
+        raise V2Error(404, "NOT_FOUND", f"Custom CLI {cli_id} not found.")
+    invalidate_cache()
+    return {"id": cli_id, "auto_update": enabled}
 
 
 # ---------------------------------------------------------------------------- AI models

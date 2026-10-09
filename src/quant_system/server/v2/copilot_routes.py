@@ -80,9 +80,10 @@ class RenameChatBody(BaseModel):
 
 class VerifyRequest(BaseModel):
     symbol: str = Field(pattern=SYMBOL)
-    providers: list[str] = Field(min_length=1, max_length=6)
+    providers: list[str] = Field(min_length=1)
     pick_note: str | None = Field(default=None, max_length=300)
     recheck: bool = True
+    chained: bool = True
 
 
 class AgentBody(BaseModel):
@@ -330,11 +331,14 @@ def start_verify(body: VerifyRequest) -> Any:
         return _fail(422, "NO_AI_KEY", _NO_AI_KEY)
     registry = _registry()
     symbol = body.symbol.upper()
-    arms = 1 + bool(body.pick_note) + body.recheck
+    arms = 1 if body.chained else (1 + bool(body.pick_note) + body.recheck)
 
     def work(on_opinion: Any, cancelled: Any) -> Any:
         options = VerifyOptions(
-            pick_context=body.pick_note, recheck=body.recheck, cancelled=cancelled
+            pick_context=body.pick_note,
+            recheck=body.recheck,
+            cancelled=cancelled,
+            chained=body.chained,
         )
         return verify_stock(chosen, build_fact_pack(registry, symbol), options, on_opinion)
 
