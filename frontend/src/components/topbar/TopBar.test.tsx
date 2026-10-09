@@ -2,7 +2,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../lib/api";
 import { renderPage } from "../update/updateKit";
-import { barWidth, engine, LIVE_OFF, statusAnswer, WED_MORNING_IN_INDIA, withUpdate } from "./topbarKit";
+import { barWidth, engine, HOLIDAYS_2026, LIVE_OFF, statusAnswer, WED_MORNING_IN_INDIA, withUpdate } from "./topbarKit";
 import { TopBar } from "./TopBar";
 
 vi.mock("../../lib/api", async (importOriginal) => {
@@ -80,6 +80,34 @@ describe("the chips, on a wide bar", () => {
     expect(within(group).getByRole("link", { name: "Market hours" })).toHaveAttribute("href", "/markets");
     expect(prices).toHaveAttribute("href", "/settings/data");
     expect(live).toHaveAttribute("href", "/settings/accounts");
+  });
+
+  it("says Market open, not Market hours, once the engine has sent this year's holidays", async () => {
+    engine({ holidays: HOLIDAYS_2026 });
+    show();
+    expect(await chip("Market open")).toHaveAttribute("href", "/markets");
+    expect(within(status()).queryByRole("link", { name: "Market hours" })).not.toBeInTheDocument();
+  });
+
+  it("says Market closed, holiday, on a day the exchange is shut", async () => {
+    engine({ holidays: { years: [2026], holidays: [{ date: "2026-10-07", name: "A day off" }] } });
+    show();
+    expect(await chip("Market closed, holiday")).toHaveAttribute("href", "/markets");
+  });
+
+  it("keeps saying Market hours when the holidays it was sent are for another year", async () => {
+    engine({ holidays: { years: [2025], holidays: [{ date: "2025-10-02", name: "Mahatma Gandhi Jayanti" }] } });
+    show();
+    await chip("Prices as of 6 Oct");
+    expect(within(status()).getByRole("link", { name: "Market hours" })).toBeInTheDocument();
+    expect(within(status()).queryByRole("link", { name: /^Market (open|closed)/ })).not.toBeInTheDocument();
+  });
+
+  it("keeps saying Market hours when the engine has no holidays to send", async () => {
+    engine();
+    show();
+    await chip("Prices as of 6 Oct");
+    expect(within(status()).getByRole("link", { name: "Market hours" })).toBeInTheDocument();
   });
 
   it("says Out of date, with the day, when prices are more than a trading day old", async () => {

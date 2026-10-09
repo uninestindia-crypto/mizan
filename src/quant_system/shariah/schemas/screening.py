@@ -104,6 +104,13 @@ class ShariahAuditResponse(TransparencyFields):
     tasis_evaluation: StandardEvaluation
     divergence_noted: bool
     divergence_explanation: str | None = None
+    overall_status: ComplianceStatus | None = Field(
+        default=None,
+        description=(
+            "The one verdict of the company's own filing (the word its badge shows), when the verdict rests on one. "
+            "Empty for the sample"
+        ),
+    )
 
     purification_ratio_pct: float
     zakatable_assets_per_share_inr: float

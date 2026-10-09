@@ -1254,7 +1254,7 @@ function ChangelogCard() {
         "Start and follow live paper trading books directly within the desktop UI",
         "Built-in market data downloader for factory-new laptops without pre-existing data",
         "Direct support for Google Gemini, DeepSeek, and Mistral API keys in AI Assistant",
-        "Auto-discovery of local market data and browser-based CLI authentication",
+        "Auto-discovery of local market data and browser-based sign-in for AI apps",
       ],
       fixes: [
         "Repaired statutory transaction cost display across order sizes",
@@ -1276,7 +1276,7 @@ function ChangelogCard() {
       is_current: false,
       whats_new: [
         "Fixed taskbar icon identity and tray integration on Windows x64",
-        "Multi-agent CLI bridge and 1-click credential hub",
+        "Install and sign in to several AI apps with one click",
       ],
       fixes: [
         "Clean exit handling on Windows process shutdowns",

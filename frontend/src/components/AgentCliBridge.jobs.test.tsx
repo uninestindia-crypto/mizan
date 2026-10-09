@@ -110,7 +110,7 @@ describe("when something goes wrong", () => {
 });
 
 const RUNNING = [app("codex", "NEEDS_SIGN_IN", { job: job() })];
-const ENDED = job({ state: "DONE", message: "Codex CLI is connected." });
+const ENDED = job({ state: "DONE", message: "Codex is connected." });
 const SIGNED_IN = [app("codex", "CONNECTED", { job: ENDED })];
 function copilotChecks(): number {
   return sent("GET", AI_STATUS).length;

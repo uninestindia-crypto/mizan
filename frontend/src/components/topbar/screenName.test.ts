@@ -23,6 +23,7 @@ describe("the name of the screen", () => {
     ["/shariah", { title: "Mizan Shariah" }],
     ["/tools/costs", { title: "Trade costs", parent: TOOLS }],
     ["/tools/position-size", { title: "Position size", parent: TOOLS }],
+    ["/tools/agents", { title: "AI apps", parent: TOOLS }],
     ["/settings/profile", { title: "Profile & money rules", parent: SETTINGS }],
     ["/settings/ai", { title: "AI assistants", parent: SETTINGS }],
     ["/settings/about", { title: "About", parent: SETTINGS }],

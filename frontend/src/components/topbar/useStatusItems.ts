@@ -4,6 +4,7 @@ import { api } from "../../lib/api";
 import { useStatus, useUpdate } from "../../lib/queries";
 import { useInstallStatus } from "../update/useInstallUpdate";
 import { buildStatusItems, type LivePrices, type StatusItem } from "./statusItems";
+import { useHolidays } from "./useHolidays";
 
 const MINUTE = 60_000;
 
@@ -36,5 +37,9 @@ export function useStatusItems(): StatusItem[] {
   const live = useLivePrices().data;
   const update = useUpdate().data;
   const install = useInstallStatus(Boolean(update?.update_available)).data;
-  return useMemo(() => buildStatusItems({ now, status, live, update, install }), [now, status, live, update, install]);
+  const holidays = useHolidays(now);
+  return useMemo(
+    () => buildStatusItems({ now, status, live, update, install, holidays }),
+    [now, status, live, update, install, holidays],
+  );
 }

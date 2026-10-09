@@ -122,6 +122,8 @@ export interface ShariahAudit {
   tasis_evaluation: ShariahStandardResult;
   divergence_noted: boolean;
   divergence_explanation?: string | null;
+  /** The engine's own verdict when the result rests on a company filing; empty for the sample or an older response. */
+  overall_status?: string | null;
   /** The next fields are new; an older response lacks them and the panel hides what is missing. */
   data_status?: string | null;
   data_notice?: string | null;

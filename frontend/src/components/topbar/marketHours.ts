@@ -1,7 +1,7 @@
 // Is the Indian stock market open right now? NSE trades Monday to Friday, 9:15 am to 3:30 pm India time. India has no
-// daylight saving, so India time is always UTC plus 5:30. The exchange's holiday list is not sent to the app, so
-// without it a weekday inside trading hours is called "Market hours", never "Market open": QuantOS does not claim the
-// market is trading on a day it cannot rule out as a holiday.
+// daylight saving, so India time is always UTC plus 5:30. The exchange's holiday list comes from the engine (see
+// useHolidays.ts), and only when it covers this year. Without it a weekday inside trading hours is called "Market
+// hours", never "Market open": QuantOS does not claim the market is trading on a day it cannot rule out as a holiday.
 
 const INDIA_OFFSET_MS = 330 * 60_000;
 const PRE_OPEN = 9 * 60;
@@ -26,6 +26,9 @@ export function indiaClock(now: Date): IndiaClock {
   };
 }
 
+/** The exchange's holidays as ISO dates: just the dates, or each date with the holiday's name. */
+export type HolidayDates = ReadonlySet<string> | ReadonlyMap<string, string>;
+
 export type MarketPhase = "weekend" | "holiday" | "before" | "pre-open" | "hours" | "after";
 export type ChipTone = "ok" | "neutral" | "warn" | "brand";
 
@@ -41,7 +44,7 @@ const NO_HOLIDAYS = "QuantOS cannot see exchange holidays, so on a holiday the m
 
 const STATUS: Record<MarketPhase, Omit<MarketStatus, "phase">> = {
   weekend: { label: "Market closed", detail: `It is the weekend. ${TIMES}`, tone: "neutral" },
-  holiday: { label: "Market closed", detail: "Today is a market holiday.", tone: "neutral" },
+  holiday: { label: "Market closed, holiday", detail: "Today is a market holiday.", tone: "neutral" },
   before: { label: "Market closed", detail: "NSE opens today at 9:15 am India time.", tone: "neutral" },
   "pre-open": {
     label: "Pre-open",
@@ -66,7 +69,7 @@ const OPEN_WHEN_HOLIDAYS_KNOWN: Omit<MarketStatus, "phase"> = {
   tone: "ok",
 };
 
-function phaseAt(clock: IndiaClock, holidays: ReadonlySet<string> | undefined): MarketPhase {
+function phaseAt(clock: IndiaClock, holidays: HolidayDates | undefined): MarketPhase {
   if (clock.weekday === 0 || clock.weekday === 6) return "weekend";
   if (holidays?.has(clock.date)) return "holiday";
   if (clock.minutes < PRE_OPEN) return "before";
@@ -74,12 +77,21 @@ function phaseAt(clock: IndiaClock, holidays: ReadonlySet<string> | undefined): 
   return clock.minutes < CLOSE ? "hours" : "after";
 }
 
+function holidayName(holidays: HolidayDates | undefined, date: string): string | undefined {
+  return holidays && "get" in holidays ? holidays.get(date) : undefined;
+}
+
 /**
- * The market's state at `now`. `holidays` is a set of ISO dates when the exchange's list is known; leave it out when it
- * is not, and a trading-hours weekday then reads "Market hours" rather than "Market open".
+ * The market's state at `now`. `holidays` is the exchange's list when it is known for this year (as a set of ISO
+ * dates, or a map from each date to the holiday's name); leave it out when it is not, and a trading-hours weekday then
+ * reads "Market hours" rather than "Market open".
  */
-export function marketStatus(now: Date, holidays?: ReadonlySet<string>): MarketStatus {
-  const phase = phaseAt(indiaClock(now), holidays);
+export function marketStatus(now: Date, holidays?: HolidayDates): MarketStatus {
+  const clock = indiaClock(now);
+  const phase = phaseAt(clock, holidays);
   const known = phase === "hours" && holidays !== undefined;
-  return { phase, ...(known ? OPEN_WHEN_HOLIDAYS_KNOWN : STATUS[phase]) };
+  const words = { ...(known ? OPEN_WHEN_HOLIDAYS_KNOWN : STATUS[phase]) };
+  const name = phase === "holiday" ? holidayName(holidays, clock.date) : undefined;
+  if (name) words.detail = `Today is a market holiday: ${name}.`;
+  return { phase, ...words };
 }

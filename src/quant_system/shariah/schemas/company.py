@@ -109,6 +109,13 @@ class CompanySummary(BaseModel):
         default=None,
         description="Period end of the filing the verdict rests on, when it rests on one",
     )
+    overall_status: ComplianceStatus | None = Field(
+        default=None,
+        description=(
+            "The one verdict of the company's own filing (the word its badge shows), when the verdict rests on one. "
+            "Empty for the sample, where the two statuses above say all there is to say"
+        ),
+    )
     purification_ratio: float
     is_nifty_50: bool = False
     is_nifty_500: bool = True

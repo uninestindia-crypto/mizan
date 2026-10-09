@@ -164,7 +164,7 @@ export function buildVerdictView(audit: ShariahAudit): VerdictView {
   const aaoifi = standardView(audit.aaoifi_evaluation, sector.passed);
   const tasis = standardView(audit.tasis_evaluation, sector.passed);
   return {
-    overall: overallStatus(aaoifi.status, tasis.status),
+    overall: overallStatus(aaoifi.status, tasis.status, audit.overall_status),
     standards: [aaoifi, tasis],
     sector,
     sources: sourceRows(audit),

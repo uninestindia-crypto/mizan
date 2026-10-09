@@ -27,6 +27,7 @@ from quant_system.shariah.services.proof_words import NUMERATOR
 __all__ = [
     "evaluations_from",
     "evidence_lines",
+    "overall_status_of",
     "prefer_filing",
     "proofs_for",
     "transparency_overrides",
@@ -67,6 +68,21 @@ def standard_status(proof: dict[str, Any], name: str) -> ComplianceStatus:
     return ComplianceStatus(status) if status != "NOT_COMPUTED" else ComplianceStatus.QUESTIONABLE
 
 
+def overall_status_of(proof: dict[str, Any]) -> ComplianceStatus | None:
+    """The proof's own verdict in the older three-value form, or None when it is none of those three.
+
+    The two standards' statuses cannot always give it back: a standard that could not be worked out shows there as
+    questionable, yet the proof still calls the stock not compliant when the other standard fails.
+    """
+    verdict = proof.get("verdict")
+    if not isinstance(verdict, str):
+        return None
+    try:
+        return ComplianceStatus(verdict)
+    except ValueError:
+        return None
+
+
 def _ratio(proof: dict[str, Any], name: str, key: str) -> float | None:
     test = next(t for t in _standard(proof, name)["tests"] if t["key"] == key)
     return None if test["high"] is None else round(test["high"]["pct"] / 100.0, 6)
@@ -81,6 +97,7 @@ def filing_fields(proof: dict[str, Any]) -> dict[str, Any]:
     fields: dict[str, Any] = {
         "aaoifi_status": standard_status(proof, "AAOIFI"),
         "tasis_status": standard_status(proof, "TASIS"),
+        "overall_status": overall_status_of(proof),
         "data_status": DataStatus(proof["data_status"]),
         "verdict_source": "filing",
         "as_of": _period_end(proof),

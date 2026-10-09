@@ -36,17 +36,30 @@ interface ShariahStockRow {
   purification_ratio: number;
   /** New: what a check backs. An older response lacks it and the screen says "Not verified". */
   data_status?: string | null;
+  /** The engine's own verdict for this row, when it sends one. An older response lacks it. */
+  overall_status?: string | null;
 }
 
-/** Both standards must pass; any failure fails the share, any doubt leaves it questionable. */
-export function overallStatus(aaoifi: ScreenStatus, tasis: ScreenStatus): ScreenStatus {
-  if (aaoifi === "NON_COMPLIANT" || tasis === "NON_COMPLIANT") return "NON_COMPLIANT";
-  if (aaoifi === "QUESTIONABLE" || tasis === "QUESTIONABLE") return "QUESTIONABLE";
-  return "COMPLIANT";
+const SCREEN_STATUSES: readonly string[] = ["COMPLIANT", "QUESTIONABLE", "NON_COMPLIANT"];
+
+/**
+ * One verdict from the two standards, by the same rule as the engine's proof (the Shariah proof contract): a share is
+ * not compliant only when both standards say so, compliant only when both pass, and questionable in every other case,
+ * including when the two disagree. That is what the badge beside every symbol says, so this screen must say it too.
+ *
+ * When the engine has already worked out the verdict for this very row (`engine`), that one stands: it knows things the
+ * two statuses cannot show, such as a business it could not confirm or a standard it could not work out. A value this
+ * app does not know is ignored, never trusted.
+ */
+export function overallStatus(aaoifi: ScreenStatus, tasis: ScreenStatus, engine?: string | null): ScreenStatus {
+  if (engine && SCREEN_STATUSES.includes(engine)) return engine as ScreenStatus;
+  if (aaoifi === "NON_COMPLIANT" && tasis === "NON_COMPLIANT") return "NON_COMPLIANT";
+  if (aaoifi === "COMPLIANT" && tasis === "COMPLIANT") return "COMPLIANT";
+  return "QUESTIONABLE";
 }
 
 export function toCompliance(row: ShariahStockRow): ShariahCompliance {
-  const status = overallStatus(row.aaoifi_status, row.tasis_status);
+  const status = overallStatus(row.aaoifi_status, row.tasis_status, row.overall_status);
   return {
     ticker: row.ticker,
     symbol: row.symbol,

@@ -49,10 +49,34 @@ describe("the market, with no holiday list", () => {
 describe("the market, with the exchange's holiday list", () => {
   const holidays = new Set(["2026-10-07"]);
 
-  it("says Market closed on a holiday that falls inside trading hours", () => {
+  it("says Market closed, holiday on a holiday that falls inside trading hours", () => {
     const status = marketStatus(new Date("2026-10-07T05:00:00Z"), holidays);
-    expect([status.phase, status.label]).toEqual(["holiday", "Market closed"]);
+    expect([status.phase, status.label]).toEqual(["holiday", "Market closed, holiday"]);
     expect(status.detail).toBe("Today is a market holiday.");
+  });
+
+  it("names the holiday in the longer sentence when the list carries names", () => {
+    const named = new Map([["2026-10-20", "Dussehra"]]);
+    const status = marketStatus(new Date("2026-10-20T05:00:00Z"), named);
+    expect([status.phase, status.label]).toEqual(["holiday", "Market closed, holiday"]);
+    expect(status.detail).toBe("Today is a market holiday: Dussehra.");
+  });
+
+  it("says Market open from a list with names, on a day that is not in it", () => {
+    const named = new Map([["2026-10-20", "Dussehra"]]);
+    expect(marketStatus(new Date("2026-10-21T05:00:00Z"), named).label).toBe("Market open");
+  });
+
+  it("is a holiday from midnight to midnight in India, whatever the date is in UTC", () => {
+    const named = new Map([["2026-10-20", "Dussehra"]]);
+    expect(marketStatus(new Date("2026-10-19T18:30:00Z"), named).phase).toBe("holiday"); // 00:00 on 20 October in India
+    expect(marketStatus(new Date("2026-10-20T18:29:00Z"), named).phase).toBe("holiday"); // 23:59 on 20 October in India
+    expect(marketStatus(new Date("2026-10-20T18:30:00Z"), named).phase).toBe("before"); // 00:00 on 21 October in India
+  });
+
+  it("calls the early morning of a holiday a holiday too, not just the trading hours", () => {
+    const status = marketStatus(new Date("2026-10-07T01:00:00Z"), holidays); // 06:30 in India
+    expect(status.phase).toBe("holiday");
   });
 
   it("says Market open on an ordinary weekday inside trading hours", () => {

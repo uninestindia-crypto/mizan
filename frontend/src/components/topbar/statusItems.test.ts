@@ -42,6 +42,38 @@ function labelOf(list: Items, id: string): string | undefined {
   return list.find((item) => item.id === id)?.label;
 }
 
+describe("the market chip and the exchange's holidays", () => {
+  const ORDINARY = new Map([["2026-10-20", "Dussehra"]]);
+  const TODAY_IS_A_HOLIDAY = new Map([["2026-10-07", "A day off"]]);
+  const market = (list: Items) => list.find((item) => item.id === "market");
+
+  it("says Market hours inside trading hours while the holidays are not known", () => {
+    expect(market(items())?.label).toBe("Market hours");
+    expect(market(items({ holidays: undefined }))?.label).toBe("Market hours");
+  });
+
+  it("says Market open inside trading hours once the holidays are known and today is not one", () => {
+    const chip = market(items({ holidays: ORDINARY }));
+    expect(chip?.label).toBe("Market open");
+    expect(chip?.tone).toBe("ok");
+  });
+
+  it("says Market closed, holiday, and why, when today is on the list", () => {
+    const chip = market(items({ holidays: TODAY_IS_A_HOLIDAY }));
+    expect(chip?.label).toBe("Market closed, holiday");
+    expect(chip?.detail).toBe("Today is a market holiday: A day off.");
+    expect(chip?.tone).toBe("neutral");
+  });
+
+  it("says plain Market closed after hours, whatever the list says", () => {
+    expect(market(items({ now: WED_NIGHT, holidays: ORDINARY }))?.label).toBe("Market closed");
+  });
+
+  it("does not take live prices for trading on a holiday", () => {
+    expect(labelOf(items({ holidays: TODAY_IS_A_HOLIDAY }), "live")).toBe("Prices: last close");
+  });
+});
+
 describe("what the top bar has to say", () => {
   it("says the market, the prices and live prices, and nothing about an update when there is none", () => {
     expect(ids(items())).toEqual(["market", "prices", "live"]);

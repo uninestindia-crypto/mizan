@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 
+from quant_system.shariah.schemas.company import ComplianceStatus
 from quant_system.shariah.schemas.screening import (
     SAMPLE_DATA_NOTICE,
     SectorRuleResult,
@@ -20,6 +21,7 @@ from quant_system.shariah.schemas.screening import (
 )
 from quant_system.shariah.services.filing_jobs import FilingJobs
 from quant_system.shariah.services.proof_runtime import ProofRuntime, use_runtime
+from quant_system.shariah.services.verdict_overlay import overall_status_of
 from tests.shariah.proof_service_fixtures import (
     FakeBars,
     FakeSample,
@@ -225,6 +227,80 @@ async def test_a_ratio_the_filing_cannot_support_without_prices_is_left_empty_no
     body = (await client.get(DETAIL.format("TCS.NS"))).json()
     assert body["aaoifi_debt_ratio"] is None and body["aaoifi_status"] == "QUESTIONABLE"
     assert body["tasis_debt_ratio"] == 0.0  # the total-assets standard needs no prices
+
+
+# ------------------------------------------------------------------------------------- one verdict
+
+
+@pytest.mark.asyncio
+async def test_a_row_carries_the_proofs_own_verdict_so_the_list_agrees_with_the_badge(
+    client: AsyncClient, tcs_filing: ProofRuntime
+) -> None:
+    """The two standards disagree on TCS (market value passes, total assets fails): the proof says questionable."""
+    items = (await client.get("/api/v1/stocks?limit=100")).json()["items"]
+    tcs = next(item for item in items if item["symbol"] == "TCS")
+    assert (tcs["aaoifi_status"], tcs["tasis_status"]) == ("COMPLIANT", "NON_COMPLIANT")
+    assert tcs["overall_status"] == "QUESTIONABLE" == tcs_filing.service.proof("TCS")["verdict"]
+
+
+@pytest.mark.asyncio
+async def test_a_standard_that_could_not_be_worked_out_does_not_turn_a_failure_into_a_doubt(
+    client: AsyncClient, tmp_path: Path
+) -> None:
+    """With no prices AAOIFI shows as questionable; TASIS fails, and the proof says not compliant. The row says so."""
+    runtime = install(tmp_path, {"TCS": tcs_figures()}, None)
+    items = (await client.get("/api/v1/stocks?limit=100")).json()["items"]
+    tcs = next(item for item in items if item["symbol"] == "TCS")
+    assert (tcs["aaoifi_status"], tcs["tasis_status"]) == ("QUESTIONABLE", "NON_COMPLIANT")
+    assert tcs["overall_status"] == "NON_COMPLIANT" == runtime.service.proof("TCS")["verdict"]
+
+
+@pytest.mark.asyncio
+async def test_a_business_that_fails_is_not_compliant_on_the_row_and_in_the_audit(
+    client: AsyncClient, tmp_path: Path
+) -> None:
+    install(
+        tmp_path, {"INFY": figures_for("INFY", "Infy Brewery Limited")}, FakeBars({"INFY": BIG})
+    )
+    items = (await client.get("/api/v1/stocks?limit=100")).json()["items"]
+    infy = next(item for item in items if item["symbol"] == "INFY")
+    assert infy["overall_status"] == "NON_COMPLIANT"
+    audit = (await client.get(AUDIT.format("INFY.NS"))).json()
+    assert audit["overall_status"] == "NON_COMPLIANT"
+
+
+@pytest.mark.asyncio
+async def test_the_audit_carries_the_same_verdict_as_the_row_and_the_screening(
+    client: AsyncClient, tcs_filing: ProofRuntime
+) -> None:
+    audit = (await client.get(AUDIT.format("TCS.NS"))).json()
+    screening = (await client.get(SCREEN.format("TCS.NS"))).json()
+    assert audit["overall_status"] == screening["overall_status"] == "QUESTIONABLE"
+
+
+@pytest.mark.asyncio
+async def test_every_row_that_rests_on_a_filing_carries_the_proofs_verdict_and_a_sample_row_carries_none(
+    client: AsyncClient, tcs_filing: ProofRuntime
+) -> None:
+    items = (await client.get("/api/v1/stocks?limit=100")).json()["items"]
+    assert all("overall_status" in item for item in items)
+    filed = [item for item in items if item["verdict_source"] == "filing"]
+    sampled = [item for item in items if item["verdict_source"] != "filing"]
+    assert filed and sampled
+    proofs = {item["symbol"]: tcs_filing.service.proof(item["symbol"])["verdict"] for item in filed}
+    assert {item["symbol"]: item["overall_status"] for item in filed} == proofs
+    assert all(item["overall_status"] is None for item in sampled)
+    audit = (await client.get(AUDIT.format("INFY.NS"))).json()
+    assert audit["verdict_source"] == "sample" and audit["overall_status"] is None
+
+
+def test_the_proofs_verdict_is_read_in_the_older_three_values_and_nothing_else() -> None:
+    assert overall_status_of({"verdict": "QUESTIONABLE"}) is ComplianceStatus.QUESTIONABLE
+    assert overall_status_of({"verdict": "NON_COMPLIANT"}) is ComplianceStatus.NON_COMPLIANT
+    assert overall_status_of({"verdict": "COMPLIANT"}) is ComplianceStatus.COMPLIANT
+    assert overall_status_of({"verdict": "NOT_SCREENED"}) is None
+    assert overall_status_of({}) is None
+    assert overall_status_of({"verdict": None}) is None
 
 
 # ------------------------------------------------------------------------------------- safety

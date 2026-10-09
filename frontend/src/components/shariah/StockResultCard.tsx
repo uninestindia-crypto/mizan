@@ -11,7 +11,7 @@ import { VerdictPanel } from "./VerdictPanel";
 function Verdict({ audit }: { audit: ShariahAudit }) {
   const aaoifi = audit.aaoifi_evaluation.status;
   const tasis = audit.tasis_evaluation.status;
-  const overall = overallStatus(aaoifi, tasis);
+  const overall = overallStatus(aaoifi, tasis, audit.overall_status);
   return (
     <div role="group" aria-label="Verdict" className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">

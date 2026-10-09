@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+from quant_system.server.v2.market_holidays import HOLIDAY_FILE, holiday_list
 from quant_system.shariah.filings.models import FilingFigures
 from quant_system.shariah.filings.snapshot import read_snapshot
 from quant_system.shariah.services.proof_paths import LISTED_FILE, SNAPSHOT_FILE
@@ -21,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SPECS = ["quant_system.spec", "installer/quantos.spec", "installer/quantos-studio.spec"]
 SNAPSHOT = ROOT / "data" / SNAPSHOT_FILE
 LISTED = ROOT / "data" / LISTED_FILE
+HOLIDAYS = ROOT / "data" / HOLIDAY_FILE
 
 
 @pytest.mark.parametrize("spec", SPECS)
@@ -38,6 +40,27 @@ def test_every_build_carries_the_list_of_listed_companies_the_coverage_line_coun
     text = (ROOT / spec).read_text(encoding="utf-8")
     assert "nse-all-listed-equities.csv" in text and "'data/authorities')" in text.replace('"', "'")
     assert LISTED.is_file()
+
+
+@pytest.mark.parametrize("spec", SPECS)
+def test_every_build_carries_the_exchange_holiday_list_the_market_chip_reads(spec: str) -> None:
+    text = (ROOT / spec).read_text(encoding="utf-8").replace('"', "'")
+    lines = [line for line in text.splitlines() if "nse-trading-holidays.json" in line]
+    assert len(lines) == 1, "the holiday list must be listed exactly once"
+    assert lines[0].rstrip().endswith("'data/authorities'),")
+
+
+def test_the_holiday_list_is_tracked_not_ignored_and_readable_by_the_route() -> None:
+    relative = str(HOLIDAYS.relative_to(ROOT))
+    assert HOLIDAYS.is_file()
+    ignored = subprocess.run(["git", "check-ignore", "-q", relative], cwd=ROOT, check=False)
+    assert ignored.returncode == 1  # 1 means "not ignored"
+    tracked = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", relative], cwd=ROOT, check=False, capture_output=True
+    )
+    assert tracked.returncode == 0
+    answer = holiday_list()
+    assert answer["years"] and answer["holidays"]
 
 
 def test_the_installer_replaces_the_staged_shariah_folder_on_every_update_so_a_newer_snapshot_arrives() -> (

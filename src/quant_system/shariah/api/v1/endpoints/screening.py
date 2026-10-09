@@ -19,6 +19,7 @@ from quant_system.shariah.services.transparency import build_screening_transpare
 from quant_system.shariah.services.verdict_overlay import (
     evaluations_from,
     evidence_lines,
+    overall_status_of,
     proofs_for,
     transparency_overrides,
 )
@@ -175,6 +176,7 @@ async def get_shariah_audit(
         tasis_evaluation=tasis_eval,
         divergence_noted=divergence,
         divergence_explanation=div_reason,
+        overall_status=overall_status_of(proof) if proof else None,
         purification_ratio_pct=purif_pct,
         zakatable_assets_per_share_inr=float(company["zakatable_assets_per_share"]),
         balance_sheet_lines=bs_lines,

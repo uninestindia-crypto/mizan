@@ -52,7 +52,7 @@ CHAT_CLIS: Final[tuple[str, ...]] = ("claude", "codex", "gemini")
 CLI_LABELS: Final[dict[str, str]] = {
     "claude": "Claude Code (your Claude sign-in)",
     "codex": "Codex (your ChatGPT sign-in)",
-    "gemini": "Gemini CLI (your Google sign-in)",
+    "gemini": "Gemini (your Google sign-in)",
 }
 
 MIN_TIMEOUT_SECONDS: Final = (

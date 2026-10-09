@@ -15,9 +15,9 @@ export const AI_TEST = "/api/v2/copilot/ai/test";
 
 const MAKERS: Record<string, [string, string]> = {
   claude: ["Claude Code", "Anthropic"],
-  codex: ["Codex CLI", "OpenAI"],
-  gemini: ["Gemini CLI", "Google"],
-  antigravity: ["Antigravity CLI", "Google"],
+  codex: ["Codex", "OpenAI"],
+  gemini: ["Gemini", "Google"],
+  antigravity: ["Antigravity", "Google"],
 };
 
 /** An app as the engine lists it. The engine's own wording is kept in, to show that this screen does not use it. */

@@ -1,7 +1,7 @@
 import { ArrowUpCircle, Clock, Database, type LucideIcon, Zap, ZapOff } from "lucide-react";
 import type { Status, UpdateInfo } from "../../lib/types";
 import { chipWords, type InstallStatus, isWorking } from "../update/updateInstall";
-import { type ChipTone, type MarketStatus, marketStatus } from "./marketHours";
+import { type ChipTone, type HolidayDates, type MarketStatus, marketStatus } from "./marketHours";
 import { freshness } from "./priceFreshness";
 
 // What the top bar tells a person, as plain data: one item per thing worth saying. The bar shows each as a chip, and
@@ -36,6 +36,8 @@ export interface StatusInputs {
   live: LivePrices | undefined;
   update: UpdateInfo | undefined;
   install: InstallStatus | undefined;
+  /** The exchange's holidays when known for this year. Left out, the market reads "Market hours", not "Market open". */
+  holidays?: HolidayDates;
 }
 
 const DATA_SCREEN = "/settings/data";
@@ -99,8 +101,8 @@ function updateItem(update: UpdateInfo | undefined, install: InstallStatus | und
 }
 
 export function buildStatusItems(inputs: StatusInputs): StatusItem[] {
-  const { now, status, live, update, install } = inputs;
-  const market = marketStatus(now);
+  const { now, status, live, update, install, holidays } = inputs;
+  const market = marketStatus(now, holidays);
   const items: (StatusItem | null)[] = [
     marketItem(market),
     status ? pricesItem(status, now) : null,

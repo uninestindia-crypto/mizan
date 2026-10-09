@@ -19,7 +19,7 @@ const TOOLS: Record<string, string> = {
   costs: "Trade costs",
   "position-size": "Position size",
   options: "Options payoff",
-  agents: "Coding agents",
+  agents: "AI apps",
 };
 
 const LAB: Record<string, string> = { new: "New test", runs: "Test result" };

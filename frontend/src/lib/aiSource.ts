@@ -56,7 +56,7 @@ export const APPS_ANCHOR = "ai-apps-setup";
 
 const APP_ORDER: readonly string[] = ["claude", "codex", "gemini"];
 const KEY_ORDER: readonly string[] = ["anthropic", "openai", "gemini", "groq", "deepseek", "mistral", "openrouter"];
-const APP_NAMES: Record<string, string> = { claude: "Claude Code", codex: "Codex", gemini: "Gemini CLI" };
+const APP_NAMES: Record<string, string> = { claude: "Claude Code", codex: "Codex", gemini: "Gemini" };
 
 /** The plain name of an app in a sentence. */
 export function appName(app: Pick<AiApp, "id" | "name">): string {

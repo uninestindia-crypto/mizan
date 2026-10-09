@@ -88,6 +88,20 @@ describe("buildVerdictView, one-line reasons", () => {
     expect(buildVerdictView(fullAudit()).overall).toBe("COMPLIANT");
     expect(buildVerdictView(bankAudit()).overall).toBe("NON_COMPLIANT");
   });
+
+  it("calls a stock the two standards disagree on questionable, not the worse of the two", () => {
+    const split = fullAudit({ tasis_evaluation: standard("TASIS", { status: "NON_COMPLIANT", is_compliant: false }) });
+    expect(buildVerdictView(split).overall).toBe("QUESTIONABLE");
+  });
+
+  it("uses the engine's own verdict when the result carries one", () => {
+    const split = fullAudit({
+      aaoifi_evaluation: standard("AAOIFI", { status: "QUESTIONABLE", is_compliant: false }),
+      tasis_evaluation: standard("TASIS", { status: "NON_COMPLIANT", is_compliant: false }),
+    });
+    expect(buildVerdictView(split).overall).toBe("QUESTIONABLE"); // two statuses alone
+    expect(buildVerdictView({ ...split, overall_status: "NON_COMPLIANT" }).overall).toBe("NON_COMPLIANT");
+  });
 });
 
 describe("buildVerdictView, business line", () => {

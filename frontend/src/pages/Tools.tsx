@@ -14,7 +14,7 @@ const TOOLS = [
   { id: "costs", label: "Trade costs" },
   { id: "position-size", label: "Position size" },
   { id: "options", label: "Options payoff" },
-  { id: "agents", label: "Coding agents" },
+  { id: "agents", label: "AI apps" },
 ];
 
 function useDebounced<T>(value: T, ms = 300): T {

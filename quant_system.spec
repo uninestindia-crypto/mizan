@@ -14,6 +14,7 @@ added_files = [
     ('data/shariah', 'data/shariah'),
     ('data/fundamentals', 'data/fundamentals'),
     ('data/authorities/nse-all-listed-equities.csv', 'data/authorities'),
+    ('data/authorities/nse-trading-holidays.json', 'data/authorities'),
 ]
 
 hidden_imports = [

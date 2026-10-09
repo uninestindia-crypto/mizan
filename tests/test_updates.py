@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import pytest
@@ -122,6 +123,19 @@ def test_changelog_returns_history_and_identifies_current_version() -> None:
     assert len(entries[0]["fixes"]) > 0
     assert len(entries[0]["unchanged_protections"]) > 0
     assert entries[1]["is_current"] is False
+
+
+def _release_note_lines() -> list[str]:
+    keys = ("whats_new", "fixes", "improvements", "unchanged_protections")
+    entries = UpdateChecker("2.5.0").changelog()
+    return [line for entry in entries for key in keys for line in entry.get(key, [])]
+
+
+def test_the_release_notes_a_person_reads_do_not_use_the_developers_word_cli() -> None:
+    lines = _release_note_lines()
+    assert len(lines) > 20
+    assert [line for line in lines if re.search(r"\bCLI\b", line)] == []
+    assert "Install and sign in to several AI apps with one click" in lines
 
 
 def test_changelog_api_endpoint(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) -> None:

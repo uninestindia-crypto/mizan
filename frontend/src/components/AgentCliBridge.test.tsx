@@ -119,8 +119,8 @@ describe("nothing here needs a terminal", () => {
 });
 
 const JUMPS = [
-  ["Codex CLI", "Sign in to Codex"],
-  ["Gemini CLI", "Install Gemini"],
+  ["Codex", "Sign in to Codex"],
+  ["Gemini", "Install Gemini"],
 ] as const;
 
 describe("the Set up button on the AI choice above", () => {

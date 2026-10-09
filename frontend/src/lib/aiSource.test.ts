@@ -7,6 +7,7 @@ import {
   type AppState,
   APPS_ANCHOR,
   appChip,
+  appName,
   applyPatch,
   buildPlan,
   groupModels,
@@ -21,7 +22,7 @@ import {
   testTarget,
 } from "./aiSource";
 
-const NAMES: Record<AppId, string> = { claude: "Claude Code", codex: "Codex CLI", gemini: "Gemini CLI" };
+const NAMES: Record<AppId, string> = { claude: "Claude Code", codex: "Codex", gemini: "Gemini" };
 
 function app(id: AppId, state: AppState): AiApp {
   const installed = state !== "NOT_INSTALLED";
@@ -130,7 +131,7 @@ const CASES: Case[] = [
     apps: withApps(app("gemini", "CONNECTED"), app("claude", "CONNECTED")),
     keys: withKeys("groq", "anthropic"),
     says:
-      "Right now your questions go to Claude Code, with Gemini CLI, " +
+      "Right now your questions go to Claude Code, with Gemini, " +
       "your saved Anthropic (Claude) key and your saved Groq key as backups.",
   },
   {
@@ -144,7 +145,7 @@ const CASES: Case[] = [
     name: "an app that cannot say whether it is signed in",
     apps: withApps(app("gemini", "UNKNOWN")),
     keys: NO_KEYS,
-    says: "Right now your questions go to Gemini CLI (not checked yet).",
+    says: "Right now your questions go to Gemini (not checked yet).",
   },
   {
     name: "apps that are all signed out and no key",
@@ -168,7 +169,12 @@ describe("the sentence that says where a question goes", () => {
   it("never uses a developer word", () => {
     const say = ({ apps, keys, choice }: Case) => summarise({ apps, providers: keys }, { ...AUTO, ...choice });
     const text = CASES.map(say).join(" ");
-    expect(text).not.toMatch(/\b(API|token|terminal|command|install script)\b/i);
+    expect(text).not.toMatch(/\b(API|token|terminal|command|install script|CLI)\b/i);
+  });
+
+  it("names Gemini without the developer's word, even if an older engine still sends it", () => {
+    expect(appName({ id: "gemini", name: "Gemini CLI" })).toBe("Gemini");
+    expect(appName(app("gemini", "CONNECTED"))).toBe("Gemini");
   });
 });
 
@@ -321,23 +327,23 @@ describe("the Set up jump", () => {
     document.body.innerHTML = `
       <div id="${APPS_ANCHOR}" tabindex="-1">
         <div class="rounded-xl" data-app-name="Claude Code"><h3>Claude Code</h3><button>Sign in</button></div>
-        <div class="rounded-xl" data-app-name="Codex CLI"><h3>Codex</h3><button disabled>Wait</button><button>Install</button></div>
+        <div class="rounded-xl" data-app-name="Codex"><h3>Codex</h3><button disabled>Wait</button><button>Install</button></div>
       </div>`;
   }
 
   it("puts the keyboard on the first button of that app's card", () => {
     bridge();
-    showAppSetup("Codex CLI");
+    showAppSetup("Codex");
     expect(document.activeElement?.textContent).toBe("Install");
   });
 
   it("falls back to the whole group for an app it cannot find, or none", () => {
     bridge();
-    showAppSetup("Gemini CLI");
+    showAppSetup("Gemini");
     expect(document.activeElement?.id).toBe(APPS_ANCHOR);
   });
 
   it("does nothing when the cards are not on the page", () => {
-    expect(() => showAppSetup("Codex CLI")).not.toThrow();
+    expect(() => showAppSetup("Codex")).not.toThrow();
   });
 });
