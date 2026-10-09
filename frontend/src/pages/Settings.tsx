@@ -1140,7 +1140,7 @@ function ChangelogCard() {
 
   const fallbackEntries: ChangelogEntry[] = [
     {
-      version: "3.0.0",
+      version: "3.1.0",
       date: "2026-10-08",
       title: "Mizan Quant OS: Quant SLM Engine, Microsoft Qlib Multi-Factor Architecture & Factory-New Installer",
       is_current: true,

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [3.0.0] - 2026-10-08
+## [3.1.0] - 2026-10-08
 
 ### Added
 - **Mizan Quant OS Brand Unification**: Unified institutional quantitative trading, factor research, and Mizan Shariah wealth compliance in one operating system.
