@@ -8,20 +8,15 @@ class ConstituentModel:
     weight: float
     company_name: str | None = None
     sector: str | None = None
-    current_price: float = 0.0
+    current_price: float | None = None
 
 
 @dataclass
 class BasketModel:
+    """A basket as defined: its name, thesis and holdings. It carries no return or risk figures."""
+
     id: str
     name: str
     thesis: str
     category: str
-    expected_cagr: float
-    expected_sharpe: float
-    annualized_volatility: float
-    max_drawdown: float
-    beta: float
-    dividend_yield: float
-    weighted_purification_ratio: float
     constituents: list[ConstituentModel] = field(default_factory=list)

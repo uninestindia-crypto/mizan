@@ -16,7 +16,14 @@ from quant_system.copilot.llm import ChatReply
 from quant_system.copilot.sources import SqliteShariahSource
 from quant_system.copilot.verify_jobs import VerifyJobs
 from quant_system.server.app import app
-from quant_system.server.v2 import copilot_routes, copilot_wiring, paths, router
+from quant_system.server.v2 import (
+    cli_bridge,
+    copilot_ai,
+    copilot_routes,
+    copilot_wiring,
+    paths,
+    router,
+)
 from quant_system.server.v2.credentials import CredentialStore
 from tests.copilot_fakes import SAMPLE_ROW, FakeNews, FakeQuotes, StubModel, opinion_json
 from tests.market_fixtures import build_standard_store
@@ -59,6 +66,7 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, lab: Lab) -> Iterato
     monkeypatch.setattr(paths, "_user_folders", lambda: [])
     monkeypatch.setattr(paths, "data_scan", paths.DataFolderScan())
     monkeypatch.setattr(copilot_routes, "_store", None)
+    monkeypatch.setattr(copilot_routes, "_conversations", None)
     monkeypatch.setattr(copilot_routes, "_jobs", VerifyJobs(spawn=_Inline()))
     monkeypatch.setattr(copilot_wiring, "_NEWS", FakeNews())
     database = _shariah_db(tmp_path)
@@ -67,13 +75,11 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, lab: Lab) -> Iterato
     )
     monkeypatch.setattr(copilot_wiring, "key_lookup", lambda provider: lab.keys.get(provider))
     monkeypatch.setattr(
-        copilot_routes,
-        "build_models",
-        lambda _lookup, providers: [lab.models[p] for p in providers if p in lab.models],
+        copilot_routes, "verify_models", lambda ids: [lab.models[p] for p in ids if p in lab.models]
     )
-    monkeypatch.setattr(
-        copilot_routes, "default_model", lambda _lookup: next(iter(lab.models.values()), None)
-    )
+    monkeypatch.setattr(copilot_routes, "chat_model", lambda: next(iter(lab.models.values()), None))
+    monkeypatch.setattr(copilot_ai, "installed_apps", lambda: {})  # no AI app on the test computer
+    monkeypatch.setattr(cli_bridge, "list_cli_status", lambda force=False: [])
     router.reset_services()
     test_store = CredentialStore(prefix=f"QuantOS-test-{uuid.uuid4().hex[:8]}:")
     router.services().credentials = test_store
@@ -137,7 +143,7 @@ def test_without_an_ai_key_a_halal_question_is_answered_from_the_screener(
     assert body["mode"] == "built_in" and body["provider"] is None and body["model"] is None
     assert "AAOIFI" in body["reply"] and "not a religious ruling" in body["reply"].lower()
     assert [s["label"] for s in body["steps"]][-1] == "Halal screening"
-    assert any(p["path"] == "/settings/accounts" for p in body["proposals"])
+    assert any(p["path"] == "/settings/ai" for p in body["proposals"])
 
 
 def test_with_an_ai_key_the_model_answers_and_says_which_one(
@@ -329,7 +335,7 @@ def test_a_ready_made_agent_runs_with_no_ai_key(ready: TestClient, headers: dict
         "/api/v2/copilot/agents/recipe-check-stock/run", json={"symbol": "AAA"}, headers=headers
     ).json()
     assert result["completed"] is True and result["symbol"] == "AAA" and len(result["steps"]) == 4
-    assert "AAOIFI" in result["steps"][1]["reply"] and "No AI key is set up" in result["note"]
+    assert "AAOIFI" in result["steps"][1]["reply"] and "No AI is set up" in result["note"]
     assert any(p["kind"] == "second_opinion" for p in result["proposals"])
 
 
@@ -429,3 +435,24 @@ def test_an_expired_broker_key_is_not_reported_as_ready(
     body = client.get("/api/v2/copilot/status").json()
     assert body["live_prices"]["ready"] is False and "expired" in body["live_prices"]["message"]
     assert CANARY not in json.dumps(body)
+
+
+# ------------------------------------------------------------------------------------- Shariah mode
+
+
+def test_in_shariah_mode_a_plain_question_about_a_stock_opens_with_the_screener(
+    ready: TestClient, headers: dict[str, str]
+) -> None:
+    router.services().state.update_settings({"shariah_mode": True})
+    body = _chat(ready, headers, "how is AAA doing?")
+    assert body["reply"].startswith("**From QuantOS's halal screener: AAA")
+    assert "Halal screening" in [s["label"] for s in body["steps"]]
+
+
+def test_switching_the_mode_off_takes_effect_on_the_very_next_question(
+    ready: TestClient, headers: dict[str, str]
+) -> None:
+    router.services().state.update_settings({"shariah_mode": True})
+    assert "halal screener" in _chat(ready, headers, "how is AAA doing?")["reply"]
+    router.services().state.update_settings({"shariah_mode": False})
+    assert "halal screener" not in _chat(ready, headers, "how is AAA doing?")["reply"]

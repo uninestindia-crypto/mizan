@@ -34,13 +34,13 @@ logger = logging.getLogger(__name__)
 
 MAX_STEPS = 8
 SYMBOL_RULE = re.compile(r"^[A-Z0-9&-]{1,15}$")
-_ADD_KEY = Proposal("navigate", "Add an AI key", "/settings/accounts")
+_ADD_KEY = Proposal("navigate", "Choose an AI", "/settings/ai")
 _NO_AI_NOTE = (
-    "No AI key is set up, so each step used only the built-in answers. Add an AI key in Settings, then Accounts "
-    "and keys, to let this assistant work through open-ended steps."
+    "No AI is set up, so each step used only the built-in answers. Open Settings, then AI assistants, and pick one "
+    "to let this assistant work through open-ended steps."
 )
 _NEEDS_AI = (
-    "This assistant needs an AI key to work through its steps. Open Settings, then Accounts and keys, add one, "
+    "This assistant needs an AI to work through its steps. Open Settings, then AI assistants, pick one, "
     "and run it again."
 )
 _NEEDS_SYMBOL = "Tell me which stock to run this on, for example TCS."
@@ -97,6 +97,7 @@ class RunOptions:
     model: ChatModel | None = None
     page: str | None = None
     needs_ai: bool = False
+    shariah_mode: bool = False
     deadline_seconds: float = 300.0
     clock: Callable[[], float] = time.monotonic
 
@@ -165,12 +166,23 @@ def _answer_step(
     text = history[-1].content
     if options.model is None:
         allowed = frozenset(agent.tools)
-        context = AnswerContext(options.page, False, allowed, hint=False, symbol=options.symbol)
+        context = AnswerContext(
+            options.page,
+            False,
+            allowed,
+            hint=False,
+            symbol=options.symbol,
+            shariah_mode=options.shariah_mode,
+        )
         return built_in_answer(text, registry, context)
     runner = CopilotAgent(options.model, registry)
     instructions = _fill(agent.instructions, options.symbol) or None
     return runner.run(
-        history, page=options.page, instructions=instructions, allowed=set(agent.tools)
+        history,
+        page=options.page,
+        instructions=instructions,
+        allowed=set(agent.tools),
+        shariah_mode=options.shariah_mode,
     )
 
 

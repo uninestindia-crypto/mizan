@@ -194,7 +194,7 @@ def _one_service_note(providers: set[str]) -> str:
     name = next(iter(providers))
     return (
         f"Every answer came from one AI service, {PROVIDER_LABELS.get(name, name)}, so they are less independent. "
-        "Add a second AI service in Settings, then Accounts and keys, for a real cross-check."
+        "Add a second AI in Settings, then AI assistants, for a real cross-check."
     )
 
 

@@ -22,6 +22,8 @@ import { type ReactNode, useEffect, useState } from "react";
 import { NavLink, useParams } from "react-router";
 import { AsOf } from "../components/common";
 import { AgentCliBridge } from "../components/AgentCliBridge";
+import { AiSource } from "../components/settings/AiSource";
+import { APPS_ANCHOR } from "../lib/aiSource";
 import { DataFolderPicker } from "../components/DataFolderPicker";
 import { EnvImport } from "../components/EnvImport";
 import { HardwareAcceleratorCard } from "../components/HardwareAcceleratorCard";
@@ -153,7 +155,8 @@ function Profile() {
           <div>
             <div className="text-[14px] font-medium text-ink">Shariah Compliant Wealth System</div>
             <div className="text-[12.5px] text-ink-3">
-              Filters stock universes, displays compliance badges, and enables the Mizan Shariah workspace.
+              Shows only Shariah-compliant stocks in your lists, labels every stock with its Shariah
+              result, and opens the Mizan Shariah workspace. The same as the mode switch at the top.
             </div>
           </div>
           <Switch
@@ -1042,7 +1045,10 @@ function AiAssistants() {
   return (
     <div className="space-y-6">
       <HardwareAcceleratorCard />
-      <AgentCliBridge />
+      <AiSource />
+      <div id={APPS_ANCHOR} tabIndex={-1} className="scroll-mt-4 outline-none">
+        <AgentCliBridge />
+      </div>
     </div>
   );
 }

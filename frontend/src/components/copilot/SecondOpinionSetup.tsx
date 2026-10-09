@@ -8,13 +8,13 @@ import type { StartChoice } from "./useStartRun";
 
 function NoReadyModels({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
-  const addKey = () => {
+  const setUp = () => {
     onClose();
-    void navigate("/settings/accounts");
+    void navigate("/settings/ai");
   };
   return (
-    <Callout tone="info" action={<Button onClick={addKey}>Add an AI key</Button>}>
-      Add at least one AI key to get a second opinion.
+    <Callout tone="info" action={<Button onClick={setUp}>Choose an AI</Button>}>
+      Set up an AI first: choose Settings, then AI assistants.
     </Callout>
   );
 }
@@ -53,7 +53,7 @@ function PickTest({ note, checked, onChange }: PickTestProps) {
 const STOPPED_NOTE = "You stopped the last check. Any answers still on their way are ignored.";
 const COST_NOTE =
   "Each model is asked again with the facts in a different order, to see whether it changes its mind. " +
-  "This takes a minute or two and uses a little of your AI key's allowance.";
+  "This takes a minute or two and uses a little of what your AI plan or key allows.";
 
 interface SetupProps {
   models: UseQueryResult<ProviderOption[]>;
@@ -91,7 +91,7 @@ function Choices(props: SetupProps & { list: ProviderOption[] }) {
   );
 }
 
-/** Choose the models and start. Nothing can be started until at least one model with a key is ticked. */
+/** Choose the models and start. Nothing can be started until at least one AI that is ready is ticked. */
 export function SecondOpinionSetup(props: SetupProps) {
   const { models, onClose } = props;
   if (models.isPending) return <Spinner label="Checking which AI models are ready" />;

@@ -21,7 +21,7 @@ router = APIRouter()
 @router.get(
     "/stocks/search",
     response_model=list[SearchSuggestion],
-    summary="Instant Search Autocomplete (<50ms)",
+    summary="Search Stocks by Name or Symbol",
 )
 async def search_stocks(
     q: str = Query(..., min_length=1, description="Search token (e.g. 'tcs', 'tata', 'pharma')"),
@@ -31,7 +31,7 @@ async def search_stocks(
     limit: int = Query(15, ge=1, le=50),
     db: aiosqlite.Connection = Depends(get_async_db),
 ) -> list[SearchSuggestion]:
-    """Sub-50ms instant stock search powered by SQLite FTS5 prefix matching."""
+    """Stock search by name or symbol, using SQLite full-text prefix matching."""
     return await search_companies_fts(db=db, query=q, standard=standard, limit=limit)
 
 

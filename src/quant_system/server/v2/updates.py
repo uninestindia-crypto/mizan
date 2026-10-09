@@ -23,14 +23,35 @@ import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
-REPOSITORY = os.environ.get("QUANTOS_UPDATE_REPO", "uninestindia-crypto/quant-system")
+REPOSITORY = os.environ.get("QUANTOS_UPDATE_REPO", "uninestindia-crypto/mizan")
 CACHE_SECONDS = 6 * 3600
 _NOTES_LIMIT = 1500
 _VERSION = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
 
 Fetcher = Callable[[], dict[str, Any] | None]
+
+
+@dataclass(frozen=True, slots=True)
+class ReleaseAssets:
+    """The files a one-click update needs from the newest release."""
+
+    version: str
+    installer_name: str
+    installer_url: str
+    checksums_url: str | None
+
+
+def _asset_url(assets: list[Any], matches: Callable[[str], bool]) -> tuple[str, str] | None:
+    """``(name, download address)`` of the first release file whose name matches, or None."""
+    for asset in assets:
+        name = str(asset.get("name", "")) if isinstance(asset, dict) else ""
+        url = str(asset.get("browser_download_url") or "") if isinstance(asset, dict) else ""
+        if name and url and matches(name):
+            return name, url
+    return None
 
 
 def parse_version(text: str) -> tuple[int, int, int] | None:
@@ -91,6 +112,22 @@ class UpdateChecker:
         self._fetch: Fetcher = fetch or fetch_latest_release
         self._lock = threading.Lock()
         self._cached: tuple[float, dict[str, Any]] | None = None
+        self._release: dict[str, Any] | None = None
+
+    def install_assets(self) -> ReleaseAssets | None:
+        """The installer and fingerprint file of the newest release, when it is newer than this one."""
+        with self._lock:
+            release, cached = self._release, self._cached
+        if release is None or cached is None or not cached[1]["update_available"]:
+            return None
+        files = [a for a in release.get("assets") or [] if isinstance(a, dict)]
+        installer = _asset_url(files, lambda name: name.endswith("_Setup.exe"))
+        sums = _asset_url(files, lambda name: name.upper().startswith("SHA256SUMS"))
+        if installer is None:
+            return None
+        return ReleaseAssets(
+            str(cached[1]["latest"]), installer[0], installer[1], sums[1] if sums else None
+        )
 
     def check(self, force: bool = False) -> dict[str, Any]:
         with self._lock:
@@ -117,6 +154,7 @@ class UpdateChecker:
             release = self._fetch()
         except Exception:  # an update check must never raise into the app
             release = None
+        self._release = release or None
         if not release:
             return base
         tag = str(release.get("tag_name") or "")

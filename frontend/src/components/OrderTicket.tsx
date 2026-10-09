@@ -2,8 +2,13 @@ import { Check, ClipboardCopy, Download } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { buildTicket, ticketToCsv, ticketToText } from "../lib/orderTicket";
+import { paperBookPickNote } from "../lib/picks";
 import { DASH, date, inr, int } from "../lib/format";
 import type { OrdersFreshness, PaperQueuedOrder, Placement } from "../lib/types";
+import { PickSecondOpinion } from "./copilot/PickSecondOpinion";
+import { PaperBookNote } from "./mode/PaperBookNote";
+import { ShariahBadge } from "./mode/ShariahBadge";
+import { useModeLabels } from "./mode/useModeLabels";
 import { PlacementDialog, type PlacementTarget } from "./PlacementDialog";
 import { Badge, Button, Callout, Card, CardHeader, Field, Input } from "./ui";
 
@@ -29,6 +34,10 @@ function download(filename: string, text: string) {
  * copy or export is offered. Second, QuantOS never connects to a broker: it hands over numbers and
  * the person places the orders themselves.
  */
+function pickNoteFor(bookName: string, row: { symbol: string; side: "BUY" | "SELL" }): string {
+  return paperBookPickNote(bookName, row.symbol, row.side === "BUY" ? "queued_buy" : "queued_sell");
+}
+
 export function OrderTicket({
   orders,
   queued,
@@ -57,6 +66,7 @@ export function OrderTicket({
   const [recording, setRecording] = useState<PlacementTarget | null>(null);
   const yourCapital = Number(mine);
   const ticket = useMemo(() => buildTicket(queued, bookCapital, yourCapital), [queued, bookCapital, yourCapital]);
+  const labels = useModeLabels(queued.map((o) => o.symbol));
   const asOf = orders.as_of;
   const noteFor = (symbol: string, side: "BUY" | "SELL") =>
     placements.find((p) => p.as_of === asOf && p.symbol === symbol && p.side === side) ?? null;
@@ -166,6 +176,7 @@ export function OrderTicket({
             </p>
           )}
 
+          <PaperBookNote labels={labels} />
           <div className="overflow-x-auto">
             <table className="w-full min-w-[480px] text-sm">
               <caption className="sr-only">Orders to place, scaled to your account size</caption>
@@ -187,9 +198,13 @@ export function OrderTicket({
                       <Badge tone={row.side === "BUY" ? "up" : "down"}>{row.side}</Badge>
                     </td>
                     <td className="px-3 py-2 font-medium text-ink">
-                      <Link to={`/stock/${row.symbol}`} className="hover:underline">
-                        {row.symbol}
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link to={`/stock/${row.symbol}`} className="hover:underline">
+                          {row.symbol}
+                        </Link>
+                        <ShariahBadge compact symbol={row.symbol} status={labels.statusOf(row.symbol)} />
+                        <PickSecondOpinion symbol={row.symbol} note={pickNoteFor(bookName, row)} />
+                      </div>
                     </td>
                     <td className="num px-3 py-2 text-right font-semibold text-ink">{int(row.yourQuantity)}</td>
                     <td className="num px-3 py-2 text-right text-ink-3">{int(row.quantity)}</td>

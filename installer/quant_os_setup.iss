@@ -23,7 +23,7 @@
 
 #define MyAppName "Mizan Quant OS"
 #define MyAppPublisher "Mizan Quant OS Quantitative Technologies"
-#define MyAppURL "https://github.com/quant-system/quantos"
+#define MyAppURL "https://github.com/uninestindia-crypto/mizan"
 #define MyAppExeName "quantos-studio.exe"
 
 #ifndef SourceDir
@@ -121,6 +121,11 @@ Source: "assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs
 Source: "..\configs\*"; DestDir: "{app}\configs"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 Source: "..\data\shariah\*"; DestDir: "{app}\data\shariah"; Flags: ignoreversion onlyifdoesntexist recursesubdirs createallsubdirs
 Source: "..\data\evidence\models\*"; DestDir: "{app}\data\evidence\models"; Flags: ignoreversion onlyifdoesntexist recursesubdirs createallsubdirs
+#ifdef WebView2Setup
+; Microsoft's own small installer for the component QuantOS draws its window with. It is copied and run only on a
+; computer that does not have the component yet (a brand-new laptop that has not run Windows Update).
+Source: "{#WebView2Setup}"; DestDir: "{tmp}"; DestName: "MicrosoftEdgeWebview2Setup.exe"; Flags: deleteafterinstall; Check: WebView2Missing
+#endif
 
 [Dirs]
 Name: "{app}\data"; Flags: uninsneveruninstall
@@ -131,7 +136,13 @@ Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingD
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon; IconFilename: "{app}\assets\quantos.ico"; IconIndex: 0; AppUserModelID: "QuantOS.Desktop.Studio.2.0"
 
 [Run]
+#ifdef WebView2Setup
+; If this cannot finish (for example there is no internet), QuantOS still installs and opens in an Edge window.
+Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "Setting up the Microsoft component QuantOS uses to show its window..."; Flags: waituntilterminated runhidden; Check: WebView2Missing
+#endif
 Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+; An update started from inside QuantOS ("Update and restart") runs this installer silently with /RELAUNCH=1, so it opens QuantOS again.
+Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Flags: nowait runasoriginaluser; Check: WantsRelaunch
 
 [UninstallDelete]
 ; Caches only. data\ and logs\ (research data and evidence) are kept.
@@ -184,6 +195,7 @@ begin
   end;
 end;
 
+<<<<<<< HEAD
 { Checks if Microsoft Edge WebView2 Runtime is installed via standard registry keys }
 function IsWebView2Installed(): Boolean;
 var
@@ -271,3 +283,13 @@ begin
   end;
 end;
 
+function WebView2Missing: Boolean;
+begin
+  Result := not IsWebView2Installed();
+end;
+
+{ True when QuantOS started this installer to update itself (it passes /RELAUNCH=1): open QuantOS again afterwards. }
+function WantsRelaunch: Boolean;
+begin
+  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
+end;

@@ -1,7 +1,8 @@
-import hashlib
 import logging
+import sqlite3
 import uuid
-from datetime import datetime
+from collections.abc import Mapping
+from datetime import UTC, datetime
 from typing import Any
 
 import aiosqlite
@@ -12,10 +13,15 @@ from quant_system.shariah.schemas.purification import (
     PurificationLedgerEntry,
     PurificationReceipt,
 )
+from quant_system.shariah.services.ledger_hash import (
+    CURRENT_HASH_VERSION,
+    GENESIS_HASH,
+    compute_entry_hash,
+    hash_version_of,
+    verify_ledger_rows,
+)
 
 logger = logging.getLogger(__name__)
-
-GENESIS_HASH: str = "0" * 64
 
 CREATE_LEDGER_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS purification_ledger (
@@ -36,10 +42,30 @@ CREATE TABLE IF NOT EXISTS purification_ledger (
     notes TEXT,
     prev_entry_hash TEXT NOT NULL,
     entry_hash TEXT NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    hash_version INTEGER NOT NULL DEFAULT 1
 );
 CREATE INDEX IF NOT EXISTS idx_purification_ledger_ticker ON purification_ledger(ticker);
 CREATE INDEX IF NOT EXISTS idx_purification_ledger_status ON purification_ledger(disbursement_status);
+"""
+
+#: Added only to a ledger made before hash versions existed. Existing rows read as version 1; none is rewritten.
+ADD_HASH_VERSION_SQL = (
+    "ALTER TABLE purification_ledger ADD COLUMN hash_version INTEGER NOT NULL DEFAULT 1;"
+)
+
+INSERT_ENTRY_SQL = """
+    INSERT INTO purification_ledger (
+        entry_uuid, ticker, company_name, record_date, payment_date, shares_held,
+        dps_inr, gross_dividend, purification_ratio, purification_payable,
+        net_permissible_dividend, charity_name, disbursement_status, notes,
+        prev_entry_hash, entry_hash, timestamp, hash_version
+    ) VALUES (
+        :entry_uuid, :ticker, :company_name, :record_date, :payment_date, :shares_held,
+        :dps_inr, :gross_dividend, :purification_ratio, :purification_payable,
+        :net_permissible_dividend, :charity_name, :disbursement_status, :notes,
+        :prev_entry_hash, :entry_hash, :timestamp, :hash_version
+    );
 """
 
 
@@ -61,18 +87,22 @@ def calculate_purification_amount(gross_dividend: float, purification_ratio: flo
     return round(gross_dividend * purification_ratio, 2)
 
 
-def generate_sha256_ledger_hash(prev_hash: str, entry_uuid: str, purification_amount: float) -> str:
-    """
-    SHA-256 cryptographic chaining function:
-    Hash_n = SHA256(Hash_{n-1} | UUID_n | PurificationAmount_n)
-    """
-    payload = f"{prev_hash}|{entry_uuid}|{purification_amount:.2f}".encode()
-    return hashlib.sha256(payload).hexdigest()
+async def _ensure_hash_version_column(db: aiosqlite.Connection) -> None:
+    """Adds the hash version column to a ledger that was made before versions existed."""
+    cursor = await db.execute("PRAGMA table_info(purification_ledger);")
+    if "hash_version" in {column[1] for column in await cursor.fetchall()}:
+        return
+    try:
+        await db.execute(ADD_HASH_VERSION_SQL)
+    except sqlite3.OperationalError as error:
+        # Another connection added it first, or the ledger cannot be written. Rows then read as version 1.
+        logger.warning("Could not add the hash version column to the ledger: %s", error)
 
 
 async def ensure_ledger_table(db: aiosqlite.Connection) -> None:
-    """Guarantees SQLite purification_ledger table exists."""
+    """Guarantees SQLite purification_ledger table exists, with its hash version column."""
     await db.executescript(CREATE_LEDGER_TABLE_SQL)
+    await _ensure_hash_version_column(db)
     await db.commit()
 
 
@@ -89,7 +119,10 @@ async def get_company_purification_info(
         variants.append(f"{clean_ticker}.NS")
 
     placeholders = ",".join("?" for _ in variants)
-    sql = f"SELECT purification_ratio, company_name FROM companies WHERE ticker IN ({placeholders}) OR symbol IN ({placeholders}) LIMIT 1;"
+    sql = (
+        "SELECT purification_ratio, company_name FROM companies "
+        f"WHERE ticker IN ({placeholders}) OR symbol IN ({placeholders}) LIMIT 1;"
+    )
     params = variants + variants
     cursor = await db.execute(sql, tuple(params))
     row = await cursor.fetchone()
@@ -146,71 +179,7 @@ async def get_latest_ledger_hash(db: aiosqlite.Connection) -> str:
     return GENESIS_HASH
 
 
-async def add_purification_ledger_entry(
-    entry_data: PurificationLedgerCreate,
-    db: aiosqlite.Connection,
-) -> PurificationLedgerEntry:
-    """Appends an immutable, SHA-256 cryptographically chained entry to purification_ledger."""
-    await ensure_ledger_table(db)
-
-    purification_ratio, company_name = await get_company_purification_info(entry_data.ticker, db)
-
-    gross_dividend = entry_data.gross_dividend
-    if gross_dividend is None or gross_dividend <= 0.0:
-        gross_dividend = round(entry_data.dps * entry_data.shares_held, 2)
-    else:
-        gross_dividend = round(gross_dividend, 2)
-
-    purification_payable = calculate_purification_amount(gross_dividend, purification_ratio)
-    net_permissible = round(gross_dividend - purification_payable, 2)
-
-    entry_uuid = f"pur-{uuid.uuid4().hex[:16]}"
-    prev_hash = await get_latest_ledger_hash(db)
-    entry_hash = generate_sha256_ledger_hash(prev_hash, entry_uuid, purification_payable)
-
-    today_str = datetime.utcnow().strftime("%Y-%m-%d")
-    record_date = entry_data.record_date or today_str
-    payment_date = entry_data.payment_date or today_str
-    status = (entry_data.disbursement_status or "UNPURIFIED").upper().strip()
-
-    insert_sql = """
-        INSERT INTO purification_ledger (
-            entry_uuid, ticker, company_name, record_date, payment_date, shares_held,
-            dps_inr, gross_dividend, purification_ratio, purification_payable,
-            net_permissible_dividend, charity_name, disbursement_status, notes,
-            prev_entry_hash, entry_hash
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-    """
-    cursor = await db.execute(
-        insert_sql,
-        (
-            entry_uuid,
-            entry_data.ticker.upper().strip(),
-            company_name,
-            record_date,
-            payment_date,
-            entry_data.shares_held,
-            entry_data.dps,
-            gross_dividend,
-            purification_ratio,
-            purification_payable,
-            net_permissible,
-            entry_data.charity_name,
-            status,
-            entry_data.notes,
-            prev_hash,
-            entry_hash,
-        ),
-    )
-    row_id = cursor.lastrowid
-    await db.commit()
-
-    # Retrieve created record
-    fetch_cursor = await db.execute("SELECT * FROM purification_ledger WHERE id = ?;", (row_id,))
-    row = await fetch_cursor.fetchone()
-    if row is None:
-        raise ValueError(f"Failed to retrieve newly created purification ledger row {row_id}")
-
+def ledger_entry_from_row(row: Mapping[str, Any]) -> PurificationLedgerEntry:
     return PurificationLedgerEntry(
         id=row["id"],
         entry_uuid=row["entry_uuid"],
@@ -230,60 +199,74 @@ async def add_purification_ledger_entry(
         prev_entry_hash=row["prev_entry_hash"],
         entry_hash=row["entry_hash"],
         timestamp=str(row["timestamp"]),
+        hash_version=hash_version_of(row),
     )
+
+
+def _new_entry_row(
+    entry_data: PurificationLedgerCreate, purification_ratio: float, company_name: str
+) -> dict[str, Any]:
+    """Every figure of a new ledger row, worked out once so the stored row and its hash agree."""
+    gross_dividend = entry_data.gross_dividend
+    if gross_dividend is None or gross_dividend <= 0.0:
+        gross_dividend = round(entry_data.dps * entry_data.shares_held, 2)
+    else:
+        gross_dividend = round(gross_dividend, 2)
+    purification_payable = calculate_purification_amount(gross_dividend, purification_ratio)
+    moment = datetime.now(UTC)
+    today = moment.strftime("%Y-%m-%d")
+    return {
+        "entry_uuid": f"pur-{uuid.uuid4().hex[:16]}",
+        "ticker": entry_data.ticker.upper().strip(),
+        "company_name": company_name,
+        "record_date": entry_data.record_date or today,
+        "payment_date": entry_data.payment_date or today,
+        "shares_held": entry_data.shares_held,
+        "dps_inr": entry_data.dps,
+        "gross_dividend": gross_dividend,
+        "purification_ratio": purification_ratio,
+        "purification_payable": purification_payable,
+        "net_permissible_dividend": round(gross_dividend - purification_payable, 2),
+        "charity_name": entry_data.charity_name,
+        "disbursement_status": (entry_data.disbursement_status or "UNPURIFIED").upper().strip(),
+        "notes": entry_data.notes,
+        "timestamp": moment.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+
+async def add_purification_ledger_entry(
+    entry_data: PurificationLedgerCreate,
+    db: aiosqlite.Connection,
+) -> PurificationLedgerEntry:
+    """Appends an entry to purification_ledger, chained to the one before it with SHA-256."""
+    await ensure_ledger_table(db)
+
+    purification_ratio, company_name = await get_company_purification_info(entry_data.ticker, db)
+    row = _new_entry_row(entry_data, purification_ratio, company_name)
+    row["prev_entry_hash"] = await get_latest_ledger_hash(db)
+    row["hash_version"] = CURRENT_HASH_VERSION
+    row["entry_hash"] = compute_entry_hash(CURRENT_HASH_VERSION, row["prev_entry_hash"], row)
+
+    cursor = await db.execute(INSERT_ENTRY_SQL, row)
+    row_id = cursor.lastrowid
+    await db.commit()
+
+    fetch_cursor = await db.execute("SELECT * FROM purification_ledger WHERE id = ?;", (row_id,))
+    stored = await fetch_cursor.fetchone()
+    if stored is None:
+        raise ValueError(f"Failed to retrieve newly created purification ledger row {row_id}")
+    return ledger_entry_from_row(dict(stored))
 
 
 async def verify_ledger_chain(db: aiosqlite.Connection) -> dict[str, Any]:
     """
     Audits the entire purification ledger sequentially from genesis.
     Verifies that no entry has been altered, deleted, or inserted out of order.
+    Each row is checked with the hash version that wrote it.
     """
     await ensure_ledger_table(db)
     cursor = await db.execute("SELECT * FROM purification_ledger ORDER BY id ASC;")
-    rows = list(await cursor.fetchall())
-
-    if not rows:
-        return {
-            "is_valid": True,
-            "total_entries": 0,
-            "tampered_entry_id": None,
-            "message": "Ledger is empty; genesis state verified.",
-        }
-
-    expected_prev = GENESIS_HASH
-    for r in rows:
-        stored_prev = r["prev_entry_hash"]
-        stored_hash = r["entry_hash"]
-        uuid_val = r["entry_uuid"]
-        payable = float(r["purification_payable"])
-
-        # Verify previous hash link
-        if stored_prev != expected_prev:
-            return {
-                "is_valid": False,
-                "total_entries": len(rows),
-                "tampered_entry_id": uuid_val,
-                "message": f"Broken chain link at entry {uuid_val}: stored prev_hash does not match preceding hash.",
-            }
-
-        # Re-compute cryptographic hash
-        computed_hash = generate_sha256_ledger_hash(stored_prev, uuid_val, payable)
-        if computed_hash != stored_hash:
-            return {
-                "is_valid": False,
-                "total_entries": len(rows),
-                "tampered_entry_id": uuid_val,
-                "message": f"Tampered entry payload at {uuid_val}: computed hash does not match stored entry_hash.",
-            }
-
-        expected_prev = stored_hash
-
-    return {
-        "is_valid": True,
-        "total_entries": len(rows),
-        "tampered_entry_id": None,
-        "message": f"Cryptographic audit chain verified intact across {len(rows)} entries.",
-    }
+    return verify_ledger_rows([dict(row) for row in await cursor.fetchall()])
 
 
 def format_printable_receipt(entry: dict[str, Any]) -> str:
@@ -299,7 +282,7 @@ def format_printable_receipt(entry: dict[str, Any]) -> str:
     status = entry.get("disbursement_status", "UNPURIFIED")
     hash_val = entry.get("entry_hash", "")
     prev_h = entry.get("prev_entry_hash", "")
-    ts = entry.get("timestamp") or datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    ts = entry.get("timestamp") or datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     return f"""================================================================================
            HALAL WEALTH PURIFICATION & CHARITABLE DISBURSEMENT RECEIPT
@@ -326,7 +309,7 @@ BENEFICIARY DISBURSEMENT:
 Beneficiary Entity: {charity}
 Fiqh Purpose      : Public interest & general welfare (Sadaqah Lillah)
 
-CRYPTOGRAPHIC IMMUTABILITY & AUDIT PROOF:
+HASH CHAIN (DETECTS EDITS MADE AFTER THE ENTRY WAS WRITTEN):
 --------------------------------------------------------------------------------
 Previous Node Hash: {prev_h}
 Verification Hash : {hash_val}
@@ -383,6 +366,7 @@ async def get_purification_receipt_by_id(
         charity_name=charity,
         disbursement_status=status,
         timestamp=ts,
+        hash_version=hash_version_of(row_dict),
         charity_disclaimer="Cleansed to public charity in accordance with AAOIFI Standard No. 21.",
         printable_receipt=printable,
     )

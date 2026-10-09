@@ -55,6 +55,9 @@ export interface HardwareTopology {
   local_models: LocalModelInfo[];
 }
 
+/** What a check backs: "UNVERIFIED_SAMPLE" today; "VERIFIED_FILING" and "STALE" later. Any other value reads "Not verified". */
+export type ShariahDataStatus = "UNVERIFIED_SAMPLE" | "VERIFIED_FILING" | "STALE";
+
 export interface ShariahCompliance {
   ticker: string;
   symbol: string;
@@ -68,6 +71,29 @@ export interface ShariahCompliance {
   aaoifi_status: "COMPLIANT" | "NON_COMPLIANT" | "QUESTIONABLE";
   tasis_status: "COMPLIANT" | "NON_COMPLIANT" | "QUESTIONABLE";
   compliance_status: "COMPLIANT" | "NON_COMPLIANT" | "QUESTIONABLE";
+  /** Absent on an older response; the screen then says "Not verified". */
+  data_status?: string | null;
+}
+
+export interface ShariahBasketConstituent {
+  ticker: string;
+  symbol: string;
+  weight: number;
+  company_name?: string | null;
+  /** Shown only together with its `price_status` words. Null when no real price exists. */
+  current_price?: number | null;
+  /** "SAMPLE" (a typed sample) or "NOT_AVAILABLE". */
+  price_status?: string | null;
+  /** This stock's own screening result; empty when it is not in the sample. */
+  aaoifi_status?: ShariahCompliance["compliance_status"] | null;
+  tasis_status?: ShariahCompliance["compliance_status"] | null;
+  data_status?: string | null;
+}
+
+/** QuantOS has not back-tested a basket, so the response carries no return or risk figure to show. */
+export interface ShariahBasketPerformance {
+  status: string;
+  message?: string | null;
 }
 
 export interface ShariahBasket {
@@ -75,18 +101,69 @@ export interface ShariahBasket {
   name: string;
   thesis: string;
   category: string;
-  expected_cagr: number;
-  expected_sharpe: number;
-  annualized_volatility: number;
-  max_drawdown: number;
-  dividend_yield: number;
-  constituents: Array<{
-    ticker: string;
-    symbol: string;
-    weight: number;
-    current_price: number;
-    company_name: string;
-  }>;
+  constituents: ShariahBasketConstituent[];
+  /** "NOT_COMPUTED" today. Older responses carried typed return and risk numbers; the screen never shows them. */
+  performance?: ShariahBasketPerformance | null;
+  /** "NONE_RECORDED" today: no rebalance has ever been recorded. */
+  history_status?: string | null;
+  history_message?: string | null;
+}
+
+export interface ShariahRatio {
+  metric_name: string;
+  actual_value: number;
+  actual_pct: number;
+  threshold_pct: number;
+  is_compliant: boolean;
+  is_warning: boolean;
+  numerator_label: string;
+  numerator_value_inr_cr: number;
+  denominator_label: string;
+  denominator_value_inr_cr: number;
+  note_reference?: string | null;
+}
+
+export interface ShariahStandardResult {
+  standard: string;
+  status: ShariahCompliance["compliance_status"];
+  is_compliant: boolean;
+  debt_ratio: ShariahRatio;
+  cash_ratio: ShariahRatio;
+  receivables_ratio: ShariahRatio;
+  impermissible_income_ratio: ShariahRatio;
+  summary: string;
+}
+
+/** Which business-line rule fired, and the word it matched on. */
+export interface ShariahSectorRule {
+  compliant: boolean;
+  rule: string | null;
+  matched_keyword: string | null;
+  reason: string | null;
+}
+
+/** One stock's full screening result with the evidence behind it (/api/v2/shariah/stocks/{ticker}/audit). */
+export interface ShariahAudit {
+  ticker: string;
+  symbol: string;
+  company_name: string;
+  filing_date: string;
+  reporting_period: string;
+  source_document?: string | null;
+  sector: string;
+  sector_compliant: boolean;
+  sector_failure_reason?: string | null;
+  aaoifi_evaluation: ShariahStandardResult;
+  tasis_evaluation: ShariahStandardResult;
+  divergence_noted: boolean;
+  divergence_explanation?: string | null;
+  /** The next fields are new; an older response lacks them and the panel hides what is missing. */
+  data_status?: string | null;
+  data_notice?: string | null;
+  methodology_version?: string | null;
+  screened_at?: string | null;
+  sector_rule?: ShariahSectorRule | null;
+  not_covered?: string[] | null;
 }
 
 export interface ZakatCalculationResult {

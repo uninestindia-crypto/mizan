@@ -42,6 +42,7 @@ from quant_system.market.index import BENCHMARK_SYMBOL
 from quant_system.market.sources import discover_caches, store_fingerprint
 from quant_system.server.security import format_error_response
 from quant_system.server.v2 import health, paths
+from quant_system.server.v2.accounts import Account, AccountError
 from quant_system.server.v2.aitools import detect_cli_tools
 from quant_system.server.v2.auto_update import AutoUpdater
 from quant_system.server.v2.cli_bridge import (
@@ -66,7 +67,9 @@ from quant_system.server.v2.live_routes import router as live_router
 from quant_system.server.v2.notify import OrdersNotifier
 from quant_system.server.v2.paper_books import PaperBooks
 from quant_system.server.v2.portfolio import paper_books, portfolio_summary
+from quant_system.server.v2.portfolio_accounts import ACCOUNT_KINDS, account_rows, positions
 from quant_system.server.v2.schemas import (
+    AccountRequest,
     CliCodeRequest,
     CliLaunchRequest,
     CostsRequest,
@@ -94,6 +97,7 @@ from quant_system.server.v2.tools import (
     position_size,
     trade_costs,
 )
+from quant_system.server.v2.update_routes import router as update_router
 from quant_system.server.v2.updates import UpdateChecker
 
 logger = logging.getLogger(__name__)
@@ -606,14 +610,50 @@ def remove_watchlist(symbol: str) -> list[str]:
 # --------------------------------------------------------------------------- portfolio
 
 
+def _scope(accounts: list[Account], wanted: str) -> tuple[int | None, str]:
+    """Which account the portfolio is being viewed for: None means all of them."""
+    if wanted.strip().lower() == "all":
+        return None, "All accounts"
+    match = next((a for a in accounts if str(a.id) == wanted.strip()), None)
+    if match is None:
+        raise V2Error(404, "ACCOUNT_NOT_FOUND", "That account does not exist.")
+    return match.id, match.name
+
+
+def _by_account(
+    summary: dict[str, Any], accounts: list[Account], scope: tuple[int | None, str]
+) -> dict[str, Any]:
+    names = {a.id: a.name for a in accounts}
+    for row in summary["holdings"]:
+        row["account_name"] = names.get(row["account_id"])
+    summary["positions"] = positions(summary["holdings"])
+    summary["scope"] = {"account": "all" if scope[0] is None else scope[0], "name": scope[1]}
+    return summary
+
+
 @router.get("/portfolio")
-def get_portfolio() -> dict[str, Any]:
+def get_portfolio(account: str = "all") -> dict[str, Any]:
     svc = services()
-    settings = svc.state.settings()
-    holdings = svc.state.holdings()
-    if not holdings:
-        return {"holdings": [], "totals": None, "warnings": [], "nifty": None}
-    return portfolio_summary(_index(), holdings, _broker(settings), _today())
+    accounts = svc.state.accounts()
+    scope = _scope(accounts, account)
+    everything = svc.state.holdings()
+    mine = [h for h in everything if scope[0] is None or h.account_id == scope[0]]
+    if not mine:
+        empty: dict[str, Any] = {"holdings": [], "totals": None, "warnings": [], "nifty": None}
+        others = _valued(everything, svc) if everything else []  # another account may hold stocks
+        return {**_by_account(empty, accounts, scope), "accounts": account_rows(accounts, others)}
+    broker = _broker(svc.state.settings())
+    full = portfolio_summary(_index(), everything, broker, _today())
+    summary = full if scope[0] is None else portfolio_summary(_index(), mine, broker, _today())
+    return {
+        **_by_account(summary, accounts, scope),
+        "accounts": account_rows(accounts, full["holdings"]),
+    }
+
+
+def _valued(holdings: list[Any], svc: Any) -> list[dict[str, Any]]:
+    broker = _broker(svc.state.settings())
+    return list(portfolio_summary(_index(), holdings, broker, _today())["holdings"])
 
 
 def _validated_holding(body: HoldingRequest) -> str:
@@ -630,18 +670,34 @@ def _validated_holding(body: HoldingRequest) -> str:
 @router.post("/portfolio/holdings")
 def add_holding(body: HoldingRequest) -> dict[str, Any]:
     symbol = _validated_holding(body)
-    holding = services().state.add_holding(
-        symbol, body.quantity, body.avg_price, body.buy_date.isoformat(), body.note
-    )
+    try:
+        holding = services().state.add_holding(
+            symbol,
+            body.quantity,
+            body.avg_price,
+            body.buy_date.isoformat(),
+            body.note,
+            body.account_id,
+        )
+    except AccountError as err:
+        raise V2Error(404, "ACCOUNT_NOT_FOUND", str(err)) from err
     return holding.model_dump(mode="json")
 
 
 @router.put("/portfolio/holdings/{holding_id}")
 def update_holding(holding_id: int, body: HoldingRequest) -> dict[str, Any]:
     _validated_holding(body)
-    holding = services().state.update_holding(
-        holding_id, body.quantity, body.avg_price, body.buy_date.isoformat(), body.note
-    )
+    try:
+        holding = services().state.update_holding(
+            holding_id,
+            body.quantity,
+            body.avg_price,
+            body.buy_date.isoformat(),
+            body.note,
+            body.account_id,
+        )
+    except AccountError as err:
+        raise V2Error(404, "ACCOUNT_NOT_FOUND", str(err)) from err
     if holding is None:
         raise V2Error(404, "HOLDING_NOT_FOUND", "That holding does not exist.")
     return holding.model_dump(mode="json")
@@ -652,6 +708,59 @@ def delete_holding(holding_id: int) -> dict[str, bool]:
     if not services().state.delete_holding(holding_id):
         raise V2Error(404, "HOLDING_NOT_FOUND", "That holding does not exist.")
     return {"deleted": True}
+
+
+# --------------------------------------------------------------------------- accounts
+
+
+def _account_json(account: Account, counts: dict[int, int]) -> dict[str, Any]:
+    return {**account.model_dump(mode="json"), "holdings": counts.get(account.id, 0)}
+
+
+@router.get("/accounts")
+def list_accounts() -> dict[str, Any]:
+    state = services().state
+    counts = state.holding_counts()
+    return {
+        "accounts": [_account_json(a, counts) for a in state.accounts()],
+        "kinds": list(ACCOUNT_KINDS),
+    }
+
+
+@router.post("/accounts")
+def add_account(body: AccountRequest) -> dict[str, Any]:
+    state = services().state
+    try:
+        account = state.add_account(body.name, body.owner, body.kind, body.broker)
+    except AccountError as err:
+        raise V2Error(400, "ACCOUNT_INVALID", str(err)) from err
+    return _account_json(account, state.holding_counts())
+
+
+@router.put("/accounts/{account_id}")
+def update_account(account_id: int, body: AccountRequest) -> dict[str, Any]:
+    state = services().state
+    try:
+        account = state.update_account(account_id, body.name, body.owner, body.kind, body.broker)
+    except AccountError as err:
+        raise V2Error(400, "ACCOUNT_INVALID", str(err)) from err
+    if account is None:
+        raise V2Error(404, "ACCOUNT_NOT_FOUND", "That account does not exist.")
+    return _account_json(account, state.holding_counts())
+
+
+@router.delete("/accounts/{account_id}")
+def delete_account(account_id: int, move_to: int | None = None) -> dict[str, Any]:
+    state = services().state
+    if state.account(account_id) is None:
+        raise V2Error(404, "ACCOUNT_NOT_FOUND", "That account does not exist.")
+    try:
+        moved = state.delete_account(account_id, move_to)
+    except AccountError as err:
+        text = str(err)
+        code = "LAST_ACCOUNT" if "at least one" in text else "ACCOUNT_HAS_HOLDINGS"
+        raise V2Error(400, code, text) from err
+    return {"deleted": True, "moved": moved}
 
 
 # ------------------------------------------------------------------------------ paper
@@ -1035,6 +1144,7 @@ def register_api(app: FastAPI) -> None:
     app.include_router(router)
     app.include_router(copilot_router, prefix="/api/v2")
     app.include_router(live_router, prefix="/api/v2")
+    app.include_router(update_router, prefix="/api/v2")
     try:
         from quant_system.shariah.api.v1.router import api_router as shariah_router
 

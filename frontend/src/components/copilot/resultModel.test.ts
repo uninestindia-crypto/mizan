@@ -60,10 +60,13 @@ describe("the disclosure and the notes", () => {
     expect(disclosure).toBe("These are opinions from AI models. They are not independent evidence.");
   });
 
-  it("is never without a disclosure, even when the engine sends none", () => {
-    for (const disclosure of ["", "   ", undefined as unknown as string]) {
-      expect(buildResultView(sampleResult({ disclosure }), models).disclosure).toBe(FALLBACK_DISCLOSURE);
-    }
+  const NO_DISCLOSURE = [[""], ["   "], [undefined as unknown as string]];
+
+  it.each(NO_DISCLOSURE)("is never without a disclosure, even when the engine sends %j", (disclosure) => {
+    expect(buildResultView(sampleResult({ disclosure }), models).disclosure).toBe(FALLBACK_DISCLOSURE);
+  });
+
+  it("words the stand-in disclosure as the real one", () => {
     expect(FALLBACK_DISCLOSURE).toMatch(/not independent evidence/);
   });
 

@@ -19,7 +19,10 @@ router = APIRouter(prefix="/baskets", tags=["Curated Thematic Baskets & Broker E
     "",
     response_model=list[BasketSummary],
     summary="List Curated Thematic Baskets",
-    description="Returns high-level metadata, constituent weights, and financial tear-sheet metrics for all 4 institutional baskets.",
+    description=(
+        "Returns each curated basket with its constituents, weights, sample prices and screening. "
+        "No return or risk figure is shown because none has been computed."
+    ),
 )
 async def list_baskets(
     db: aiosqlite.Connection = Depends(get_async_db),
@@ -31,7 +34,10 @@ async def list_baskets(
     "/{basket_id}",
     response_model=BasketDetail,
     summary="Get Detailed Basket Tear-Sheet",
-    description="Returns detailed financial tear-sheet, constituents with real-time valuation, sector allocation, and rebalancing logs.",
+    description=(
+        "Returns one basket with its constituents, sample prices, screening and sector split. "
+        "The tear sheet and the rebalance history are empty until real figures exist."
+    ),
 )
 async def get_basket(
     basket_id: str = Path(..., description="Unique basket identifier (e.g. halal-tech-giants)"),
@@ -41,7 +47,10 @@ async def get_basket(
     if not basket:
         raise HTTPException(
             status_code=404,
-            detail=f"Basket '{basket_id}' not found. Available baskets: halal-tech-giants, shariah-high-growth-champions, green-ethical-infrastructure, nifty-shariah-25.",
+            detail=(
+                f"Basket '{basket_id}' not found. Available baskets: halal-tech-giants, "
+                "shariah-high-growth-champions, green-ethical-infrastructure, nifty-shariah-25."
+            ),
         )
     return basket
 
@@ -49,8 +58,12 @@ async def get_basket(
 @router.post(
     "/{basket_id}/export",
     response_model=BasketExportResponse,
-    summary="Export 1-Click Indian Broker Order Sheet",
-    description="Converts target investment capital into constituent share quantities and generates batch order sheets for Zerodha (CNC), Upstox (Delivery), Groww (Buy), or AngelOne.",
+    summary="Order-sheet export (QuantOS does not place orders)",
+    description=(
+        "Turns an amount of capital into share counts for each stock and writes an order sheet for "
+        "Zerodha (CNC), Upstox (Delivery), Groww (Buy) or AngelOne. Nothing is sent to a broker. "
+        "A stock with no price is refused instead of guessed."
+    ),
 )
 async def export_basket(
     basket_id: str = Path(..., description="Unique basket identifier"),
@@ -88,7 +101,10 @@ class TaxCalculationResponse(BaseModel):
     stamp_duty: float
     gst: float
     total_statutory_charges: float
-    estimated_dividend_purification_ratio: float
+    estimated_dividend_purification_ratio: float | None = Field(
+        default=None,
+        description="Not estimated: it depends on the stock, so no single figure is given",
+    )
     net_effective_cost: float
     effective_tax_rate_pct: float
 
@@ -97,7 +113,7 @@ class TaxCalculationResponse(BaseModel):
     "/tax-calculator",
     response_model=TaxCalculationResponse,
     summary="Indian Statutory Tax & Brokerage Calculator",
-    description="Calculates exact SEBI turnover charges, STT, stamp duty, GST, and purification deductions for delivery CNC equity orders.",
+    description="Works out SEBI turnover charges, STT, stamp duty and GST for a delivery (CNC) equity order.",
 )
 async def calculate_statutory_taxes(payload: TaxCalculationRequest) -> TaxCalculationResponse:
     turnover = payload.investment_amount
@@ -123,7 +139,6 @@ async def calculate_statutory_taxes(payload: TaxCalculationRequest) -> TaxCalcul
         stamp_duty=stamp_duty,
         gst=gst,
         total_statutory_charges=total_charges,
-        estimated_dividend_purification_ratio=0.0042,
         net_effective_cost=net_cost,
         effective_tax_rate_pct=tax_rate,
     )

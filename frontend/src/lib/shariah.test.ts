@@ -34,4 +34,19 @@ describe("combining the two Shariah standards", () => {
     expect(row.debt_ratio).toBe(0.2);
     expect(row.purification_ratio).toBe(0.004);
   });
+
+  it("carries the data status of a row through, and leaves it empty when the list does not say", () => {
+    const base = {
+      ticker: "TCS.NS",
+      symbol: "TCS",
+      company_name: "Tata Consultancy Services Limited",
+      aaoifi_status: "COMPLIANT" as const,
+      tasis_status: "COMPLIANT" as const,
+      aaoifi_debt_ratio: 0.01,
+      aaoifi_cash_ratio: 0.02,
+      purification_ratio: 0.005,
+    };
+    expect(toCompliance({ ...base, data_status: "UNVERIFIED_SAMPLE" }).data_status).toBe("UNVERIFIED_SAMPLE");
+    expect(toCompliance(base).data_status).toBeNull();
+  });
 });

@@ -8,92 +8,15 @@ from quant_system.shariah.schemas.screening import (
     RatioMeter,
     StandardEvaluation,
 )
-
-PROHIBITED_SECTORS = {
-    "banking": "Conventional banking and interest lending (Riba)",
-    "financial services": "Conventional financial intermediation, loan broking, and margin lending (Riba)",
-    "insurance": "Conventional life and general insurance pools with interest/uncertainty (Gharar/Riba)",
-    "alcohol": "Distillation, brewing, distribution, and sale of alcoholic beverages (Khamr)",
-    "breweries & distilleries": "Commercial manufacturing and distribution of liquor and beer (Khamr)",
-    "tobacco": "Cigarettes, bidis, and smokeless tobacco manufacturing and distribution (Dharar)",
-    "gambling": "Casinos, sports betting, lotteries, and real-money gaming (Maysir/Qimar)",
-    "media & entertainment": "Commercial cinema theater exhibition of unscreened non-halal media",
-    "defense & weapons": "Offensive weaponry, cluster munitions, and anti-personnel landmines",
-}
+from quant_system.shariah.services.sector_rules import explain_sector_compliance
 
 
 def check_sector_compliance(
     sector: str, industry: str, business_summary: str = ""
 ) -> tuple[bool, str | None]:
     """Determine whether a company's business activity is permissible under Islamic law."""
-    sec_lower = sector.strip().lower()
-    ind_lower = industry.strip().lower()
-    sum_lower = business_summary.strip().lower()
-    full_text = f"{sec_lower} {ind_lower} {sum_lower}"
-
-    # IT and software vendors providing enterprise tech are permissible
-    if sec_lower in ["information technology", "it"] and not any(
-        k in full_text for k in ["casino", "gambling", "betting"]
-    ):
-        return True, None
-
-    # Check conventional financial services exclusions (Commercial Banking, NBFCs, Insurance)
-    if sec_lower in ["financial services", "banking", "insurance"]:
-        return False, "Conventional banking and interest lending (Riba)"
-    if any(
-        k in full_text
-        for k in [
-            "commercial bank",
-            "retail lending",
-            "housing finance",
-            "nbfc - consumer lending",
-            "life insurance",
-            "general insurance",
-        ]
-    ):
-        return False, "Conventional banking and interest lending (Riba)"
-
-    # Check alcohol exclusions
-    if any(
-        k in full_text
-        for k in [
-            "distilleries, breweries",
-            "alcoholic beverages",
-            "liquor",
-            "spirits",
-            "brewery",
-            "distillery",
-            "beer",
-            "imfl",
-        ]
-    ):
-        return False, "Commercial manufacturing and distribution of liquor and beer (Khamr)"
-
-    # Check tobacco exclusions
-    if any(
-        k in full_text for k in ["cigarettes, tobacco", "cigarette", "tobacco", "cigars", "gutkha"]
-    ):
-        return False, "Manufacturing or distribution of tobacco and nicotine products (Dharar)"
-
-    # Check gambling / casino exclusions
-    if any(
-        k in full_text
-        for k in [
-            "casinos, gaming",
-            "casino",
-            "gambling",
-            "lottery",
-            "real-money gaming",
-            "real money gaming",
-        ]
-    ):
-        return False, "Operation of gambling or gaming ventures (Maysir/Qimar)"
-
-    # Check prohibited media (unscreened commercial film exhibition)
-    if "cinema" in full_text or "film exhibition" in full_text:
-        return False, "Commercial cinema theater exhibition of unscreened non-halal media"
-
-    return True, None
+    result = explain_sector_compliance(sector, industry, business_summary)
+    return result.compliant, result.reason
 
 
 def evaluate_ratio(
@@ -259,7 +182,7 @@ def evaluate_company_shariah(
         threshold=settings.MAX_DEBT_RATIO,
         warning_threshold=settings.WARN_DEBT_RATIO,
         numerator_label="Total Interest-Bearing Debt",
-        denominator_label="Audited Book Value of Total Assets",
+        denominator_label="Book Value of Total Assets",
         note_reference=debt_note,
     )
     tasis_cash = evaluate_ratio(
@@ -269,7 +192,7 @@ def evaluate_company_shariah(
         threshold=settings.MAX_CASH_RATIO,
         warning_threshold=settings.WARN_CASH_RATIO,
         numerator_label="Cash, Bank & Debt Securities",
-        denominator_label="Audited Book Value of Total Assets",
+        denominator_label="Book Value of Total Assets",
         note_reference=cash_note,
     )
     tasis_rec = evaluate_ratio(
@@ -279,7 +202,7 @@ def evaluate_company_shariah(
         threshold=settings.MAX_RECEIVABLES_RATIO,
         warning_threshold=settings.WARN_RECEIVABLES_RATIO,
         numerator_label="Total Trade Receivables",
-        denominator_label="Audited Book Value of Total Assets",
+        denominator_label="Book Value of Total Assets",
         note_reference=rec_note,
     )
     tasis_imp = evaluate_ratio(
@@ -377,7 +300,8 @@ def evaluate_company_shariah(
         ):
             divergence_reason = (
                 f"Divergence: Passes TASIS on Total Assets (Debt/Assets={tasis_debt.actual_pct}%), "
-                f"but FAILS AAOIFI due to depressed market capitalization elevating Debt/Mcap to {aaoifi_debt.actual_pct}%."
+                "but FAILS AAOIFI due to depressed market capitalization elevating "
+                f"Debt/Mcap to {aaoifi_debt.actual_pct}%."
             )
         else:
             divergence_reason = f"Divergent classification: AAOIFI={aaoifi_status.value}, TASIS={tasis_status.value}."
@@ -391,7 +315,7 @@ def build_audit_evidence_lines(
     """Build itemized line-item audit trail with notes and filing citations."""
     bs_lines = [
         AuditEvidenceLine(
-            line_item="Total Audited Assets",
+            line_item="Total Assets",
             value_inr_cr=float(company.get("total_assets", 0.0)),
             note_ref="Balance Sheet Line Item",
             filing_schedule="Non-Current + Current Assets",
@@ -422,7 +346,7 @@ def build_audit_evidence_lines(
             line_item="Total Interest-Bearing Debt",
             value_inr_cr=float(company.get("total_debt", 0.0)),
             note_ref=company.get("debt_note_ref", "Note 18/21 Summary"),
-            filing_schedule="Audited Debt Aggregation",
+            filing_schedule="Debt Aggregation",
             verification_status=UNVERIFIED_SAMPLE,
         ),
         AuditEvidenceLine(

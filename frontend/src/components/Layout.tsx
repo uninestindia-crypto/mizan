@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   Monitor,
   Moon,
-  Scale,
   Search,
   Settings as SettingsIcon,
   ShieldCheck,
@@ -27,6 +26,10 @@ import { SecondOpinionHost } from "./copilot/SecondOpinionHost";
 import { SecondOpinionReady } from "./copilot/SecondOpinionReady";
 import { HistoryNav } from "./HistoryNav";
 import { Logo } from "./Logo";
+import { ModeFilterNote } from "./mode/ModeFilterNote";
+import { ModeNotice, ModeSwitch, PhoneModeButton } from "./mode/ModeSwitch";
+import { ShariahBadge } from "./mode/ShariahBadge";
+import { useModeFilter } from "./mode/useModeFilter";
 import { Badge, cx } from "./ui";
 
 const NAV = [
@@ -55,7 +58,9 @@ export function Layout({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    document.getElementById("main")?.focus({ preventScroll: true });
+    // Someone who just used the mode switch stays on it, so they hear which mode they are in.
+    const onSwitch = document.activeElement?.closest("[data-mode-switch]");
+    if (!onSwitch) document.getElementById("main")?.focus({ preventScroll: true });
     window.scrollTo({ top: 0 });
   }, [location.pathname]);
 
@@ -70,6 +75,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <MobileBar onSearch={() => setPaletteOpen(true)} />
           <TopHeader onSearch={() => setPaletteOpen(true)} />
           <UpdateNotice />
+          <ModeNotice />
           <main id="main" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto outline-none">
             <div className="q-fade-in mx-auto w-full max-w-[1320px] px-6 py-7 lg:px-10" key={location.pathname}>
               {children}
@@ -232,39 +238,12 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
   );
 }
 
-/** Which mode the person is in, and the two ways to change it. Shared by the wide top bar and the phone bar. */
-function useModeSwitch() {
-  const status = useStatus();
-  const updateSettings = useUpdateSettings();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const isShariah = location.pathname.startsWith("/shariah");
-  const enabled = Boolean(status.data?.settings?.shariah_mode);
-  const goQuant = () => {
-    if (isShariah) void navigate("/");
-  };
-  const goShariah = () => {
-    if (!enabled) updateSettings.mutate({ shariah_mode: true });
-    if (!isShariah) void navigate("/shariah");
-  };
-  return { isShariah, enabled, goQuant, goShariah, toggle: isShariah ? goQuant : goShariah };
-}
-
 // The top bar measures itself (a container), and each piece decides from the bar's own width how much to say. Below
 // the widths named here a piece drops its key hint, then its words, and becomes an icon with a tooltip, so nothing
 // wraps onto a second line and the bar never grows wider than the window.
 const BAR_STYLE =
   "@container hidden h-14 shrink-0 items-center justify-between gap-3 border-b border-line bg-surface/90 px-6 " +
   "backdrop-blur-[6px] md:flex";
-const MODE_BUTTON =
-  "flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[7px] px-2 text-[13px] font-medium " +
-  "transition-all @min-[820px]:gap-2 @min-[820px]:px-3.5";
-const MODE_ON_QUANT = "bg-surface text-ink shadow-sm";
-const MODE_ON_SHARIAH = "bg-emerald-700 text-white shadow-sm";
-const MODE_OFF = "text-ink-3 hover:text-ink";
-const ONE_CLICK =
-  "ml-1 hidden rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 " +
-  "@min-[900px]:inline dark:text-emerald-200";
 const SEARCH_BUTTON =
   "flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-line " +
   "bg-surface-2 px-2.5 text-[12.5px] text-ink-3 transition-colors hover:border-line-strong hover:text-ink " +
@@ -274,43 +253,6 @@ const KEY_HINT =
 const PILL_STYLE =
   "flex min-w-0 items-center gap-2 whitespace-nowrap rounded-lg border border-line/60 bg-surface-2/60 px-2 " +
   "py-1 text-[12px] text-ink-3 @min-[820px]:px-2.5";
-
-function ModeSwitch() {
-  const { isShariah, enabled, goQuant, goShariah } = useModeSwitch();
-  return (
-    <div
-      role="radiogroup"
-      aria-label="Application Mode"
-      className="flex shrink-0 rounded-[var(--radius-control)] border border-line bg-surface-2 p-0.5"
-    >
-      <button
-        type="button"
-        role="radio"
-        aria-checked={!isShariah}
-        aria-label="Institutional QuantOS"
-        onClick={goQuant}
-        className={cx(MODE_BUTTON, isShariah ? MODE_OFF : MODE_ON_QUANT)}
-      >
-        <LayoutDashboard className="size-4" aria-hidden />
-        <span>
-          <span className="hidden @min-[640px]:inline">Institutional </span>QuantOS
-        </span>
-      </button>
-      <button
-        type="button"
-        role="radio"
-        aria-checked={isShariah}
-        aria-label="Mizan Shariah"
-        onClick={goShariah}
-        className={cx(MODE_BUTTON, isShariah ? MODE_ON_SHARIAH : MODE_OFF)}
-      >
-        <Scale className="size-4" aria-hidden />
-        <span>Mizan Shariah</span>
-        {!enabled && !isShariah && <span className={ONE_CLICK}>1-Click</span>}
-      </button>
-    </div>
-  );
-}
 
 function marketWords(status: Status): string {
   const latest = status.index.latest_session;
@@ -369,23 +311,6 @@ function TopHeader({ onSearch }: { onSearch: () => void }) {
         <SearchButton onSearch={onSearch} />
       </div>
     </header>
-  );
-}
-
-function PhoneModeButton() {
-  const { isShariah, toggle } = useModeSwitch();
-  const style = isShariah ? "bg-emerald-700 text-white" : "border border-line bg-surface-2 text-ink-2";
-  const Icon = isShariah ? Scale : LayoutDashboard;
-  return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label="Switch Mode"
-      className={cx("flex h-7 items-center gap-1 rounded-full px-2.5 text-[11.5px] font-medium", style)}
-    >
-      <Icon className="size-3" aria-hidden />
-      <span>{isShariah ? "Shariah" : "Quant"}</span>
-    </button>
   );
 }
 
@@ -485,7 +410,10 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
   const navigate = useNavigate();
   const results = useSearch(query);
   // The list for the latest keystroke may still be on its way; never offer an earlier query's answer.
-  const stocks = results.isPlaceholderData ? [] : (results.data ?? []);
+  const found = results.isPlaceholderData ? [] : (results.data ?? []);
+  const filter = useModeFilter(found, "search");
+  const stocks = filter.visible;
+  const empty = filter.nothingLeft ? "No Shariah-compliant matches." : "No matches.";
   const pages = [...NAV, { to: "/settings", label: "Settings", icon: SettingsIcon }].filter(
     (n) => !query || n.label.toLowerCase().includes(query.toLowerCase()),
   );
@@ -519,7 +447,7 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
         />
       </div>
       <Command.List className="max-h-[50vh] overflow-y-auto p-2">
-        <Command.Empty className="px-3 py-6 text-center text-sm text-ink-3">{results.isFetching && query.trim() ? "Searching…" : "No matches."}</Command.Empty>
+        <Command.Empty className="px-3 py-6 text-center text-sm text-ink-3">{results.isFetching && query.trim() ? "Searching…" : empty}</Command.Empty>
         {stocks.length > 0 && (
           <Command.Group heading="Stocks" className="px-1 text-[11.5px] font-medium uppercase tracking-wide text-ink-3 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5">
             {stocks.map((r) => (
@@ -533,7 +461,10 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
                   <span className="font-semibold">{r.symbol}</span>
                   <span className="truncate text-ink-3">{r.name}</span>
                 </span>
-                {r.is_etf ? <Badge tone="violet">ETF</Badge> : null}
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <ShariahBadge compact status={filter.statusOf(r.symbol)} />
+                  {r.is_etf ? <Badge tone="violet">ETF</Badge> : null}
+                </span>
               </Command.Item>
             ))}
           </Command.Group>
@@ -554,6 +485,7 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
         </Command.Group>
         )}
       </Command.List>
+      <ModeFilterNote filter={filter} className="border-t border-line px-4 py-2.5" />
     </Command.Dialog>
   );
 }

@@ -261,7 +261,7 @@ class DomainOracle:
 
     @staticmethod
     def get_thematic_baskets() -> list[dict[str, Any]]:
-        """The 4 Curated Baskets specification from PROJECT.md."""
+        """The 4 Curated Baskets specification: names, theses and weights. It carries no return or risk figures."""
         return [
             {
                 "id": "halal-tech-giants",
@@ -274,8 +274,6 @@ class DomainOracle:
                     {"ticker": "TECHM.NS", "symbol": "TECHM", "weight": 0.15},
                     {"ticker": "LTIM.NS", "symbol": "LTIM", "weight": 0.15},
                 ],
-                "expected_cagr": 0.148,
-                "expected_sharpe": 1.12,
             },
             {
                 "id": "shariah-high-growth-champions",
@@ -288,8 +286,6 @@ class DomainOracle:
                     {"ticker": "PIDILITIND.NS", "symbol": "PIDILITIND", "weight": 0.20},
                     {"ticker": "MARICO.NS", "symbol": "MARICO", "weight": 0.20},
                 ],
-                "expected_cagr": 0.264,
-                "expected_sharpe": 1.45,
             },
             {
                 "id": "green-ethical-infrastructure",
@@ -302,8 +298,6 @@ class DomainOracle:
                     {"ticker": "ABB.NS", "symbol": "ABB", "weight": 0.20},
                     {"ticker": "KEC.NS", "symbol": "KEC", "weight": 0.15},
                 ],
-                "expected_cagr": 0.312,
-                "expected_sharpe": 1.60,
             },
             {
                 "id": "nifty-shariah-25",
@@ -317,8 +311,6 @@ class DomainOracle:
                     {"ticker": "CIPLA.NS", "symbol": "CIPLA", "weight": 0.05},
                     {"ticker": "DRREDDY.NS", "symbol": "DRREDDY", "weight": 0.04},
                 ],
-                "expected_cagr": 0.165,
-                "expected_sharpe": 1.05,
             },
         ]
 
