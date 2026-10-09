@@ -25,6 +25,7 @@ SUMMARY_KEYS = frozenset(
         "positions_not_shown",
         "could_not_read",
         "warnings",
+        "risk",
         "note",
     }
 )

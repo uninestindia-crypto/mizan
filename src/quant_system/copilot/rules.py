@@ -240,6 +240,22 @@ def _rupees(value: Any) -> str:
     return f"₹{float(value):,.0f}" if isinstance(value, (int, float)) else "not available"
 
 
+def _risk_lines(risk: Any) -> list[str]:
+    """The short risk picture, in words. Nothing when there is none."""
+    if not isinstance(risk, dict):
+        return []
+    lines = [
+        f"- Typical yearly swing of the whole portfolio: {float(risk['volatility_pct']):.1f}% "
+        f"(from the last {risk['sessions']} sessions: the past, not a forecast)",
+        f"- It behaves like about {float(risk['effective_bets']):.1f} independent holdings out of {risk['holdings_counted']}",
+    ]
+    for item in risk.get("largest_risks") or []:
+        lines.append(
+            f"- {item['symbol']}: {float(item['money_pct']):.0f}% of the money, {float(item['risk_pct']):.0f}% of the risk"
+        )
+    return lines
+
+
 def _render_portfolio(data: dict[str, Any]) -> str:
     totals = data.get("totals")
     if not isinstance(totals, dict):
@@ -254,6 +270,7 @@ def _render_portfolio(data: dict[str, Any]) -> str:
         f"- Profit or loss so far: {_rupees(totals.get('pnl'))}{percent}",
     ]
     lines.extend(f"- {warning}" for warning in data.get("warnings") or [])
+    lines.extend(_risk_lines(data.get("risk")))
     lines.append(str(data.get("note") or ""))
     return "\n".join(line for line in lines if line)
 
@@ -276,6 +293,7 @@ def _render_broker(data: dict[str, Any]) -> str:
         )
         lines.append(f"- **{holding.get('symbol')}**: {holding.get('quantity')} shares{share}")
     lines.extend(f"- {warning}" for warning in data.get("warnings") or [])
+    lines.extend(_risk_lines(data.get("risk")))
     lines.append("Nothing can be bought, sold or changed through QuantOS.")
     return "\n".join(line for line in lines if line)
 

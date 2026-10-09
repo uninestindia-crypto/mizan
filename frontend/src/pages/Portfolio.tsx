@@ -5,6 +5,7 @@ import { BrokerAccountCard } from "../components/BrokerAccountCard";
 import { Donut } from "../components/charts";
 import { DataGate, Illustration } from "../components/common";
 import { type HoldingDraft, HoldingDialog } from "../components/HoldingDialog";
+import { RiskCard } from "../components/RiskCard";
 import { Button, Callout, Card, CardHeader, Delta, Dialog, EmptyState, PageHeader, Skeleton, Stat } from "../components/ui";
 import { date, inr, inrCompact, inrSigned, int, num, pct, tone } from "../lib/format";
 import { useDeleteHolding, usePortfolio } from "../lib/queries";
@@ -89,6 +90,8 @@ function PortfolioContent({ onEdit, onAdd }: { onEdit: (initial: Partial<Holding
           <p className="mt-1.5">A single stock that large can undo years of gains if something goes wrong with that company.</p>
         </Callout>
       )}
+
+      <RiskCard source="portfolio" />
 
       <div className="grid gap-5 xl:grid-cols-3">
         <Card padded={false} className="xl:col-span-2">

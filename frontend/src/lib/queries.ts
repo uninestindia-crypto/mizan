@@ -3,6 +3,7 @@ import { api } from "./api";
 import type {
   AiTool,
   BrokerSnapshot,
+  PortfolioRisk,
   BrokerStatus,
   Bars,
   CostsResult,
@@ -560,5 +561,15 @@ export function useBrokerAssistantAccess() {
   return useMutation({
     mutationFn: (allowed: boolean) => api<BrokerStatus>("/api/v2/broker/assistant-access", "PUT", { allowed }),
     onSuccess: (data) => qc.setQueryData(brokerKeys.status, data),
+  });
+}
+
+/** How the holdings have moved together over the last year. `portfolio` is the hand-entered list, `broker` the broker's. */
+export function useRisk(source: "portfolio" | "broker") {
+  return useQuery({
+    queryKey: ["risk", source],
+    queryFn: () => api<PortfolioRisk>(source === "portfolio" ? "/api/v2/portfolio/risk" : "/api/v2/broker/risk"),
+    staleTime: 5 * 60_000,
+    retry: false,
   });
 }

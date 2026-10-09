@@ -394,6 +394,8 @@ export interface LabResult {
     trials: number;
     threshold: number;
   };
+  /** How much of the result could be luck of the particular days. Absent on runs saved before it existed. */
+  ranges?: LabRanges | null;
   equity: [string, number, number, number | null][];
   trades: LabTrade[];
   open_positions: { symbol: string; quantity: number; average_price: number; last_close: number; unrealized_pnl: number }[];
@@ -895,4 +897,29 @@ export interface BrokerSnapshot {
   warnings: string[];
   skipped: { holdings: number; positions: number };
   notes: string[];
+}
+
+/** How a set of holdings has moved together over the last year (describes the past; not a forecast). */
+export interface PortfolioRisk {
+  available: boolean;
+  message: string | null;
+  window: { sessions: number; from: string; to: string; days_left_out: number } | null;
+  volatility_pct: number | null;
+  effective_bets: number | null;
+  diversification: { holdings: number; average_correlation: number | null } | null;
+  shrinkage: number | null;
+  holdings: { symbol: string; money_pct: number; risk_pct: number; volatility_pct: number }[];
+  left_out: { symbol: string; reason: string }[];
+  note: string;
+}
+
+export interface LabRanges {
+  level: number;
+  resamples: number;
+  block: number;
+  sessions: number;
+  sharpe: { low: number | null; high: number | null };
+  cagr: { low: number | null; high: number | null };
+  max_drawdown: { low: number | null; high: number | null };
+  note: string;
 }

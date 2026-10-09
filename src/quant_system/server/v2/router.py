@@ -67,6 +67,7 @@ from quant_system.server.v2.live_routes import router as live_router
 from quant_system.server.v2.notify import OrdersNotifier
 from quant_system.server.v2.paper_books import PaperBooks
 from quant_system.server.v2.portfolio import paper_books, portfolio_summary
+from quant_system.server.v2.portfolio_risk import NO_HOLDINGS, risk_from_quantities, unavailable
 from quant_system.server.v2.schemas import (
     CliCodeRequest,
     CliLaunchRequest,
@@ -615,6 +616,18 @@ def get_portfolio() -> dict[str, Any]:
     if not holdings:
         return {"holdings": [], "totals": None, "warnings": [], "nifty": None}
     return portfolio_summary(_index(), holdings, _broker(settings), _today())
+
+
+@router.get("/portfolio/risk")
+def get_portfolio_risk() -> dict[str, Any]:
+    """How the hand-entered holdings have moved together over the last year. Describes the past; not a forecast."""
+    holdings = services().state.holdings()
+    if not holdings:
+        return unavailable(NO_HOLDINGS)
+    quantities: dict[str, float] = {}
+    for holding in holdings:
+        quantities[holding.symbol] = quantities.get(holding.symbol, 0.0) + float(holding.quantity)
+    return risk_from_quantities(_index(), quantities)
 
 
 def _validated_holding(body: HoldingRequest) -> str:

@@ -6,6 +6,7 @@ summaries the tools hand to a model or show to a person.
 
 from __future__ import annotations
 
+import logging
 import math
 import os
 import sqlite3
@@ -18,9 +19,12 @@ from quant_system.copilot.registry import ToolContext, UserFacingError
 from quant_system.copilot.sources import SqliteShariahSource
 from quant_system.server.v2.credentials import AI_KEY_NAMES
 from quant_system.server.v2.portfolio import portfolio_summary
+from quant_system.server.v2.portfolio_risk import risk_from_quantities, risk_summary
 from quant_system.server.v2.tools import SEGMENTS, ToolError, position_size, trade_costs
 
 __all__ = ["key_lookup", "live_prices_status", "news_source", "tool_context"]
+
+logger = logging.getLogger(__name__)
 
 _NEWS = GoogleNewsSource()
 _NO_DATA = "Market data is not connected yet. Open Settings, then Market data."
@@ -110,12 +114,21 @@ def _portfolio() -> dict[str, Any]:
     if not svc.index.is_ready():
         raise UserFacingError(_NO_DATA)
     full = portfolio_summary(svc.index, holdings, _broker(svc.state.settings()), _today())
-    return {
+    summary = {
         "totals": {**full["totals"], "pnl_pct": _percent_points(full["totals"].get("pnl_pct"))},
         "warnings": full["warnings"],
         "holdings": [_holding(row) for row in full["holdings"]][:30],
         "note": "Values use each stock's last end-of-day close, not live prices.",
     }
+    try:
+        quantities: dict[str, float] = {}
+        for held in holdings:
+            quantities[held.symbol] = quantities.get(held.symbol, 0.0) + float(held.quantity)
+        risk = risk_summary(risk_from_quantities(svc.index, quantities))
+    except Exception as error:  # the risk picture is an extra: it must never take the portfolio answer down with it
+        logger.warning("portfolio risk picture skipped (%s)", type(error).__name__)
+        risk = None
+    return {**summary, "risk": risk} if risk else summary
 
 
 def _holding(row: dict[str, Any]) -> dict[str, Any]:
@@ -133,9 +146,30 @@ def _broker_account() -> dict[str, Any]:
     from quant_system.server.v2.broker_routes import broker_view_service
 
     try:
-        return broker_view_service().assistant_summary()
+        summary = broker_view_service().assistant_summary()
     except BrokerViewError as error:
         raise UserFacingError(error.message) from error
+    risk = _risk_of(summary["holdings"])
+    return {**summary, "risk": risk} if risk else summary
+
+
+def _risk_of(holdings: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """The short risk picture for these holdings, or None when market data is not connected or history is too short."""
+    from quant_system.server.v2.portfolio_risk import RiskHolding, portfolio_risk
+    from quant_system.server.v2.router import services
+
+    index = services().index
+    if not index.is_ready():
+        return None
+    values = [
+        RiskHolding(str(h["symbol"]), float(h["last_price"] or 0) * float(h["quantity"] or 0))
+        for h in holdings
+    ]
+    try:
+        return risk_summary(portfolio_risk(index, values))
+    except Exception as error:  # an extra: the broker summary is still worth giving without it
+        logger.warning("broker risk picture skipped (%s)", type(error).__name__)
+        return None
 
 
 def _paper_books() -> list[dict[str, Any]]:

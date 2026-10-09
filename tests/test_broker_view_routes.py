@@ -46,6 +46,7 @@ def test_the_routes_are_exactly_these_and_none_can_trade() -> None:
         ("POST", "/broker/upstox/connect"),
         ("DELETE", "/broker/upstox/connect"),
         ("GET", "/broker/snapshot"),
+        ("GET", "/broker/risk"),
         ("POST", "/broker/refresh"),
         ("DELETE", "/broker/connection"),
         ("PUT", "/broker/assistant-access"),

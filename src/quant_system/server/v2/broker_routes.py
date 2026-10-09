@@ -31,6 +31,7 @@ from quant_system.server.v2.credentials import (
     CredentialStore,
     ScopedCredentialStore,
 )
+from quant_system.server.v2.portfolio_risk import RiskHolding, portfolio_risk, unavailable
 
 if TYPE_CHECKING:
     from quant_system.server.v2.router import Services
@@ -144,6 +145,28 @@ def cancel_upstox_sign_in(view: BrokerView = Depends(broker_view_service)) -> di
 def broker_snapshot(view: BrokerView = Depends(broker_view_service)) -> dict[str, Any]:
     """The last figures with the time they were fetched. Reading this never asks Upstox for anything."""
     return view.snapshot()
+
+
+@router.get("/risk")
+def broker_risk(view: BrokerView = Depends(broker_view_service)) -> dict[str, Any]:
+    """How the broker's holdings have moved together over the last year. Reads the stored figures; asks Upstox for nothing."""
+    from quant_system.server.v2.router import V2Error, services
+
+    holdings = [
+        RiskHolding(str(row["symbol"]), float(row["value"] or 0.0))
+        for row in view.snapshot()["holdings"]
+        if row.get("value")
+    ]
+    if not holdings:
+        return unavailable("There are no broker holdings to look at yet.")
+    index = services().index
+    if not index.is_ready():
+        raise V2Error(
+            409,
+            "INDEX_NOT_READY",
+            "Market data is not connected yet. Open Settings, then Market data.",
+        )
+    return portfolio_risk(index, holdings)
 
 
 @router.post("/refresh")

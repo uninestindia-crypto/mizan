@@ -177,7 +177,9 @@ _TEXT = {
         "My portfolio",
         "Reads your holdings: their value, profit or loss, and how big a share each one is.",
         "The person's own holdings summary: value, profit or loss, and each holding's share of the portfolio. "
-        + PERCENT_NOTE,
+        "When there is enough price history it also has a short risk picture (the typical yearly swing, how many independent "
+        "bets the holdings behave like, and each holding's share of the risk next to its share of the money): say it "
+        "describes the past and is not a forecast. " + PERCENT_NOTE,
     ),
     "watchlist": ToolText(
         "My watchlist", "Reads the stocks on your watchlist.", "The person's watchlist."

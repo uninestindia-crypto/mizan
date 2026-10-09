@@ -13,6 +13,8 @@ vi.mock("../lib/api", async (importOriginal) => {
 const FETCHED = "2026-10-06T10:30:00+05:30";
 const SNAPSHOT_URL = "GET /api/v2/broker/snapshot";
 const REFRESH_URL = "POST /api/v2/broker/refresh";
+const RISK_URL = "GET /api/v2/broker/risk";
+const RISK = { available: false, message: "There are no broker holdings to look at yet.", window: null, volatility_pct: null, effective_bets: null, diversification: null, shrinkage: null, holdings: [], left_out: [], note: "" };
 
 const TCS = {
   symbol: "TCS",
@@ -57,7 +59,7 @@ afterEach(cleanup);
 
 describe("Portfolio, the Upstox account card", () => {
   it("before anything is connected, shows the engine's message and a link to the one place that fixes it", async () => {
-    routeApi({ [SNAPSHOT_URL]: NOTHING });
+    routeApi({ [RISK_URL]: RISK, [SNAPSHOT_URL]: NOTHING });
     renderApp(<BrokerAccountCard />);
     expect(await screen.findByText(/follow the three steps/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open Broker view" })).toHaveAttribute("href", "/settings/broker");
@@ -65,7 +67,7 @@ describe("Portfolio, the Upstox account card", () => {
   });
 
   it("shows the account with the time it was fetched, in more than one place, and says it is view only", async () => {
-    routeApi({ [SNAPSHOT_URL]: FIGURES });
+    routeApi({ [RISK_URL]: RISK, [SNAPSHOT_URL]: FIGURES });
     renderApp(<BrokerAccountCard />);
     expect(await screen.findByText("From your Upstox account")).toBeInTheDocument();
     expect(screen.getByText(new RegExp(`View only · Updated ${dateTime(FETCHED).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`))).toBeInTheDocument();
@@ -76,7 +78,7 @@ describe("Portfolio, the Upstox account card", () => {
   });
 
   it("lists each holding with its quantity, price, value, gain and share, and the recently bought shares apart", async () => {
-    routeApi({ [SNAPSHOT_URL]: FIGURES });
+    routeApi({ [RISK_URL]: RISK, [SNAPSHOT_URL]: FIGURES });
     renderApp(<BrokerAccountCard />);
     const table = await screen.findByRole("table", { name: "Holdings in your Upstox account" });
     const rows = within(table).getAllByRole("row");
@@ -89,7 +91,7 @@ describe("Portfolio, the Upstox account card", () => {
   });
 
   it("lists open positions in words and the concentration warning", async () => {
-    routeApi({ [SNAPSHOT_URL]: FIGURES });
+    routeApi({ [RISK_URL]: RISK, [SNAPSHOT_URL]: FIGURES });
     renderApp(<BrokerAccountCard />);
     const table = await screen.findByRole("table", { name: "Open positions in your Upstox account" });
     expect(within(table).getByText("Intraday")).toBeInTheDocument();
@@ -97,14 +99,14 @@ describe("Portfolio, the Upstox account card", () => {
   });
 
   it("announces rows that could not be read", async () => {
-    routeApi({ [SNAPSHOT_URL]: { ...FIGURES, skipped: { holdings: 1, positions: 0 }, notes: ["1 holding could not be read and was not shown."] } });
+    routeApi({ [RISK_URL]: RISK, [SNAPSHOT_URL]: { ...FIGURES, skipped: { holdings: 1, positions: 0 }, notes: ["1 holding could not be read and was not shown."] } });
     renderApp(<BrokerAccountCard />);
     expect(await screen.findByText("1 holding could not be read and was not shown.")).toBeInTheDocument();
   });
 
   it("after the sign-in ends, keeps the figures with their time and names the click, without asking Upstox", async () => {
     const ended = { ...FIGURES, connected: false, freshness: "OLDER", message: "Your Upstox sign-in has ended for today (Upstox ends it at 3:30 am). Open Settings, then Broker view, and click Connect Upstox." };
-    routeApi({ [SNAPSHOT_URL]: ended });
+    routeApi({ [RISK_URL]: RISK, [SNAPSHOT_URL]: ended });
     renderApp(<BrokerAccountCard />);
     expect(await screen.findByText(/Your Upstox sign-in has ended for today/)).toBeInTheDocument();
     expect(screen.getAllByText("Older").length).toBeGreaterThan(0);
@@ -114,7 +116,7 @@ describe("Portfolio, the Upstox account card", () => {
   });
 
   it("refreshes once by itself when the figures are old and the sign-in is still good", async () => {
-    routeApi({ [SNAPSHOT_URL]: { ...FIGURES, freshness: "OLDER" }, [REFRESH_URL]: FIGURES });
+    routeApi({ [RISK_URL]: RISK, [SNAPSHOT_URL]: { ...FIGURES, freshness: "OLDER" }, [REFRESH_URL]: FIGURES });
     renderApp(<BrokerAccountCard />);
     await waitFor(() => expect(callsTo("POST", "/api/v2/broker/refresh")).toHaveLength(1));
     expect(await screen.findAllByText("Up to date")).not.toHaveLength(0);
@@ -122,14 +124,14 @@ describe("Portfolio, the Upstox account card", () => {
   });
 
   it("does not refresh when the figures are already up to date", async () => {
-    routeApi({ [SNAPSHOT_URL]: FIGURES });
+    routeApi({ [RISK_URL]: RISK, [SNAPSHOT_URL]: FIGURES });
     renderApp(<BrokerAccountCard />);
     await screen.findByText("From your Upstox account");
     expect(callsTo("POST", "/api/v2/broker/refresh")).toHaveLength(0);
   });
 
   it("refreshes when asked", async () => {
-    routeApi({ [SNAPSHOT_URL]: FIGURES, [REFRESH_URL]: FIGURES });
+    routeApi({ [RISK_URL]: RISK, [SNAPSHOT_URL]: FIGURES, [REFRESH_URL]: FIGURES });
     renderApp(<BrokerAccountCard />);
     fireEvent.click(await screen.findByRole("button", { name: "Refresh" }));
     await waitFor(() => expect(callsTo("POST", "/api/v2/broker/refresh")).toHaveLength(1));
@@ -137,7 +139,7 @@ describe("Portfolio, the Upstox account card", () => {
 
   it("while the first figures are being fetched after connecting, says so instead of 'not connected'", async () => {
     const gate = deferred<unknown>();
-    routeApi({ [SNAPSHOT_URL]: { ...NOTHING, connected: true, message: null }, [REFRESH_URL]: () => gate.promise });
+    routeApi({ [RISK_URL]: RISK, [SNAPSHOT_URL]: { ...NOTHING, connected: true, message: null }, [REFRESH_URL]: () => gate.promise });
     renderApp(<BrokerAccountCard />);
     expect(await screen.findByText("Fetching your account from Upstox…")).toBeInTheDocument();
     expect(screen.queryByText("Not connected")).toBeNull();
@@ -146,7 +148,7 @@ describe("Portfolio, the Upstox account card", () => {
   });
 
   it("has no button that could trade", async () => {
-    routeApi({ [SNAPSHOT_URL]: FIGURES });
+    routeApi({ [RISK_URL]: RISK, [SNAPSHOT_URL]: FIGURES });
     renderApp(<BrokerAccountCard />);
     await screen.findByText("From your Upstox account");
     const names = screen.getAllByRole("button").map((b) => b.textContent ?? "");

@@ -5,6 +5,7 @@ import { errorMessage } from "../lib/api";
 import { dateTime, inr, inrSigned, int, num, pct, tone } from "../lib/format";
 import { useBrokerRefresh, useBrokerSnapshot } from "../lib/queries";
 import type { BrokerHolding, BrokerPosition } from "../lib/types";
+import { RiskCard } from "./RiskCard";
 import { Badge, Button, Callout, Card, CardHeader, Delta, Skeleton, Stat } from "./ui";
 
 /** The broker sends percent points (5 means 5%); the shared formatter takes a fraction. */
@@ -67,67 +68,70 @@ export function BrokerAccountCard() {
   const skipped = data.skipped.holdings + data.skipped.positions;
 
   return (
-    <Card>
-      <CardHeader
-        title="From your Upstox account"
-        subtitle={`View only · Updated ${dateTime(data.fetched_at)}`}
-        action={
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <Badge tone={data.freshness === "UP_TO_DATE" ? "up" : "warn"}>{data.freshness === "UP_TO_DATE" ? "Up to date" : "Older"}</Badge>
-            {data.connected && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<RefreshCw className="size-4" aria-hidden />}
-                loading={refresh.isPending}
-                onClick={() => refresh.mutate()}
-              >
-                Refresh
-              </Button>
-            )}
-          </div>
-        }
-      />
+    <div className="space-y-5">
+      <Card>
+        <CardHeader
+          title="From your Upstox account"
+          subtitle={`View only · Updated ${dateTime(data.fetched_at)}`}
+          action={
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Badge tone={data.freshness === "UP_TO_DATE" ? "up" : "warn"}>{data.freshness === "UP_TO_DATE" ? "Up to date" : "Older"}</Badge>
+              {data.connected && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<RefreshCw className="size-4" aria-hidden />}
+                  loading={refresh.isPending}
+                  onClick={() => refresh.mutate()}
+                >
+                  Refresh
+                </Button>
+              )}
+            </div>
+          }
+        />
 
-      {data.message && (
-        <Callout tone="warn" className="mb-4">
-          {data.message}
-        </Callout>
-      )}
+        {data.message && (
+          <Callout tone="warn" className="mb-4">
+            {data.message}
+          </Callout>
+        )}
 
-      <div className="grid grid-cols-2 gap-6 lg:grid-cols-5">
-        <Stat label="Value of holdings" value={inr(totals.value, 0)} sub={`Invested ${inr(totals.invested, 0)}`} />
-        <Stat label="Profit or loss" value={inrSigned(totals.pnl)} tone={tone(totals.pnl)} sub={points(totals.pnl_pct)} />
-        <Stat label="Today" value={inrSigned(totals.today)} tone={tone(totals.today)} />
-        <Stat label="Cash available" value={inr(data.cash?.available, 0)} sub={data.cash?.in_use != null ? `In use ${inr(data.cash.in_use, 0)}` : undefined} />
-        <Stat label="Updated" value={dateTime(data.fetched_at)} sub={data.freshness === "UP_TO_DATE" ? "Up to date" : "Older than 5 minutes"} />
-      </div>
+        <div className="grid grid-cols-2 gap-6 lg:grid-cols-5">
+          <Stat label="Value of holdings" value={inr(totals.value, 0)} sub={`Invested ${inr(totals.invested, 0)}`} />
+          <Stat label="Profit or loss" value={inrSigned(totals.pnl)} tone={tone(totals.pnl)} sub={points(totals.pnl_pct)} />
+          <Stat label="Today" value={inrSigned(totals.today)} tone={tone(totals.today)} />
+          <Stat label="Cash available" value={inr(data.cash?.available, 0)} sub={data.cash?.in_use != null ? `In use ${inr(data.cash.in_use, 0)}` : undefined} />
+          <Stat label="Updated" value={dateTime(data.fetched_at)} sub={data.freshness === "UP_TO_DATE" ? "Up to date" : "Older than 5 minutes"} />
+        </div>
 
-      {totals.arriving_note && <p className="mt-3 text-[13px] text-ink-3">{totals.arriving_note}</p>}
+        {totals.arriving_note && <p className="mt-3 text-[13px] text-ink-3">{totals.arriving_note}</p>}
 
-      {data.warnings.length > 0 && (
-        <Callout tone="warn" title="Too much in one place" className="mt-4">
-          <ul className="list-disc space-y-0.5 pl-4">
-            {data.warnings.map((warning) => (
-              <li key={warning}>{warning}</li>
-            ))}
-          </ul>
-        </Callout>
-      )}
+        {data.warnings.length > 0 && (
+          <Callout tone="warn" title="Too much in one place" className="mt-4">
+            <ul className="list-disc space-y-0.5 pl-4">
+              {data.warnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          </Callout>
+        )}
 
-      {(data.notes.length > 0 || skipped > 0) && (
-        <Callout tone="info" className="mt-4">
-          <ul className="space-y-0.5">
-            {data.notes.map((note) => (
-              <li key={note}>{note}</li>
-            ))}
-          </ul>
-        </Callout>
-      )}
+        {(data.notes.length > 0 || skipped > 0) && (
+          <Callout tone="info" className="mt-4">
+            <ul className="space-y-0.5">
+              {data.notes.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          </Callout>
+        )}
 
-      <HoldingsTable holdings={holdings} />
-      {positions.length > 0 && <PositionsTable positions={positions} />}
-    </Card>
+        <HoldingsTable holdings={holdings} />
+        {positions.length > 0 && <PositionsTable positions={positions} />}
+      </Card>
+      {holdings.length > 0 && <RiskCard source="broker" />}
+    </div>
   );
 }
 
