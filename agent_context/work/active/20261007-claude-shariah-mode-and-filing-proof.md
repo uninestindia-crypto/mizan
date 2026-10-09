@@ -172,3 +172,20 @@ exactly zero, profit for the period is non-zero and EPS x shares corroborates it
 profit for the period, labelled as such. It changes extraction output, so it needs its own tests and a snapshot rebuild
 (about 70 minutes). Not started; not a founder decision.
 
+UPDATED 2026-10-09 13:05 UTC. Wording / holidays / badges committed and pushed (`4393b6617`). I staged exactly its files (and
+only its hunks of `topbar/screenName.ts` and its test, which the fundamentals helper also edits), then checked the staged
+state in an isolated export: tsc clean, 1,363 vitest tests passed (92 files); Python: ruff, mypy --platform win32 (133
+files) clean, 2,251 tests passed (one test deselected, below), secret scan only the 8 old names in `Settings.tsx`.
+What changed: 'AI apps' naming; no 'CLI' in visible words (guarded in `tests/test_no_terminal_copy.py`); a holiday route
+`GET /api/v2/market/holidays` and the chip saying Market open / closed / holiday only when the list covers this year;
+engine rows and the audit now carry the proof's `overall_status` and the old tab follows it (the contract's rule matched the
+old worse-of rule on all 350 filing-backed stocks, a plain two-status rule would have disagreed on 69).
+Open points: (1) `data/authorities/nse-trading-holidays.json` covers 2026 only; from 1 Jan 2027 the chip says 'Market hours'
+until a 2027 list ships (MUST ship before the new year); (2) `/stocks/{ticker}/screen` for sample-only stocks and baskets
+still show the sample's statuses; (3) `/api/v2/ai-tools` still says 'Codex CLI' / 'Gemini CLI' (no screen shows it);
+(4) Gemini sign-in still opens a window (engine change); (5) the bundled-data root list exists in three places
+(`proof_paths.py`, `fundamentals/runtime.py`, `market_holidays.py`): a shared helper would remove it.
+The one red test in the wider run, `test_every_page_the_web_app_defines_is_served_on_reload`, is the fundamentals helper's
+new `/fundamentals` route missing from `server/v2/spa.py`; I told that helper, which has since edited `spa.py`.
+Still running: fundamentals screens (`af8649e`).
+
