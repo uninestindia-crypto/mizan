@@ -16,6 +16,7 @@ describe("the name of the screen", () => {
     ["/lab/new/buy_hold", { title: "New test", parent: LAB }],
     ["/lab/runs/abc123", { title: "Test result", parent: LAB }],
     ["/portfolio", { title: "Portfolio" }],
+    ["/fundamentals", { title: "Fundamentals" }],
     ["/paper", { title: "Paper trading" }],
     ["/paper/new", { title: "New paper book", parent: PAPER }],
     ["/paper/2f269931b483", { title: "Paper book", parent: PAPER }],

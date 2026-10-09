@@ -53,6 +53,8 @@ interface FormProps {
   initial?: Partial<LotDraft>;
   /** The account being viewed, which a new purchase goes to unless another is picked. */
   viewing: AccountChoice;
+  /** Keep the stock as it is given (the stock's own page): no search, no "Change". */
+  lockSymbol?: boolean;
 }
 
 /** The draft being filled in, whether it can be saved, and the save itself. */
@@ -103,7 +105,7 @@ export function HoldingFormDialog(props: FormProps) {
         </>
       }
     >
-      <LotFields form={form} />
+      <LotFields form={form} lockSymbol={props.lockSymbol === true} />
     </Dialog>
   );
 }
@@ -111,11 +113,11 @@ export function HoldingFormDialog(props: FormProps) {
 const DESCRIPTION =
   "Enter what you bought. QuantOS values it at the latest close and compares it with NIFTY bought on the same day.";
 
-function LotFields({ form }: { form: LotForm }) {
+function LotFields({ form, lockSymbol }: { form: LotForm; lockSymbol: boolean }) {
   const { draft, set, accounts } = form;
   return (
     <div className="grid gap-4">
-      <SymbolField draft={draft} locked={Boolean(draft.id)} onSymbol={(symbol) => set({ symbol })} />
+      <SymbolField draft={draft} locked={Boolean(draft.id) || lockSymbol} onSymbol={(symbol) => set({ symbol })} />
       {accounts.length > 1 && <AccountField accounts={accounts} value={form.chosen} set={set} />}
       <AmountFields draft={draft} set={set} />
       <DateFields draft={draft} set={set} />

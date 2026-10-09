@@ -25,6 +25,11 @@ function remember(choice: AccountChoice): void {
   }
 }
 
+/** The account last viewed on the Portfolio on this computer, or all accounts: a default for other screens. */
+export function rememberedChoice(): AccountChoice {
+  return readRemembered() || "all";
+}
+
 export interface AccountChoiceState {
   choice: AccountChoice;
   choose: (next: AccountChoice) => void;
