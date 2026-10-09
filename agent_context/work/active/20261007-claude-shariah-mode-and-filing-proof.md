@@ -104,3 +104,13 @@ Open points from the proof helper that need a decision or a small follow-up (not
 6. `data/shariah/halal_stocks.db-shm` and `-wal` are SQLite side files; they must not be committed (`.gitignore` is a
    shared file, so adding them there is for the coordinator, with the founder's say).
 
+UPDATED 2026-10-09 07:40 UTC. AI apps card committed and pushed (`29d589201`). I checked the exact staged state in an
+isolated export (the card's own hunks of `queries.ts` and `types.ts` only, none of the Portfolio worker's): tsc clean,
+1,003 vitest tests passed, secret scan 0, craft checks clean. Still running: fundamentals backend, top bar and Update
+dialog, Portfolio accounts. Follow-ups the card's helper found, not yet done:
+1. `pages/Tools.tsx` still has a "Coding agents" tab showing the same card, and `components/topbar/screenName.ts` says
+   "Coding agents". Rename to "AI apps" (the top bar worker owns `topbar/`).
+2. The engine's own texts still say "Codex CLI is connected." and "Gemini CLI is installed." (`cli_bridge.py`).
+3. `APP_NAMES` in `lib/aiSource.ts` still says "Gemini CLI" in the choice card; the founder's wording rule says drop "CLI".
+4. Gemini sign-in still opens a window (`signin_mode="terminal"` in `cli_bridge.py`); only an engine change fixes that.
+
