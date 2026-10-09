@@ -37,7 +37,7 @@ hidden_imports = [
     'tomllib',
     'quant_system',
     'quant_system.release',
-] + collect_submodules('quant_system')
+] + collect_submodules('quant_system') + collect_submodules('websockets')
 
 a = Analysis(
     ['launcher.py'],

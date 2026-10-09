@@ -203,6 +203,7 @@ def _build_server(port: int) -> uvicorn.Server:
         access_log=False,
         log_config=None,
         use_colors=False,
+        ws="none",
     )
     return uvicorn.Server(config)
 
