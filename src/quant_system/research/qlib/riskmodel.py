@@ -181,6 +181,8 @@ class ShrinkCovEstimator(RiskModel):
             raise NotImplementedError("currently oas can only support const_var as target")
         self.alpha = alpha
         self.target = target
+        #: The shrinkage actually used by the latest ``predict`` (0 = the raw sample, 1 = all target), for reporting.
+        self.shrinkage_: float | None = None
 
     def _predict(self, X: Any) -> np.ndarray:
         sample = super()._predict(X)
@@ -204,6 +206,7 @@ class ShrinkCovEstimator(RiskModel):
         sample = sample.copy()
         target = np.array(self._get_shrink_target(X, sample), dtype=np.float64, copy=True)
         alpha = self._get_shrink_param(X, sample, target)
+        self.shrinkage_ = alpha
         shrunk = (1 - alpha) * sample + alpha * target if alpha > 0 else sample
         return np.asarray((shrunk + shrunk.T) / 2)
 

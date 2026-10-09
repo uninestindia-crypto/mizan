@@ -7,6 +7,7 @@ Provenance & Local Source:
 - Local reference repository: ``d:/Quant OS Project/qlib-main``
 - Upstream GitHub: ``https://github.com/microsoft/qlib``
 - Detailed guide: See ``src/quant_system/research/qlib/README.md``
+- Licence of the copied code (MIT): ``THIRD_PARTY_NOTICES.md`` at the repository root
 """
 
 from __future__ import annotations
@@ -17,6 +18,14 @@ from quant_system.research.qlib.alpha158 import (
     QLIB_ALPHA158_MINIMUM_BARS,
     QlibAlpha158Extractor,
     compute_qlib_alpha_features,
+)
+from quant_system.research.qlib.alpha_eval import (
+    ICSummary,
+    calc_ic,
+    calc_long_short_prec,
+    calc_long_short_return,
+    ic_summary,
+    pred_autocorr,
 )
 from quant_system.research.qlib.pipeline import (
     CONVENTIONAL_FINANCIALS,
@@ -29,6 +38,7 @@ from quant_system.research.qlib.quant_slm import (
     QuantSLMConfig,
     QuantSLMPrediction,
 )
+from quant_system.research.qlib.riskmodel import RiskModel, ShrinkCovEstimator
 from quant_system.research.qlib.upstream_watcher import (
     QlibUpstreamRelease,
     QlibUpstreamWatcher,
@@ -37,6 +47,7 @@ from quant_system.research.qlib.upstream_watcher import (
 
 __all__ = [
     "CONVENTIONAL_FINANCIALS",
+    "ICSummary",
     "QLIB_ALPHA158_CANONICAL_WINDOW_BARS",
     "QLIB_ALPHA158_MINIMUM_BARS",
     "QlibAlpha158Extractor",
@@ -47,9 +58,16 @@ __all__ = [
     "QuantSLM",
     "QuantSLMConfig",
     "QuantSLMPrediction",
+    "RiskModel",
+    "ShrinkCovEstimator",
+    "calc_ic",
+    "calc_long_short_prec",
+    "calc_long_short_return",
     "check_qlib_upstream",
     "compute_indian_statutory_friction",
     "compute_qlib_alpha_features",
     "get_default_cache_store",
+    "ic_summary",
+    "pred_autocorr",
     "run_live_slm_pipeline",
 ]

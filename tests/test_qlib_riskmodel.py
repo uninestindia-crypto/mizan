@@ -250,3 +250,14 @@ def test_a_bad_shrinkage_parameter_is_refused(bad: object) -> None:
 def test_oas_with_a_target_other_than_constant_variance_is_refused_as_in_qlib() -> None:
     with pytest.raises(NotImplementedError):
         ShrinkCovEstimator(alpha="oas", target="const_corr")
+
+
+def test_the_shrinkage_actually_used_is_reported() -> None:
+    x = draws(true_cov(20), rows=40, seed=2)
+    model = ShrinkCovEstimator(alpha="lw", target="const_corr", scale_return=False)
+    assert model.shrinkage_ is None
+    model.predict(x, is_price=False)
+    assert model.shrinkage_ is not None and 0.0 <= model.shrinkage_ <= 1.0
+    fixed = ShrinkCovEstimator(alpha=0.25, scale_return=False)
+    fixed.predict(x, is_price=False)
+    assert fixed.shrinkage_ == 0.25
