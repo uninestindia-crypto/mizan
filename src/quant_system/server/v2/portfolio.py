@@ -13,6 +13,7 @@ from quant_system.core.domain import Side
 from quant_system.lab.costs import BrokerCharges, RetailCostModel
 from quant_system.lab.simulator import to_decimal
 from quant_system.market.index import BENCHMARK_SYMBOL, BarSeries, MarketIndex, SymbolNotFoundError
+from quant_system.server.v2.holding_periods import holding_period
 from quant_system.server.v2.state import Holding
 
 CONCENTRATION_LIMIT = 0.25
@@ -50,6 +51,7 @@ def portfolio_summary(
             "buy_date": holding.buy_date,
             "note": holding.note,
             "cost": float(holding.avg_price * holding.quantity),
+            "lot": holding_period(holding.buy_date, today),
         }
         try:
             info = index.symbol_info(holding.symbol)

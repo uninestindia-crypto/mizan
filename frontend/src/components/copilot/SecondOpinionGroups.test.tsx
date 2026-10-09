@@ -15,7 +15,7 @@ vi.mock("../../lib/api", async (importOriginal) => {
 const MODELS = [
   { id: "cli:claude", label: "Claude Code (your Claude sign-in)", ready: true },
   { id: "cli:codex", label: "Codex (your ChatGPT sign-in)", ready: false },
-  { id: "cli:gemini", label: "Gemini CLI (your Google sign-in)", ready: true },
+  { id: "cli:gemini", label: "Gemini (your Google sign-in)", ready: true },
   { id: "anthropic", label: "Anthropic (Claude)", ready: false },
   { id: "openai", label: "OpenAI", ready: true },
   { id: "groq", label: "Groq", ready: true },
@@ -85,7 +85,7 @@ describe("choosing the AIs for a second opinion", () => {
     fakeEngine();
     await openDialog();
     await screen.findAllByRole("checkbox");
-    fireEvent.click(boxOf(/^Gemini CLI/));
+    fireEvent.click(boxOf(/^Gemini/));
     fireEvent.click(boxOf(/^Groq/));
     fireEvent.click(screen.getByRole("button", { name: "Ask the models" }));
     await waitFor(() => expect(callsTo("POST", "/api/v2/copilot/verify")).toHaveLength(1));

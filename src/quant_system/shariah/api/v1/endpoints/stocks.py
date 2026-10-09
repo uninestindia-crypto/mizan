@@ -14,8 +14,41 @@ from quant_system.shariah.schemas.company import (
     SearchSuggestion,
 )
 from quant_system.shariah.services.search_service import filter_companies, search_companies_fts
+from quant_system.shariah.services.verdict_overlay import prefer_filing, proofs_for
 
 router = APIRouter()
+
+
+def _summary(r: dict[str, Any]) -> CompanySummary:
+    return CompanySummary(
+        ticker=r["ticker"],
+        symbol=r["symbol"],
+        isin=r["isin"],
+        bse_code=r["bse_code"],
+        company_name=r["company_name"],
+        sector=r["sector"],
+        industry=r["industry"],
+        current_price=float(r["current_price"]),
+        market_cap=float(r["market_cap"]),
+        avg_36m_market_cap=float(r["avg_36m_market_cap"]),
+        aaoifi_status=ComplianceStatus(r["aaoifi_status"]),
+        tasis_status=ComplianceStatus(r["tasis_status"]),
+        purification_ratio=float(r["purification_ratio"]),
+        is_nifty_50=bool(r["is_nifty_50"]),
+        is_nifty_500=bool(r["is_nifty_500"]),
+        aaoifi_debt_ratio=float(r["aaoifi_debt_ratio"])
+        if r.get("aaoifi_debt_ratio") is not None
+        else 0.0,
+        aaoifi_cash_ratio=float(r["aaoifi_cash_ratio"])
+        if r.get("aaoifi_cash_ratio") is not None
+        else 0.0,
+        tasis_debt_ratio=float(r["tasis_debt_ratio"])
+        if r.get("tasis_debt_ratio") is not None
+        else 0.0,
+        tasis_cash_ratio=float(r["tasis_cash_ratio"])
+        if r.get("tasis_cash_ratio") is not None
+        else 0.0,
+    )
 
 
 @router.get(
@@ -31,8 +64,13 @@ async def search_stocks(
     limit: int = Query(15, ge=1, le=50),
     db: aiosqlite.Connection = Depends(get_async_db),
 ) -> list[SearchSuggestion]:
-    """Stock search by name or symbol, using SQLite full-text prefix matching."""
-    return await search_companies_fts(db=db, query=q, standard=standard, limit=limit)
+    """Stock search by name or symbol, using SQLite full-text prefix matching.
+
+    A stock with a company filing shows the filing's result in place of the sample's (see `verdict_source`).
+    """
+    found = await search_companies_fts(db=db, query=q, standard=standard, limit=limit)
+    proofs = await proofs_for([item.symbol for item in found])
+    return [prefer_filing(item, proofs[item.symbol]) for item in found]
 
 
 @router.get("/stocks", summary="List and Filter Stocks Universe")
@@ -61,39 +99,8 @@ async def list_stocks(
         offset=offset,
     )
 
-    items = []
-    for r in rows:
-        items.append(
-            CompanySummary(
-                ticker=r["ticker"],
-                symbol=r["symbol"],
-                isin=r["isin"],
-                bse_code=r["bse_code"],
-                company_name=r["company_name"],
-                sector=r["sector"],
-                industry=r["industry"],
-                current_price=float(r["current_price"]),
-                market_cap=float(r["market_cap"]),
-                avg_36m_market_cap=float(r["avg_36m_market_cap"]),
-                aaoifi_status=ComplianceStatus(r["aaoifi_status"]),
-                tasis_status=ComplianceStatus(r["tasis_status"]),
-                purification_ratio=float(r["purification_ratio"]),
-                is_nifty_50=bool(r["is_nifty_50"]),
-                is_nifty_500=bool(r["is_nifty_500"]),
-                aaoifi_debt_ratio=float(r["aaoifi_debt_ratio"])
-                if r.get("aaoifi_debt_ratio") is not None
-                else 0.0,
-                aaoifi_cash_ratio=float(r["aaoifi_cash_ratio"])
-                if r.get("aaoifi_cash_ratio") is not None
-                else 0.0,
-                tasis_debt_ratio=float(r["tasis_debt_ratio"])
-                if r.get("tasis_debt_ratio") is not None
-                else 0.0,
-                tasis_cash_ratio=float(r["tasis_cash_ratio"])
-                if r.get("tasis_cash_ratio") is not None
-                else 0.0,
-            )
-        )
+    proofs = await proofs_for([r["symbol"] for r in rows])
+    items = [prefer_filing(_summary(r), proofs[r["symbol"]]) for r in rows]
 
     return {
         "total": total,
@@ -188,7 +195,7 @@ async def get_stock_detail(
         income_note_ref=r["income_note_ref"],
     )
 
-    return CompanyDetail(
+    detail = CompanyDetail(
         profile=profile,
         balance_sheet=balance_sheet,
         income_statement=income_statement,
@@ -208,3 +215,5 @@ async def get_stock_detail(
         zakatable_assets_per_share=float(r["zakatable_assets_per_share"]),
         audit_notes=r["audit_notes"],
     )
+    proofs = await proofs_for([r["symbol"]])
+    return prefer_filing(detail, proofs[r["symbol"]])

@@ -207,7 +207,7 @@ class UpdateInstaller:
         if not all(map(download_url_allowed, (assets.installer_url, assets.checksums_url))):
             raise _Refused(_NOT_ALLOWED)
         self._folder.mkdir(parents=True, exist_ok=True)
-        for old in self._folder.glob("QuantOS_v*_Setup.exe*"):
+        for old in self._folder.glob("*_v*_Setup.exe*"):
             old.unlink(missing_ok=True)
 
     def _fingerprint(self, assets: ReleaseAssets) -> str:

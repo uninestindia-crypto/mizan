@@ -15,6 +15,9 @@ added_files = [
     (str(root_dir / 'src' / 'quant_system' / 'server' / 'static'), 'quant_system/server/static'),
     (str(root_dir / 'configs'), 'configs'),
     (str(root_dir / 'data' / 'shariah'), 'data/shariah'),
+    (str(root_dir / 'data' / 'fundamentals'), 'data/fundamentals'),
+    (str(root_dir / 'data' / 'authorities' / 'nse-all-listed-equities.csv'), 'data/authorities'),
+    (str(root_dir / 'data' / 'authorities' / 'nse-trading-holidays.json'), 'data/authorities'),
 ]
 
 hidden_imports = [

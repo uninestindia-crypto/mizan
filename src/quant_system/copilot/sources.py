@@ -7,9 +7,9 @@ from collections.abc import Callable
 from contextlib import closing
 from typing import Any
 
-from quant_system.copilot.registry import UserFacingError
+from quant_system.copilot.registry import ShariahSource, UserFacingError
 
-__all__ = ["SqliteShariahSource"]
+__all__ = ["ProofBackedShariahSource", "SqliteShariahSource"]
 
 _UNREADABLE = "The halal screening data could not be opened right now. Close QuantOS, open it again and ask once more."
 
@@ -37,3 +37,24 @@ class SqliteShariahSource:
                 return int(conn.execute("SELECT COUNT(*) FROM companies").fetchone()[0])
         except sqlite3.Error as error:
             raise UserFacingError(_UNREADABLE) from error
+
+
+class ProofBackedShariahSource:
+    """The sample rows, plus ``proof(symbol)``: the Shariah engine's proof from the company's own filing.
+
+    The sample methods pass straight through. ``proof`` is asked first by the halal screening tool; when it cannot
+    answer, the tool falls back to the sample, so a missing filing never leaves a stock unscreened by accident.
+    """
+
+    def __init__(self, sample: ShariahSource, proof: Callable[[str], dict[str, Any]]) -> None:
+        self._sample = sample
+        self._proof = proof
+
+    def company(self, symbol: str) -> dict[str, Any] | None:
+        return self._sample.company(symbol)
+
+    def company_count(self) -> int:
+        return self._sample.company_count()
+
+    def proof(self, symbol: str) -> dict[str, Any]:
+        return self._proof(symbol)

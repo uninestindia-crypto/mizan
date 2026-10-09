@@ -16,6 +16,7 @@ import pytest
 
 from quant_system.copilot.cli_chat import (
     CLI_FAILED,
+    CLI_LABELS,
     CLI_NOT_FOUND,
     CLI_NOT_SIGNED_IN,
     CLI_UNSUPPORTED,
@@ -238,3 +239,11 @@ def test_the_real_runner_stops_a_program_that_never_finishes() -> None:
 
 def test_the_real_runner_reports_a_program_that_is_not_there() -> None:
     assert run_cli(["/no/such/program-xyz"], "", 5.0, {}).missing is True
+
+
+def test_the_names_a_person_sees_for_the_apps_do_not_use_the_developers_word() -> None:
+    assert CLI_LABELS == {
+        "claude": "Claude Code (your Claude sign-in)",
+        "codex": "Codex (your ChatGPT sign-in)",
+        "gemini": "Gemini (your Google sign-in)",
+    }

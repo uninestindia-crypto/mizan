@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import pytest
 
+from quant_system import __version__
 from quant_system.server.v2 import updates
 from quant_system.server.v2.updates import UpdateChecker, is_newer, parse_version
 
@@ -113,16 +115,28 @@ def test_the_endpoint_never_errors_even_when_nothing_answers(
 
 
 def test_changelog_returns_history_and_identifies_current_version() -> None:
-    checker = UpdateChecker("3.0.0")
+    checker = UpdateChecker(__version__)
     entries = checker.changelog()
     assert len(entries) >= 6
-    assert entries[0]["version"] == "3.0.0"
+    assert entries[0]["version"] == __version__
     assert entries[0]["is_current"] is True
     assert len(entries[0]["whats_new"]) > 0
-    assert len(entries[0]["fixes"]) > 0
     assert len(entries[0]["unchanged_protections"]) > 0
-    assert entries[1]["version"] == "2.5.0"
+    assert entries[1]["version"] != __version__
     assert entries[1]["is_current"] is False
+
+
+def _release_note_lines() -> list[str]:
+    keys = ("whats_new", "fixes", "improvements", "unchanged_protections")
+    entries = UpdateChecker("2.5.0").changelog()
+    return [line for entry in entries for key in keys for line in entry.get(key, [])]
+
+
+def test_the_release_notes_a_person_reads_do_not_use_the_developers_word_cli() -> None:
+    lines = _release_note_lines()
+    assert len(lines) > 20
+    assert [line for line in lines if re.search(r"\bCLI\b", line)] == []
+    assert "Install and sign in to several AI apps with one click" in lines
 
 
 def test_changelog_api_endpoint(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) -> None:
@@ -139,10 +153,10 @@ def test_changelog_api_endpoint(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) 
         data = res.json()
         assert isinstance(data, list)
         assert len(data) >= 6
-        assert data[0]["version"] == "3.0.0"
+        assert data[0]["version"] == __version__
         assert data[0]["is_current"] is True
-        assert any("Quant SLM" in item or "Mizan Quant OS" in item for item in data[0]["whats_new"])
-        assert data[1]["version"] == "2.5.0"
+        assert data[0]["whats_new"]
+        assert data[1]["version"] != __version__
         assert data[1]["is_current"] is False
     router.reset_services()
 

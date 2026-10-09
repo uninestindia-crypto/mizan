@@ -61,9 +61,11 @@ from quant_system.server.v2.credentials import (
     with_saved_credentials,
 )
 from quant_system.server.v2.env_import import EnvFile, apply_plan, build_plan
+from quant_system.server.v2.fundamentals_routes import router as fundamentals_router
 from quant_system.server.v2.hardware import detect_hardware_topology, topology_to_dict
 from quant_system.server.v2.jobs import IndexJob
 from quant_system.server.v2.live_routes import router as live_router
+from quant_system.server.v2.market_holidays import router as market_holidays_router
 from quant_system.server.v2.notify import OrdersNotifier
 from quant_system.server.v2.paper_books import PaperBooks
 from quant_system.server.v2.portfolio import paper_books, portfolio_summary
@@ -1144,6 +1146,8 @@ def register_api(app: FastAPI) -> None:
     app.include_router(router)
     app.include_router(copilot_router, prefix="/api/v2")
     app.include_router(live_router, prefix="/api/v2")
+    app.include_router(market_holidays_router, prefix="/api/v2")
+    app.include_router(fundamentals_router, prefix="/api/v2")
     app.include_router(update_router, prefix="/api/v2")
     try:
         from quant_system.shariah.api.v1.router import api_router as shariah_router

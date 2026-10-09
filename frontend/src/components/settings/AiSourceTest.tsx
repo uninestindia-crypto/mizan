@@ -30,19 +30,28 @@ function Outcome({ run }: { run: TestRun }) {
 
 interface TestProps {
   run: TestRun;
-  subject: string;
+  /** What the test is about, beside the button. Left out where the button already sits on that AI's own card. */
+  subject?: string;
   target: string | null;
+  /** A small quiet button instead of the full one, for a card that has its own main action. */
+  quiet?: boolean;
 }
 
 /** One small question to the AI, so a person can see that it works. Never a pop-up: the answer sits here. */
-export function AiSourceTest({ run, subject, target }: TestProps) {
+export function AiSourceTest({ run, subject, target, quiet = false }: TestProps) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Button variant="secondary" disabled={run.isPending} onClick={() => run.mutate(target)}>
+        <Button
+          variant={quiet ? "ghost" : "secondary"}
+          size={quiet ? "sm" : "md"}
+          className={quiet ? "-ml-3" : undefined}
+          disabled={run.isPending}
+          onClick={() => run.mutate(target)}
+        >
           Test this AI
         </Button>
-        <span className="text-[12.5px] text-ink-3">{subject}</span>
+        {subject && <span className="text-[12.5px] text-ink-3">{subject}</span>}
       </div>
       <Outcome run={run} />
     </div>

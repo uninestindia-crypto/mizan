@@ -56,7 +56,7 @@ export const APPS_ANCHOR = "ai-apps-setup";
 
 const APP_ORDER: readonly string[] = ["claude", "codex", "gemini"];
 const KEY_ORDER: readonly string[] = ["anthropic", "openai", "gemini", "groq", "deepseek", "mistral", "openrouter"];
-const APP_NAMES: Record<string, string> = { claude: "Claude Code", codex: "Codex", gemini: "Gemini CLI" };
+const APP_NAMES: Record<string, string> = { claude: "Claude Code", codex: "Codex", gemini: "Gemini" };
 
 /** The plain name of an app in a sentence. */
 export function appName(app: Pick<AiApp, "id" | "name">): string {
@@ -257,9 +257,10 @@ export function groupModels(models: readonly ProviderOption[]): ModelGroups {
 
 // ----------------------------------------------------------------------------------------------- "Set up" jump
 
+/** Each card names the app it is for in data-app-name, the engine's name for it, so a title can be worded freely. */
 function findCard(root: HTMLElement, name: string): HTMLElement | null {
-  const title = Array.from(root.querySelectorAll("span")).find((span) => span.textContent?.trim() === name);
-  return title?.closest<HTMLElement>("div.rounded-xl") ?? null;
+  const cards = Array.from(root.querySelectorAll<HTMLElement>("[data-app-name]"));
+  return cards.find((card) => card.dataset.appName === name) ?? null;
 }
 
 /** Scrolls to the install and sign-in card of one app (or to the whole group) and puts the keyboard there. */

@@ -28,8 +28,39 @@ const HOLDING = {
   value: 1200,
   pnl: 200,
   pnl_pct: 0.2,
+  account_id: 1,
+  account_name: "My account",
+};
+const position = (symbol: string) => ({
+  symbol,
+  name: null,
+  quantity: 10,
+  avg_price: 100,
+  cost: 1000,
+  close: 120,
+  value: 1200,
+  pnl: 200,
+  pnl_pct: 0.2,
+  weight: 0.5,
+  accounts: [{ account_id: 1, account_name: "My account", quantity: 10, value: 1200 }],
+});
+const ONLY_ACCOUNT = {
+  id: 1,
+  name: "My account",
+  owner: "Me",
+  kind: "Demat account",
+  broker: "",
+  holdings: 2,
+  value: 2400,
+  cost: 2000,
+  pnl: 400,
+  pnl_pct: 0.2,
+  weight: 1,
 };
 const PORTFOLIO = {
+  scope: { account: "all", name: "All accounts" },
+  accounts: [ONLY_ACCOUNT],
+  positions: [position("TCS"), position("INFY")],
   holdings: [
     { id: 1, symbol: "TCS", ...HOLDING },
     { id: 2, symbol: "INFY", ...HOLDING },

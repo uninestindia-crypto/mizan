@@ -30,7 +30,7 @@ class FilingIn:
     detail_url: str | None
     period_end: str
     period_label: str
-    filed_on: str
+    filed_on: str | None
     consolidated: bool
     audited: bool | None
     sha256: str

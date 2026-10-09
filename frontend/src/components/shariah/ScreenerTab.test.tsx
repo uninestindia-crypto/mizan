@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../lib/api";
+import { toCompliance } from "../../lib/shariah";
 import type { ShariahCompliance } from "../../lib/types";
 import { renderWithQuery } from "./renderWithQuery";
 import { fullAudit } from "./shariahFixtures";
@@ -57,6 +58,41 @@ describe("ScreenerTab", () => {
     const bank = screen.getByRole("row", { name: /HDFCBANK/ });
     expect(within(bank).getByText("Non-Compliant")).toBeInTheDocument();
     expect(within(bank).getByText("Not verified")).toBeInTheDocument();
+  });
+
+  it("shows a stock that one standard passes and the other fails as Questionable, the word its badge uses", () => {
+    const split = toCompliance({
+      ticker: "WIPRO.NS",
+      symbol: "WIPRO",
+      company_name: "Wipro Limited",
+      aaoifi_status: "COMPLIANT",
+      tasis_status: "NON_COMPLIANT",
+      aaoifi_debt_ratio: 0.1,
+      aaoifi_cash_ratio: 0.1,
+      purification_ratio: 0.002,
+    });
+    show([split]);
+    const line = screen.getByRole("row", { name: /WIPRO/ });
+    expect(within(line).getByText("Questionable")).toBeInTheDocument();
+    expect(within(line).queryByText("Non-Compliant")).toBeNull();
+    expect(within(line).getByText("Passed")).toBeInTheDocument(); // the AAOIFI column still says what AAOIFI said
+    expect(within(line).getByText("Failed")).toBeInTheDocument(); // and the TASIS column what TASIS said
+  });
+
+  it("keeps a stock both standards fail as Non-Compliant, and filters it as such", () => {
+    show([
+      toCompliance({
+        ticker: "HDFCBANK.NS",
+        symbol: "HDFCBANK",
+        company_name: "HDFC Bank Limited",
+        aaoifi_status: "NON_COMPLIANT",
+        tasis_status: "NON_COMPLIANT",
+        aaoifi_debt_ratio: 0.88,
+        aaoifi_cash_ratio: 0.1,
+        purification_ratio: 0.2,
+      }),
+    ]);
+    expect(within(screen.getByRole("row", { name: /HDFCBANK/ })).getByText("Non-Compliant")).toBeInTheDocument();
   });
 
   it("opens one stock's result with one click, then closes it and gives focus back to the same button", async () => {

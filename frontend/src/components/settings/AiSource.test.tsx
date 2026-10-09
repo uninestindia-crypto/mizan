@@ -37,8 +37,8 @@ const BASE: AiStatus = {
   ai_ready: true,
   apps: [
     app("claude", "Claude Code", "CONNECTED"),
-    app("codex", "Codex CLI", "NEEDS_SIGN_IN"),
-    app("gemini", "Gemini CLI", "NOT_INSTALLED"),
+    app("codex", "Codex", "NEEDS_SIGN_IN"),
+    app("gemini", "Gemini", "NOT_INSTALLED"),
   ],
   ai: AUTO,
   providers: keys("openai"),
@@ -173,14 +173,14 @@ describe("which AI to prefer", () => {
     await shown();
     expect(rowOf(/^Claude Code/).getByText("Ready")).toBeInTheDocument();
     expect(rowOf(/^Codex/).getByText("Not signed in")).toBeInTheDocument();
-    expect(rowOf(/^Gemini CLI/).getByText("Not installed")).toBeInTheDocument();
+    expect(rowOf(/^Gemini/).getByText("Not installed")).toBeInTheDocument();
     expect(rowOf(/^Claude Code/).queryByRole("button")).toBeNull();
     const setUp = screen.getAllByRole("button", { name: /^Set up/ });
-    expect(setUp.map((b) => b.getAttribute("aria-label"))).toEqual(["Set up Codex", "Set up Gemini CLI"]);
+    expect(setUp.map((b) => b.getAttribute("aria-label"))).toEqual(["Set up Codex", "Set up Gemini"]);
   });
 
   it("says an app that cannot report its sign-in has not been checked yet", async () => {
-    await shown({ apps: [app("gemini", "Gemini CLI", "UNKNOWN")] });
+    await shown({ apps: [app("gemini", "Gemini", "UNKNOWN")] });
     expect(screen.getByText("Not checked yet. Press Test this AI.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Set up/ })).toBeNull();
   });
@@ -206,8 +206,8 @@ describe("which AI to prefer", () => {
       <>
         <AiSource />
         <div id={APPS_ANCHOR} tabIndex={-1}>
-          <div className="rounded-xl">
-            <span>Codex CLI</span>
+          <div className="rounded-xl" data-app-name="Codex">
+            <h3>Codex</h3>
             <button>Sign in with browser</button>
           </div>
         </div>
@@ -215,6 +215,26 @@ describe("which AI to prefer", () => {
     );
     click(await screen.findByRole("button", { name: "Set up Codex" }));
     expect(screen.getByRole("button", { name: "Sign in with browser" })).toHaveFocus();
+  });
+
+  it("lands on Gemini's card too, now that its name no longer carries the developer's word", async () => {
+    engine();
+    renderApp(
+      <>
+        <AiSource />
+        <div id={APPS_ANCHOR} tabIndex={-1}>
+          <div className="rounded-xl" data-app-name="Codex">
+            <button>Sign in with browser</button>
+          </div>
+          <div className="rounded-xl" data-app-name="Gemini">
+            <h3>Gemini</h3>
+            <button>Install Gemini</button>
+          </div>
+        </div>
+      </>,
+    );
+    click(await screen.findByRole("button", { name: "Set up Gemini" }));
+    expect(screen.getByRole("button", { name: "Install Gemini" })).toHaveFocus();
   });
 });
 
@@ -253,7 +273,7 @@ describe("Test this AI", () => {
   });
 
   it("shows a failed test inline, in the engine's own words, never as an alert", async () => {
-    const message = "Codex CLI is not signed in yet. Open Settings, then AI assistants, and choose Sign in.";
+    const message = "Codex is not signed in yet. Open Settings, then AI assistants, and choose Sign in.";
     await shown({}, { [`POST ${TEST}`]: { ok: false, who: "Codex (sign-in)", message } });
     click(screen.getByRole("button", { name: "Test this AI" }));
     expect(await screen.findByText(`Codex (sign-in): ${message}`)).toBeInTheDocument();
@@ -285,7 +305,7 @@ describe("Test this AI", () => {
   it("looks at what is ready again afterwards, so a chip can change", async () => {
     const { state } = await shown();
     const before = sent("GET", STATUS).length;
-    state.apps = state.apps.map((a) => (a.id === "codex" ? app("codex", "Codex CLI", "CONNECTED") : a));
+    state.apps = state.apps.map((a) => (a.id === "codex" ? app("codex", "Codex", "CONNECTED") : a));
     click(screen.getByRole("button", { name: "Test this AI" }));
     await waitFor(() => expect(rowOf(/^Codex/).getByText("Ready")).toBeInTheDocument());
     expect(sent("GET", STATUS).length).toBeGreaterThan(before);
@@ -335,6 +355,6 @@ describe("keeping up with the apps", () => {
 describe("the words on the card", () => {
   it("uses no developer word", async () => {
     await shown();
-    expect(document.body.textContent).not.toMatch(/\b(API|token|terminal|command|install script|CLI app)\b/i);
+    expect(document.body.textContent).not.toMatch(/\b(API|token|terminal|command|install script|CLI)\b/i);
   });
 });

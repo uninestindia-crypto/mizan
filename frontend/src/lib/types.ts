@@ -157,6 +157,8 @@ export interface ShariahAudit {
   tasis_evaluation: ShariahStandardResult;
   divergence_noted: boolean;
   divergence_explanation?: string | null;
+  /** The engine's own verdict when the result rests on a company filing; empty for the sample or an older response. */
+  overall_status?: string | null;
   /** The next fields are new; an older response lacks them and the panel hides what is missing. */
   data_status?: string | null;
   data_notice?: string | null;
@@ -511,9 +513,61 @@ export interface PortfolioRow {
   weight?: number;
   error?: string;
   vs_nifty?: { holding_value: number; nifty_value: number; compare_on: string } | null;
+  /** The account that holds this purchase. */
+  account_id: number;
+  account_name: string | null;
+}
+
+/** Which account the portfolio answer is for: every account ("all") or one of them. */
+export interface PortfolioScope {
+  account: "all" | number;
+  name: string;
+}
+
+/** One line per account, with its share of everything held. The answer lists every account, even when one is viewed. */
+export interface AccountLine {
+  id: number;
+  name: string;
+  owner: string;
+  kind: string;
+  broker: string;
+  holdings: number;
+  value: number;
+  cost: number;
+  pnl: number;
+  pnl_pct: number | null;
+  weight: number;
+}
+
+/** Where a stock is held: how many shares in which account. */
+export interface PositionPlace {
+  account_id: number;
+  account_name: string | null;
+  quantity: number;
+  value?: number | null;
+}
+
+/** One line per stock across the accounts being viewed. The average price is weighted by shares. */
+export interface PortfolioPosition {
+  symbol: string;
+  name: string | null;
+  quantity: number;
+  avg_price: number;
+  cost: number;
+  accounts: PositionPlace[];
+  close?: number;
+  value?: number;
+  pnl?: number;
+  pnl_pct?: number | null;
+  weight?: number;
+  /** Set instead of the figures above when the stock is not in the market data. */
+  error?: string;
 }
 
 export interface Portfolio {
+  scope: PortfolioScope;
+  accounts: AccountLine[];
+  positions: PortfolioPosition[];
   holdings: PortfolioRow[];
   totals: {
     value: number;
@@ -650,8 +704,6 @@ export interface AgentCli {
   auth_detail: string;
   state: "NOT_INSTALLED" | "NEEDS_SIGN_IN" | "CONNECTED" | "UNKNOWN";
   signin_mode: "browser" | "terminal";
-  install_steps: string[];
-  run_cmd: string;
   job: AgentCliJob | null;
 }
 
@@ -901,4 +953,32 @@ export interface ChangelogEntry {
   fixes: string[];
   improvements: string[];
   unchanged_protections: string[];
+}
+
+/** One account of the person's (their own, a spouse's, a parent's, a HUF's), with how many stocks it holds. */
+export interface Account {
+  id: number;
+  name: string;
+  owner: string;
+  kind: string;
+  broker: string;
+  holdings: number;
+}
+
+export interface AccountList {
+  accounts: Account[];
+  /** The fixed kinds of account the person can choose from. */
+  kinds: string[];
+}
+
+export interface AccountInput {
+  name: string;
+  owner: string;
+  kind: string;
+  broker: string;
+}
+
+export interface AccountDeleted {
+  deleted: boolean;
+  moved: number;
 }

@@ -22,8 +22,6 @@ const FORBIDDEN: { name: string; pattern: RegExp }[] = [
 
 // file (relative to src/) -> { rule name: number of lines allowed }
 const KNOWN_DEBT: Record<string, Record<string, number>> = {
-  // Settings > AI assistants opens terminals and offers a "run your own command" box. Founder to decide its future.
-  "components/AgentCliBridge.tsx": { "open in a terminal": 4, "terminal window": 1, "run a command": 1 },
   // Settings > Orders reminder tells the person to set two settings by name and restart. Needs a form.
   "pages/Settings.tsx": { "an UPPER_CASE setting name": 2 },
 };

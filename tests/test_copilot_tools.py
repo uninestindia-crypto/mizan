@@ -186,6 +186,12 @@ NOT_FOR_PEOPLE = re.compile(
 )
 
 
+def test_the_catalogue_offers_the_filing_results_tool_apart_from_the_sample_one() -> None:
+    by_name = {entry["name"]: entry for entry in CATALOG}
+    assert by_name["filing_fundamentals"]["label"] == "Company results from filings"
+    assert by_name["fundamentals"]["label"] != by_name["filing_fundamentals"]["label"]
+
+
 def test_the_catalogue_gives_each_tool_a_name_a_label_a_help_line_and_a_model_description() -> None:
     assert CATALOG and all(
         set(entry) == {"name", "label", "help", "description"} for entry in CATALOG
@@ -223,6 +229,7 @@ def test_the_instructions_to_the_model_are_not_in_any_help_line(leaked: str) -> 
         "stock_facts",
         "shariah_check",
         "fundamentals",
+        "filing_fundamentals",
         "portfolio_summary",
         "paper_books",
         "trade_costs",

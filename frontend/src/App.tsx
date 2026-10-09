@@ -14,6 +14,7 @@ const Lab = lazy(() => import("./pages/Lab"));
 const LabNew = lazy(() => import("./pages/LabNew"));
 const LabRun = lazy(() => import("./pages/LabRun"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
+const Fundamentals = lazy(() => import("./pages/Fundamentals"));
 const Paper = lazy(() => import("./pages/Paper"));
 const PaperNew = lazy(() => import("./pages/PaperNew"));
 const PaperBook = lazy(() => import("./pages/PaperBook"));
@@ -76,6 +77,7 @@ export function App() {
           <Route path="/lab/new/:templateId" element={<LabNew />} />
           <Route path="/lab/runs/:runId" element={<LabRun />} />
           <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/fundamentals" element={<Fundamentals />} />
           <Route path="/paper" element={<Paper />} />
           <Route path="/paper/new" element={<PaperNew />} />
           <Route path="/paper/:id" element={<PaperBook />} />

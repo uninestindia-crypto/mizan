@@ -52,6 +52,7 @@ export const keys = {
   paperBook: (id: string) => ["paper-book", id] as const,
   secrets: ["secrets"] as const,
   aiTools: ["ai-tools"] as const,
+  agentClis: ["agent-clis"] as const,
 };
 
 export function useStatus() {
@@ -326,6 +327,8 @@ export interface HoldingInput {
   avg_price: string;
   buy_date: string;
   note: string;
+  /** Which account holds it. Left out, a new purchase goes to the first account and an edited one stays where it is. */
+  account_id?: number;
 }
 
 export function useSaveHolding() {
@@ -361,7 +364,7 @@ export function useSecretMutation() {
 
 export function useAgentClis() {
   return useQuery({
-    queryKey: ["agent-clis"],
+    queryKey: keys.agentClis,
     queryFn: () => api<import("./types").AgentCli[]>("/api/v2/cli/status"),
     // Check quickly while an install or sign-in is running, lazily otherwise.
     refetchInterval: (query) => (query.state.data?.some((a) => a.job?.state === "RUNNING") ? 1_500 : 15_000),
@@ -372,21 +375,18 @@ export function useRefreshAgentClis() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => api<import("./types").AgentCli[]>("/api/v2/cli/status?refresh=true"),
-    onSuccess: (data) => qc.setQueryData(["agent-clis"], data),
+    onSuccess: (data) => qc.setQueryData(keys.agentClis, data),
   });
 }
 
+/** Starts an install or a sign-in for one AI app on this computer. The engine runs it in the background. */
 export function useLaunchCli() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { agent_id: string; action?: "run" | "signin" | "install" | "custom"; custom_command?: string }) =>
-      api<{ success: boolean; command?: string; launcher?: string; message: string; job?: import("./types").AgentCliJob }>(
-        "/api/v2/cli/launch",
-        "POST",
-        body,
-      ),
+    mutationFn: (body: { agent_id: string; action: "signin" | "install" }) =>
+      api<{ success: boolean; message: string; job?: import("./types").AgentCliJob }>("/api/v2/cli/launch", "POST", body),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["agent-clis"] });
+      void qc.invalidateQueries({ queryKey: keys.agentClis });
     },
   });
 }
@@ -396,7 +396,7 @@ export function useSendCliCode() {
   return useMutation({
     mutationFn: ({ agentId, text }: { agentId: string; text: string }) =>
       api<{ sent: boolean }>(`/api/v2/cli/jobs/${agentId}/input`, "POST", { text }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["agent-clis"] }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.agentClis }),
   });
 }
 

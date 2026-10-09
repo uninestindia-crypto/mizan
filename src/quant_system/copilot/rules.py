@@ -14,6 +14,7 @@ from typing import Any
 
 from quant_system.copilot.agent import AgentResult, Step
 from quant_system.copilot.guard import is_advice
+from quant_system.copilot.halal_text import FILING_SOURCES, render_proof_block, verdict_of
 from quant_system.copilot.registry import Proposal, ToolRegistry, ToolResult, failure
 
 __all__ = ["AnswerContext", "answer_without_ai", "render_halal", "verdict_word"]
@@ -160,6 +161,8 @@ def render_halal(data: dict[str, Any]) -> str:
     """The screener's own result as short paragraphs and flat lists, so it reads the same in every screen."""
     if not data.get("covered"):
         return str(data["message"])
+    if data.get("verdict_source") in FILING_SOURCES:
+        return render_proof_block(data)
     blocks = [f"**From QuantOS's halal screener: {data['symbol']} ({data.get('company')})**"]
     if not data.get("sector_compliant", True):
         blocks.append(f"**Business activity:** not allowed ({data.get('sector_failure_reason')})")
@@ -266,6 +269,8 @@ def verdict_word(data: dict[str, Any]) -> str:
     """One plain word for a screener result: compliant, not compliant, questionable or not screened."""
     if not data.get("covered"):
         return "not screened"
+    if data.get("verdict_source") in FILING_SOURCES:
+        return verdict_of(data)
     statuses = {str(s["status"]) for s in data["standards"]}
     if not data.get("sector_compliant", True) or "NON_COMPLIANT" in statuses:
         return "not compliant"

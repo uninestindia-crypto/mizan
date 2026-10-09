@@ -116,6 +116,8 @@ class ToolContext:
     paper_books: Callable[[], list[dict[str, Any]]] | None = None
     trade_costs: Callable[[Mapping[str, Any]], dict[str, Any]] | None = None
     position_size: Callable[[Mapping[str, Any]], dict[str, Any]] | None = None
+    # One stock's results from its own filings, as the fundamentals screen shows them. Left out, the tool reads them.
+    fundamentals: Callable[[str], dict[str, Any]] | None = None
 
 
 def _check_value(spec: ToolSpec, param: Param, value: Any) -> str | None:

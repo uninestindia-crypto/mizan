@@ -1,6 +1,6 @@
 # Work record: Shariah mode screens and the proof panel (frontend worker)
 
-STATUS: COMPLETED_UNCOMMITTED (all gates passed; the coordinator stages and commits)  
+STATUS: COMPLETED (released in v3.2.0; remaining work is in agent_context/handoffs/20261009-claude-v3-2-0-release-handoff.md)  
 OWNER: Claude Code (frontend worker, spawned by the coordinator of `20261007-claude-shariah-mode-and-filing-proof.md`)  
 STARTING_REVISION: `e9fea0bca040a6821ab28202b5d748879c06a1b5` (checkout head when this record was written; the work began a few commits earlier on `wip/halal-transparency`)  
 WORKTREE_OR_BRANCH: `/home/user/mizan`, branch `wip/halal-transparency`. No other worktree.

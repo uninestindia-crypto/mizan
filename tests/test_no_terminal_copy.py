@@ -44,7 +44,9 @@ FORBIDDEN = {
 }
 # Words for developers. They are banned in what a person reads, but a model is told to use some of them.
 DEVELOPER_WORDS = {
-    "a developer's word": re.compile(r"\bAPI\b|\bJSON\b|\bschema\b|\bbackend\b|\bendpoint\b", re.I),
+    "a developer's word": re.compile(
+        r"\bAPI\b|\bJSON\b|\bschema\b|\bbackend\b|\bendpoint\b|\bCLI\b", re.I
+    ),
     # lower_case_words_joined_by_underscores inside a sentence: a tool name, a screen key, a field name
     "a name from the code": re.compile(r"(?<![\w.{/-])[a-z][a-z0-9]*(?:_[a-z0-9]+)+(?![\w(}])"),
 }
@@ -150,6 +152,7 @@ def test_no_user_facing_message_uses_a_terminal_a_file_edit_a_code_setting_or_a_
         ("a developer's word", "The schema changed."),
         ("a developer's word", "The backend is down."),
         ("a developer's word", "That endpoint is gone."),
+        ("a developer's word", "Gemini CLI is installed."),
         ("restart", "Restart QuantOS and ask again."),
         ("terminal", "Open a terminal."),
     ],

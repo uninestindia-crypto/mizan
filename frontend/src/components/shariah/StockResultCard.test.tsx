@@ -2,7 +2,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../lib/api";
 import { renderWithQuery } from "./renderWithQuery";
-import { bankAudit, fullAudit, olderAudit } from "./shariahFixtures";
+import { bankAudit, fullAudit, olderAudit, standard } from "./shariahFixtures";
 import { StockResultCard } from "./StockResultCard";
 
 vi.mock("../../lib/api", () => ({ api: vi.fn() }));
@@ -51,6 +51,36 @@ describe("StockResultCard", () => {
     const verdict = await screen.findByRole("group", { name: "Verdict" });
     expect(within(verdict).getByText("Non-Compliant")).toBeInTheDocument();
     expect(within(verdict).getAllByText("Failed")).toHaveLength(2);
+  });
+
+  it("calls a stock Questionable when the two standards disagree, the word its badge uses", async () => {
+    vi.mocked(api).mockResolvedValue(
+      fullAudit({
+        tasis_evaluation: standard("TASIS", { status: "NON_COMPLIANT", is_compliant: false }),
+        divergence_noted: true,
+        divergence_explanation: "The two standards divide by different totals.",
+      }),
+    );
+    show();
+    const verdict = await screen.findByRole("group", { name: "Verdict" });
+    expect(within(verdict).getByText("Questionable")).toBeInTheDocument();
+    expect(within(verdict).queryByText("Non-Compliant")).toBeNull();
+    expect(within(verdict).getByText("Passed")).toBeInTheDocument();
+    expect(within(verdict).getByText("Failed")).toBeInTheDocument();
+  });
+
+  it("shows the engine's own verdict when one standard could not be worked out and the other fails", async () => {
+    vi.mocked(api).mockResolvedValue(
+      fullAudit({
+        aaoifi_evaluation: standard("AAOIFI", { status: "QUESTIONABLE", is_compliant: false }),
+        tasis_evaluation: standard("TASIS", { status: "NON_COMPLIANT", is_compliant: false }),
+        overall_status: "NON_COMPLIANT",
+      }),
+    );
+    show();
+    const verdict = await screen.findByRole("group", { name: "Verdict" });
+    expect(within(verdict).getByText("Non-Compliant")).toBeInTheDocument(); // the overall badge; the standards say Failed
+    expect(within(verdict).getByText("Failed")).toBeInTheDocument();
   });
 
   it("says Not verified when an older response has no data status", async () => {

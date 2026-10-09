@@ -83,7 +83,7 @@ _NODE_STEP = InstallStep(
 SUPPORTED_AGENTS: tuple[AgentCliDef, ...] = (
     AgentCliDef(
         id="antigravity",
-        name="Antigravity CLI",
+        name="Antigravity",
         maker="Google",
         commands=("agy", "antigravity"),
         extra_dirs=(r"%LOCALAPPDATA%\agy\bin",),
@@ -106,7 +106,7 @@ SUPPORTED_AGENTS: tuple[AgentCliDef, ...] = (
     ),
     AgentCliDef(
         id="codex",
-        name="Codex CLI",
+        name="Codex",
         maker="OpenAI",
         commands=("codex",),
         extra_dirs=(r"%APPDATA%\npm",),
@@ -145,11 +145,11 @@ SUPPORTED_AGENTS: tuple[AgentCliDef, ...] = (
     ),
     AgentCliDef(
         id="gemini",
-        name="Gemini CLI",
+        name="Gemini",
         maker="Google",
         commands=("gemini",),
         extra_dirs=(r"%APPDATA%\npm",),
-        install=(InstallStep("Installing Gemini CLI", "npm", "@google/gemini-cli"),),
+        install=(InstallStep("Installing Gemini", "npm", "@google/gemini-cli"),),
         # Gemini CLI asks which sign-in method to use the first time it starts, so it needs a window.
         signin_mode="terminal",
         signin_args=(),
@@ -538,7 +538,7 @@ def start_agent_job(agent_id: str, action: Literal["install", "signin"]) -> dict
     """Start (or join) a background install or sign-in and return its snapshot straight away."""
     agent = _AGENTS.get(agent_id)
     if agent is None:
-        raise ValueError(f"Unknown agent CLI: {agent_id}")
+        raise ValueError(f"Unknown AI app: {agent_id}")
     with _jobs_lock:
         existing = _jobs.get(agent_id)
         if existing is not None and existing.state == "RUNNING":
@@ -611,10 +611,10 @@ def launch_agent_session(
         if not custom_command:
             raise ValueError("custom_command must be provided when action is 'custom'")
         target_cmd = custom_command
-        title = f"Agent CLI - {custom_command[:25]}"
+        title = f"QuantOS - {custom_command[:25]}"
     else:
         if agent_id not in _AGENTS:
-            raise ValueError(f"Unknown agent CLI: {agent_id}")
+            raise ValueError(f"Unknown AI app: {agent_id}")
         agent = _AGENTS[agent_id]
         title = f"QuantOS - {agent.name}"
         target_cmd = agent.run_cmd
