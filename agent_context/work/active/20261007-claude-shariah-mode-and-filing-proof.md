@@ -78,3 +78,9 @@ Their files are uncommitted and are committed by me only after I re-run their ga
 For each helper report: re-run its gates, commit only its own paths, push. Then: full fundamentals snapshot build
 (`scripts/build_fundamentals_snapshot.py`, polite, about an hour), Fundamentals tab on the Portfolio screens,
 `scripts/release_status.py`, and ask the founder before the pull request, merge and release.
+
+UPDATED 2026-10-09 07:20 UTC. The weekly usage limit reset; the chat-history and AI-source screens are committed
+(`297301b69`, `c9a0f9341`). Five helpers were resumed by me at 07:15 UTC, each continuing from the stop point in its own
+record: proof service backend (`afb3ed9`), fundamentals backend (`af9f045`), top bar and Update dialog (`a73b644`),
+Portfolio accounts screens (`af8649e`), AI apps card in plain words (`acafd55`). Their files are still uncommitted and are
+committed by me only after I re-run their gates. Pull request, merge and release still wait for the founder.
