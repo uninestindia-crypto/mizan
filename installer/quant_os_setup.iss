@@ -195,7 +195,6 @@ begin
   end;
 end;
 
-<<<<<<< HEAD
 { Checks if Microsoft Edge WebView2 Runtime is installed via standard registry keys }
 function IsWebView2Installed(): Boolean;
 var
