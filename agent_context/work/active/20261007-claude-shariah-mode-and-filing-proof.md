@@ -84,3 +84,23 @@ UPDATED 2026-10-09 07:20 UTC. The weekly usage limit reset; the chat-history and
 record: proof service backend (`afb3ed9`), fundamentals backend (`af9f045`), top bar and Update dialog (`a73b644`),
 Portfolio accounts screens (`af8649e`), AI apps card in plain words (`acafd55`). Their files are still uncommitted and are
 committed by me only after I re-run their gates. Pull request, merge and release still wait for the founder.
+
+UPDATED 2026-10-09 07:35 UTC. Proof service backend committed and pushed (`878ccae8f`); I re-ran its gates myself: 1,079
+tests passed (`tests/shariah`, Copilot proof, packaging, no-terminal copy), ruff format and lint clean, mypy --platform win32
+clean on 131 files, craft checks clean on the new files, detect-secrets 0 hits. Still running: fundamentals backend,
+top bar and Update dialog, Portfolio accounts, AI apps card.
+
+Open points from the proof helper that need a decision or a small follow-up (not blockers for committing):
+1. A bank or other sector-failed business with no usable figures comes back `NON_COMPLIANT` with data status
+   `NOT_SCREENED`. The frontend badge collapses that pair to "Not screened"; the proof panel shows it correctly.
+   Decide which the badge should say.
+2. When AAOIFI and TASIS disagree the proof says QUESTIONABLE; the older screener tab (`lib/shariah.ts` `overallStatus`)
+   takes the worse of the two. `/screen` follows the proof; list rows cannot. Decide one rule and make both agree.
+3. Market value needs at least about 34 months of prices ending within a year; otherwise the AAOIFI column says it needs
+   price history. The bundled filings are all STALE (newest period Dec 2024), so a refresh from NSE is needed in the app.
+4. The SQL status filter on the older list still filters on the sample's status before the filing's status is applied.
+5. Another helper ran `ruff format src/quant_system` repo-wide by mistake and reformatted the untracked fundamentals
+   files (formatting only). The fundamentals helper has been told to re-read them.
+6. `data/shariah/halal_stocks.db-shm` and `-wal` are SQLite side files; they must not be committed (`.gitignore` is a
+   shared file, so adding them there is for the coordinator, with the founder's say).
+
