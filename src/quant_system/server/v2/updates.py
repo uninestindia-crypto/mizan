@@ -209,6 +209,27 @@ class UpdateChecker:
 
 OFFLINE_CHANGELOG: list[dict[str, Any]] = [
     {
+        "version": "3.2.1",
+        "date": "2026-10-10",
+        "title": "Desktop Studio Startup Fix & Clean WebSockets Packaging",
+        "whats_new": [
+            "Seamless startup reliability: QuantOS Studio now launches cleanly on all Windows environments without background protocol stalls",
+        ],
+        "fixes": [
+            "Fixed QuantOS Studio desktop application startup crash caused by Uvicorn attempting to initialize WebSockets from an incomplete package directory",
+            "Explicitly disabled WebSocket protocol on loopback REST server to eliminate unnecessary background protocol probes",
+            "Bundled complete WebSockets module trees in standalone installer packages",
+        ],
+        "improvements": [],
+        "unchanged_protections": [
+            "Keys stay strictly encrypted in local Windows Credential Manager and are never sent to external servers",
+            "Zero unauthorized live-broker order execution — all autonomous decisions strictly sandboxed and verified",
+            "Halal results come only from deterministic screening rules applied to a company's own figures, never from an AI model",
+            "Company results are facts from filings, not advice, and old data is always labelled",
+            "Decimal-exact financial accounting and statutory NSE transaction cost schedules preserved",
+        ],
+    },
+    {
         "version": "3.2.0",
         "date": "2026-10-09",
         "title": "Shariah results from company filings, fundamentals, several accounts, a clearer top bar and one-click updates",
