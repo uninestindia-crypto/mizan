@@ -93,9 +93,8 @@ def _document(tmp_path: Path) -> dict[str, object]:
         return dict(json.loads(handle.read()))
 
 
-def test_the_default_output_is_the_bundled_snapshot_path_and_is_never_used_here() -> None:
+def test_the_default_output_is_the_bundled_snapshot_path() -> None:
     assert DEFAULT_OUT == REPO / "data" / "fundamentals" / "fundamentals_snapshot.json.gz"
-    assert not DEFAULT_OUT.exists()
 
 
 def test_the_universe_file_is_read_without_its_comment_lines() -> None:

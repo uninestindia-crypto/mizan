@@ -12,6 +12,7 @@ added_files = [
     ('src/quant_system/server/static', 'quant_system/server/static'),
     ('configs', 'configs'),
     ('data/shariah', 'data/shariah'),
+    ('data/fundamentals', 'data/fundamentals'),
     ('data/authorities/nse-all-listed-equities.csv', 'data/authorities'),
 ]
 
