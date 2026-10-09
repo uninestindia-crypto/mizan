@@ -90,6 +90,28 @@ New owned paths (checked: no active record claims them; two records only mention
 - `agent_context/handoffs/20261006-claude-cloud-paper-and-kronos-handoff.md`: correct the line above.
 - Branch `claude/dazzling-brown-yn5qu3` pull request: opened on this instruction, **not merged**.
 
+## Added on founder instruction, 2026-10-06 (third request: "run Kronos biggest and best")
+
+Founder direction, in his words: the first priority is to test and finalise a model with the highest chance of profitability;
+run Kronos's biggest and best model; download it so it can be run locally; and run it on a third party like Kaggle if
+possible. This overrides, knowingly, the one-trial-only rule in `reports/kronos_trial/TRIAL-LEDGER.md` (which itself says
+"any further attempt is ordinal 11, with its own dated declaration"). Merged PR #4 (`0a22d7c9`) first, as asked.
+
+- **GOAL_LINE: G5** (honest evidence about any model). Trial 11 is declared before any forecast exists, deflated against 11,
+  scored once, with the same gate. It is not a search.
+- New owned paths: `reports/kronos_trial11/**` (declaration, README, inputs, package, forecasts, results),
+  `scripts/kronos_trial11.py` (runner), `scripts/score_kronos_trial11.py` (once-only scoring wrapper),
+  `tests/test_kronos_trial11.py`, `agent_context/work/active/20261006-NOTICE-kronos-trial-11-declared.md` (new, additive).
+- Read and run, never edited: `scripts/generate_kronos_forecasts.py`, `scripts/run_kronos_trial.py` (claimed by
+  `20260928-claude-kronos-trial.md`).
+- **Founder decision, 2026-10-06 (after the declaration was committed):** "keep five paths, I'll run it on Kaggle". Five paths is
+  now locked. The founder runs the package on Kaggle; the file comes back as `kronos-forecasts.json`, to be placed at
+  `reports/kronos_trial11/kronos-forecasts.json` and scored with `python scripts/score_kronos_trial11.py`. The CPU run left
+  going here is only a backup (first complete run is scored; any other is discarded unscored). The declaration file is
+  deliberately not edited to say this, because it is frozen and its zip is pinned by a test.
+- **Feasibility checked, not assumed:** no Kaggle credential exists here; `LIGHTNING_API_KEY` is set but empty (length 0);
+  no GPU. So no third-party run can be started from this container. A CPU run here is the fallback only.
+
 ## Decision rationale
 
 - **Separate state.** The laptop flagship's live state is `logs/paper_runs/portfolio_state.json` (untracked). A cloud run
@@ -133,6 +155,14 @@ New owned paths (checked: no active record claims them; two records only mention
 | Workflow run on GitHub, [37415038898](https://github.com/uninestindia-crypto/mizan/actions/runs/37415038898), mode `rehearse-state` | PASS | 45 s, every step green; log read, not inferred. `check` 3 of 3 priced at 10:13 IST; real-secret leak guard refused (exit 14, nothing copied, value masked `***`); `cloud-paper-state-rehearsal` created, checked out, written, committed, pushed; real-session step skipped. |
 | Temporary `push` trigger removed from the workflow | DONE, untested | The shipped file differs from the tested one by that trigger and its fallback mode. `workflow_dispatch` can only be exercised once the file is on the default branch. |
 | `git fetch origin main` | FINDING | `main` advanced (PR #3, `v2.4.0`). No file overlap with this branch. Merged into the branch, not rebased (PROTOCOL section 1). |
+| PR #4 merged (`0a22d7c9`) after all five checks green on one re-run | DONE | The failed check was `tests/shariah/test_m3_stress_challenger.py::test_stress_mixed_concurrency_under_load`, a wall-clock p95 assertion (50.40 ms vs 50 ms) on a shared Windows runner; locally p95 is 8-11 ms. Unrelated to the diff. It passed on its one allowed re-run. The 50 ms threshold stays fragile; no patch made (not this PR's code). |
+| `workflow_dispatch` `check` run on `main` | started | Run 37416149667; result not read at the time of writing. |
+| **Trial 11 (Kronos-base, 5 paths): feasibility** | FINDING | No Kaggle credential, `LIGHTNING_API_KEY` set but **empty**, no GPU. No third-party run can be started from this container. |
+| Trial 11 inputs exported (`scripts/kronos_trial11.py export-inputs`) | PASS | 45 names, 529 dates, 23,805 forecasts; round-trips identically; all 23,805 `last_close` values equal trial 10's recorded ones. |
+| Trial 11 runner, scorer wrapper, 42 tests | PASS | 17 mutations of the two scripts all killed. One test caught a real hole in my own once-only guard (a results file under any other name would not have been refused); fixed with a sentinel. ruff, format, `mypy --platform win32` (303 files), craft clean. |
+| Package zip from a clean folder, no repo | PASS | `selfcheck` passes; a tampered generator is refused. Loader rehearsed on synthetic bars: base + 5 paths forecasts on CPU. |
+| Declaration committed **before any forecast** | DONE | `7a33c62c`, 2026-10-06 10:41 IST. |
+| Trial 11 CPU fallback run | **RUNNING** | Started 10:42 IST here, niced, base 5 paths, output in scratch (`kronos-trial/trial11/`). Measured 694.5 s/date on 4 cores = about 102 h. Checkpointed; lost with the container unless copied. A GPU run supersedes it (first complete run is scored). |
 
 ## Files changed
 

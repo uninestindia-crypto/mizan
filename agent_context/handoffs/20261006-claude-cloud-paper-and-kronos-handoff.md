@@ -47,6 +47,22 @@ Nothing partial.
   been published by another session. Re-run `python scripts/release_status.py` after `git fetch --tags`. No release
   was cut by this work.
 
+## Update, 2026-10-06 later: trial 11 (Kronos-base, five paths) is declared and not yet run
+
+The founder asked for the biggest, best Kronos model and for a download he can run locally or on Kaggle. Declaration
+`reports/kronos_trial11/TRIAL-LEDGER.md` was committed (`7a33c62c`) **before any forecast**. It runs the largest released
+model with five averaged paths, judged against 11 attempts, scored once. **PR #4 is merged.**
+
+- **Download:** `reports/kronos_trial11/kronos-trial11-package.zip` (inputs, runner, declared generator, README, ledger).
+  Follow `reports/kronos_trial11/README.md`, Option A (Kaggle, private dataset, GPU on, internet on). One file comes back:
+  `kronos-forecasts.json`.
+- **Why it has not run:** no GPU, no Kaggle credential and an empty `LIGHTNING_API_KEY` in the build container. A CPU
+  fallback was started on 2026-10-06 10:42 IST (about 102 hours); it is scratch-only and is superseded by any GPU run.
+- **Scoring, once the file exists:** put it at `reports/kronos_trial11/kronos-forecasts.json` and run
+  `python scripts/score_kronos_trial11.py`. It refuses a second scoring under any file name. **The first complete run is
+  scored; any other is discarded unscored.** Never run with fewer paths or a smaller model.
+- **Honest expectation:** it fails. Trial 10 lost to cash; a bigger model has to clear a 0.95 deflated Sharpe from 0.013.
+
 ## Decisions waiting for the founder
 
 1. **Whether to start the cloud book at all.** `20260924-NOTICE-paper-books-system-test-running.md` forbids another
