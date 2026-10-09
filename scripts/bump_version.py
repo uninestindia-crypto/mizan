@@ -313,6 +313,56 @@ def bump(root: Path, new_version: str) -> list[str]:
             if new_raw != raw:
                 p.write_bytes(new_raw)
                 changed.append(license_rel)
+    # 8. CHANGELOG.md
+    rel = "CHANGELOG.md"
+    p = root / rel
+    if p.is_file():
+        raw = p.read_bytes()
+        text = raw.decode("utf-8")
+        new_text = re.sub(
+            r"(##\s+\[)" + VERSION_RE + r"(\])",
+            rf"\g<1>{new_version}\g<2>",
+            text,
+            count=1,
+        )
+        new_raw = new_text.encode("utf-8")
+        if new_raw != raw:
+            p.write_bytes(new_raw)
+            changed.append(rel)
+
+    # 9. src/quant_system/server/v2/updates.py
+    rel = "src/quant_system/server/v2/updates.py"
+    p = root / rel
+    if p.is_file():
+        raw = p.read_bytes()
+        text = raw.decode("utf-8")
+        new_text = re.sub(
+            r'("version":\s*")' + VERSION_RE + r'(")',
+            rf"\g<1>{new_version}\g<2>",
+            text,
+            count=1,
+        )
+        new_raw = new_text.encode("utf-8")
+        if new_raw != raw:
+            p.write_bytes(new_raw)
+            changed.append(rel)
+
+    # 10. frontend/src/pages/Settings.tsx
+    rel = "frontend/src/pages/Settings.tsx"
+    p = root / rel
+    if p.is_file():
+        raw = p.read_bytes()
+        text = raw.decode("utf-8")
+        new_text = re.sub(
+            r'(version:\s*")' + VERSION_RE + r'(")',
+            rf"\g<1>{new_version}\g<2>",
+            text,
+            count=1,
+        )
+        new_raw = new_text.encode("utf-8")
+        if new_raw != raw:
+            p.write_bytes(new_raw)
+            changed.append(rel)
 
     return changed
 
