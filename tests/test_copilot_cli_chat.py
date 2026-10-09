@@ -227,8 +227,8 @@ def test_the_real_runner_gives_the_program_only_the_environment_it_is_handed() -
 def test_the_real_runner_works_in_an_empty_folder_not_the_project() -> None:
     code = "import os; print(os.getcwd()); print(len(os.listdir('.')))"
     result = run_cli([sys.executable, "-c", code], "", 30.0, {})
-    lines = result.out.split()
-    assert Path(lines[0]).resolve() != Path.cwd().resolve() and lines[1] == "0"
+    lines = result.out.splitlines()
+    assert Path(lines[0].strip()).resolve() != Path.cwd().resolve() and lines[1].strip() == "0"
 
 
 def test_the_real_runner_stops_a_program_that_never_finishes() -> None:

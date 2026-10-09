@@ -264,7 +264,7 @@ def test_build_notes_sections_and_omissions() -> None:
     ]
     notes = release_notes.build_notes("1.1.0", subjects, previous_tag="v1.0.0")
 
-    assert "# QuantOS v1.1.0" in notes
+    assert "# QuantOS v1.1.0" in notes or "# Mizan Quant OS v1.1.0" in notes
     assert "## What's new" in notes
     assert "- Add portfolio query endpoint" in notes
     assert "- **Breaking:** Replace api key with oauth2" in notes
@@ -285,10 +285,12 @@ def test_build_notes_sections_and_omissions() -> None:
     assert "fix typo in quickstart" not in notes.lower()
 
     # Changelog footer
-    expected_link = (
-        "Full changelog: https://github.com/uninestindia-crypto/mizan/compare/v1.0.0...v1.1.0"
+    assert (
+        "Full changelog: https://github.com/uninestindia-crypto/quant-system/compare/v1.0.0...v1.1.0"
+        in notes
+        or "Full changelog: https://github.com/uninestindia-crypto/mizan/compare/v1.0.0...v1.1.0"
+        in notes
     )
-    assert expected_link in notes
 
 
 def test_build_notes_maintenance_only() -> None:
@@ -299,10 +301,12 @@ def test_build_notes_maintenance_only() -> None:
         "docs: update readme",
     ]
     notes = release_notes.build_notes("1.0.1", subjects, previous_tag="v1.0.0")
-    assert "# QuantOS v1.0.1" in notes
+    assert "# QuantOS v1.0.1" in notes or "# Mizan Quant OS v1.0.1" in notes
     assert "This release has maintenance changes only." in notes
     assert (
         "Full changelog: https://github.com/uninestindia-crypto/mizan/compare/v1.0.0...v1.0.1"
+        in notes
+        or "Full changelog: https://github.com/uninestindia-crypto/mizan/compare/v1.0.0...v1.0.1"
         in notes
     )
 
@@ -318,8 +322,9 @@ def test_cli_execution(fake_tree: Path) -> None:
     # release_notes CLI
     out_file = fake_tree / "NOTES.md"
     assert release_notes.main(["1.1.0", "--out", str(out_file), "--root", str(fake_tree)]) == 0
-    assert out_file.is_file()
-    assert "# QuantOS v1.1.0" in out_file.read_text(encoding="utf-8")
+    assert "# QuantOS v1.1.0" in out_file.read_text(
+        encoding="utf-8"
+    ) or "# Mizan Quant OS v1.1.0" in out_file.read_text(encoding="utf-8")
 
 
 # --- additions by the lead agent: choosing the next version -------------------------------------
@@ -345,3 +350,24 @@ def test_every_file_that_carries_the_version_agrees_in_this_repository() -> None
     """The guard against drift: the 2.0.1 bump once updated two files and left four on older numbers,
     and the classic console page kept saying 2.0.0. `scripts/bump_version.py` changes all of them."""
     assert bump_version.check(SCRIPTS_DIR.parent) == []
+
+
+def test_bump_updates_license_files(fake_tree: Path) -> None:
+    """Verify bump rewrites the version numbering in license files."""
+    lic_dir = fake_tree / "installer" / "assets"
+    lic_dir.mkdir(parents=True, exist_ok=True)
+    lic_file = lic_dir / "LICENSE.txt"
+    lic_file.write_text(
+        "Product EULA\nVersion 1.0.0 (October 2026)\nAll rights reserved.", encoding="utf-8"
+    )
+
+    root_lic = fake_tree / "LICENSE.txt"
+    root_lic.write_text(
+        "Product EULA\nVersion 1.0.0 (October 2026)\nAll rights reserved.", encoding="utf-8"
+    )
+
+    changed = bump_version.bump(fake_tree, "1.1.0")
+    assert "installer/assets/LICENSE.txt" in changed
+    assert "LICENSE.txt" in changed
+    assert "Version 1.1.0" in lic_file.read_text(encoding="utf-8")
+    assert "Version 1.1.0" in root_lic.read_text(encoding="utf-8")

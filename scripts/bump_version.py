@@ -74,6 +74,46 @@ def read_versions(root: Path) -> dict[str, str | None]:
         if m:
             results["uv.lock"] = m.group(1)
 
+    # 7. installer/assets/LICENSE.txt: Version X.Y.Z
+    p = root / "installer/assets/LICENSE.txt"
+    if p.is_file():
+        text = p.read_bytes().decode("utf-8")
+        m = re.search(r"(?i)Version\s+(" + VERSION_RE + r")", text)
+        if m:
+            results["installer/assets/LICENSE.txt"] = m.group(1)
+
+    # 8. LICENSE.txt: Version X.Y.Z
+    p = root / "LICENSE.txt"
+    if p.is_file():
+        text = p.read_bytes().decode("utf-8")
+        m = re.search(r"(?i)Version\s+(" + VERSION_RE + r")", text)
+        if m:
+            results["LICENSE.txt"] = m.group(1)
+
+    # 9. CHANGELOG.md: first ## [X.Y.Z] entry
+    p = root / "CHANGELOG.md"
+    if p.is_file():
+        text = p.read_bytes().decode("utf-8")
+        m = re.search(r"##\s+\[(" + VERSION_RE + r")\]", text)
+        if m:
+            results["CHANGELOG.md"] = m.group(1)
+
+    # 10. src/quant_system/server/v2/updates.py: first "version": "X.Y.Z"
+    p = root / "src/quant_system/server/v2/updates.py"
+    if p.is_file():
+        text = p.read_bytes().decode("utf-8")
+        m = re.search(r'"version":\s*"(' + VERSION_RE + r')"', text)
+        if m:
+            results["src/quant_system/server/v2/updates.py"] = m.group(1)
+
+    # 11. frontend/src/pages/Settings.tsx: first version: "X.Y.Z"
+    p = root / "frontend/src/pages/Settings.tsx"
+    if p.is_file():
+        text = p.read_bytes().decode("utf-8")
+        m = re.search(r'version:\s*"(' + VERSION_RE + r')"', text)
+        if m:
+            results["frontend/src/pages/Settings.tsx"] = m.group(1)
+
     return results
 
 
@@ -251,6 +291,73 @@ def bump(root: Path, new_version: str) -> list[str]:
         )
         new_text = re.sub(
             uv_pattern, rf"\g<1>{new_version}\g<2>", text, count=1, flags=re.MULTILINE
+        )
+        new_raw = new_text.encode("utf-8")
+        if new_raw != raw:
+            p.write_bytes(new_raw)
+            changed.append(rel)
+
+    # 7. License files: installer/assets/LICENSE.txt and LICENSE.txt
+    for license_rel in ("installer/assets/LICENSE.txt", "LICENSE.txt"):
+        p = root / license_rel
+        if p.is_file():
+            raw = p.read_bytes()
+            text = raw.decode("utf-8")
+            new_text = re.sub(
+                r"(?i)(Version\s+)" + VERSION_RE,
+                rf"\g<1>{new_version}",
+                text,
+                count=1,
+            )
+            new_raw = new_text.encode("utf-8")
+            if new_raw != raw:
+                p.write_bytes(new_raw)
+                changed.append(license_rel)
+    # 8. CHANGELOG.md
+    rel = "CHANGELOG.md"
+    p = root / rel
+    if p.is_file():
+        raw = p.read_bytes()
+        text = raw.decode("utf-8")
+        new_text = re.sub(
+            r"(##\s+\[)" + VERSION_RE + r"(\])",
+            rf"\g<1>{new_version}\g<2>",
+            text,
+            count=1,
+        )
+        new_raw = new_text.encode("utf-8")
+        if new_raw != raw:
+            p.write_bytes(new_raw)
+            changed.append(rel)
+
+    # 9. src/quant_system/server/v2/updates.py
+    rel = "src/quant_system/server/v2/updates.py"
+    p = root / rel
+    if p.is_file():
+        raw = p.read_bytes()
+        text = raw.decode("utf-8")
+        new_text = re.sub(
+            r'("version":\s*")' + VERSION_RE + r'(")',
+            rf"\g<1>{new_version}\g<2>",
+            text,
+            count=1,
+        )
+        new_raw = new_text.encode("utf-8")
+        if new_raw != raw:
+            p.write_bytes(new_raw)
+            changed.append(rel)
+
+    # 10. frontend/src/pages/Settings.tsx
+    rel = "frontend/src/pages/Settings.tsx"
+    p = root / rel
+    if p.is_file():
+        raw = p.read_bytes()
+        text = raw.decode("utf-8")
+        new_text = re.sub(
+            r'(version:\s*")' + VERSION_RE + r'(")',
+            rf"\g<1>{new_version}\g<2>",
+            text,
+            count=1,
         )
         new_raw = new_text.encode("utf-8")
         if new_raw != raw:

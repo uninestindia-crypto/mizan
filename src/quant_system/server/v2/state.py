@@ -109,6 +109,7 @@ class Settings(BaseModel):
     auto_update_paper_books: bool = True
     disclaimer_accepted_at: str | None = None
     shariah_mode: bool = False
+    ai_accelerator: Literal["auto", "npu", "gpu", "cpu"] = "auto"
     # Which AI answers the Copilot. The AI app already signed in on this computer comes first; a saved key backs it up.
     ai_source: Literal["cli", "api"] = "cli"
     ai_cli: Literal["claude", "codex", "gemini"] | None = None

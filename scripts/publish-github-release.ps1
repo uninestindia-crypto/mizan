@@ -194,8 +194,9 @@ try {
     Write-Host "`n[STEP 6] Collecting release distribution assets..." -ForegroundColor Yellow
     $distDir = Join-Path $projectRoot "dist"
     $installerCandidates = @(
+        (Join-Path $distDir "MizanQuantOS_v$($newVersion)_Setup.exe"),
         (Join-Path $distDir "QuantOS_v$($newVersion)_Setup.exe"),
-        (Get-ChildItem -Path $distDir -Filter "QuantOS_v*_Setup.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName)
+        (Get-ChildItem -Path $distDir -Filter "*_Setup.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName)
     ) | Where-Object { $_ -and (Test-Path $_) }
 
     $installerExe = $installerCandidates | Select-Object -First 1

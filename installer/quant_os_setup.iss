@@ -21,8 +21,8 @@
   #error "Inno Setup 6.7 or newer is required (windows11 wizard style, dark mode)."
 #endif
 
-#define MyAppName "QuantOS"
-#define MyAppPublisher "QuantOS Quantitative Technologies"
+#define MyAppName "Mizan Quant OS"
+#define MyAppPublisher "Mizan Quant OS Quantitative Technologies"
 #define MyAppURL "https://github.com/uninestindia-crypto/mizan"
 #define MyAppExeName "quantos-studio.exe"
 
@@ -51,6 +51,7 @@ AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 AppCopyright=Copyright (C) {#MyAppPublisher}
+LicenseFile=assets\LICENSE.txt
 
 VersionInfoVersion={#MyAppNumericVersion}
 VersionInfoProductVersion={#MyAppNumericVersion}
@@ -66,6 +67,7 @@ PrivilegesRequired=lowest
 DefaultDirName={code:DefaultInstallDir}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
+DisableDirPage=no
 UsePreviousAppDir=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -86,7 +88,7 @@ SetupLogging=yes
 
 ; Output
 OutputDir=..\dist
-OutputBaseFilename=QuantOS_v{#MyAppVersion}_Setup
+OutputBaseFilename=MizanQuantOS_v{#MyAppVersion}_Setup
 Compression=lzma2/ultra64
 SolidCompression=yes
 
@@ -99,6 +101,10 @@ SignedUninstaller=yes
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+[Messages]
+SelectDirLabel3=Select the drive and folder where Mizan Quant OS, its research databases, and AI model data will be installed:
+SelectDirBrowseLabel=To continue, click Next. To choose a different drive or folder, click Browse:
+
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
@@ -110,9 +116,11 @@ Type: files; Name: "{autodesktop}\QuantOS Studio.lnk"
 Type: files; Name: "{%USERPROFILE}\Desktop\QuantOS Studio.lnk"
 
 [Files]
-Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
+Source: "assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
+Source: "..\configs\*"; DestDir: "{app}\configs"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 Source: "..\data\shariah\*"; DestDir: "{app}\data\shariah"; Flags: ignoreversion onlyifdoesntexist recursesubdirs createallsubdirs
+Source: "..\data\evidence\models\*"; DestDir: "{app}\data\evidence\models"; Flags: ignoreversion onlyifdoesntexist recursesubdirs createallsubdirs
 #ifdef WebView2Setup
 ; Microsoft's own small installer for the component QuantOS draws its window with. It is copied and run only on a
 ; computer that does not have the component yet (a brand-new laptop that has not run Windows Update).
@@ -144,6 +152,11 @@ Type: filesandordirs; Name: "{app}\tmp"
 const
   DRIVE_FIXED = 3;
   MinFreeBytes = 2147483648; { 2 GB: room for market-data caches to grow }
+  WEBVIEW2_GUID = '{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
+  WEBVIEW2_BOOTSTRAPPER_URL = 'https://go.microsoft.com/fwlink/p/?LinkId=2124703';
+
+var
+  DownloadPage: TDownloadWizardPage;
 
 function GetDriveType(lpRootPathName: String): Cardinal;
   external 'GetDriveTypeW@kernel32.dll stdcall';
@@ -182,22 +195,96 @@ begin
   end;
 end;
 
-const
-  WebView2Key = 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
-
-function WebView2VersionIn(const Root: Integer; const Key: String): Boolean;
+{ Checks if Microsoft Edge WebView2 Runtime is installed via standard registry keys }
+function IsWebView2Installed(): Boolean;
 var
   Version: String;
 begin
-  Result := RegQueryStringValue(Root, Key, 'pv', Version) and (Version <> '') and (Version <> '0.0.0.0');
+  Result := False;
+  if RegQueryStringValue(HKLM64, 'SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\' + WEBVIEW2_GUID, 'pv', Version) or
+     RegQueryStringValue(HKLM32, 'SOFTWARE\Microsoft\EdgeUpdate\Clients\' + WEBVIEW2_GUID, 'pv', Version) or
+     RegQueryStringValue(HKCU, 'Software\Microsoft\EdgeUpdate\Clients\' + WEBVIEW2_GUID, 'pv', Version) then
+  begin
+    if (Trim(Version) <> '') and (Trim(Version) <> '0.0.0.0') then
+      Result := True;
+  end;
 end;
 
-{ Microsoft registers the installed WebView2 runtime under this key: for everyone on the machine (32-bit view on a
-  64-bit Windows) or for the current user. }
+procedure InitializeWizard;
+begin
+  DownloadPage := CreateDownloadPage(SetupMessage(msgWizardPreparing), SetupMessage(msgPreparingDesc), nil);
+  DownloadPage.ShowBaseNameInsteadOfUrl := True;
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+var
+  ResultCode: Integer;
+  BootstrapperExe: String;
+begin
+  Result := True;
+  if CurPageID = wpReady then
+  begin
+    if not IsWebView2Installed() then
+    begin
+      Log('WebView2 Runtime not found. Attempting to download Evergreen Bootstrapper.');
+      DownloadPage.Clear;
+      DownloadPage.Add(WEBVIEW2_BOOTSTRAPPER_URL, 'MicrosoftEdgeWebview2Setup.exe', '');
+      DownloadPage.Show;
+      try
+        try
+          DownloadPage.Download;
+          BootstrapperExe := ExpandConstant('{tmp}\MicrosoftEdgeWebview2Setup.exe');
+          if FileExists(BootstrapperExe) then
+          begin
+            Log('Executing WebView2 silent installer: ' + BootstrapperExe);
+            Exec(BootstrapperExe, '/silent /install', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+            Log('WebView2 installation completed with code: ' + IntToStr(ResultCode));
+          end;
+        except
+          if DownloadPage.AbortedByUser then
+            Log('WebView2 download was cancelled by user.')
+          else
+            Log('WebView2 download skipped or machine is offline: ' + GetExceptionMessage);
+        end;
+      finally
+        DownloadPage.Hide;
+      end;
+    end
+    else
+      Log('WebView2 Runtime verified present on system.');
+  end;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+  BootstrapperExe: String;
+begin
+  Result := '';
+  Exec('taskkill.exe', '/F /T /IM quantos-studio.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /T /IM quantos.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(500);
+
+  if WizardSilent and (not IsWebView2Installed()) then
+  begin
+    Log('Silent install: WebView2 Runtime missing. Attempting silent download.');
+    try
+      DownloadTemporaryFile(WEBVIEW2_BOOTSTRAPPER_URL, 'MicrosoftEdgeWebview2Setup.exe', '', nil);
+      BootstrapperExe := ExpandConstant('{tmp}\MicrosoftEdgeWebview2Setup.exe');
+      if FileExists(BootstrapperExe) then
+      begin
+        Exec(BootstrapperExe, '/silent /install', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+        Log('Silent WebView2 install completed with code: ' + IntToStr(ResultCode));
+      end;
+    except
+      Log('Silent WebView2 install skipped or offline: ' + GetExceptionMessage);
+    end;
+  end;
+end;
+
 function WebView2Missing: Boolean;
 begin
-  Result := not (WebView2VersionIn(HKLM32, WebView2Key) or WebView2VersionIn(HKLM64, WebView2Key) or
-                 WebView2VersionIn(HKCU, WebView2Key));
+  Result := not IsWebView2Installed();
 end;
 
 { True when QuantOS started this installer to update itself (it passes /RELAUNCH=1): open QuantOS again afterwards. }

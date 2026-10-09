@@ -27,6 +27,7 @@ import { APPS_ANCHOR } from "../lib/aiSource";
 import { DataFolderPicker } from "../components/DataFolderPicker";
 import { EnvImport } from "../components/EnvImport";
 import { UpdateNowButton } from "../components/update/UpdateNowButton";
+import { HardwareAcceleratorCard } from "../components/HardwareAcceleratorCard";
 import { Badge, Button, Callout, Card, CardHeader, cx, Field, Input, PageHeader, ProgressBar, Segmented, Skeleton, Switch } from "../components/ui";
 import { errorMessage } from "../lib/api";
 import { MONEY_LIMITS, moneyProblems } from "../lib/rules";
@@ -414,16 +415,17 @@ function Accounts() {
 
   const getSecret = (name: string) => allSecrets.find((s) => s.name === name);
 
-  const handleTest = (provider: string, creds: Record<string, string>) => {
-    setTestResults((prev) => ({ ...prev, [provider]: { testing: true } }));
+  const handleTest = (provider: string, creds: Record<string, string>, resultKey?: string) => {
+    const key = resultKey ?? provider;
+    setTestResults((prev) => ({ ...prev, [key]: { testing: true } }));
     testMutation.mutate(
       { provider, credentials: creds },
       {
         onSuccess: (res) => {
-          setTestResults((prev) => ({ ...prev, [provider]: { testing: false, valid: res.valid, message: res.message } }));
+          setTestResults((prev) => ({ ...prev, [key]: { testing: false, valid: res.valid, message: res.message } }));
         },
         onError: (err) => {
-          setTestResults((prev) => ({ ...prev, [provider]: { testing: false, valid: false, message: errorMessage(err) } }));
+          setTestResults((prev) => ({ ...prev, [key]: { testing: false, valid: false, message: errorMessage(err) } }));
         },
       }
     );
@@ -661,7 +663,7 @@ function Accounts() {
                 variant="secondary"
                 disabled={!(drafts["UPSTOX_ANALYTICS_TOKEN"] || upstoxAnalytics?.active || upstoxAnalytics?.stored)}
                 loading={testResults["upstox_analytics"]?.testing}
-                onClick={() => handleTest("upstox", { UPSTOX_ANALYTICS_TOKEN: drafts["UPSTOX_ANALYTICS_TOKEN"] || "" })}
+                onClick={() => handleTest("upstox", { UPSTOX_ANALYTICS_TOKEN: drafts["UPSTOX_ANALYTICS_TOKEN"] || "" }, "upstox_analytics")}
               >
                 Test Connection
               </Button>
@@ -1042,12 +1044,13 @@ function Accounts() {
 
 function AiAssistants() {
   return (
-    <>
+    <div className="space-y-6">
+      <HardwareAcceleratorCard />
       <AiSource />
       <div id={APPS_ANCHOR} tabIndex={-1} className="scroll-mt-4 outline-none">
         <AgentCliBridge />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -1108,11 +1111,11 @@ function About() {
   return (
     <>
       <Card>
-        <CardHeader title="QuantOS" subtitle={`Version ${status.data?.version ?? ""}`} />
+        <CardHeader title="Mizan Quant OS" subtitle={`Version ${status.data?.version ?? ""}`} />
         <UpdateLine />
         <p className="text-sm leading-relaxed text-ink-2">
-          QuantOS is a research and practice tool for testing trading and investing ideas on real NSE data with exact costs. It is not investment advice,
-          it is not registered with SEBI as an investment adviser or research analyst, and it does not place orders with any broker. Past results,
+          Mizan Quant OS is an institutional-grade research, algorithmic backtesting, and Shariah wealth engineering platform for testing trading and investing ideas on real NSE data with exact statutory costs. It is not investment advice,
+          it is not registered with SEBI as an investment adviser or research analyst, and it does not place live orders with any broker without explicit governed oversight. Past results,
           including backtests and paper trading, do not guarantee future returns.
         </p>
       </Card>
@@ -1139,10 +1142,38 @@ function ChangelogCard() {
 
   const fallbackEntries: ChangelogEntry[] = [
     {
-        version: "2.5.0",
-        date: "2026-10-07",
-        title: "Copilot Assistant, Independent Second Opinions, Your Own Agents & Live Prices",
-        is_current: true,
+      version: "3.1.0",
+      date: "2026-10-08",
+      title: "Mizan Quant OS: Quant SLM Engine, Microsoft Qlib Multi-Factor Architecture & Factory-New Installer",
+      is_current: true,
+      whats_new: [
+        "Mizan Quant OS brand unification: combined institutional quantitative trading, factor research, and Mizan Shariah wealth compliance in one unified operating system",
+        "Quant SLM: local Small Language Model for ultra-fast, accurate market intelligence, combining deep multi-factor alpha signals, technical indicators, and embedding-gemma-2 / XRIV features",
+        "Microsoft Qlib integration: high-performance quantitative alpha factor library, multi-factor models, and automated upstream synchronization pipeline",
+        "Factory-new laptop installer: standalone, drive-isolated Inno Setup distribution (MizanQuantOS_v3.0.0_Setup.exe) with bundled runtime and zero C-drive leakage",
+        "Upstox live market feeds: low-latency price feeds, quote streams, and portfolio synchronization",
+      ],
+      fixes: [
+        "Enforced strict drive-isolated local execution with zero C: drive path leakage",
+        "Corporate actions provider caching with automatic historical symbol alias mapping",
+        "Fixed walk-forward validation matrix bounds and purged look-ahead data leakage",
+      ],
+      improvements: [
+        "Institutional multi-factor backtesting performance and real-time risk governor checks",
+        "Comprehensive packaging with cryptographic Software Bill of Materials (SBOM) and SHA-256 verification manifests",
+      ],
+      unchanged_protections: [
+        "Keys stay strictly encrypted in local Windows Credential Manager and are never sent to external servers",
+        "Zero unauthorized live-broker order execution — all autonomous decisions strictly sandboxed and verified",
+        "Halal screening rules remain determined by deterministic algorithmic criteria (DJIM/AAOIFI), never unverified AI hallucination",
+        "Decimal-exact financial accounting and statutory NSE transaction cost schedules preserved",
+      ],
+    },
+    {
+      version: "2.5.0",
+      date: "2026-10-07",
+      title: "Copilot Assistant, Independent Second Opinions, Your Own Agents & Live Prices",
+      is_current: false,
         whats_new: [
             "Copilot: ask a question from any screen with the Copilot button at the top (or Ctrl+J). It works with no AI key, answering from QuantOS's own data, and takes open-ended questions once you add an AI key in Settings. It can suggest a screen to open and can never place an order",
             "Second opinions: have several AI models read the same facts about a stock, each on its own, and see where they agree, where they differ and why. Agreement between AI models is not evidence that a stock will do well",

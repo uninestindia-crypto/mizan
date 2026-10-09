@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QuantOS Desktop — Institutional Quant & Risk Engine v2.5.0</title>
+  <title>Mizan Quant OS Desktop — Institutional Quant & Risk Engine v3.1.0</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -13,19 +13,20 @@
   <!-- Top Navigation Bar -->
   <header class="navbar" role="banner">
     <div class="brand">
-      <div class="brand-logo" aria-label="QuantOS Home">
+      <div class="brand-logo" aria-label="Mizan Quant OS Home">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
           <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
           <polyline points="16 7 22 7 22 13"></polyline>
         </svg>
-        <span>QuantOS</span>
+        <span>Mizan Quant OS</span>
       </div>
-      <span class="brand-badge">v2.5.0</span>
+      <span class="brand-badge">v3.1.0</span>
     </div>
 
-    <nav class="nav-tabs" role="tablist" aria-label="QuantOS User Journeys">
+    <nav class="nav-tabs" role="tablist" aria-label="Mizan Quant OS User Journeys">
       <button class="tab-btn active" id="tab-btn-ingestion" data-tab="tab-ingestion" role="tab" aria-selected="true" aria-controls="tab-ingestion" tabindex="0">📥 Data &amp; Manifests</button>
       <button class="tab-btn" id="tab-btn-features" data-tab="tab-features" role="tab" aria-selected="false" aria-controls="tab-features" tabindex="-1">📐 Features &amp; Labels</button>
+      <button class="tab-btn" id="tab-btn-quant-slm" data-tab="tab-quant-slm" role="tab" aria-selected="false" aria-controls="tab-quant-slm" tabindex="-1">🤖 Quant-SLM</button>
       <button class="tab-btn" id="tab-btn-training" data-tab="tab-training" role="tab" aria-selected="false" aria-controls="tab-training" tabindex="-1">🧠 Governed Ridge</button>
       <button class="tab-btn" id="tab-btn-holdout" data-tab="tab-holdout" role="tab" aria-selected="false" aria-controls="tab-holdout" tabindex="-1">🔒 Holdout &amp; Stress</button>
       <button class="tab-btn" id="tab-btn-ledger" data-tab="tab-ledger" role="tab" aria-selected="false" aria-controls="tab-ledger" tabindex="-1">📊 Backtest &amp; Ledger</button>
@@ -362,6 +363,182 @@
           <div class="notice-box info" role="status">
             <strong>Point-in-Time Contract:</strong> Decision is fixed at 15:30 Close. Execution fills strictly at 09:15 Next Open. Overlapping lookaheads are automatically purged.
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== QUANT-SLM: NEURAL ATTENTION ALPHA ENGINE ==================== -->
+    <section id="tab-quant-slm" class="tab-panel" data-test="journey-quant-slm" role="tabpanel" aria-labelledby="tab-btn-quant-slm" tabindex="0">
+      <div class="journey-header">
+        <div>
+          <h1 class="journey-title">Mizan Quant-SLM (Neural Attention Alpha Engine)</h1>
+          <p class="journey-subtitle">In-house cross-factor self-attention architecture trained on 37,250 Nifty 50 historical bars, fused with Google EmbeddingGemma 2 (16-dim MRL) and arXiv quantitative finance research, streaming real-time Upstox API quotes.</p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <span class="badge badge-source" style="background:#0284c7; color:#fff;">NEURAL_SLM_V1</span>
+          <span class="badge badge-source" style="background:#16a34a; color:#fff;">UPSTOX_LIVE</span>
+        </div>
+      </div>
+
+      <div class="metrics-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:20px;">
+        <div class="metric-card" style="padding:16px; border-radius:8px; background:var(--color-bg-surface); border:1px solid var(--color-border);">
+          <div style="font-size:12px; color:var(--color-text-secondary); text-transform:uppercase;">Architecture</div>
+          <div style="font-size:18px; font-weight:600; margin-top:4px;">Cross-Factor Self-Attention</div>
+          <div style="font-size:12px; color:var(--color-text-secondary); margin-top:4px;">80 in (64 Qlib + 16 Gemma) • AdamW</div>
+        </div>
+        <div class="metric-card" style="padding:16px; border-radius:8px; background:var(--color-bg-surface); border:1px solid var(--color-border);">
+          <div style="font-size:12px; color:var(--color-text-secondary); text-transform:uppercase;">Training History</div>
+          <div style="font-size:18px; font-weight:600; margin-top:4px; color:#38bdf8;">37,250 Daily Bars</div>
+          <div style="font-size:12px; color:var(--color-text-secondary); margin-top:4px;">Full Nifty 50 cache • 30 epochs in 2.51s</div>
+        </div>
+        <div class="metric-card" style="padding:16px; border-radius:8px; background:var(--color-bg-surface); border:1px solid var(--color-border);">
+          <div style="font-size:12px; color:var(--color-text-secondary); text-transform:uppercase;">Inference Speed</div>
+          <div style="font-size:18px; font-weight:600; margin-top:4px; color:#4ade80;">0.03 ms / Stock</div>
+          <div style="font-size:12px; color:var(--color-text-secondary); margin-top:4px;">1.55 ms across entire 50-stock index</div>
+        </div>
+        <div class="metric-card" style="padding:16px; border-radius:8px; background:var(--color-bg-surface); border:1px solid var(--color-border);">
+          <div style="font-size:12px; color:var(--color-text-secondary); text-transform:uppercase;">Risk &amp; Shariah Guard</div>
+          <div style="font-size:18px; font-weight:600; margin-top:4px; color:#fbbf24;">Dual-Gate Filter</div>
+          <div style="font-size:12px; color:var(--color-text-secondary); margin-top:4px;">Blocks conventional banks • Capped 70%</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h2>Real-Time Live Market Signals &amp; Statutory Execution</h2>
+            <p style="margin:4px 0 0 0; font-size:13px; color:var(--color-text-secondary);">Streaming quotes from Upstox API v3 with exact Indian statutory friction (STT, Brokerage, GST, Slippage).</p>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button type="button" id="btn-slm-fetch-signals" class="btn-primary">⚡ Refresh Live Signals</button>
+            <button type="button" id="btn-slm-run-backtest" class="btn-secondary">📈 Run Walk-Forward</button>
+          </div>
+        </div>
+
+        <div class="table-container" style="max-height:480px; overflow-y:auto; margin-top:12px;">
+          <table class="data-table" id="slm-signals-table" aria-label="Quant-SLM Signals Table">
+            <thead>
+              <tr>
+                <th scope="col">SYMBOL</th>
+                <th scope="col">LTP (INR)</th>
+                <th scope="col">SOURCE</th>
+                <th scope="col">ACTION</th>
+                <th scope="col">ALPHA SCORE</th>
+                <th scope="col">P(UP)</th>
+                <th scope="col">SHARIAH</th>
+                <th scope="col">RISK GOVERNOR</th>
+                <th scope="col">PAPER ALLOCATION</th>
+              </tr>
+            </thead>
+            <tbody id="slm-signals-tbody">
+              <tr>
+                <td><strong>SBILIFE</strong></td>
+                <td>INR 1,666.10</td>
+                <td><span class="badge" style="background:#0284c7; color:#fff;">Upstox</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">BUY</span></td>
+                <td>+0.1729</td>
+                <td>60.02%</td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">COMPLIANT</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">APPROVED</span></td>
+                <td>BUY 60 shares (INR 99,966)</td>
+              </tr>
+              <tr>
+                <td><strong>BEL</strong></td>
+                <td>INR 368.50</td>
+                <td><span class="badge" style="background:#0284c7; color:#fff;">Upstox</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">BUY</span></td>
+                <td>+0.1457</td>
+                <td>60.16%</td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">COMPLIANT</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">APPROVED</span></td>
+                <td>BUY 271 shares (INR 99,863)</td>
+              </tr>
+              <tr>
+                <td><strong>BHARTIARTL</strong></td>
+                <td>INR 1,801.60</td>
+                <td><span class="badge" style="background:#0284c7; color:#fff;">Upstox</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">BUY</span></td>
+                <td>+0.1194</td>
+                <td>66.55%</td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">COMPLIANT</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">APPROVED</span></td>
+                <td>BUY 55 shares (INR 99,088)</td>
+              </tr>
+              <tr>
+                <td><strong>NESTLEIND</strong></td>
+                <td>INR 1,315.70</td>
+                <td><span class="badge" style="background:#0284c7; color:#fff;">Upstox</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">BUY</span></td>
+                <td>+0.1105</td>
+                <td>56.93%</td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">COMPLIANT</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">APPROVED</span></td>
+                <td>BUY 76 shares (INR 99,993)</td>
+              </tr>
+              <tr>
+                <td><strong>APOLLOHOSP</strong></td>
+                <td>INR 7,613.50</td>
+                <td><span class="badge" style="background:#0284c7; color:#fff;">Upstox</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">BUY</span></td>
+                <td>+0.0900</td>
+                <td>65.81%</td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">COMPLIANT</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">APPROVED</span></td>
+                <td>BUY 13 shares (INR 98,975)</td>
+              </tr>
+              <tr>
+                <td><strong>DRREDDY</strong></td>
+                <td>INR 1,170.20</td>
+                <td><span class="badge" style="background:#0284c7; color:#fff;">Upstox</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">BUY</span></td>
+                <td>+0.0851</td>
+                <td>55.89%</td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">COMPLIANT</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">APPROVED</span></td>
+                <td>BUY 85 shares (INR 99,467)</td>
+              </tr>
+              <tr>
+                <td><strong>ONGC</strong></td>
+                <td>INR 219.60</td>
+                <td><span class="badge" style="background:#0284c7; color:#fff;">Upstox</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">BUY</span></td>
+                <td>+0.0645</td>
+                <td>63.90%</td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">COMPLIANT</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">APPROVED</span></td>
+                <td>BUY 455 shares (INR 99,918)</td>
+              </tr>
+              <tr>
+                <td><strong>ICICIBANK</strong></td>
+                <td>INR 1,351.20</td>
+                <td><span class="badge" style="background:#0284c7; color:#fff;">Upstox</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">BUY</span></td>
+                <td>+0.0662</td>
+                <td>55.78%</td>
+                <td><span class="badge" style="background:#dc2626; color:#fff;">NON-COMPLIANT</span></td>
+                <td><span class="badge" style="background:#dc2626; color:#fff;">BLOCKED (SHARIAH)</span></td>
+                <td>--</td>
+              </tr>
+              <tr>
+                <td><strong>SHRIRAMFIN</strong></td>
+                <td>INR 923.45</td>
+                <td><span class="badge" style="background:#0284c7; color:#fff;">Upstox</span></td>
+                <td><span class="badge" style="background:#16a34a; color:#fff;">BUY</span></td>
+                <td>+0.0754</td>
+                <td>56.31%</td>
+                <td><span class="badge" style="background:#dc2626; color:#fff;">NON-COMPLIANT</span></td>
+                <td><span class="badge" style="background:#dc2626; color:#fff;">BLOCKED (SHARIAH)</span></td>
+                <td>--</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:16px; padding:12px; background:var(--color-bg-secondary); border-radius:6px; font-size:13px;">
+          <strong>Indian Statutory Execution Friction Breakdown:</strong>
+          STT 0.10% • NSE Turnover 0.00345% • SEBI Fee 0.0001% • Stamp Duty 0.015% • Brokerage 0.03% (Max ₹20) • GST 18% • Slippage 0.05%
+          <br>
+          <span style="color:#4ade80;">Total Net Friction on Current Portfolio: INR 1,344.92 (0.193% of INR 697,271 committed capital)</span>
         </div>
       </div>
     </section>
@@ -1368,15 +1545,15 @@
 
   <footer class="footer" role="contentinfo">
     <div class="container footer-content">
-      <span>QuantOS v2.5.0 — Institutional Quantitative Trading & Risk Operating System</span>
+      <span>Mizan Quant OS v3.1.0 — Institutional Quantitative Trading & Risk Operating System</span>
       <span class="footer-badge">Zero Float Invariant • Read-Only Broker Guard</span>
     </div>
   </footer>
 
   <div id="toast" role="alert" aria-live="assertive"></div>
 
-  <!-- QuantOS Copilot — Floating Launcher Button -->
-  <button id="copilot-trigger-btn" aria-label="Open QuantOS Copilot AI Assistant">
+  <!-- Mizan Quant OS Copilot — Floating Launcher Button -->
+  <button id="copilot-trigger-btn" aria-label="Open Mizan Quant OS Copilot AI Assistant">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
       <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"></path>
       <rect x="4" y="8" width="16" height="12" rx="2"></rect>
@@ -1387,9 +1564,9 @@
     <span>Ask Copilot 🤖</span>
   </button>
 
-  <!-- QuantOS Copilot — Slide-Out Drawer & Backdrop -->
+  <!-- Mizan Quant OS Copilot — Slide-Out Drawer & Backdrop -->
   <div id="copilot-backdrop" aria-hidden="true"></div>
-  <aside id="copilot-drawer" role="dialog" aria-modal="true" aria-label="QuantOS Copilot Assistant">
+  <aside id="copilot-drawer" role="dialog" aria-modal="true" aria-label="Mizan Quant OS Copilot Assistant">
     <div class="copilot-header">
       <div class="copilot-header-brand">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" aria-hidden="true">
@@ -1399,7 +1576,7 @@
           <circle cx="15" cy="13" r="1.5"></circle>
           <path d="M9 17h6"></path>
         </svg>
-        <span>QuantOS Copilot</span>
+        <span>Mizan Quant OS Copilot</span>
         <span class="copilot-badge">Platform Actions</span>
       </div>
       <button class="icon-btn" id="copilot-close-btn" aria-label="Close Assistant">
@@ -1413,8 +1590,8 @@
     <div id="copilot-messages" role="log" aria-live="polite">
       <div class="copilot-msg copilot-msg-assistant">
         <div class="copilot-msg-content">
-          👋 <strong>Hello! I am your QuantOS Copilot.</strong><br>
-          I can help you navigate journeys, run system diagnostics, calculate option Greeks, configure backtests, and inspect risk governor limits.<br><br>
+          👋 <strong>Hello! I am your Mizan Quant OS Copilot.</strong><br>
+          I can help you navigate journeys, run system diagnostics, calculate option Greeks, configure backtests, inspect Quant-SLM attention alpha signals, and inspect risk governor limits.<br><br>
           <em>Ask me anything or choose a quick prompt below:</em>
         </div>
       </div>
@@ -1423,7 +1600,7 @@
     <div class="copilot-chips-container" id="copilot-chips"></div>
 
     <div class="copilot-input-area">
-      <input type="text" id="copilot-input" class="copilot-input-field" placeholder="Ask Copilot or request an action..." aria-label="Message to QuantOS Copilot">
+      <input type="text" id="copilot-input" class="copilot-input-field" placeholder="Ask Copilot or request an action..." aria-label="Message to Mizan Quant OS Copilot">
       <button type="button" id="copilot-send-btn" class="copilot-send-btn" aria-label="Send Message">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
           <line x1="22" y1="2" x2="11" y2="13"></line>

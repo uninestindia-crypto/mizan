@@ -83,6 +83,8 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, lab: Lab) -> Iterato
     router.reset_services()
     test_store = CredentialStore(prefix=f"QuantOS-test-{uuid.uuid4().hex[:8]}:")
     router.services().credentials = test_store
+    monkeypatch.delenv("UPSTOX_ANALYTICS_TOKEN", raising=False)
+    monkeypatch.delenv("UPSTOX_ACCESS_TOKEN", raising=False)
     with TestClient(app, base_url="http://localhost:8000") as test_client:
         yield test_client
     router.reset_services()

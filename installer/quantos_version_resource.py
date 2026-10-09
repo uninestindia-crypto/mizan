@@ -20,8 +20,8 @@ from PyInstaller.utils.win32.versioninfo import (
     VSVersionInfo,
 )
 
-COMPANY_NAME = "QuantOS Quantitative Technologies"
-PRODUCT_NAME = "QuantOS"
+COMPANY_NAME = "Mizan Quant OS Quantitative Technologies"
+PRODUCT_NAME = "Mizan Quant OS"
 
 _PACKAGE_INIT = Path(__file__).resolve().parent.parent / "src" / "quant_system" / "__init__.py"
 _US_ENGLISH_UNICODE = "040904B0"

@@ -113,6 +113,48 @@ def acquire_single_instance(name: str = MUTEX_NAME) -> bool:
     return True
 
 
+def release_single_instance() -> None:
+    """Explicitly release and close the single-instance mutex handle.
+
+    Releasing the mutex as soon as window destruction begins allows subsequent
+    user launches to acquire the lock immediately without waiting for background
+    teardown.
+    """
+    global _mutex_handle
+    if sys.platform != "win32" or _mutex_handle is None:
+        return
+    try:
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+        kernel32.CloseHandle(_mutex_handle)
+    except Exception:
+        pass
+    finally:
+        _mutex_handle = None
+
+
+def hard_exit(code: int = 0) -> None:
+    """Terminate the process unconditionally without deadlocking in DLL detach routines.
+
+    On Windows, ExitProcess (called by os._exit) invokes DLL_PROCESS_DETACH on all loaded
+    DLLs while holding the Windows loader lock. In GUI runtimes using WebView2 and pywebview,
+    COM threads, RPC channels, and CLR workers frequently deadlock in DllMain / DLL_PROCESS_DETACH,
+    leaving an orphaned zombie process with 1 stuck thread.
+    TerminateProcess bypasses DLL_PROCESS_DETACH and guarantees immediate kernel cleanup.
+    """
+    release_single_instance()
+    if sys.platform == "win32":
+        try:
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel32.GetCurrentProcess.restype = ctypes.c_void_p
+            kernel32.TerminateProcess.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+            kernel32.TerminateProcess.restype = ctypes.c_bool
+            kernel32.TerminateProcess(kernel32.GetCurrentProcess(), code)
+        except Exception:
+            pass
+    os._exit(code)
+
+
 def focus_existing_window(title: str = DEFAULT_TITLE) -> bool:
     """Bring the already-running QuantOS window to the front. Returns whether one was found."""
     if sys.platform != "win32":
@@ -120,12 +162,48 @@ def focus_existing_window(title: str = DEFAULT_TITLE) -> bool:
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     user32.FindWindowW.restype = ctypes.c_void_p
     user32.FindWindowW.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p]
+    user32.IsWindowVisible.argtypes = [ctypes.c_void_p]
+    user32.IsWindowVisible.restype = ctypes.c_bool
+    user32.GetWindowTextLengthW.argtypes = [ctypes.c_void_p]
+    user32.GetWindowTextLengthW.restype = ctypes.c_int
+    user32.GetWindowTextW.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_int]
+    user32.GetWindowTextW.restype = ctypes.c_int
+    user32.ShowWindow.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    user32.ShowWindow.restype = ctypes.c_bool
+    user32.ShowWindowAsync.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    user32.ShowWindowAsync.restype = ctypes.c_bool
+    user32.SetForegroundWindow.argtypes = [ctypes.c_void_p]
+    user32.SetForegroundWindow.restype = ctypes.c_bool
+    user32.BringWindowToTop.argtypes = [ctypes.c_void_p]
+    user32.BringWindowToTop.restype = ctypes.c_bool
+
     hwnd = user32.FindWindowW(None, title)
+
+    if not hwnd:
+        matched_hwnd = None
+        WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+
+        def _enum_cb(h: ctypes.c_void_p, _lparam: ctypes.c_void_p) -> bool:
+            nonlocal matched_hwnd
+            if user32.IsWindowVisible(h):
+                length = user32.GetWindowTextLengthW(h)
+                if length > 0:
+                    buf = ctypes.create_unicode_buffer(length + 1)
+                    user32.GetWindowTextW(h, buf, length + 1)
+                    if title.lower() in buf.value.lower():
+                        matched_hwnd = h
+                        return False
+            return True
+
+        user32.EnumWindows(WNDENUMPROC(_enum_cb), None)
+        hwnd = matched_hwnd
+
     if not hwnd:
         return False
-    user32.ShowWindow.argtypes = [ctypes.c_void_p, ctypes.c_int]
-    user32.SetForegroundWindow.argtypes = [ctypes.c_void_p]
+
+    user32.ShowWindowAsync(hwnd, _SW_RESTORE)
     user32.ShowWindow(hwnd, _SW_RESTORE)
+    user32.BringWindowToTop(hwnd)
     user32.SetForegroundWindow(hwnd)
     return True
 
@@ -134,6 +212,7 @@ def cleanup_zombie_instances(process_names: tuple[str, ...] = ("quantos-studio.e
     """Terminates orphaned headless instances of QuantOS Studio.
 
     Only targets processes with matching names whose PID differs from the current process.
+    Uses process tree termination and synchronously waits for kernel process handles to close.
     Returns the number of processes terminated.
     """
     if sys.platform != "win32":
@@ -142,6 +221,18 @@ def cleanup_zombie_instances(process_names: tuple[str, ...] = ("quantos-studio.e
 
     current_pid = os.getpid()
     cleaned = 0
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.OpenProcess.argtypes = [ctypes.c_uint, ctypes.c_bool, ctypes.c_uint]
+    kernel32.OpenProcess.restype = ctypes.c_void_p
+    kernel32.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+    kernel32.WaitForSingleObject.restype = ctypes.c_uint
+    kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+    kernel32.CloseHandle.restype = ctypes.c_bool
+    kernel32.TerminateProcess.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+    kernel32.TerminateProcess.restype = ctypes.c_bool
+    process_terminate = 0x0001
+    synchronize = 0x00100000
+
     for name in process_names:
         try:
             cmd = f'tasklist /FI "IMAGENAME eq {name}" /FO CSV /NH'
@@ -155,8 +246,17 @@ def cleanup_zombie_instances(process_names: tuple[str, ...] = ("quantos-studio.e
                     try:
                         pid = int(parts[1])
                         if pid != current_pid:
+                            # Terminate directly via OpenProcess + TerminateProcess
+                            h_term = kernel32.OpenProcess(
+                                process_terminate | synchronize, False, pid
+                            )
+                            if h_term:
+                                kernel32.TerminateProcess(h_term, 1)
+                                kernel32.WaitForSingleObject(h_term, 1500)
+                                kernel32.CloseHandle(h_term)
+                            # Also run taskkill as process tree fallback
                             subprocess.run(
-                                f"taskkill /F /PID {pid}",
+                                f"taskkill /F /T /PID {pid}",
                                 shell=True,
                                 stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL,
@@ -287,29 +387,41 @@ def run_native_window(
         except Exception:
             screen_size = None
         (width, height), min_size = fit_to_screen(screen_size, (width, height), min_size)
-        first_page: dict[str, str] = {"html": loading.html} if loading else {"url": url}
-        win = webview.create_window(
-            title=title,
-            **first_page,
-            width=width,
-            height=height,
-            min_size=min_size,
-            background_color=DARK_BACKGROUND if system_prefers_dark() else LIGHT_BACKGROUND,
-            text_select=True,
-            confirm_close=False,
-        )
+        if loading:
+            win = webview.create_window(
+                title=title,
+                html=loading.html,
+                width=width,
+                height=height,
+                min_size=min_size,
+                background_color=DARK_BACKGROUND if system_prefers_dark() else LIGHT_BACKGROUND,
+                text_select=True,
+                confirm_close=False,
+            )
+        else:
+            win = webview.create_window(
+                title=title,
+                url=url,
+                width=width,
+                height=height,
+                min_size=min_size,
+                background_color=DARK_BACKGROUND if system_prefers_dark() else LIGHT_BACKGROUND,
+                text_select=True,
+                confirm_close=False,
+            )
 
         if win is not None and hasattr(win, "events") and hasattr(win.events, "closed"):
 
             def _on_window_closed() -> None:
                 log.info("Native window closed event received.")
+                release_single_instance()
 
                 def _watchdog() -> None:
-                    time.sleep(2.5)
+                    time.sleep(2.0)
                     log.warning(
-                        "GUI loop did not exit within 2.5s after window close; forcing process exit."
+                        "GUI loop did not exit within 2.0s after window close; forcing process exit."
                     )
-                    os._exit(0)
+                    hard_exit(0)
 
                 threading.Thread(
                     target=_watchdog, name="QuantOS-CloseWatchdog", daemon=True
@@ -335,6 +447,7 @@ def run_native_window(
         log.warning("Native window failed (%s: %s); falling back.", type(err).__name__, err)
         return False
     log.info("Native window closed by the user.")
+    release_single_instance()
     return True
 
 

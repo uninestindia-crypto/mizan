@@ -69,7 +69,10 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $version = (Get-Item -LiteralPath $studioExe).VersionInfo.ProductVersion
-$setupExe = Join-Path $projectRoot "dist\QuantOS_v$($version)_Setup.exe"
+$setupExe = Join-Path $projectRoot "dist\MizanQuantOS_v$($version)_Setup.exe"
+if (-not (Test-Path -LiteralPath $setupExe)) {
+    $setupExe = Join-Path $projectRoot "dist\QuantOS_v$($version)_Setup.exe"
+}
 if (-not (Test-Path -LiteralPath $setupExe)) {
     throw "Expected installer not produced: $setupExe"
 }

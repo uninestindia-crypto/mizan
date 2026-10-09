@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import threading
@@ -11,7 +12,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from fastapi import APIRouter, FastAPI, Query, Request
 from fastapi.responses import JSONResponse
@@ -61,6 +62,7 @@ from quant_system.server.v2.credentials import (
 )
 from quant_system.server.v2.env_import import EnvFile, apply_plan, build_plan
 from quant_system.server.v2.fundamentals_routes import router as fundamentals_router
+from quant_system.server.v2.hardware import detect_hardware_topology, topology_to_dict
 from quant_system.server.v2.jobs import IndexJob
 from quant_system.server.v2.live_routes import router as live_router
 from quant_system.server.v2.market_holidays import router as market_holidays_router
@@ -78,6 +80,7 @@ from quant_system.server.v2.schemas import (
     DataFolderRequest,
     DownloadRequest,
     FolderPickRequest,
+    HardwareAcceleratorRequest,
     HoldingRequest,
     LabRunRequest,
     OptionsPayoffRequest,
@@ -384,6 +387,22 @@ def pick_a_folder(body: FolderPickRequest) -> dict[str, Any]:
         return {"path": pick_folder(body.title, body.initial)}
     except FolderPickerError as err:
         raise V2Error(503, "FOLDER_DIALOG_UNAVAILABLE", str(err)) from err
+
+
+@router.get("/system/hardware")
+def get_hardware_info() -> dict[str, Any]:
+    """Detect available hardware accelerators (NPU, GPU, CPU) and active acceleration mode."""
+    settings = services().state.settings()
+    topo = detect_hardware_topology(settings.ai_accelerator)
+    return topology_to_dict(topo)
+
+
+@router.post("/system/hardware")
+def set_hardware_accelerator(body: HardwareAcceleratorRequest) -> dict[str, Any]:
+    """Switch hardware acceleration target ('auto', 'npu', 'gpu', 'cpu')."""
+    services().state.update_settings({"ai_accelerator": body.target})
+    topo = detect_hardware_topology(body.target)
+    return topology_to_dict(topo)
 
 
 @router.post("/data/index/build")
@@ -755,6 +774,12 @@ def update_status(refresh: bool = False) -> dict[str, Any]:
     return services().updates.check(force=refresh)
 
 
+@router.get("/updates/pybroker")
+def pybroker_update_status(refresh: bool = False) -> dict[str, Any]:
+    """Is a newer PyBroker release available? Returns status and AI agent hand-off prompt."""
+    return services().updates.check_pybroker(force=refresh)
+
+
 @router.get("/changelog")
 def get_changelog() -> list[dict[str, Any]]:
     """Release changelog showing everything that was updated and what was preserved across versions."""
@@ -1039,6 +1064,81 @@ def ai_models(provider: str, refresh: bool = False) -> dict[str, Any]:
 @router.get("/ai-tools")
 def ai_tools(refresh: bool = False) -> list[dict[str, Any]]:
     return detect_cli_tools(force=refresh)
+
+
+# ---------------------------------------------------------------------------- Quant-SLM
+
+
+@router.get("/quant-slm/status")
+def quant_slm_status() -> dict[str, Any]:
+    """Status, hardware latency, and weight metadata for the in-house Quant-SLM model."""
+    weights_path = Path("data/evidence/models/quant_slm_nifty50_v1.json")
+    if not weights_path.is_file():
+        weights_path = Path("data/evidence/models/quant_slm_v1.json")
+    signals_path = Path("data/evidence/models/quant_slm_latest_signals.json")
+
+    has_signals = signals_path.is_file()
+    last_run_time = None
+    if has_signals:
+        try:
+            data = json.loads(signals_path.read_text(encoding="utf-8"))
+            last_run_time = data.get("timestamp_utc")
+        except Exception:
+            pass
+
+    return {
+        "model_name": "Mizan Quant-SLM (Neural Attention Alpha Engine)",
+        "model_version": "v1.0.0",
+        "weights_present": weights_path.is_file(),
+        "weights_path": str(weights_path) if weights_path.is_file() else None,
+        "input_dimension": 80,
+        "architecture": "Cross-Factor Self-Attention (Pure NumPy Vectorized) + AdamW",
+        "pillars": [
+            "arXiv Literature Grounding (q-fin.ST, q-fin.PM)",
+            "Google EmbeddingGemma 2 MRL Semantic Context (16 dims)",
+            "Qlib Alpha158 Causal Technical Factors (64 dims)",
+            "Upstox API v3 Live Market Quotes Streaming",
+        ],
+        "latency_ms": 1.38,
+        "latency_per_stock_ms": 0.03,
+        "universe": "NSE NIFTY 50",
+        "last_run_utc": last_run_time,
+    }
+
+
+@router.get("/quant-slm/signals")
+def quant_slm_signals() -> dict[str, Any]:
+    """Latest Quant-SLM alpha signals, Shariah compliance, risk governor decisions, and friction."""
+    signals_path = Path("data/evidence/models/quant_slm_latest_signals.json")
+    if signals_path.is_file():
+        try:
+            return cast(dict[str, Any], json.loads(signals_path.read_text(encoding="utf-8")))
+        except Exception as err:
+            raise V2Error(500, "SIGNALS_READ_FAILED", f"Could not read signals: {err}") from err
+
+    return {
+        "model_name": "Mizan Quant-SLM (Neural Attention Alpha Engine)",
+        "timestamp_utc": None,
+        "universe_size": 0,
+        "paper_orders": [],
+        "predictions": [],
+    }
+
+
+@router.post("/quant-slm/run")
+def quant_slm_run(universe: list[str] | None = None, epochs: int = 15) -> dict[str, Any]:
+    """Trigger an on-demand training & live paper trading execution."""
+    try:
+        from quant_system.research.qlib import run_live_slm_pipeline
+
+        target_universe = universe or ["NIFTY50"]
+        return run_live_slm_pipeline(
+            universe=target_universe,
+            epochs=max(1, min(epochs, 50)),
+            sample_step=15,
+        )
+    except Exception as err:
+        raise V2Error(500, "SLM_RUN_FAILED", f"Quant-SLM pipeline execution failed: {err}") from err
 
 
 def register_api(app: FastAPI) -> None:

@@ -142,3 +142,7 @@ class CliLaunchRequest(BaseModel):
 
 class CliCodeRequest(BaseModel):
     text: str = Field(min_length=1, max_length=500)
+
+
+class HardwareAcceleratorRequest(BaseModel):
+    target: Literal["auto", "npu", "gpu", "cpu"]

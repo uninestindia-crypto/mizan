@@ -18,6 +18,41 @@ export interface Settings {
   disclaimer_accepted_at: string | null;
   auto_update_paper_books: boolean;
   shariah_mode?: boolean;
+  ai_accelerator?: AcceleratorTarget;
+}
+
+export type AcceleratorTarget = "auto" | "npu" | "gpu" | "cpu";
+
+export interface DeviceInfo {
+  available: boolean;
+  name: string;
+  category: "NPU" | "GPU" | "CPU";
+  provider: string;
+  details: string;
+  status: "Ready" | "Standby" | "Not Available";
+}
+
+export interface LocalModelInfo {
+  id: string;
+  name: string;
+  category: string;
+  size: string;
+  recommended_hardware: string;
+  status: string;
+  description: string;
+}
+
+export interface HardwareTopology {
+  active_target: AcceleratorTarget;
+  effective_target: "npu" | "gpu" | "cpu";
+  platform: string;
+  architecture: string;
+  devices: {
+    npu: DeviceInfo;
+    gpu: DeviceInfo;
+    cpu: DeviceInfo;
+  };
+  local_models: LocalModelInfo[];
 }
 
 /** What a check backs: "UNVERIFIED_SAMPLE" today; "VERIFIED_FILING" and "STALE" later. Any other value reads "Not verified". */

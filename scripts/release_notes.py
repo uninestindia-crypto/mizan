@@ -12,7 +12,7 @@ from pathlib import Path
 def build_notes(version: str, subjects: list[str], previous_tag: str | None) -> str:
     """Build markdown release notes grouped by change category."""
     ver = version.lstrip("v")
-    lines: list[str] = [f"# QuantOS v{ver}"]
+    lines: list[str] = [f"# Mizan Quant OS v{ver}"]
 
     whats_new: list[str] = []
     fixes: list[str] = []

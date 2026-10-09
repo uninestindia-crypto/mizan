@@ -173,19 +173,68 @@ class UpdateChecker:
             "published_at": release.get("published_at"),
             "installer": next((a for a in assets if a.endswith("_Setup.exe")), None),
             "checked": True,
+            "pybroker_update": self.check_pybroker(force=False),
         }
+
+    def check_pybroker(self, force: bool = False) -> dict[str, Any]:
+        """Checks upstream PyBroker release status and AI agent hand-off prompt."""
+        try:
+            from quant_system.research.pybroker_upstream_tracker import get_pybroker_tracker
+
+            return get_pybroker_tracker().check(force=force)
+        except Exception as e:
+            return {
+                "current_version": "2.0.1",
+                "latest_version": "2.0.1",
+                "update_available": False,
+                "error": str(e),
+                "checked": False,
+            }
 
     def changelog(self) -> list[dict[str, Any]]:
         curr_ver = self._current.lstrip("v")
         results: list[dict[str, Any]] = []
+        found_current = False
         for item in OFFLINE_CHANGELOG:
             entry = dict(item)
-            entry["is_current"] = entry["version"] == curr_ver
+            is_cur = entry["version"] == curr_ver
+            if is_cur:
+                found_current = True
+            entry["is_current"] = is_cur
             results.append(entry)
+        if results and not found_current:
+            results[0]["is_current"] = True
         return results
 
 
 OFFLINE_CHANGELOG: list[dict[str, Any]] = [
+    {
+        "version": "3.1.0",
+        "date": "2026-10-08",
+        "title": "Mizan Quant OS: Quant SLM Engine, Microsoft Qlib Multi-Factor Architecture & Factory-New Installer",
+        "whats_new": [
+            "Mizan Quant OS brand unification: combined institutional quantitative trading, factor research, and Mizan Shariah wealth compliance in one unified operating system",
+            "Quant SLM: local Small Language Model for ultra-fast, accurate market intelligence, combining deep multi-factor alpha signals, technical indicators, and embedding-gemma-2 / XRIV features",
+            "Microsoft Qlib integration: high-performance quantitative alpha factor library, multi-factor models, and automated upstream synchronization pipeline",
+            "Factory-new laptop installer: standalone, drive-isolated Inno Setup distribution (MizanQuantOS_v3.0.0_Setup.exe) with bundled runtime and zero C-drive leakage",
+            "Upstox live market feeds: low-latency price feeds, quote streams, and portfolio synchronization",
+        ],
+        "fixes": [
+            "Enforced strict drive-isolated local execution with zero C: drive path leakage",
+            "Corporate actions provider caching with automatic historical symbol alias mapping",
+            "Fixed walk-forward validation matrix bounds and purged look-ahead data leakage",
+        ],
+        "improvements": [
+            "Institutional multi-factor backtesting performance and real-time risk governor checks",
+            "Comprehensive packaging with cryptographic Software Bill of Materials (SBOM) and SHA-256 verification manifests",
+        ],
+        "unchanged_protections": [
+            "Keys stay strictly encrypted in local Windows Credential Manager and are never sent to external servers",
+            "Zero unauthorized live-broker order execution — all autonomous decisions strictly sandboxed and verified",
+            "Halal screening rules remain determined by deterministic algorithmic criteria (DJIM/AAOIFI), never unverified AI hallucination",
+            "Decimal-exact financial accounting and statutory NSE transaction cost schedules preserved",
+        ],
+    },
     {
         "version": "2.5.0",
         "date": "2026-10-07",

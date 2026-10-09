@@ -22,6 +22,7 @@ logs/
 tmp/
 data/work/
 data/quantos2/
+data/downloads/
 *.log
 *.sqlite
 *.sqlite3

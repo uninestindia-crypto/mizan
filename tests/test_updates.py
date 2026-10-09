@@ -114,14 +114,15 @@ def test_the_endpoint_never_errors_even_when_nothing_answers(
 
 
 def test_changelog_returns_history_and_identifies_current_version() -> None:
-    checker = UpdateChecker("2.5.0")
+    checker = UpdateChecker("3.0.0")
     entries = checker.changelog()
-    assert len(entries) >= 5
-    assert entries[0]["version"] == "2.5.0"
+    assert len(entries) >= 6
+    assert entries[0]["version"] == "3.0.0"
     assert entries[0]["is_current"] is True
     assert len(entries[0]["whats_new"]) > 0
     assert len(entries[0]["fixes"]) > 0
     assert len(entries[0]["unchanged_protections"]) > 0
+    assert entries[1]["version"] == "2.5.0"
     assert entries[1]["is_current"] is False
 
 
@@ -151,10 +152,12 @@ def test_changelog_api_endpoint(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) 
         assert res.status_code == 200
         data = res.json()
         assert isinstance(data, list)
-        assert len(data) >= 5
-        assert data[0]["version"] == "2.5.0"
+        assert len(data) >= 6
+        assert data[0]["version"] == "3.0.0"
         assert data[0]["is_current"] is True
-        assert any("Second opinions" in item for item in data[0]["whats_new"])
+        assert any("Quant SLM" in item or "Mizan Quant OS" in item for item in data[0]["whats_new"])
+        assert data[1]["version"] == "2.5.0"
+        assert data[1]["is_current"] is False
     router.reset_services()
 
 

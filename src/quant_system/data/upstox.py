@@ -109,11 +109,24 @@ class UpstoxClient:
         # issued free, one per user, for roughly a year, and the paper runner already prefers it --
         # the two paths disagreeing is what left the pre-open refresh unauthorised while the session
         # that follows it was fine.
-        self.access_token = (
-            access_token
-            or os.getenv("UPSTOX_ANALYTICS_TOKEN", "")
-            or os.getenv("UPSTOX_ACCESS_TOKEN", "")
-        )
+        if access_token is not None:
+            self.access_token = access_token
+        else:
+            token = os.getenv("UPSTOX_ANALYTICS_TOKEN", "") or os.getenv("UPSTOX_ACCESS_TOKEN", "")
+            if not token:
+                try:
+                    from quant_system.server.v2.credentials import CredentialStore
+
+                    store = CredentialStore()
+                    if store.available:
+                        token = (
+                            store.get("UPSTOX_ANALYTICS_TOKEN")
+                            or store.get("UPSTOX_ACCESS_TOKEN")
+                            or ""
+                        )
+                except Exception:
+                    token = ""
+            self.access_token = token
         self.dependencies = dependencies or _default_dependencies()
         self.config = config or UpstoxClientConfig()
 

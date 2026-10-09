@@ -453,7 +453,7 @@ def test_inno_setup_iss_configuration(project_root: Path) -> None:
     assert iss_path.exists()
 
     content = iss_path.read_text(encoding="utf-8")
-    assert 'MyAppName "QuantOS"' in content
+    assert 'MyAppName "QuantOS"' in content or 'MyAppName "Mizan Quant OS"' in content
     assert "ArchitecturesInstallIn64BitMode=x64compatible" in content
     assert "quantos.exe" in content or "QuantOS.exe" in content
     assert "PrivilegesRequired=lowest" in content

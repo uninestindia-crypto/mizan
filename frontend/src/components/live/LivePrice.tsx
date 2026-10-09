@@ -1,3 +1,4 @@
+import { RefreshCw } from "lucide-react";
 import { Link } from "react-router";
 import { inr } from "../../lib/format";
 import {
@@ -74,26 +75,62 @@ const NOTE_CLASS = "flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12.5px] 
  * the engine had a problem (Upstox busy, unreachable): the message alone, because there is nothing to click. Nothing
  * when all is well or while loading.
  */
-export function LiveConnectNote({ quotes, className }: { quotes: LiveQuotes | undefined; className?: string }) {
+export function LiveConnectNote({
+  quotes,
+  className,
+  onRetry,
+  isRetrying,
+}: {
+  quotes: LiveQuotes | undefined;
+  className?: string;
+  onRetry?: () => void;
+  isRetrying?: boolean;
+}) {
   if (!quotes) return null;
-  if (quotes.connected) return quotes.message ? <ProblemNote message={quotes.message} className={className} /> : null;
+  if (quotes.connected) {
+    return quotes.message ? (
+      <ProblemNote message={quotes.message} className={className} onRetry={onRetry} isRetrying={isRetrying} />
+    ) : null;
+  }
   return (
     <div role="status" className={cx(NOTE_CLASS, className)}>
       <span>{quotes.message || NOT_CONNECTED_MESSAGE}</span>
-      <Link to="/settings/accounts">
-        <Button variant="secondary" size="sm">
-          Open Accounts and keys
-        </Button>
-      </Link>
+      <div className="flex items-center gap-2">
+        {onRetry && (
+          <Button variant="secondary" size="sm" onClick={onRetry} loading={isRetrying}>
+            Retry live fetch
+          </Button>
+        )}
+        <Link to="/settings/accounts">
+          <Button variant="secondary" size="sm">
+            Open Accounts and keys
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }
 
-function ProblemNote({ message, className }: { message: string; className?: string }) {
+function ProblemNote({
+  message,
+  className,
+  onRetry,
+  isRetrying,
+}: {
+  message: string;
+  className?: string;
+  onRetry?: () => void;
+  isRetrying?: boolean;
+}) {
   return (
-    <p role="status" className={cx(NOTE_CLASS, className)}>
-      {message}
-    </p>
+    <div role="status" className={cx(NOTE_CLASS, className)}>
+      <span>{message}</span>
+      {onRetry && (
+        <Button variant="secondary" size="sm" onClick={onRetry} loading={isRetrying}>
+          Fetch again
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -118,7 +155,9 @@ export function LiveChip({ symbol, quotes }: { symbol: string; quotes: LiveQuote
 /** A live price for one stock, asking the engine itself. For a list, fetch once and use LiveChip instead. */
 export function LivePrice({ symbol }: { symbol: string }) {
   const live = useLiveQuotes([symbol]);
-  if (live.data && !live.data.connected) return <LiveConnectNote quotes={live.data} />;
+  if (live.data && !live.data.connected) {
+    return <LiveConnectNote quotes={live.data} onRetry={() => void live.refetch()} isRetrying={live.isFetching} />;
+  }
   const quote = quoteFor(live.data, symbol);
   if (!quote) return null;
   const line = asOfLine(quote);
@@ -126,6 +165,17 @@ export function LivePrice({ symbol }: { symbol: string }) {
     <div className="space-y-1">
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm">
         <QuoteBody quote={quote} large />
+        <button
+          type="button"
+          onClick={() => void live.refetch()}
+          disabled={live.isFetching}
+          className="inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink transition-colors disabled:opacity-50"
+          title="Click to fetch live price"
+          aria-label="Refresh live price"
+        >
+          <RefreshCw className={cx("size-3", live.isFetching && "animate-spin")} aria-hidden />
+          <span>{live.isFetching ? "Fetching…" : "Fetch live"}</span>
+        </button>
       </div>
       {line && <p className="text-[12px] text-ink-3">{line}</p>}
     </div>

@@ -87,12 +87,9 @@ try {
     # ------------------------------------------------------------------ 3. gates
     if (-not $SkipTests) {
         Step "Gates: lint, types, tests (tracked files only, so another agent's unfinished file cannot block this)"
-        $tracked = @(git ls-files "*.py")
-        # --force-exclude keeps pyproject's excludes (.agents, dist, ...) in force for an explicit file list, as in CI.
-        & $python -m ruff check --force-exclude @tracked; Native "ruff check"
-        & $python -m ruff format --check --force-exclude @tracked; Native "ruff format"
-        $typed = @(git ls-files "src/*.py" "scripts/*.py" "launcher.py")
-        & $python -m mypy @typed; Native "mypy"
+        & $python -m ruff check src tests scripts launcher.py quantos_studio.py; Native "ruff check"
+        & $python -m ruff format --check src tests scripts launcher.py quantos_studio.py; Native "ruff format"
+        & $python -m mypy src scripts launcher.py; Native "mypy"
         & $python -m pytest tests -q -p no:cacheprovider; Native "pytest"
     } else {
         Write-Host "`nGates skipped (-SkipTests)." -ForegroundColor Yellow
@@ -102,7 +99,8 @@ try {
     Step "Bumping every version file to $Version"
     & $python scripts/bump_version.py $Version; Native "bump_version"
     $carriers = @("pyproject.toml", "src/quant_system/__init__.py", "frontend/package.json", "frontend/package-lock.json",
-                  "src/quant_system/server/static/index.html", "uv.lock") | Where-Object { Test-Path -LiteralPath $_ }
+                  "src/quant_system/server/static/index.html", "uv.lock", "installer/assets/LICENSE.txt", "LICENSE.txt",
+                  "CHANGELOG.md", "src/quant_system/server/v2/updates.py", "frontend/src/pages/Settings.tsx") | Where-Object { Test-Path -LiteralPath $_ }
     git add -- @carriers
     $message = "chore(release): v$Version`n`nRelease $Version. See the GitHub release notes for what changed."
     if ($CoAuthor) { $message += "`n`n$CoAuthor" }
@@ -113,7 +111,10 @@ try {
     # ------------------------------------------------------------------ 5. build from the release commit
     Step "Building the installer (this takes several minutes)"
     & (Join-Path $PSScriptRoot "build-windows-release.ps1"); Native "build-windows-release"
-    $setup = "dist\QuantOS_v${Version}_Setup.exe"
+    $setup = "dist\MizanQuantOS_v${Version}_Setup.exe"
+    if (-not (Test-Path -LiteralPath $setup)) {
+        $setup = "dist\QuantOS_v${Version}_Setup.exe"
+    }
     $zip = "dist\quantos-v${Version}-windows-x86_64.zip"
     $sbom = "dist\quantos-sbom.json"
     foreach ($artifact in @($setup, $zip, $sbom)) {
@@ -142,7 +143,7 @@ $($lines -join "`n")
 
     # ------------------------------------------------------------------ 6. tag and publish
     Step "Tagging $tag"
-    git tag -a $tag -m "QuantOS v$Version"; Native "git tag"
+    git tag -a $tag -m "Mizan Quant OS v$Version"; Native "git tag"
     if ($NoPublish) {
         Write-Host "`n-NoPublish: built and tagged locally. To publish: git push origin main $tag ; then gh release create." -ForegroundColor Yellow
         Pop-Location; exit 0
@@ -150,9 +151,9 @@ $($lines -join "`n")
     Step "Publishing"
     git push origin main; Native "git push main"
     git push origin $tag; Native "git push tag"
-    gh release create $tag $setup $zip $sbom $sums --title "QuantOS v$Version" --notes-file $notesFile --latest; Native "gh release create"
+    gh release create $tag $setup $zip $sbom $sums --title "Mizan Quant OS v$Version" --notes-file $notesFile --latest; Native "gh release create"
     $url = (gh release view $tag --json url -q .url)
-    Write-Host "`nReleased QuantOS v$Version  $url" -ForegroundColor Green
+    Write-Host "`nReleased Mizan Quant OS v$Version  $url" -ForegroundColor Green
     Write-Host "Installed apps will offer the update within hours, or at once from Settings > About > Check now."
 }
 catch {

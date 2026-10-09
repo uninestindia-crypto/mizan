@@ -90,9 +90,9 @@ class OperationCancelResponse(BaseModel):
 
 
 class VersionInfo(BaseModel):
-    version: str = "1.0.0"
-    name: str = "QuantOS"
-    description: str = "Institutional Quantitative Trading & Backtesting System"
+    version: str = "2.5.3"
+    name: str = "Mizan Quant OS"
+    description: str = "Mizan Quant OS: Institutional Quantitative Trading & Backtesting System"
     status: str = "ONLINE"
 
 

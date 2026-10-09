@@ -620,3 +620,11 @@ def test_write_symbol_changes_returns_the_count_and_never_raises(
     monkeypatch.setattr(downloader, "_fetch_symbol_changes", lambda wd: short_text)
     count = downloader.write_symbol_changes(authorities, work_dir)
     assert count == 151
+
+
+def test_seeded_baseline_without_marker_is_recognised(tmp_path: Path) -> None:
+    """A pre-existing or seeded 10-year baseline cache without .quantos-download is recognized."""
+    market_cache = tmp_path / "evidence" / "market-cache"
+    seeded = market_cache / "all-market-20160822-20260821"
+    (seeded / "store" / "datasets").mkdir(parents=True)
+    assert baseline_exists(tmp_path) is True
