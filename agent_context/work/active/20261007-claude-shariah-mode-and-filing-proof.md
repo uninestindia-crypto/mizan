@@ -126,3 +126,17 @@ RULES (profit in 6 of 8 quarters, growth not below zero, interest cover at least
 ROE at least 12%); `is_long_term` means strictly more than 12 months, 29 Feb counted as 28 Feb; whether stale companies
 should be hidden from the screen by default; whether banks and lenders get their own reader (today: FORMAT_NOT_READ).
 
+UPDATED 2026-10-09 08:25 UTC. Top bar and Update dialog committed and pushed (`a4e492df5`). Checked the exact staged state in
+an isolated export: tsc clean, 1,194 vitest tests passed (81 files), craft checks clean, secret scan 0 in the new files
+(`Settings.tsx` still reports 8 pre-existing "Secret Keyword" lines that hold setting names, none of them in the lines
+added). The helper also ran it in a real browser at six widths in both themes (axe: no serious or critical findings). The
+real Windows update path (download, fingerprint, installer launch, relaunch) has NOT been run anywhere. Remaining helper:
+Portfolio accounts screens. Fundamentals snapshot build still running.
+Open points from the top bar helper:
+1. The engine sends no NSE holiday list to the app (`data/authorities/nse-trading-holidays.json` has no route), so the
+   market chip says "Market hours", never "Market open". Needs a small backend route.
+2. The live-prices status only says ready or not, so the chip cannot say "Delayed".
+3. The theme toggle is in the sidebar only; phones have none. Decide whether to add it to the Status list.
+4. Inline chips need about 1,870 px of window; below that people see one Status button. Decide if Market and Prices should
+   stay inline with a shorter mode-switch label (touches ModeSwitch).
+
