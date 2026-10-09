@@ -387,17 +387,28 @@ def run_native_window(
         except Exception:
             screen_size = None
         (width, height), min_size = fit_to_screen(screen_size, (width, height), min_size)
-        first_page: dict[str, str] = {"html": loading.html} if loading else {"url": url}
-        win = webview.create_window(
-            title=title,
-            **first_page,
-            width=width,
-            height=height,
-            min_size=min_size,
-            background_color=DARK_BACKGROUND if system_prefers_dark() else LIGHT_BACKGROUND,
-            text_select=True,
-            confirm_close=False,
-        )
+        if loading:
+            win = webview.create_window(
+                title=title,
+                html=loading.html,
+                width=width,
+                height=height,
+                min_size=min_size,
+                background_color=DARK_BACKGROUND if system_prefers_dark() else LIGHT_BACKGROUND,
+                text_select=True,
+                confirm_close=False,
+            )
+        else:
+            win = webview.create_window(
+                title=title,
+                url=url,
+                width=width,
+                height=height,
+                min_size=min_size,
+                background_color=DARK_BACKGROUND if system_prefers_dark() else LIGHT_BACKGROUND,
+                text_select=True,
+                confirm_close=False,
+            )
 
         if win is not None and hasattr(win, "events") and hasattr(win.events, "closed"):
 
