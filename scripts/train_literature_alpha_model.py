@@ -239,7 +239,12 @@ def run_pipeline(
     print(f"  - Sample Size:               {report.sample_size} predictions")
     print(f"  - Information Coefficient (IC): {report.ic_mean:+.4f} (Pearson correlation)")
     print(f"  - Rank IC (Spearman):        {report.rank_ic_mean:+.4f}")
-    print(f"  - Information Ratio (IC IR): {report.rank_ic_ir:.2f}")
+    ratio = (
+        f"{report.rank_ic_ir:.2f}"
+        if report.rank_ic_ir is not None
+        else "not measurable (needs at least 3 dates)"
+    )
+    print(f"  - Information Ratio (rank IC over {report.n_dates} dates): {ratio}")
     print(f"  - Top Decile Spread (Alpha): {report.top_decile_excess * 100:+.2f}%")
     print(f"  - Literature Grounding:      {len(papers)} arXiv papers indexed")
     print(f"  - Total Pipeline Runtime:    {total_time:.2f} seconds")

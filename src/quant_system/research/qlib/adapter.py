@@ -6,7 +6,12 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
+import pandas as pd  # type: ignore[import-untyped]
 from scipy.stats import spearmanr  # type: ignore[import-untyped]
+
+from quant_system.research.qlib.alpha_eval import calc_ic, ic_summary
+
+MIN_NAMES_PER_DATE = 3  # a ranking of fewer names than this says nothing
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,19 +20,21 @@ class QlibEvaluationReport:
 
     ic_mean: float
     rank_ic_mean: float
-    ic_ir: float
-    rank_ic_ir: float
+    ic_ir: float | None
+    rank_ic_ir: float | None
     top_decile_excess: float
     sample_size: int
+    n_dates: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "ic_mean": round(self.ic_mean, 6),
             "rank_ic_mean": round(self.rank_ic_mean, 6),
-            "ic_ir": round(self.ic_ir, 4),
-            "rank_ic_ir": round(self.rank_ic_ir, 4),
+            "ic_ir": None if self.ic_ir is None else round(self.ic_ir, 4),
+            "rank_ic_ir": None if self.rank_ic_ir is None else round(self.rank_ic_ir, 4),
             "top_decile_excess": round(self.top_decile_excess, 6),
             "sample_size": self.sample_size,
+            "n_dates": self.n_dates,
         }
 
 
@@ -86,24 +93,22 @@ class QlibModelAdapter:
         return np.asarray(res, dtype=np.float64)
 
     def evaluate(self, dataset: QlibRankDataset) -> QlibEvaluationReport:
-        """Compute standard Qlib evaluation metrics: IC, Rank IC, and Top Decile Excess."""
+        """Judge the signal the way Qlib does: one date at a time, then how steady that is across dates.
+
+        The IC and Rank IC are the means of the per-date correlations between the signal and what followed. The information
+        ratio is that mean divided by its spread across dates, and needs at least 3 dates; with fewer it is ``None``
+        (not measurable), never a made-up number. If no date has at least 3 names, the pooled correlation is reported
+        instead and the ratio is ``None``.
+        """
         if len(dataset.y) < 10:
             raise ValueError("Insufficient evaluation samples (minimum 10 required)")
 
         preds = self.predict(dataset.X)
         actuals = dataset.y
 
-        # Pearson IC
-        std_p = float(np.std(preds))
-        std_a = float(np.std(actuals))
-        if std_p > 1e-12 and std_a > 1e-12:
-            ic = float(np.corrcoef(preds, actuals)[0, 1])
-        else:
-            ic = 0.0
-
-        # Rank IC (Spearman)
-        res = spearmanr(preds, actuals)
-        rank_ic = float(res.correlation) if not np.isnan(res.correlation) else 0.0
+        ic, rank_ic, ic_ir, rank_ic_ir, n_dates = self._per_date_ic(dataset, preds)
+        if n_dates == 0:
+            ic, rank_ic = self._pooled_ic(preds, actuals)
 
         # Top Decile vs Bottom Decile
         n = len(preds)
@@ -111,13 +116,48 @@ class QlibModelAdapter:
         sorted_indices = np.argsort(preds)
         bottom_return = float(np.mean(actuals[sorted_indices[:k]]))
         top_return = float(np.mean(actuals[sorted_indices[-k:]]))
-        top_decile_excess = top_return - bottom_return
 
         return QlibEvaluationReport(
             ic_mean=ic,
             rank_ic_mean=rank_ic,
-            ic_ir=ic / 0.1 if ic != 0 else 0.0,
-            rank_ic_ir=rank_ic / 0.1 if rank_ic != 0 else 0.0,
-            top_decile_excess=top_decile_excess,
+            ic_ir=ic_ir,
+            rank_ic_ir=rank_ic_ir,
+            top_decile_excess=top_return - bottom_return,
             sample_size=n,
+            n_dates=n_dates,
         )
+
+    @staticmethod
+    def _per_date_ic(
+        dataset: QlibRankDataset, preds: np.ndarray
+    ) -> tuple[float, float, float | None, float | None, int]:
+        frame = pd.DataFrame(
+            {
+                "datetime": dataset.dates,
+                "instrument": dataset.symbols,
+                "pred": preds,
+                "label": dataset.y,
+            }
+        )
+        sizes = frame.groupby("datetime")["pred"].transform("size")
+        usable = frame[sizes >= MIN_NAMES_PER_DATE].set_index(["datetime", "instrument"])
+        if usable.empty:
+            return 0.0, 0.0, None, None, 0
+        ic, rank_ic = calc_ic(usable["pred"], usable["label"], dropna=True)
+        pearson, spearman = ic_summary(ic), ic_summary(rank_ic)
+        return (
+            0.0 if np.isnan(pearson.mean) else pearson.mean,
+            0.0 if np.isnan(spearman.mean) else spearman.mean,
+            pearson.ir,
+            spearman.ir,
+            pearson.n_dates,
+        )
+
+    @staticmethod
+    def _pooled_ic(preds: np.ndarray, actuals: np.ndarray) -> tuple[float, float]:
+        ic = 0.0
+        if float(np.std(preds)) > 1e-12 and float(np.std(actuals)) > 1e-12:
+            ic = float(np.corrcoef(preds, actuals)[0, 1])
+        res = spearmanr(preds, actuals)
+        rank_ic = float(res.correlation) if not np.isnan(res.correlation) else 0.0
+        return ic, rank_ic
