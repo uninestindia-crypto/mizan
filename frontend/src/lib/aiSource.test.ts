@@ -22,7 +22,7 @@ import {
   testTarget,
 } from "./aiSource";
 
-const NAMES: Record<AppId, string> = { antigravity: "Antigravity", claude: "Claude Code", codex: "Codex" };
+const NAMES: Record<AppId, string> = { claude: "Claude Code", codex: "Codex", gemini: "Gemini" };
 
 function app(id: AppId, state: AppState): AiApp {
   const installed = state !== "NOT_INSTALLED";
@@ -37,7 +37,7 @@ const LABELS: Record<string, string> = {
   groq: "Groq",
 };
 
-const NO_APPS = [app("antigravity", "NOT_INSTALLED"), app("claude", "NOT_INSTALLED"), app("codex", "NOT_INSTALLED")];
+const NO_APPS = [app("claude", "NOT_INSTALLED"), app("codex", "NOT_INSTALLED"), app("gemini", "NOT_INSTALLED")];
 const NO_KEYS = ["anthropic", "openai", "gemini", "groq"].map((id) => key(id, false));
 const withKeys = (...ids: string[]) => NO_KEYS.map((k) => ({ ...k, ready: ids.includes(k.id) }));
 const withApps = (...apps: AiApp[]) => NO_APPS.map((blank) => apps.find((a) => a.id === blank.id) ?? blank);
@@ -131,7 +131,7 @@ const CASES: Case[] = [
     apps: withApps(app("antigravity", "CONNECTED"), app("claude", "CONNECTED")),
     keys: withKeys("groq", "anthropic"),
     says:
-      "Right now your questions go to Antigravity, with Claude Code, " +
+      "Right now your questions go to Claude Code, with Antigravity, " +
       "your saved Anthropic (Claude) key and your saved Groq key as backups.",
   },
   {
