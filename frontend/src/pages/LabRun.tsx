@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { DrawdownChart, EquityChart, type EquitySeries } from "../components/charts";
 import { VerdictBanner } from "../components/common";
+import { LabRanges } from "../components/LabRanges";
 import { Badge, Button, Callout, Card, CardHeader, cx, Delta, EmptyState, PageHeader, Segmented, Skeleton, Switch } from "../components/ui";
 import { date, dateTime, inr, inrCompact, int, num, pct } from "../lib/format";
 import { useLabRun } from "../lib/queries";
@@ -97,6 +98,7 @@ function Result({ result }: { result: LabResult }) {
         <Card>
           <CardHeader title="Head to head" subtitle="After every charge and slippage" />
           <Comparison result={result} />
+          <LabRanges ranges={result.ranges} />
         </Card>
       </div>
 

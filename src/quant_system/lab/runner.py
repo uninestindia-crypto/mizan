@@ -11,8 +11,15 @@ from typing import Any, Literal
 import numpy as np
 
 from quant_system.lab.costs import COSTS_COVERED_FROM, BrokerCharges, RetailCostModel
+from quant_system.lab.ranges import bootstrap_ranges
 from quant_system.lab.simulator import SimConfig, SimResult, simulate
-from quant_system.lab.stats import WHOLE_LIST, excess_probability, performance, verdict
+from quant_system.lab.stats import (
+    WHOLE_LIST,
+    daily_returns,
+    excess_probability,
+    performance,
+    verdict,
+)
 from quant_system.lab.strategies import BuyAndHold, Panel, build_strategy, warmup_sessions
 from quant_system.lab.templates import get_template
 from quant_system.market.index import BENCHMARK_SYMBOL, BarSeries, MarketIndex, SymbolNotFoundError
@@ -245,6 +252,8 @@ def run_lab(
             else None
         ),
         "verdict": judgement.as_dict(),
+        # how much of the result could be luck of the particular days; the verdict above is unchanged by it
+        "ranges": bootstrap_ranges(daily_returns(strategy_result.equity)),
         "equity": [
             [
                 d,
