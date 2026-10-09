@@ -154,3 +154,9 @@ Fundamentals snapshot build still running (scratchpad `fundsnap/`); after it fin
 Open from the Portfolio helper: 'remember the account choice' uses localStorage (survives restarts); labels 'By stock' /
 'By lot' to be confirmed.
 
+UPDATED 2026-10-09 12:15 UTC. A session usage limit (reset 12:10 UTC) stopped both new helpers before they wrote their
+records or any file (checked: working tree clean apart from the two SQLite side files); I resumed them at 12:11 UTC:
+fundamentals screens (`af8649e`) and wording/holidays/badges (`a31ba91`). The fundamentals snapshot build had read 412 of
+423 companies when its background window ended; I restarted it with the same resume folder at 12:11 UTC so it only reads
+the rest. Everything committed is pushed (latest code commit `995acbaa4`).
+
