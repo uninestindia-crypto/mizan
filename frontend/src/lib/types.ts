@@ -615,8 +615,6 @@ export interface AgentCli {
   auth_detail: string;
   state: "NOT_INSTALLED" | "NEEDS_SIGN_IN" | "CONNECTED" | "UNKNOWN";
   signin_mode: "browser" | "terminal";
-  install_steps: string[];
-  run_cmd: string;
   job: AgentCliJob | null;
 }
 

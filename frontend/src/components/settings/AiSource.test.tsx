@@ -206,8 +206,8 @@ describe("which AI to prefer", () => {
       <>
         <AiSource />
         <div id={APPS_ANCHOR} tabIndex={-1}>
-          <div className="rounded-xl">
-            <span>Codex CLI</span>
+          <div className="rounded-xl" data-app-name="Codex CLI">
+            <h3>Codex</h3>
             <button>Sign in with browser</button>
           </div>
         </div>

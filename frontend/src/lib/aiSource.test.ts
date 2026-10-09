@@ -320,8 +320,8 @@ describe("the Set up jump", () => {
   function bridge() {
     document.body.innerHTML = `
       <div id="${APPS_ANCHOR}" tabindex="-1">
-        <div class="rounded-xl"><span>Claude Code</span><button>Sign in</button></div>
-        <div class="rounded-xl"><span>Codex CLI</span><button disabled>Wait</button><button>Install</button></div>
+        <div class="rounded-xl" data-app-name="Claude Code"><h3>Claude Code</h3><button>Sign in</button></div>
+        <div class="rounded-xl" data-app-name="Codex CLI"><h3>Codex</h3><button disabled>Wait</button><button>Install</button></div>
       </div>`;
   }
 
