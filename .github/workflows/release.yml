@@ -95,6 +95,12 @@ jobs:
               "- ``$($f.Name)`` (SHA-256: ``$hash``, Size: $([math]::Round($f.Length / 1MB, 2)) MB)"
           }
 
+          # The fingerprint file the app's "Update and restart" button checks the installer against.
+          $sumLines = foreach ($f in $files) {
+              "$((Get-FileHash -Path $f.FullName -Algorithm SHA256).Hash.ToLower())  $($f.Name)"
+          }
+          Set-Content -Path (Join-Path $distDir "SHA256SUMS-$tag.txt") -Value ($sumLines -join "`n") -Encoding ascii
+
           $notes = @"
           # QuantOS Release $tag
 
@@ -123,6 +129,7 @@ jobs:
             dist/*.exe
             dist/*.zip
             dist/*.json
+            dist/SHA256SUMS-*.txt
           draft: false
           prerelease: false
         env:

@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.2.0] - 2026-10-09
+
+### Added
+- Shariah results now come from each company's own filing wherever QuantOS holds one, with the filing behind every figure and a plain "out of date" label when the filing is old. You can read newer filings from inside the app
+- Fundamentals: a new screen where you set the filters and sorting yourself and compare up to four companies side by side. Each Stock page shows the company's results from its own filings with the formula and the filing behind every figure, and your Portfolio has a Fundamentals tab. Nothing is ranked or called good or bad
+- Several accounts in your Portfolio: see them together or one at a time, add, edit and remove accounts, and Add to portfolio now asks which account. Each purchase shows how long it has been held, as a fact, with no tax amounts
+- A top bar that tells you where you are and what needs attention: the screen and its parent, a real search field, whether the market is open, how fresh prices are, whether live prices are on and when an update is waiting
+- Update and restart: Settings, About can download the new version, check it against the fingerprint published with the release, install it and open QuantOS again. Windows may ask you to confirm
+- AI apps: install and sign in to Claude Code, Codex and Gemini from one plain card, with no terminal. Choose in Settings which AI answers the Copilot, and every chat is kept on this computer so you can search and carry one on
+
+### Fixed
+- A stock whose two Shariah standards disagree now reads the same result on its badge, its card and the screener tab
+- The market chip says Market open, Market closed or a holiday when it knows the NSE holiday list, and says Market hours otherwise
+- Add to portfolio on a stock page no longer files into the first account for people who keep several
+- "Coding agents" is now "AI apps", and developer words no longer appear in anything you read
+
+### Improved
+- Company results for 412 NSE companies ship with the app, so Fundamentals and Shariah screens work on a brand-new laptop with no internet. They are out of date until you read newer filings, and say so
+- Back and forward buttons sit in the new top bar
+
+### Preserved Guards
+- Keys stay strictly encrypted in local Windows Credential Manager and are never sent to external servers
+- Zero unauthorized live-broker order execution — all autonomous decisions strictly sandboxed and verified
+- Halal results come only from deterministic screening rules applied to a company's own figures, never from an AI model
+- Company results are facts from filings, not advice, and old data is always labelled
+- Decimal-exact financial accounting and statutory NSE transaction cost schedules preserved
+
+---
+
 ## [3.1.0] - 2026-10-08
 
 ### Added
