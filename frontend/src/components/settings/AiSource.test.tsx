@@ -38,7 +38,7 @@ const BASE: AiStatus = {
   apps: [
     app("claude", "Claude Code", "CONNECTED"),
     app("codex", "Codex", "NEEDS_SIGN_IN"),
-    app("gemini", "Gemini", "NOT_INSTALLED"),
+    app("antigravity", "Antigravity", "NOT_INSTALLED"),
   ],
   ai: AUTO,
   providers: keys("openai"),
@@ -173,14 +173,14 @@ describe("which AI to prefer", () => {
     await shown();
     expect(rowOf(/^Claude Code/).getByText("Ready")).toBeInTheDocument();
     expect(rowOf(/^Codex/).getByText("Not signed in")).toBeInTheDocument();
-    expect(rowOf(/^Gemini/).getByText("Not installed")).toBeInTheDocument();
+    expect(rowOf(/^Antigravity/).getByText("Not installed")).toBeInTheDocument();
     expect(rowOf(/^Claude Code/).queryByRole("button")).toBeNull();
     const setUp = screen.getAllByRole("button", { name: /^Set up/ });
-    expect(setUp.map((b) => b.getAttribute("aria-label"))).toEqual(["Set up Codex", "Set up Gemini"]);
+    expect(setUp.map((b) => b.getAttribute("aria-label"))).toEqual(["Set up Antigravity", "Set up Codex"]);
   });
 
   it("says an app that cannot report its sign-in has not been checked yet", async () => {
-    await shown({ apps: [app("gemini", "Gemini", "UNKNOWN")] });
+    await shown({ apps: [app("antigravity", "Antigravity", "UNKNOWN")] });
     expect(screen.getByText("Not checked yet. Press Test this AI.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Set up/ })).toBeNull();
   });
@@ -217,7 +217,7 @@ describe("which AI to prefer", () => {
     expect(screen.getByRole("button", { name: "Sign in with browser" })).toHaveFocus();
   });
 
-  it("lands on Gemini's card too, now that its name no longer carries the developer's word", async () => {
+  it("lands on Antigravity's card too, now that its name no longer carries the developer's word", async () => {
     engine();
     renderApp(
       <>
@@ -226,15 +226,15 @@ describe("which AI to prefer", () => {
           <div className="rounded-xl" data-app-name="Codex">
             <button>Sign in with browser</button>
           </div>
-          <div className="rounded-xl" data-app-name="Gemini">
-            <h3>Gemini</h3>
-            <button>Install Gemini</button>
+          <div className="rounded-xl" data-app-name="Antigravity">
+            <h3>Antigravity</h3>
+            <button>Install Antigravity</button>
           </div>
         </div>
       </>,
     );
-    click(await screen.findByRole("button", { name: "Set up Gemini" }));
-    expect(screen.getByRole("button", { name: "Install Gemini" })).toHaveFocus();
+    click(await screen.findByRole("button", { name: "Set up Antigravity" }));
+    expect(screen.getByRole("button", { name: "Install Antigravity" })).toHaveFocus();
   });
 });
 

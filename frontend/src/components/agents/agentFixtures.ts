@@ -70,7 +70,7 @@ export const RESULT: RunResult = {
 };
 
 // The engine lists the AI apps on this computer first, then the keys. An agent can run if either kind is ready.
-const APPS = ["claude", "codex", "gemini"].map((name) => ({ id: `cli:${name}`, label: `${name} app`, ready: false }));
+const APPS = ["antigravity", "claude", "codex"].map((name) => ({ id: `cli:${name}`, label: `${name} app`, ready: false }));
 const key = (ready: boolean) => ({ id: "openai", label: "OpenAI", ready });
 export const AI_READY = { models: [...APPS, key(true)] };
 export const AI_APP_READY = { models: [{ ...APPS[0], ready: true }, ...APPS.slice(1), key(false)] };

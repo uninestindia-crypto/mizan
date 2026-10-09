@@ -678,7 +678,7 @@ export interface AiTool {
 
 export interface AgentCliJob {
   id: string;
-  action: "install" | "signin";
+  action: "install" | "signin" | "update";
   state: "RUNNING" | "DONE" | "FAILED";
   message: string;
   /** A sign-in address the tool printed, offered if the browser did not open by itself. */
@@ -705,6 +705,38 @@ export interface AgentCli {
   state: "NOT_INSTALLED" | "NEEDS_SIGN_IN" | "CONNECTED" | "UNKNOWN";
   signin_mode: "browser" | "terminal";
   job: AgentCliJob | null;
+  can_update?: boolean;
+  update_available?: boolean;
+  update_steps?: string[];
+}
+
+export interface CliModel {
+  id: string;
+  name: string;
+  provider: string;
+  description: string;
+  context_window?: string;
+  recommended: boolean;
+}
+
+export interface CliFeature {
+  name: string;
+  description: string;
+  status: "active" | "available";
+}
+
+export interface CliCapabilities {
+  agent_id: string;
+  name: string;
+  maker: string;
+  installed: boolean;
+  authenticated: boolean;
+  version: string | null;
+  models: CliModel[];
+  features: CliFeature[];
+  update_available: boolean;
+  latest_version: string | null;
+  last_fetched: string;
 }
 
 export interface AiModels {

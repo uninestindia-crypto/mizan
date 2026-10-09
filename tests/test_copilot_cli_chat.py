@@ -1,4 +1,4 @@
-"""The Copilot can ask the signed-in AI app already on this computer (Claude Code, Codex, Gemini CLI) instead of a key.
+"""The Copilot can ask the signed-in AI app already on this computer (Claude Code, Codex, Antigravity CLI) instead of a key.
 
 The app is run with its tools switched off, the question goes in on standard input (never on the command line), and
 anything unexpected fails closed with a plain sentence instead of being retried with the safety switches removed.
@@ -84,14 +84,14 @@ def test_codex_is_run_read_only_and_reads_the_question_from_standard_input() -> 
     assert argv[-1] == "-"
 
 
-def test_gemini_gets_only_a_fixed_instruction_and_the_question_arrives_on_standard_input() -> None:
-    argv = build_command("gemini", EXE)
+def test_antigravity_gets_only_a_fixed_instruction_and_the_question_arrives_on_standard_input() -> None:
+    argv = build_command("antigravity", EXE)
     assert argv[1] == "-p" and "standard input" in argv[2]
 
 
 def test_an_app_that_cannot_be_used_for_chat_is_refused() -> None:
     with pytest.raises(ValueError, match="chat"):
-        build_command("antigravity", EXE)
+        build_command("gemini", EXE)
 
 
 # --------------------------------------------------------------------------------------- the environment
@@ -129,7 +129,7 @@ def test_claudes_json_answer_is_unwrapped_and_names_the_model_it_used() -> None:
     assert (reply.text, reply.status, reply.model) == ("It is fine.", 200, "claude-sonnet-x")
 
 
-@pytest.mark.parametrize("agent", ["codex", "gemini"])
+@pytest.mark.parametrize("agent", ["codex", "antigravity"])
 def test_the_other_apps_plain_text_answer_is_used_as_it_is(agent: str) -> None:
     reply = _ask(_chat(agent, FakeRunner(RunResult(0, "  Plain answer.\n"))))
     assert (reply.text, reply.status) == ("Plain answer.", 200)
@@ -243,7 +243,7 @@ def test_the_real_runner_reports_a_program_that_is_not_there() -> None:
 
 def test_the_names_a_person_sees_for_the_apps_do_not_use_the_developers_word() -> None:
     assert CLI_LABELS == {
+        "antigravity": "Antigravity (your Google sign-in)",
         "claude": "Claude Code (your Claude sign-in)",
         "codex": "Codex (your ChatGPT sign-in)",
-        "gemini": "Gemini (your Google sign-in)",
     }

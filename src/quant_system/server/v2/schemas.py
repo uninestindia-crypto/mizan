@@ -136,7 +136,7 @@ class CredentialImportRequest(BaseModel):
 
 class CliLaunchRequest(BaseModel):
     agent_id: str = Field(min_length=1, max_length=50)
-    action: Literal["run", "signin", "install", "custom"] = "run"
+    action: Literal["run", "signin", "install", "update", "custom"] = "run"
     custom_command: str | None = Field(default=None, max_length=500)
 
 

@@ -22,7 +22,7 @@ import {
   testTarget,
 } from "./aiSource";
 
-const NAMES: Record<AppId, string> = { claude: "Claude Code", codex: "Codex", gemini: "Gemini" };
+const NAMES: Record<AppId, string> = { antigravity: "Antigravity", claude: "Claude Code", codex: "Codex" };
 
 function app(id: AppId, state: AppState): AiApp {
   const installed = state !== "NOT_INSTALLED";
@@ -37,7 +37,7 @@ const LABELS: Record<string, string> = {
   groq: "Groq",
 };
 
-const NO_APPS = [app("claude", "NOT_INSTALLED"), app("codex", "NOT_INSTALLED"), app("gemini", "NOT_INSTALLED")];
+const NO_APPS = [app("antigravity", "NOT_INSTALLED"), app("claude", "NOT_INSTALLED"), app("codex", "NOT_INSTALLED")];
 const NO_KEYS = ["anthropic", "openai", "gemini", "groq"].map((id) => key(id, false));
 const withKeys = (...ids: string[]) => NO_KEYS.map((k) => ({ ...k, ready: ids.includes(k.id) }));
 const withApps = (...apps: AiApp[]) => NO_APPS.map((blank) => apps.find((a) => a.id === blank.id) ?? blank);
@@ -128,10 +128,10 @@ const CASES: Case[] = [
   },
   {
     name: "two apps and a key, in the fixed order",
-    apps: withApps(app("gemini", "CONNECTED"), app("claude", "CONNECTED")),
+    apps: withApps(app("antigravity", "CONNECTED"), app("claude", "CONNECTED")),
     keys: withKeys("groq", "anthropic"),
     says:
-      "Right now your questions go to Claude Code, with Gemini, " +
+      "Right now your questions go to Antigravity, with Claude Code, " +
       "your saved Anthropic (Claude) key and your saved Groq key as backups.",
   },
   {
@@ -143,9 +143,9 @@ const CASES: Case[] = [
   },
   {
     name: "an app that cannot say whether it is signed in",
-    apps: withApps(app("gemini", "UNKNOWN")),
+    apps: withApps(app("antigravity", "UNKNOWN")),
     keys: NO_KEYS,
-    says: "Right now your questions go to Gemini (not checked yet).",
+    says: "Right now your questions go to Antigravity (not checked yet).",
   },
   {
     name: "apps that are all signed out and no key",
@@ -172,9 +172,9 @@ describe("the sentence that says where a question goes", () => {
     expect(text).not.toMatch(/\b(API|token|terminal|command|install script|CLI)\b/i);
   });
 
-  it("names Gemini without the developer's word, even if an older engine still sends it", () => {
-    expect(appName({ id: "gemini", name: "Gemini CLI" })).toBe("Gemini");
-    expect(appName(app("gemini", "CONNECTED"))).toBe("Gemini");
+  it("names Antigravity without the developer's word, even if an older engine still sends it", () => {
+    expect(appName({ id: "antigravity", name: "Antigravity CLI" })).toBe("Antigravity");
+    expect(appName(app("antigravity", "CONNECTED"))).toBe("Antigravity");
   });
 });
 

@@ -379,11 +379,11 @@ export function useRefreshAgentClis() {
   });
 }
 
-/** Starts an install or a sign-in for one AI app on this computer. The engine runs it in the background. */
+/** Starts an install, sign-in, or update for one AI app on this computer. The engine runs it in the background. */
 export function useLaunchCli() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { agent_id: string; action: "signin" | "install" }) =>
+    mutationFn: (body: { agent_id: string; action: "signin" | "install" | "update" }) =>
       api<{ success: boolean; message: string; job?: import("./types").AgentCliJob }>("/api/v2/cli/launch", "POST", body),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: keys.agentClis });
@@ -397,6 +397,36 @@ export function useSendCliCode() {
     mutationFn: ({ agentId, text }: { agentId: string; text: string }) =>
       api<{ sent: boolean }>(`/api/v2/cli/jobs/${agentId}/input`, "POST", { text }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: keys.agentClis }),
+  });
+}
+
+export function useCliCapabilities(agentId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["cli-capabilities", agentId],
+    queryFn: () => api<import("./types").CliCapabilities>(`/api/v2/cli/${agentId}/capabilities`),
+    enabled,
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useCliAutoUpdateStatus() {
+  return useQuery({
+    queryKey: ["cli-auto-update"],
+    queryFn: () => api<{ auto_update_cli: boolean }>("/api/v2/cli/auto-update"),
+    staleTime: 60_000,
+  });
+}
+
+export function useCliAutoUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (enabled: boolean) =>
+      api<{ auto_update_cli: boolean; jobs_started: unknown[] }>("/api/v2/cli/auto-update", "POST", enabled),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["cli-auto-update"] });
+      void qc.invalidateQueries({ queryKey: keys.status });
+      void qc.invalidateQueries({ queryKey: keys.agentClis });
+    },
   });
 }
 

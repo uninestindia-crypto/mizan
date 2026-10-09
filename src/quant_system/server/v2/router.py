@@ -46,6 +46,8 @@ from quant_system.server.v2.accounts import Account, AccountError
 from quant_system.server.v2.aitools import detect_cli_tools
 from quant_system.server.v2.auto_update import AutoUpdater
 from quant_system.server.v2.cli_bridge import (
+    auto_update_all_clis,
+    fetch_cli_capabilities,
     launch_agent_session,
     list_cli_status,
     send_job_input,
@@ -1012,7 +1014,7 @@ def get_cli_status(refresh: bool = False) -> list[dict[str, Any]]:
 @router.post("/cli/launch")
 def post_cli_launch(body: CliLaunchRequest) -> dict[str, Any]:
     try:
-        if body.action in ("install", "signin"):
+        if body.action in ("install", "signin", "update"):
             status = {item["id"]: item for item in list_cli_status()}.get(body.agent_id)
             terminal_signin = (
                 body.action == "signin"
@@ -1035,6 +1037,32 @@ def post_cli_job_input(agent_id: str, body: CliCodeRequest) -> dict[str, bool]:
     if not send_job_input(agent_id, body.text):
         raise V2Error(409, "NO_SIGN_IN_WAITING", "There is no sign-in waiting for a code.")
     return {"sent": True}
+
+
+@router.get("/cli/{agent_id}/capabilities")
+def get_cli_capabilities(agent_id: str, refresh: bool = False) -> dict[str, Any]:
+    try:
+        return fetch_cli_capabilities(agent_id, force_refresh=refresh)
+    except ValueError as err:
+        raise V2Error(404, "UNKNOWN_CLI", str(err)) from err
+    except Exception as err:
+        raise V2Error(500, "CAPABILITIES_FAILED", str(err)) from err
+
+
+@router.get("/cli/auto-update")
+def get_cli_auto_update() -> dict[str, Any]:
+    current = services().state.settings()
+    return {"auto_update_cli": current.auto_update_cli}
+
+
+@router.post("/cli/auto-update")
+def post_cli_auto_update(body: dict[str, Any]) -> dict[str, Any]:
+    enabled = bool(body.get("enabled", False))
+    services().state.update_settings({"auto_update_cli": enabled})
+    started: list[dict[str, Any]] = []
+    if enabled:
+        started = auto_update_all_clis()
+    return {"auto_update_cli": enabled, "jobs_started": started}
 
 
 # ---------------------------------------------------------------------------- AI models
