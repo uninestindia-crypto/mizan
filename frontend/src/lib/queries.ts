@@ -325,6 +325,8 @@ export interface HoldingInput {
   avg_price: string;
   buy_date: string;
   note: string;
+  /** Which account holds it. Left out, a new purchase goes to the first account and an edited one stays where it is. */
+  account_id?: number;
 }
 
 export function useSaveHolding() {
