@@ -31,6 +31,7 @@ const PLAIN: Record<string, string> = {
   "/markets": "Markets",
   "/lab": "Strategy Lab",
   "/portfolio": "Portfolio",
+  "/fundamentals": "Fundamentals",
   "/paper": "Paper trading",
   "/agents": "Agents",
   "/shariah": "Mizan Shariah",

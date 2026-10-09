@@ -5,9 +5,11 @@ import { Link, useParams } from "react-router";
 import { PriceChart, type PriceRange } from "../components/charts";
 import { AsOf, DataGate } from "../components/common";
 import { SecondOpinionButton } from "../components/copilot/SecondOpinionButton";
-import { HoldingDialog } from "../components/HoldingDialog";
+import { FundamentalsSection } from "../components/fundamentals/FundamentalsSection";
 import { LivePrice } from "../components/live/LivePrice";
 import { useWatchGuard } from "../components/mode/useWatchGuard";
+import { HoldingFormDialog } from "../components/portfolio/HoldingFormDialog";
+import { rememberedChoice } from "../components/portfolio/useAccountChoice";
 import { StockProofPanel } from "../components/proof/StockProofPanel";
 import { Badge, Button, Callout, Card, CardHeader, Delta, EmptyState, Input, Segmented, Skeleton, Stat, Switch } from "../components/ui";
 import { ApiError } from "../lib/api";
@@ -196,8 +198,15 @@ function StockPage({ symbol }: { symbol: string }) {
           </Card>
         </div>
       </div>
+      <FundamentalsSection symbol={symbol} />
       {guard.dialog}
-      <HoldingDialog open={adding} onOpenChange={setAdding} initial={{ symbol, avg_price: snap ? String(snap.close) : "" }} lockSymbol />
+      <HoldingFormDialog
+        open={adding}
+        onOpenChange={setAdding}
+        initial={{ symbol, avg_price: snap ? String(snap.close) : "" }}
+        viewing={rememberedChoice()}
+        lockSymbol
+      />
     </div>
   );
 }

@@ -1,11 +1,20 @@
 import { ChevronRight } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { inr, int, num, pct, plural } from "../../lib/format";
+import type { PositionLot, PositionLots } from "../../lib/fundamentalsTypes";
 import type { PortfolioPosition, PositionPlace } from "../../lib/types";
 import { useModeFilter } from "../mode/useModeFilter";
 import { cx } from "../ui";
 import { GainCell, HEAD_ROW, HoldingsFrame, StockName, ValueAndGain } from "./holdingCells";
+import { LotsList } from "./LotsList";
 import { useNarrow } from "./useNarrow";
+
+type Position = PortfolioPosition & PositionLots;
+
+const lotsOf = (position: Position): PositionLot[] => position.lots ?? [];
+
+/** A line opens when there are several accounts to name, or purchases to show. */
+const canOpen = (position: Position, showAccounts: boolean): boolean => showAccounts || lotsOf(position).length > 0;
 
 function addPlace(byAccount: Map<number, PositionPlace>, place: PositionPlace): void {
   const before = byAccount.get(place.account_id);
@@ -41,10 +50,10 @@ function useOpened(): [ReadonlySet<string>, (symbol: string) => void] {
   return [opened, flip];
 }
 
-type Filter = ReturnType<typeof useModeFilter<PortfolioPosition>>;
+type Filter = ReturnType<typeof useModeFilter<Position>>;
 
 /** One line per stock across the accounts in view. With several accounts, a line opens to show who holds how many. */
-export function StockTable(props: { positions: PortfolioPosition[]; showAccounts: boolean; toggle: ReactNode }) {
+export function StockTable(props: { positions: Position[]; showAccounts: boolean; toggle: ReactNode }) {
   const filter = useModeFilter(props.positions, "portfolio");
   const [opened, flip] = useOpened();
   const narrow = useNarrow();
@@ -58,7 +67,7 @@ export function StockTable(props: { positions: PortfolioPosition[]; showAccounts
             position={position}
             filter={filter}
             narrow={narrow}
-            expandable={props.showAccounts}
+            showAccounts={props.showAccounts}
             expanded={opened.has(position.symbol)}
             onFlip={() => flip(position.symbol)}
           />
@@ -85,10 +94,10 @@ function StockHead({ narrow }: { narrow: boolean }) {
 }
 
 interface GroupProps {
-  position: PortfolioPosition;
+  position: Position;
   filter: Filter;
   narrow: boolean;
-  expandable: boolean;
+  showAccounts: boolean;
   expanded: boolean;
   onFlip: () => void;
 }
@@ -97,15 +106,15 @@ function PositionGroup(props: GroupProps) {
   return (
     <tbody className="border-b border-line last:border-b-0">
       <PositionRow {...props} />
-      {props.expandable && props.expanded && <PlacesRow position={props.position} narrow={props.narrow} />}
+      {props.expanded && canOpen(props.position, props.showAccounts) && <DetailsRow {...props} />}
     </tbody>
   );
 }
 
 /** The small line under a stock's symbol. On a phone it also carries the shares and the average price. */
-function subLine(p: PortfolioPosition, props: GroupProps): ReactNode {
+function subLine(p: Position, props: GroupProps): ReactNode {
   if (p.error) return p.error;
-  const where = props.expandable ? whereText(placesOf(p)) : p.name;
+  const where = props.showAccounts ? whereText(placesOf(p)) : p.name;
   if (!props.narrow) return where;
   return (
     <>
@@ -123,7 +132,7 @@ function PositionRow(props: GroupProps) {
     <tr>
       <td className="px-4 py-3">
         <div className="flex items-start gap-1.5">
-          {props.expandable && <Opener position={p} expanded={props.expanded} onFlip={props.onFlip} />}
+          {canOpen(p, props.showAccounts) && <Opener position={p} expanded={props.expanded} onFlip={props.onFlip} />}
           <StockName symbol={p.symbol} filter={props.filter} sub={subLine(p, props)} />
         </div>
       </td>
@@ -154,7 +163,7 @@ function ValueCells({ position: p, narrow }: { position: PortfolioPosition; narr
   );
 }
 
-function Opener(props: { position: PortfolioPosition; expanded: boolean; onFlip: () => void }) {
+function Opener(props: { position: Position; expanded: boolean; onFlip: () => void }) {
   const symbol = props.position.symbol;
   return (
     <button
@@ -170,21 +179,33 @@ function Opener(props: { position: PortfolioPosition; expanded: boolean; onFlip:
   );
 }
 
-function PlacesRow({ position, narrow }: { position: PortfolioPosition; narrow: boolean }) {
+function Places({ position }: { position: Position }) {
+  return (
+    <ul aria-label={`Accounts holding ${position.symbol}`} className="grid gap-1.5 text-[13px] sm:grid-cols-2">
+      {placesOf(position).map((place) => (
+        <li key={place.account_id} className="flex items-baseline justify-between gap-3">
+          <span className="min-w-0 truncate text-ink">{place.account_name ?? "An account"}</span>
+          <span className="num shrink-0 text-ink-2">
+            {plural(place.quantity, "share")}
+            {place.value == null ? "" : ` · ${inr(place.value, 0)}`}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** What opens under a stock: which accounts hold it, and each purchase with how long it has been held. */
+function DetailsRow(props: GroupProps) {
+  const { position } = props;
+  const lots = lotsOf(position);
   return (
     <tr id={`places-${position.symbol}`} className="bg-surface-2/50">
-      <td colSpan={narrow ? 2 : 7} className="px-4 py-3 pl-11">
-        <ul aria-label={`Accounts holding ${position.symbol}`} className="grid gap-1.5 text-[13px] sm:grid-cols-2">
-          {placesOf(position).map((place) => (
-            <li key={place.account_id} className="flex items-baseline justify-between gap-3">
-              <span className="min-w-0 truncate text-ink">{place.account_name ?? "An account"}</span>
-              <span className="num shrink-0 text-ink-2">
-                {plural(place.quantity, "share")}
-                {place.value == null ? "" : ` · ${inr(place.value, 0)}`}
-              </span>
-            </li>
-          ))}
-        </ul>
+      <td colSpan={props.narrow ? 2 : 7} className="space-y-3 px-4 py-3 pl-11">
+        {props.showAccounts && <Places position={position} />}
+        {lots.length > 0 && (
+          <LotsList symbol={position.symbol} lots={lots} note={position.lots_note} showAccount={props.showAccounts} />
+        )}
       </td>
     </tr>
   );
