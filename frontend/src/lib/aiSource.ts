@@ -6,7 +6,7 @@
 import type { ProviderOption } from "./copilot";
 
 export type AiKind = "cli" | "api";
-export type AppId = "antigravity" | "claude" | "codex";
+export type AppId = "claude" | "codex" | "gemini";
 export type AppState = "CONNECTED" | "NEEDS_SIGN_IN" | "NOT_INSTALLED" | "UNKNOWN";
 
 export interface AiApp {
@@ -54,7 +54,7 @@ export const CLI_PREFIX = "cli:";
 /** Where the install and sign-in cards sit on the Settings screen, so "Set up" can take a person to them. */
 export const APPS_ANCHOR = "ai-apps-setup";
 
-const APP_ORDER: readonly string[] = ["antigravity", "claude", "codex"];
+const APP_ORDER: readonly string[] = ["claude", "codex", "antigravity"];
 const KEY_ORDER: readonly string[] = ["anthropic", "openai", "gemini", "groq", "deepseek", "mistral", "openrouter"];
 const APP_NAMES: Record<string, string> = { antigravity: "Antigravity", claude: "Claude Code", codex: "Codex" };
 
