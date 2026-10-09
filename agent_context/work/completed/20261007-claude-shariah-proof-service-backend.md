@@ -1,6 +1,6 @@
 # Work record: Shariah proof service (backend), sub-task of the Shariah mode and filing proof work
 
-STATUS: COMPLETED_PENDING_COMMIT (coordinator commits the paths listed in the report; this record then moves to completed)  
+STATUS: COMPLETED (released in v3.2.0; remaining work is in agent_context/handoffs/20261009-claude-v3-2-0-release-handoff.md)  
 OWNER: Claude Code worker (backend proof service), spawned by the coordinator session  
 TOOL: Claude Code  
 STARTED_UTC: 2026-10-07  

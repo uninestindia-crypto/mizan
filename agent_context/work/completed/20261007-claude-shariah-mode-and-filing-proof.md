@@ -1,6 +1,6 @@
 # Work record: Shariah mode everywhere, and real filing proof on every stock
 
-STATUS: ACTIVE  
+STATUS: COMPLETED (released in v3.2.0; remaining work is in agent_context/handoffs/20261009-claude-v3-2-0-release-handoff.md)  
 OWNER: Claude Code (cloud session)  
 TOOL: Claude Code  
 STARTED_UTC: 2026-10-07T05:05Z  
