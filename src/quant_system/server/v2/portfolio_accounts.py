@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from quant_system.server.v2.accounts import ACCOUNT_KINDS, Account
+from quant_system.server.v2.holding_periods import HOLDING_PERIOD_NOTE
 
 __all__ = ["ACCOUNT_KINDS", "account_rows", "positions"]
 
@@ -54,6 +55,22 @@ def _worth(valued: list[dict[str, Any]], cost: float, total: float) -> dict[str,
     }
 
 
+def _lot(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "holding_id": row.get("id"),
+        "account_id": row["account_id"],
+        "account_name": row.get("account_name"),
+        "quantity": row["quantity"],
+        **row["lot"],
+    }
+
+
+def _lots(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Each buy lot with its holding period, oldest first. Facts only: no tax rates or amounts."""
+    held = [_lot(row) for row in rows if row.get("lot")]
+    return sorted(held, key=lambda lot: (lot["buy_date"], lot["holding_id"] or 0))
+
+
 def _position(symbol: str, rows: list[dict[str, Any]], total: float) -> dict[str, Any]:
     valued = [r for r in rows if "value" in r]
     quantity = sum(r["quantity"] for r in rows)
@@ -65,6 +82,8 @@ def _position(symbol: str, rows: list[dict[str, Any]], total: float) -> dict[str
         "avg_price": cost / quantity if quantity else 0.0,
         "cost": cost,
         "accounts": [_where(r) for r in rows],
+        "lots": _lots(rows),
+        "lots_note": HOLDING_PERIOD_NOTE,
     }
     if valued and len(valued) == len(rows):
         return {**position, **_worth(valued, cost, total)}
