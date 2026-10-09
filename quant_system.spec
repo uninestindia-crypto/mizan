@@ -11,6 +11,8 @@ block_cipher = None
 added_files = [
     ('src/quant_system/server/static', 'quant_system/server/static'),
     ('configs', 'configs'),
+    ('data/shariah', 'data/shariah'),
+    ('data/authorities/nse-all-listed-equities.csv', 'data/authorities'),
 ]
 
 hidden_imports = [

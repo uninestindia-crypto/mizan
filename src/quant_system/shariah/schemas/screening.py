@@ -71,6 +71,14 @@ class TransparencyFields(BaseModel):
     """What every verdict says about itself: how sure, by which rules, as of when, and what it leaves out."""
 
     data_status: DataStatus = DataStatus.UNVERIFIED_SAMPLE
+    verdict_source: str = Field(
+        default="sample",
+        description="Where the verdict came from: 'filing' (the company's own results on NSE) or 'sample'",
+    )
+    as_of: str | None = Field(
+        default=None,
+        description="Period end of the filing the verdict rests on, when it rests on one",
+    )
     data_notice: str = SAMPLE_DATA_NOTICE
     methodology_version: str = METHODOLOGY_VERSION
     screened_at: str = Field(..., description="UTC time of this screening, to the second")

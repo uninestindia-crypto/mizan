@@ -15,7 +15,7 @@ from typing import Any
 
 from quant_system.copilot.news import GoogleNewsSource
 from quant_system.copilot.registry import ToolContext, UserFacingError
-from quant_system.copilot.sources import SqliteShariahSource
+from quant_system.copilot.sources import ProofBackedShariahSource, SqliteShariahSource
 from quant_system.server.v2.credentials import AI_KEY_NAMES
 from quant_system.server.v2.portfolio import portfolio_summary
 from quant_system.server.v2.tools import SEGMENTS, ToolError, position_size, trade_costs
@@ -102,8 +102,16 @@ def _open_read_only(path: Path) -> sqlite3.Connection:
     return sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
 
 
-def _shariah() -> SqliteShariahSource:
-    return SqliteShariahSource(lambda: _open_read_only(_shariah_path()))
+def _proof(symbol: str) -> dict[str, Any]:
+    """The Shariah engine's proof for a stock, from the company's own filing where QuantOS holds one."""
+    from quant_system.server.v2.shariah_wiring import proof_runtime
+
+    return proof_runtime().service.proof(symbol)
+
+
+def _shariah() -> ProofBackedShariahSource:
+    sample = SqliteShariahSource(lambda: _open_read_only(_shariah_path()))
+    return ProofBackedShariahSource(sample, _proof)
 
 
 def _portfolio() -> dict[str, Any]:

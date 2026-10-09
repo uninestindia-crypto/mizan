@@ -22,6 +22,7 @@ added_files = [
     (str(root_dir / 'configs'), 'configs'),
     (str(root_dir / 'assets'), 'assets'),
     (str(root_dir / 'data' / 'shariah'), 'data/shariah'),
+    (str(root_dir / 'data' / 'authorities' / 'nse-all-listed-equities.csv'), 'data/authorities'),
 ]
 
 hidden_imports = [

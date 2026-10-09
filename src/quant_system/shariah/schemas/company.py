@@ -101,6 +101,14 @@ class CompanySummary(BaseModel):
         default=DataStatus.UNVERIFIED_SAMPLE,
         description="How far the figures behind these results are checked",
     )
+    verdict_source: str = Field(
+        default="sample",
+        description="Where the verdict came from: 'filing' (the company's own results on NSE) or 'sample'",
+    )
+    as_of: str | None = Field(
+        default=None,
+        description="Period end of the filing the verdict rests on, when it rests on one",
+    )
     purification_ratio: float
     is_nifty_50: bool = False
     is_nifty_500: bool = True
@@ -123,6 +131,14 @@ class SearchSuggestion(BaseModel):
     aaoifi_status: ComplianceStatus
     tasis_status: ComplianceStatus
     data_status: DataStatus = DataStatus.UNVERIFIED_SAMPLE
+    verdict_source: str = Field(
+        default="sample",
+        description="Where the verdict came from: 'filing' (the company's own results on NSE) or 'sample'",
+    )
+    as_of: str | None = Field(
+        default=None,
+        description="Period end of the filing the verdict rests on, when it rests on one",
+    )
 
 
 class CompanyProfile(BaseModel):
@@ -164,11 +180,20 @@ class CompanyDetail(BaseModel):
     sector_failure_reason: str | None = None
 
     data_status: DataStatus = DataStatus.UNVERIFIED_SAMPLE
+    verdict_source: str = Field(
+        default="sample",
+        description="Where the verdict came from: 'filing' (the company's own results on NSE) or 'sample'",
+    )
+    as_of: str | None = Field(
+        default=None,
+        description="Period end of the filing the verdict rests on, when it rests on one",
+    )
 
     aaoifi_status: ComplianceStatus
-    aaoifi_debt_ratio: float
-    aaoifi_cash_ratio: float
-    aaoifi_rec_ratio: float
+    # None when the market-value standard could not be worked out (a filing, but no price history)
+    aaoifi_debt_ratio: float | None
+    aaoifi_cash_ratio: float | None
+    aaoifi_rec_ratio: float | None
     aaoifi_imp_ratio: float
 
     tasis_status: ComplianceStatus
