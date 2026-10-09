@@ -114,3 +114,15 @@ dialog, Portfolio accounts. Follow-ups the card's helper found, not yet done:
 3. `APP_NAMES` in `lib/aiSource.ts` still says "Gemini CLI" in the choice card; the founder's wording rule says drop "CLI".
 4. Gemini sign-in still opens a window (`signin_mode="terminal"` in `cli_bridge.py`); only an engine change fixes that.
 
+UPDATED 2026-10-09 08:00 UTC. Fundamentals backend committed and pushed (`b34b236f6`); I re-ran its gates myself: 2,786
+tests passed (fundamentals, portfolio, Copilot, Shariah, no-terminal copy), ruff, mypy --platform win32 (84 files), craft
+checks and detect-secrets all clean. The full snapshot build (423 companies, 8 quarters, 1.5 s pause, one request at a
+time) was started in the background at about 08:00 UTC, writing to the scratchpad, not to `data/`. When it finishes:
+check the log, copy to `data/fundamentals/fundamentals_snapshot.json.gz`, add `data/fundamentals` to the three
+`.spec` files as `data/shariah` is, run the packaging test, commit. Do NOT start a Shariah filings refresh meanwhile (two
+NSE jobs have no shared gate). Still running: top bar and Update dialog, Portfolio accounts screens.
+Open points from the fundamentals helper (founder decisions): rule-of-thumb thresholds in `fundamentals/scorecard.py`
+RULES (profit in 6 of 8 quarters, growth not below zero, interest cover at least 3, borrowings at most 1x owners' money,
+ROE at least 12%); `is_long_term` means strictly more than 12 months, 29 Feb counted as 28 Feb; whether stale companies
+should be hidden from the screen by default; whether banks and lenders get their own reader (today: FORMAT_NOT_READ).
+
