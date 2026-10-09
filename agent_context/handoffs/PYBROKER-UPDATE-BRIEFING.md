@@ -1,6 +1,6 @@
 # Mizan Upstream PyBroker Update Briefing
 
-**Generated UTC**: 2026-10-08T08:48:35Z
+**Generated UTC**: 2026-10-09T13:22:01Z
 **Current Mizan PyBroker**: `v2.0.1`
 **New Upstream PyBroker**: `v2.2.0`
 **Release URL**: [https://github.com/edtechre/pybroker/releases/tag/v2.2.0](https://github.com/edtechre/pybroker/releases/tag/v2.2.0)
