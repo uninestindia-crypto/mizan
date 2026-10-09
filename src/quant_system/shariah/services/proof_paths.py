@@ -52,8 +52,9 @@ def bundled_snapshot_path() -> Path:
 
 
 @lru_cache(maxsize=4)
-def _count_rows(path: Path, modified: int) -> int:
-    del modified  # part of the cache key: a changed file is counted again
+def _count_rows(path: Path, modified: int, size: int) -> int:
+    # Both are part of the cache key: a changed file is counted again, even when two writes share one clock tick.
+    del modified, size
     with path.open(encoding="utf-8", newline="") as handle:
         return max(sum(1 for line in handle if line.strip()) - 1, 0)
 
@@ -62,7 +63,8 @@ def listed_equities_count() -> int | None:
     """How many companies NSE lists, from the bundled list, or None when this copy has no such list."""
     for path in candidate_files(LISTED_FILE):
         try:
-            return _count_rows(path, path.stat().st_mtime_ns)
+            seen = path.stat()
+            return _count_rows(path, seen.st_mtime_ns, seen.st_size)
         except (OSError, UnicodeDecodeError):
             continue
     return None

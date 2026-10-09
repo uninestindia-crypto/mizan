@@ -46,9 +46,11 @@ class _AppBars:
 
         current = services().index.current_path()
         try:
-            return f"{current.name}:{current.stat().st_mtime_ns}" if current else "none"
+            seen = current.stat() if current else None
         except OSError:
             return "none"
+        # The size joins the time: Windows can give two writes in quick succession the same time stamp.
+        return f"{current.name}:{seen.st_mtime_ns}:{seen.st_size}" if current and seen else "none"
 
 
 def _sample_path() -> Path:

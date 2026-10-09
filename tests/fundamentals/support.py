@@ -83,7 +83,7 @@ def with_value(text: str, tag: str, context: str, value: str) -> str:
 
 
 def without_fact(text: str, tag: str, context: str) -> str:
-    pattern = rf'<in-bse-fin:{tag} contextRef="{context}"[^>]*>[^<]*</in-bse-fin:{tag}>\n'
+    pattern = rf'<in-bse-fin:{tag} contextRef="{context}"[^>]*>[^<]*</in-bse-fin:{tag}>\r?\n'
     changed, count = re.subn(pattern, "", text)
     assert count == 1, f"{tag} in {context} was not found exactly once"
     return changed
