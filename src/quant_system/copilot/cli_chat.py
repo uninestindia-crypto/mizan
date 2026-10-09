@@ -48,11 +48,11 @@ CLI_UNSUPPORTED: Final = 493
 CLI_FAILED: Final = 494
 
 # The apps that can answer a chat, in the order the Copilot prefers them.
-CHAT_CLIS: Final[tuple[str, ...]] = ("antigravity", "claude", "codex")
+CHAT_CLIS: Final[tuple[str, ...]] = ("claude", "codex", "antigravity")
 CLI_LABELS: Final[dict[str, str]] = {
-    "antigravity": "Antigravity (your Google sign-in)",
     "claude": "Claude Code (your Claude sign-in)",
     "codex": "Codex (your ChatGPT sign-in)",
+    "antigravity": "Antigravity (your Google sign-in)",
 }
 
 MIN_TIMEOUT_SECONDS: Final = (

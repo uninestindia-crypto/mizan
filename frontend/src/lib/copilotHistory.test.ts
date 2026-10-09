@@ -17,7 +17,7 @@ import {
 const NAMED: [string, string][] = [
   ["cli:claude", "Answered by Claude Code"],
   ["cli:codex", "Answered by Codex"],
-  ["cli:gemini", "Answered by Gemini"],
+  ["cli:antigravity", "Answered by Antigravity"],
   ["anthropic", "Answered by Claude (Anthropic)"],
   ["openai", "Answered by OpenAI"],
   ["gemini", "Answered by Google Gemini"],
