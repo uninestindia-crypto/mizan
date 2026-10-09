@@ -189,3 +189,18 @@ The one red test in the wider run, `test_every_page_the_web_app_defines_is_serve
 new `/fundamentals` route missing from `server/v2/spa.py`; I told that helper, which has since edited `spa.py`.
 Still running: fundamentals screens (`af8649e`).
 
+UPDATED 2026-10-09 13:20 UTC. FOUNDER INSTRUCTION (genuine user message, this session): "continue from where stopped but merge to
+main and release the upgrade so i can test and then do remaining work". This authorises the pull request, the merge to main
+and the release. Findings before starting: `origin/main` moved on without this branch: 31 commits by the founder's other
+tooling (v2.5.1, v2.5.2, v2.5.3, v3.0.0 are tagged and released; Quant-SLM engine, Mizan Quant OS branding, installer and
+update changes; 3,163 files changed, mostly data caches). A trial merge (`git merge-tree`) reports 9 conflicts:
+`frontend/src/components/Layout.tsx`, `pages/Home.tsx`, `pages/Settings.tsx`, `installer/quant_os_setup.iss`,
+`installer/quantos.spec`, `quantos_studio.py`, `src/quant_system/server/v2/router.py`, `server/v2/state.py`,
+`tests/test_release_tooling.py`. PLAN: do the merge in an isolated local clone (scratchpad `merge/`, workspace created by me,
+branch `merge-main-into-branch`, not a registered worktree), resolve the 9 conflicts keeping both sides' intent, run the full
+gates, push the merge commit to `claude/wonderful-wozniak-6ek6zl`, open the pull request, wait for CI, merge, then release
+as the next version after v3.0.0 using the repository's own release workflow. The shared checkout is NOT touched (the
+fundamentals-screens helper `af8649e` is editing `App.tsx`, `Layout.tsx`, `Stock.tsx`, `components/portfolio/*`, `spa.py`
+there); it will be brought up to date with a normal merge after that helper reports. The fundamentals screens are therefore
+NOT in this release; the backend and bundled snapshot are.
+
