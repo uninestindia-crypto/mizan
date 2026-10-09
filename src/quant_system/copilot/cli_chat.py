@@ -48,11 +48,11 @@ CLI_UNSUPPORTED: Final = 493
 CLI_FAILED: Final = 494
 
 # The apps that can answer a chat, in the order the Copilot prefers them.
-CHAT_CLIS: Final[tuple[str, ...]] = ("claude", "codex", "gemini")
+CHAT_CLIS: Final[tuple[str, ...]] = ("antigravity", "claude", "codex")
 CLI_LABELS: Final[dict[str, str]] = {
+    "antigravity": "Antigravity (your Google sign-in)",
     "claude": "Claude Code (your Claude sign-in)",
     "codex": "Codex (your ChatGPT sign-in)",
-    "gemini": "Gemini (your Google sign-in)",
 }
 
 MIN_TIMEOUT_SECONDS: Final = (
@@ -67,7 +67,7 @@ _PREAMBLE = (
     "coding task: do not use any tool, read any file or run any command. Follow the instructions below and "
     "reply with the answer only."
 )
-_GEMINI_INSTRUCTION = (
+_ANTIGRAVITY_INSTRUCTION = (
     "Answer the instructions given on standard input. Use no tools, read no files, run no commands."
 )
 
@@ -142,8 +142,8 @@ def build_command(agent_id: str, executable: str) -> list[str]:
         ]
     if agent_id == "codex":
         return [executable, "exec", "--sandbox", "read-only", "--skip-git-repo-check", "-"]
-    if agent_id == "gemini":
-        return [executable, "-p", _GEMINI_INSTRUCTION]
+    if agent_id == "antigravity":
+        return [executable, "-p", _ANTIGRAVITY_INSTRUCTION]
     raise ValueError(f"{agent_id} cannot answer a chat.")
 
 

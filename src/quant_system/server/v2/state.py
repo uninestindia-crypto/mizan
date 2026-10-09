@@ -112,9 +112,10 @@ class Settings(BaseModel):
     ai_accelerator: Literal["auto", "npu", "gpu", "cpu"] = "auto"
     # Which AI answers the Copilot. The AI app already signed in on this computer comes first; a saved key backs it up.
     ai_source: Literal["cli", "api"] = "cli"
-    ai_cli: Literal["claude", "codex", "gemini"] | None = None
+    ai_cli: Literal["antigravity", "claude", "codex"] | None = None
     ai_api: str | None = Field(default=None, max_length=40)
     ai_fallback: bool = True
+    auto_update_cli: bool = False
 
 
 class Holding(BaseModel):

@@ -22,10 +22,16 @@ class CliSpec:
 
 CLIS: tuple[CliSpec, ...] = (
     CliSpec(
+        "agy",
+        "Antigravity CLI",
+        "Google",
+        "irm https://antigravity.google/cli/install.ps1 | iex",
+        "agy login",
+    ),
+    CliSpec(
         "claude", "Claude Code", "Anthropic", "npm install -g @anthropic-ai/claude-code", "claude"
     ),
     CliSpec("codex", "Codex CLI", "OpenAI", "npm install -g @openai/codex", "codex login"),
-    CliSpec("gemini", "Gemini CLI", "Google", "npm install -g @google/gemini-cli", "gemini"),
 )
 
 _CACHE_SECONDS = 60.0
