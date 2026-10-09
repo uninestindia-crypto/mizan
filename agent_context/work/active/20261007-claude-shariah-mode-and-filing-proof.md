@@ -160,3 +160,15 @@ fundamentals screens (`af8649e`) and wording/holidays/badges (`a31ba91`). The fu
 423 companies when its background window ended; I restarted it with the same resume folder at 12:11 UTC so it only reads
 the rest. Everything committed is pushed (latest code commit `995acbaa4`).
 
+UPDATED 2026-10-09 12:45 UTC. Fundamentals snapshot committed and pushed (data/fundamentals/fundamentals_snapshot.json.gz,
+412 companies, 2,915 filings, 755 industry groups, 803 KB; the three build specs carry `data/fundamentals`; new
+`tests/test_fundamentals_bundle_packaging.py` pins it). 11 of the 423 universe names have no filing in NSE's feed.
+FOLLOW-UP (engineering, found by reading the build): 414 of 2,915 quarters (14%) are TIE_OUT_FAILED, and 382 of those fail
+one check, 'Owners and minority shares add up to profit for the period'. In the cases I read (e.g. AJANTPHARM consolidated,
+Mar and Jun 2023) the filer reported both the owners' share and the minority share as exactly 0.00 while profit for the
+period, profit before tax less tax, and EPS x shares all agree. The quarter is then excluded and the company may fall back
+to its standalone filing. That is safe (fails closed) but throws away good data. A careful fix: when both shares are
+exactly zero, profit for the period is non-zero and EPS x shares corroborates it, treat the split as 'not filled in' and use
+profit for the period, labelled as such. It changes extraction output, so it needs its own tests and a snapshot rebuild
+(about 70 minutes). Not started; not a founder decision.
+
