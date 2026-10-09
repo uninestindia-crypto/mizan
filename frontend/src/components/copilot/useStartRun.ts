@@ -5,6 +5,7 @@ import type { RunAction } from "./verifyState";
 export interface StartChoice {
   providers: string[];
   withPick: boolean;
+  chained?: boolean;
 }
 
 export const COULD_NOT_START = "QuantOS could not start the check. Try again in a moment.";
@@ -15,7 +16,9 @@ async function startRun(request: SecondOpinionRequest, choice: StartChoice, repo
   report({ type: "starting" });
   try {
     const note = choice.withPick ? (request.pickNote ?? null) : null;
-    const started = await copilotApi.startVerify(buildVerifyRequest(request.symbol, choice.providers, note));
+    const started = await copilotApi.startVerify(
+      buildVerifyRequest(request.symbol, choice.providers, note, choice.chained ?? true)
+    );
     if (started.job_id) report({ type: "started", jobId: started.job_id });
     else report({ type: "startFailed", message: COULD_NOT_START });
   } catch (error) {

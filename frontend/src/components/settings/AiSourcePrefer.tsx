@@ -1,3 +1,4 @@
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { type ReactNode, useId } from "react";
 import { Link } from "react-router";
 import {
@@ -72,8 +73,15 @@ interface ListProps {
   onPick: (id: string | null) => void;
 }
 
+function sortedByPriority(apps: AiApp[], priority?: string[]): AiApp[] {
+  if (!priority || priority.length === 0) return sortApps(apps);
+  const prioritized = priority.map((id) => apps.find((a) => a.id === id)).filter((a): a is AiApp => !!a);
+  const rest = apps.filter((a) => !priority.includes(a.id));
+  return [...prioritized, ...sortApps(rest)];
+}
+
 function AppRows({ apps, choice, name, onPick }: ListProps & { apps: AiApp[] }) {
-  return sortApps(apps).map((app) => (
+  return sortedByPriority(apps, choice.cli_priority).map((app) => (
     <Row
       key={app.id}
       id={app.id}
@@ -100,6 +108,85 @@ function KeyRows({ providers, choice, name, onPick }: ListProps & { providers: A
       onPick={() => onPick(provider.id)}
     />
   ));
+}
+
+function CliPriorityOrder({
+  apps,
+  priority,
+  onChange,
+}: {
+  apps: AiApp[];
+  priority?: string[];
+  onChange: (patch: AiSettingsPatch) => void;
+}) {
+  const currentOrder = sortedByPriority(apps, priority).map((a) => a.id);
+
+  const move = (fromIndex: number, toIndex: number) => {
+    const next = [...currentOrder];
+    const moved = next[fromIndex];
+    if (moved === undefined) return;
+    next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    onChange({ cli_priority: next });
+  };
+
+  if (apps.length <= 1) return null;
+
+  return (
+    <div className="mt-4 rounded-xl border border-line bg-surface-2/40 p-3 space-y-2.5">
+      <div className="flex items-center justify-between">
+        <h4 className="text-[13px] font-semibold text-ink">AI App Priority Order</h4>
+        <span className="text-[11px] text-ink-3">Higher priority answers first</span>
+      </div>
+      <p className="text-[12px] text-ink-3 leading-relaxed">
+        QuantOS asks your #1 priority app first. If it cannot answer, is offline, or hits an issue, it automatically falls back down the chain to the next app.
+      </p>
+      <ul className="space-y-1.5">
+        {currentOrder.map((appId, index) => {
+          const app = apps.find((a) => a.id === appId);
+          if (!app) return null;
+          return (
+            <li
+              key={appId}
+              className="flex items-center justify-between rounded-lg border border-line bg-surface px-3 py-1.5 text-[12.5px]"
+            >
+              <div className="flex items-center gap-2">
+                <span className="flex size-5 items-center justify-center rounded-full bg-brand/10 font-bold text-[11px] text-brand">
+                  {index + 1}
+                </span>
+                <span className="font-medium text-ink">{appName(app)}</span>
+                <span className="text-[11px] text-ink-3">
+                  {index === 0 ? "(Primary)" : `(Fallback #${index})`}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="size-7 p-0"
+                  disabled={index === 0}
+                  aria-label={`Move ${appName(app)} up`}
+                  onClick={() => move(index, index - 1)}
+                >
+                  <ArrowUp className="size-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="size-7 p-0"
+                  disabled={index === currentOrder.length - 1}
+                  aria-label={`Move ${appName(app)} down`}
+                  onClick={() => move(index, index + 1)}
+                >
+                  <ArrowDown className="size-3.5" />
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
 }
 
 /** Which app, or which saved key, to ask first. "Automatic" leaves it to the first one that is ready. */
@@ -130,6 +217,13 @@ export function AiSourcePrefer({
           <KeyRows providers={status.providers} choice={choice} name={name} onPick={pick} />
         )}
       </ul>
+      {apps && (
+        <CliPriorityOrder
+          apps={status.apps}
+          priority={choice.cli_priority}
+          onChange={onChange}
+        />
+      )}
       {!apps && (
         <Link to="/settings/accounts" className="inline-block text-[13px] font-medium text-brand hover:underline">
           Add a key under Accounts &amp; keys

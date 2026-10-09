@@ -22,11 +22,12 @@ import {
   testTarget,
 } from "./aiSource";
 
-const NAMES: Record<AppId, string> = { antigravity: "Antigravity", claude: "Claude Code", codex: "Codex" };
+const NAMES: Record<string, string> = { antigravity: "Antigravity", claude: "Claude Code", codex: "Codex" };
 
 function app(id: AppId, state: AppState): AiApp {
+  const name = NAMES[id] ?? id;
   const installed = state !== "NOT_INSTALLED";
-  return { id, name: NAMES[id], label: `${NAMES[id]} (sign-in)`, state, installed, ready: state === "CONNECTED" };
+  return { id, name, label: `${name} (sign-in)`, state, installed, ready: state === "CONNECTED" };
 }
 
 const key = (id: string, ready = true): ProviderOption => ({ id, label: LABELS[id] ?? id, ready });

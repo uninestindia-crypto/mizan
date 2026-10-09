@@ -1,6 +1,6 @@
-import { ArrowUpCircle, CheckCircle2, ChevronDown, ChevronUp, Cpu, Download, LogIn, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowUpCircle, CheckCircle2, ChevronDown, ChevronUp, Cpu, Download, LogIn, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { useCliCapabilities } from "../../lib/queries";
+import { useCliCapabilities, useDeleteCustomCli, useSetCustomCliAutoUpdate } from "../../lib/queries";
 import type { AgentCli } from "../../lib/types";
 import { AiSourceTest } from "../settings/AiSourceTest";
 import { Badge, Button, Callout } from "../ui";
@@ -30,7 +30,10 @@ function Heading({ agent }: { agent: AgentCli }) {
           <Cpu className="size-4" aria-hidden />
         </div>
         <div>
-          <h3 className="text-[14px] font-semibold text-ink">{plainName(agent)}</h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-[14px] font-semibold text-ink">{plainName(agent)}</h3>
+            {agent.is_custom && <Badge tone="brand">Company app</Badge>}
+          </div>
           <div className="text-[11.5px] text-ink-3">by {agent.maker}</div>
         </div>
       </div>
@@ -98,7 +101,7 @@ function StepRow(props: AppProps) {
       {agent.installed && (
         <Button
           size="sm"
-          variant="outline"
+          variant="secondary"
           icon={<ArrowUpCircle className="size-3.5" aria-hidden />}
           loading={loading && agent.job?.action === "update"}
           aria-label={`Update ${plainName(agent)}`}
@@ -226,6 +229,43 @@ function CliCapabilitiesSection({ agentId, name, installed }: { agentId: string;
   );
 }
 
+function CustomCliControls({ agent }: { agent: AgentCli }) {
+  const toggleAutoUpdate = useSetCustomCliAutoUpdate();
+  const deleteCli = useDeleteCustomCli();
+  const isAuto = Boolean(agent.auto_update);
+
+  if (!agent.is_custom) return null;
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center justify-between border-t border-line/60 pt-2.5 text-[12px]">
+      <label className="flex items-center gap-1.5 cursor-pointer text-ink-2 select-none hover:text-ink">
+        <input
+          type="checkbox"
+          checked={isAuto}
+          disabled={toggleAutoUpdate.isPending}
+          onChange={(e) => toggleAutoUpdate.mutate({ cliId: agent.id, enabled: e.target.checked })}
+          className="size-3.5 rounded border-line text-brand focus:ring-brand"
+        />
+        <span>Update this app automatically</span>
+      </label>
+      <Button
+        size="sm"
+        variant="ghost"
+        icon={<Trash2 className="size-3 text-red-500" aria-hidden />}
+        className="text-red-500 hover:text-red-600 hover:bg-red-500/10 text-[11px] h-6 px-2"
+        loading={deleteCli.isPending}
+        onClick={() => {
+          if (window.confirm(`Are you sure you want to remove ${agent.name}?`)) {
+            deleteCli.mutate(agent.id);
+          }
+        }}
+      >
+        Remove
+      </Button>
+    </div>
+  );
+}
+
 /** One AI app on this computer: what it is, where it stands, and the one thing to do next. */
 export function AppCard(props: CardProps) {
   const { agent, note } = props;
@@ -250,8 +290,9 @@ export function AppCard(props: CardProps) {
       <div>
         <Actions agent={agent} busy={props.busy} onStep={props.onStep} onRecheck={props.onRecheck} />
         <CliCapabilitiesSection agentId={agent.id} name={plainName(agent)} installed={agent.installed} />
+        <CustomCliControls agent={agent} />
       </div>
-      {!agent.installed && (
+      {!agent.installed && !agent.is_custom && (
         <p className="mt-2 text-[11.5px] text-ink-3">
           QuantOS downloads the official app from {agent.maker} and sets it up for you. It can take a few minutes.
         </p>

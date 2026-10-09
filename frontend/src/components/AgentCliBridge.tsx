@@ -1,6 +1,8 @@
-import { RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
+import { useState } from "react";
 import { errorMessage } from "../lib/api";
 import { useAgentClis, useCliAutoUpdate, useCliAutoUpdateStatus, useRefreshAgentClis } from "../lib/queries";
+import { AddCustomCliModal } from "./aiapps/AddCustomCliModal";
 import { AppCard } from "./aiapps/AppCard";
 import { inOrder } from "./aiapps/appWords";
 import { useAppSetup, useRefreshWhenJobEnds } from "./aiapps/useAppSetup";
@@ -41,6 +43,7 @@ export function AgentCliBridge() {
   const setup = useAppSetup();
   const autoUpdateStatus = useCliAutoUpdateStatus();
   const setAutoUpdate = useCliAutoUpdate();
+  const [showAddModal, setShowAddModal] = useState(false);
   useRefreshWhenJobEnds(useAgentClis().data);
 
   const isAutoUpdate = autoUpdateStatus.data?.auto_update_cli ?? false;
@@ -66,17 +69,28 @@ export function AgentCliBridge() {
       >
         Check status
       </Button>
+      <Button
+        size="sm"
+        variant="secondary"
+        icon={<Plus className="size-3.5" aria-hidden />}
+        onClick={() => setShowAddModal(true)}
+      >
+        Add company app
+      </Button>
     </div>
   );
   return (
-    <Card>
-      <CardHeader title="Set up AI apps on this computer" subtitle={SUBTITLE} action={headerActions} />
-      {setup.error && (
-        <Callout tone="danger" className="mb-4">
-          {setup.error}
-        </Callout>
-      )}
-      <Apps setup={setup} recheck={() => refresh.mutate()} />
-    </Card>
+    <>
+      <Card>
+        <CardHeader title="Set up AI apps on this computer" subtitle={SUBTITLE} action={headerActions} />
+        {setup.error && (
+          <Callout tone="danger" className="mb-4">
+            {setup.error}
+          </Callout>
+        )}
+        <Apps setup={setup} recheck={() => refresh.mutate()} />
+      </Card>
+      <AddCustomCliModal open={showAddModal} onOpenChange={setShowAddModal} />
+    </>
   );
 }

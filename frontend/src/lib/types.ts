@@ -19,6 +19,8 @@ export interface Settings {
   auto_update_paper_books: boolean;
   shariah_mode?: boolean;
   ai_accelerator?: AcceleratorTarget;
+  ai_cli?: string | null;
+  cli_priority?: string[];
 }
 
 export type AcceleratorTarget = "auto" | "npu" | "gpu" | "cpu";
@@ -708,6 +710,22 @@ export interface AgentCli {
   can_update?: boolean;
   update_available?: boolean;
   update_steps?: string[];
+  is_custom?: boolean;
+  auto_update?: boolean | number;
+}
+
+export interface CustomCli {
+  id: string;
+  name: string;
+  maker: string;
+  command: string;
+  install_cmd: string;
+  update_cmd: string;
+  description: string;
+  docs_url: string;
+  status_args: string;
+  auto_update: number | boolean;
+  created_at: string;
 }
 
 export interface CliModel {

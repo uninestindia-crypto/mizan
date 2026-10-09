@@ -55,6 +55,7 @@ export interface VerifyRequest {
   providers: string[];
   recheck: boolean;
   pick_note?: string;
+  chained?: boolean;
 }
 
 export interface Opinion {
@@ -221,9 +222,18 @@ export function buildVerifyRequest(
   symbol: string,
   providers: readonly string[],
   pickNote: string | null,
+  chained?: boolean,
 ): VerifyRequest {
   const note = pickNote?.trim().slice(0, MAX_PICK_NOTE_CHARS);
-  const base = { symbol: symbol.trim().toUpperCase(), providers: providers.slice(0, MAX_PROVIDERS), recheck: true };
+  const modelList = chained ? [...providers] : providers.slice(0, MAX_PROVIDERS);
+  const base: VerifyRequest = {
+    symbol: symbol.trim().toUpperCase(),
+    providers: modelList,
+    recheck: true,
+  };
+  if (chained === false) {
+    base.chained = false;
+  }
   return note ? { ...base, pick_note: note } : base;
 }
 

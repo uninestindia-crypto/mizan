@@ -34,8 +34,8 @@ export function plainName(agent: Pick<AgentCli, "name">): string {
 }
 
 /** One plain line about what the app is. An app this screen has no line for gets a plain default. */
-export function oneLine(agent: Pick<AgentCli, "id" | "maker">): string {
-  return ONE_LINE[agent.id] ?? `An AI app from ${agent.maker}.`;
+export function oneLine(agent: Pick<AgentCli, "id" | "maker" | "description">): string {
+  return ONE_LINE[agent.id] ?? agent.description ?? `An AI app from ${agent.maker}.`;
 }
 
 /** What a person can do next: install it, sign in to it, or nothing because it is ready. */
@@ -45,8 +45,8 @@ export function nextStep(agent: Pick<AgentCli, "installed" | "state">): NextStep
 }
 
 /** Whether the Copilot can ask this app a question, so "Test this AI" makes sense for it. */
-export function canAnswer(agent: Pick<AgentCli, "id">): boolean {
-  return ANSWERING.includes(agent.id);
+export function canAnswer(agent: Pick<AgentCli, "id" | "is_custom">): boolean {
+  return ANSWERING.includes(agent.id) || agent.is_custom === true;
 }
 
 /** The id the engine's test takes for this app. */

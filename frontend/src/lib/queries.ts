@@ -430,6 +430,51 @@ export function useCliAutoUpdate() {
   });
 }
 
+export function useCustomClis() {
+  return useQuery({
+    queryKey: ["custom-clis"],
+    queryFn: () => api<import("./types").CustomCli[]>("/api/v2/cli/custom"),
+  });
+}
+
+export function useAddCustomCli() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Partial<import("./types").CustomCli>) =>
+      api<import("./types").CustomCli>("/api/v2/cli/custom", "POST", body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["custom-clis"] });
+      void qc.invalidateQueries({ queryKey: keys.agentClis });
+      void qc.invalidateQueries({ queryKey: keys.status });
+    },
+  });
+}
+
+export function useDeleteCustomCli() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (cliId: string) =>
+      api<{ deleted: boolean }>(`/api/v2/cli/custom/${cliId}`, "DELETE"),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["custom-clis"] });
+      void qc.invalidateQueries({ queryKey: keys.agentClis });
+      void qc.invalidateQueries({ queryKey: keys.status });
+    },
+  });
+}
+
+export function useSetCustomCliAutoUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ cliId, enabled }: { cliId: string; enabled: boolean }) =>
+      api<{ id: string; auto_update: number }>(`/api/v2/cli/custom/${cliId}/auto-update`, "POST", { enabled }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["custom-clis"] });
+      void qc.invalidateQueries({ queryKey: keys.agentClis });
+    },
+  });
+}
+
 export function useAiModels(provider: string, enabled: boolean) {
   return useQuery({
     queryKey: ["ai-models", provider],

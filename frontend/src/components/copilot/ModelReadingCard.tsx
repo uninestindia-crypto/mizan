@@ -16,9 +16,22 @@ function Points({ title, items }: { title: string; items: readonly string[] }) {
   );
 }
 
-function WhoAnswered({ name, modelName }: { name: string; modelName: string | null }) {
+function WhoAnswered({
+  name,
+  modelName,
+  stage,
+}: {
+  name: string;
+  modelName: string | null;
+  stage?: number;
+}) {
   return (
-    <div className="min-w-0 [overflow-wrap:anywhere]">
+    <div className="flex flex-wrap items-center gap-2 min-w-0 [overflow-wrap:anywhere]">
+      {stage !== undefined && (
+        <Badge tone="brand" className="text-[11px] px-1.5 py-0.5">
+          {stage === 1 ? "Stage 1 · Initial Reading" : `Stage ${stage} · Recheck`}
+        </Badge>
+      )}
       <span className="font-semibold text-ink">{name}</span>
       {modelName && <span className="text-ink-3"> · {modelName}</span>}
     </div>
@@ -30,7 +43,7 @@ export function ModelReadingCard({ model }: { model: ModelView }) {
   return (
     <li className="min-w-0 space-y-3 rounded-xl border border-line bg-surface px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2 text-[13.5px]">
-        <WhoAnswered name={model.name} modelName={model.modelName} />
+        <WhoAnswered name={model.name} modelName={model.modelName} stage={model.stage} />
         {model.answered ? <Badge>{readingWords(model.reading)}</Badge> : <Badge tone="warn">Could not answer</Badge>}
       </div>
       {!model.answered && <p className="text-[13.5px] text-ink-2">{model.error}</p>}

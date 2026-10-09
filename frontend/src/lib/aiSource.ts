@@ -6,7 +6,7 @@
 import type { ProviderOption } from "./copilot";
 
 export type AiKind = "cli" | "api";
-export type AppId = "antigravity" | "claude" | "codex";
+export type AppId = string;
 export type AppState = "CONNECTED" | "NEEDS_SIGN_IN" | "NOT_INSTALLED" | "UNKNOWN";
 
 export interface AiApp {
@@ -24,6 +24,8 @@ export interface AiChoice {
   cli: AppId | null;
   api: string | null;
   fallback: boolean;
+  cli_priority?: string[];
+  api_priority?: string[];
 }
 
 /** What GET /api/v2/copilot/status says about the AI. Other fields it carries are not used here. */
@@ -46,6 +48,8 @@ export interface AiSettings {
   ai_cli: AppId | null;
   ai_api: string | null;
   ai_fallback: boolean;
+  cli_priority?: string[];
+  api_priority?: string[];
 }
 
 export type AiSettingsPatch = Partial<AiSettings>;
@@ -64,7 +68,14 @@ export function appName(app: Pick<AiApp, "id" | "name">): string {
 }
 
 export function choiceFrom(saved: AiSettings): AiChoice {
-  return { source: saved.ai_source, cli: saved.ai_cli, api: saved.ai_api, fallback: saved.ai_fallback };
+  return {
+    source: saved.ai_source,
+    cli: saved.ai_cli,
+    api: saved.ai_api,
+    fallback: saved.ai_fallback,
+    cli_priority: saved.cli_priority,
+    api_priority: saved.api_priority,
+  };
 }
 
 /** The choice as it will be once a save goes through, so the screen answers a click at once. */
@@ -74,6 +85,8 @@ export function applyPatch(choice: AiChoice, patch: AiSettingsPatch): AiChoice {
     cli: patch.ai_cli === undefined ? choice.cli : patch.ai_cli,
     api: patch.ai_api === undefined ? choice.api : patch.ai_api,
     fallback: patch.ai_fallback ?? choice.fallback,
+    cli_priority: patch.cli_priority ?? choice.cli_priority,
+    api_priority: patch.api_priority ?? choice.api_priority,
   };
 }
 
@@ -120,9 +133,17 @@ export function sortKeys<T extends { id: string }>(providers: readonly T[]): T[]
   return [...providers].sort((a, b) => rank(KEY_ORDER, a.id) - rank(KEY_ORDER, b.id));
 }
 
-function appEntries(apps: readonly AiApp[], favourite: string | null): PlanEntry[] {
+function appEntries(apps: readonly AiApp[], favourite: string | null, priority?: readonly string[]): PlanEntry[] {
   const present = apps.filter((app) => app.installed && app.state !== "NOT_INSTALLED");
-  return favouriteFirst(sortApps(present), favourite).map(appEntry);
+  let ordered: AiApp[];
+  if (priority && priority.length > 0) {
+    const priorityItems = priority.map((id) => present.find((a) => a.id === id)).filter((a): a is AiApp => !!a);
+    const rest = present.filter((a) => !priority.includes(a.id));
+    ordered = [...priorityItems, ...sortApps(rest)];
+  } else {
+    ordered = sortApps(present);
+  }
+  return favouriteFirst(ordered, favourite).map(appEntry);
 }
 
 function keyEntries(providers: readonly ProviderOption[], favourite: string | null): PlanEntry[] {
@@ -134,7 +155,7 @@ type PlanSource = Pick<AiStatus, "apps" | "providers">;
 
 /** Every AI that would be asked, in the order it would be asked. */
 export function buildPlan(status: PlanSource, choice: AiChoice): PlanEntry[] {
-  const apps = appEntries(status.apps, choice.cli);
+  const apps = appEntries(status.apps, choice.cli, choice.cli_priority);
   const keys = keyEntries(status.providers, choice.api);
   const [first, second] = choice.source === "cli" ? [apps, keys] : [keys, apps];
   return choice.fallback ? [...first, ...second] : first;
