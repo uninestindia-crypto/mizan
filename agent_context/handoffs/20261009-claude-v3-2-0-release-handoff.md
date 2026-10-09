@@ -98,7 +98,7 @@ Nothing. There is no uncommitted work and no running helper.
 | `uv run --frozen pytest tests` (Linux, merged tree) | PASS after two test fixes | 5,473 passed, 18 skipped (Windows-only or no Tk) |
 | CI "Static gates" on the pull request | PASS | ruff lint, ruff format, strict mypy: first green run on this line of work |
 | CI "Craft checkers and audits" | PASS | includes the PowerShell claim and disk-layout audits |
-| CI "Tests" (both orders, Windows) | see the release section of the coordinator record | |
+| CI "Tests" (both orders, Windows), final commit | PASS | both orders green; run 37968004307 |
 | Real Windows install and update | NOT RUN | cannot run in the cloud |
 | Real NSE read, newest filings | NOT RUN | the cloud-visible feed ends around Jan 2025 |
 
@@ -110,10 +110,19 @@ Nothing. There is no uncommitted work and no running helper.
 
 ## Exact stop point
 
-All helpers finished and everything is committed. When this note was first pushed, pull request 11 was open with the Windows
-test jobs still running; the merge to main, the release workflow run and the removal of the hourly "Keep QuantOS agents
-moving" routine were the only steps left. A later commit on `main` replaces this paragraph with the result. If it still
-reads like this, look at the pull request and at the Releases page to see how far the closing steps got.
+Done. Pull request 11 was merged into `main` (`e052dccaa`), and the release workflow (run 37968803445) published
+**v3.2.0** from that exact commit: https://github.com/uninestindia-crypto/mizan/releases/tag/v3.2.0
+
+- Files: `MizanQuantOS_v3.2.0_Setup.exe` (109 MB), `quantos-v3.2.0-windows-x86_64.zip` (178 MB), `quantos-sbom.json`,
+  `SHA256SUMS-v3.2.0.txt`. The fingerprint file lists all three, in the format the in-app updater reads, and each line
+  matches the digest GitHub shows for that file (checked by downloading it).
+- The workflow's own "Verify Clean Release Gates" step passed. The installer was built on a Windows runner; it has not been
+  installed on a real machine.
+- CI on the pull request's final commit: every job green on Windows (static gates, craft and audits, tests in forward and
+  reverse order). An earlier run on the same branch failed on three Windows-only problems in my code (two caches that trusted
+  a file's time stamp alone, and a test helper that assumed Unix line endings); they were fixed in `d59af61db`.
+- `python scripts/release_status.py` after the release: no release due.
+- The hourly "Keep QuantOS agents moving" routine and the one-off check-in reminders were deleted. No helper is running.
 
 ## Next safe action
 
