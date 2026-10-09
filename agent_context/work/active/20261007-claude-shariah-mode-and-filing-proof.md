@@ -140,3 +140,17 @@ Open points from the top bar helper:
 4. Inline chips need about 1,870 px of window; below that people see one Status button. Decide if Market and Prices should
    stay inline with a shorter mode-switch label (touches ModeSwitch).
 
+UPDATED 2026-10-09 08:55 UTC. Portfolio accounts screens committed and pushed (`995acbaa4`); I checked the exact staged state
+in an isolated export: tsc clean, 1,295 vitest tests passed (90 files), craft checks clean, secret scan 0. All earlier
+helpers' work is committed. Two helpers are now running, each with its own record and stop point:
+- `20261007-claude-fundamentals-screens.md` (resumed `af8649e`): Portfolio Fundamentals tab, filings section and
+  'Get the latest results' on the Stock page, the Stock page 'Add to portfolio' fix (it silently files into the first
+  account for people with several accounts), a Fundamentals screen with filters and compare, per-lot holding periods.
+- `20261007-claude-wording-holidays-badges.md` (new, `a31ba91`): 'Coding agents' -> 'AI apps', drop 'CLI' from visible
+  words, a holiday route for the market chip (plus the holidays file in the three specs), one rule for AAOIFI/TASIS
+  disagreement across badge and old tab.
+Fundamentals snapshot build still running (scratchpad `fundsnap/`); after it finishes: copy to
+`data/fundamentals/fundamentals_snapshot.json.gz`, add `data/fundamentals` to the three specs, run the packaging test, commit.
+Open from the Portfolio helper: 'remember the account choice' uses localStorage (survives restarts); labels 'By stock' /
+'By lot' to be confirmed.
+
