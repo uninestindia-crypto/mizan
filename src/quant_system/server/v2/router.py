@@ -44,6 +44,7 @@ from quant_system.server.security import format_error_response
 from quant_system.server.v2 import health, paths
 from quant_system.server.v2.aitools import detect_cli_tools
 from quant_system.server.v2.auto_update import AutoUpdater
+from quant_system.server.v2.broker_routes import router as broker_router
 from quant_system.server.v2.cli_bridge import (
     launch_agent_session,
     list_cli_status,
@@ -1035,6 +1036,7 @@ def register_api(app: FastAPI) -> None:
     app.include_router(router)
     app.include_router(copilot_router, prefix="/api/v2")
     app.include_router(live_router, prefix="/api/v2")
+    app.include_router(broker_router, prefix="/api/v2")
     try:
         from quant_system.shariah.api.v1.router import api_router as shariah_router
 

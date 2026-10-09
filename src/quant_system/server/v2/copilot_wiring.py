@@ -127,6 +127,17 @@ def _holding(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _broker_account() -> dict[str, Any]:
+    """A short, view-only summary of the person's broker account, if they have allowed the assistant to see it."""
+    from quant_system.broker_view import BrokerViewError
+    from quant_system.server.v2.broker_routes import broker_view_service
+
+    try:
+        return broker_view_service().assistant_summary()
+    except BrokerViewError as error:
+        raise UserFacingError(error.message) from error
+
+
 def _paper_books() -> list[dict[str, Any]]:
     from quant_system.server.v2.router import services
 
@@ -208,4 +219,5 @@ def tool_context() -> ToolContext:
         paper_books=_paper_books,
         trade_costs=_costs,
         position_size=_size,
+        broker=_broker_account,
     )

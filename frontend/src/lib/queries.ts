@@ -2,6 +2,8 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { api } from "./api";
 import type {
   AiTool,
+  BrokerSnapshot,
+  BrokerStatus,
   Bars,
   CostsResult,
   LabResult,
@@ -491,3 +493,72 @@ export function useSetHardwareAccelerator() {
   });
 }
 
+
+// ------------------------------------------------------------------ broker view (view only; reads an account, never trades)
+
+const brokerKeys = { status: ["broker-status"] as const, snapshot: ["broker-snapshot"] as const };
+
+/** Whether the Upstox app keys are saved, whether a sign-in is open or in force, and when it ends. */
+export function useBrokerStatus() {
+  return useQuery({
+    queryKey: brokerKeys.status,
+    queryFn: () => api<BrokerStatus>("/api/v2/broker/status"),
+    // Quick while the person is signing in on Upstox's page; stops by itself in a hidden tab.
+    refetchInterval: (query) => (query.state.data?.brokers.some((b) => b.waiting_for_sign_in) ? 2_000 : 30_000),
+  });
+}
+
+/** The last figures with the time they were fetched. Reading never asks Upstox for anything. */
+export function useBrokerSnapshot() {
+  return useQuery({
+    queryKey: brokerKeys.snapshot,
+    queryFn: () => api<BrokerSnapshot>("/api/v2/broker/snapshot"),
+    refetchInterval: 60_000,
+  });
+}
+
+export function useBrokerConnect() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<{ opened: boolean; login_address: string }>("/api/v2/broker/upstox/connect", "POST"),
+    onSettled: () => void qc.invalidateQueries({ queryKey: brokerKeys.status }),
+  });
+}
+
+export function useBrokerCancel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<BrokerStatus>("/api/v2/broker/upstox/connect", "DELETE"),
+    onSuccess: (data) => qc.setQueryData(brokerKeys.status, data),
+  });
+}
+
+export function useBrokerRefresh() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<BrokerSnapshot>("/api/v2/broker/refresh", "POST"),
+    onSuccess: (data) => {
+      qc.setQueryData(brokerKeys.snapshot, data);
+      void qc.invalidateQueries({ queryKey: brokerKeys.status });
+    },
+  });
+}
+
+export function useBrokerDisconnect() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<BrokerStatus>("/api/v2/broker/connection", "DELETE"),
+    onSuccess: (data) => {
+      qc.setQueryData(brokerKeys.status, data);
+      void qc.invalidateQueries({ queryKey: brokerKeys.snapshot });
+    },
+  });
+}
+
+export function useBrokerAssistantAccess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (allowed: boolean) => api<BrokerStatus>("/api/v2/broker/assistant-access", "PUT", { allowed }),
+    onSuccess: (data) => qc.setQueryData(brokerKeys.status, data),
+  });
+}

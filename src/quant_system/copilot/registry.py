@@ -116,6 +116,7 @@ class ToolContext:
     paper_books: Callable[[], list[dict[str, Any]]] | None = None
     trade_costs: Callable[[Mapping[str, Any]], dict[str, Any]] | None = None
     position_size: Callable[[Mapping[str, Any]], dict[str, Any]] | None = None
+    broker: Callable[[], dict[str, Any]] | None = None
 
 
 def _check_value(spec: ToolSpec, param: Param, value: Any) -> str | None:

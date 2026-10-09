@@ -218,16 +218,7 @@ class CredentialStore:
 
     def set(self, name: str, value: str) -> None:
         _check_name(name)
-        cleaned = value.strip()
-        if not cleaned:
-            raise CredentialError("The value is empty.")
-        if any(char.isspace() or not char.isprintable() or ord(char) > 126 for char in cleaned):
-            raise CredentialError(
-                "That value has a space, a line break or an unusual character in it. "
-                "Paste it again, exactly as you copied it, with nothing extra."
-            )
-        if len(cleaned.encode("utf-8")) > MAX_SECRET_BYTES:
-            raise CredentialError("The value is too long for Windows Credential Manager.")
+        cleaned = _clean_secret(value)
         if self._api is None:
             raise CredentialError("Windows Credential Manager is not available on this system.")
         self._api.write(self._prefix + name, cleaned)
@@ -272,6 +263,61 @@ class CredentialStore:
 def _check_name(name: str) -> None:
     if name not in _NAMES:
         raise CredentialError(f"{name} is not a secret QuantOS manages.")
+
+
+def _clean_secret(value: str) -> str:
+    cleaned = value.strip()
+    if not cleaned:
+        raise CredentialError("The value is empty.")
+    if any(char.isspace() or not char.isprintable() or ord(char) > 126 for char in cleaned):
+        raise CredentialError(
+            "That value has a space, a line break or an unusual character in it. "
+            "Paste it again, exactly as you copied it, with nothing extra."
+        )
+    if len(cleaned.encode("utf-8")) > MAX_SECRET_BYTES:
+        raise CredentialError("The value is too long for Windows Credential Manager.")
+    return cleaned
+
+
+BROKER_VIEW_KEY = "UPSTOX_VIEW_KEY"
+
+
+class ScopedCredentialStore:
+    """A narrow store for secrets that must never reach the process environment.
+
+    It keeps its entries under its own prefix, so they are not in ``SECRETS``, are not listed by
+    ``CredentialStore.status()`` and are never copied by ``apply_to_environment()``. The broker view's sign-in key
+    lives here: it is read when a request needs it and is held by as little code as possible.
+    """
+
+    def __init__(self, names: frozenset[str], prefix: str | None = None) -> None:
+        self._api: _WinCredApi | None = _WinCredApi() if sys.platform == "win32" else None
+        self._prefix = prefix if prefix is not None else TARGET_PREFIX + "BrokerView:"
+        self._names = names
+
+    @property
+    def available(self) -> bool:
+        return self._api is not None
+
+    def _target(self, name: str) -> str:
+        if name not in self._names:
+            raise CredentialError(f"{name} is not a secret this store keeps.")
+        return self._prefix + name
+
+    def get(self, name: str) -> str | None:
+        target = self._target(name)
+        return self._api.read(target) if self._api else None
+
+    def set(self, name: str, value: str) -> None:
+        target = self._target(name)
+        cleaned = _clean_secret(value)
+        if self._api is None:
+            raise CredentialError("Windows Credential Manager is not available on this system.")
+        self._api.write(target, cleaned)
+
+    def delete(self, name: str) -> bool:
+        target = self._target(name)
+        return self._api.delete(target) if self._api else False
 
 
 class _WinCredApi:

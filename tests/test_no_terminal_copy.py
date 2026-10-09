@@ -17,12 +17,14 @@ ROOT = Path(__file__).resolve().parents[1] / "src" / "quant_system"
 SETTINGS_SCREEN = (
     Path(__file__).resolve().parents[1] / "frontend" / "src" / "pages" / "Settings.tsx"
 )
-PACKAGES = [ROOT / "copilot", ROOT / "live"]
-# The three files that put the Copilot and the live prices on the wire; every message they send reaches a screen.
+PACKAGES = [ROOT / "copilot", ROOT / "live", ROOT / "broker_view"]
+# The files that put the Copilot, the live prices and the broker view on the wire; every message they send reaches a
+# screen.
 FILES = [
     ROOT / "server" / "v2" / "copilot_routes.py",
     ROOT / "server" / "v2" / "copilot_wiring.py",
     ROOT / "server" / "v2" / "live_routes.py",
+    ROOT / "server" / "v2" / "broker_routes.py",
 ]
 # These two modules write the instructions the app sends to an AI model, and they tell it to answer in a JSON
 # object, naming the tools it may use. A model's reply goes through the guard before anyone reads it, so these words
@@ -126,10 +128,12 @@ def test_the_scan_actually_finds_messages_in_every_place_it_is_meant_to_look() -
         "server/v2/copilot_routes.py",
         "server/v2/copilot_wiring.py",
         "server/v2/live_routes.py",
+        "server/v2/broker_routes.py",
     } <= seen
     assert any(path.startswith("copilot/") for path in seen) and any(
         path.startswith("live/") for path in seen
     )
+    assert any(path.startswith("broker_view/") for path in seen)
 
 
 @pytest.mark.parametrize("rule", sorted(ALL_RULES))

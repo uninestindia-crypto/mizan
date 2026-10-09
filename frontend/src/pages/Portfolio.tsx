@@ -1,6 +1,7 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
+import { BrokerAccountCard } from "../components/BrokerAccountCard";
 import { Donut } from "../components/charts";
 import { DataGate, Illustration } from "../components/common";
 import { type HoldingDraft, HoldingDialog } from "../components/HoldingDialog";
@@ -22,6 +23,9 @@ export default function Portfolio() {
           </Button>
         }
       />
+      <div className="mb-5">
+        <BrokerAccountCard />
+      </div>
       <DataGate>
         <PortfolioContent onEdit={(initial) => setDialog({ open: true, initial })} onAdd={() => setDialog({ open: true })} />
       </DataGate>

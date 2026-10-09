@@ -33,6 +33,7 @@ _NEED_AI = (
     "open Settings, then Accounts and keys."
 )
 _ADD_KEY_BUTTON = Proposal("navigate", "Add an AI key", "/settings/accounts")
+_BROKER_BUTTON = Proposal("navigate", "Open Broker view", "/settings/broker")
 _NOT_ALLOWED = "This assistant is not set up to look that up. Open Agents, edit it, and tick that item in its list."
 _WHICH_STOCK = "Which stock do you mean? Write its symbol in capital letters, for example TCS."
 _WHICH_FOR_OPINION = "Which stock should the AI models look at? Write its symbol in capital letters, for example TCS."
@@ -46,6 +47,7 @@ _MENU = """I can answer from what is inside QuantOS:
 - **Live prices** ("price of TCS")
 - **Trading costs** and **position size** (the Tools screen)
 - **Your portfolio, watchlist and paper books**
+- **Your broker account** (view only), if you connected it in Settings, then Broker view
 - **Independent second opinions** from several AI models on a stock
 
 I cannot predict the market or tell you what to buy or sell."""
@@ -256,6 +258,28 @@ def _render_portfolio(data: dict[str, Any]) -> str:
     return "\n".join(line for line in lines if line)
 
 
+def _render_broker(data: dict[str, Any]) -> str:
+    totals = data.get("totals") or {}
+    change = totals.get("pnl_pct")
+    percent = f" ({float(change):+.1f}%)" if isinstance(change, (int, float)) else ""
+    lines = [
+        "**Your broker account (view only)**",
+        str(data.get("source") or ""),
+        f"- Value of holdings: {_rupees(totals.get('value'))} (you paid {_rupees(totals.get('invested'))})",
+        f"- Profit or loss so far: {_rupees(totals.get('pnl'))}{percent}",
+        f"- Cash available: {_rupees(data.get('cash_available'))}",
+    ]
+    for holding in (data.get("holdings") or [])[:5]:
+        weight = holding.get("weight_pct")
+        share = (
+            f", {float(weight):.0f}% of your holdings" if isinstance(weight, (int, float)) else ""
+        )
+        lines.append(f"- **{holding.get('symbol')}**: {holding.get('quantity')} shares{share}")
+    lines.extend(f"- {warning}" for warning in data.get("warnings") or [])
+    lines.append("Nothing can be bought, sold or changed through QuantOS.")
+    return "\n".join(line for line in lines if line)
+
+
 # ------------------------------------------------------------------------------------- questions
 
 
@@ -302,6 +326,13 @@ def _portfolio(run: _Run, kind: str) -> str:
     return _render_portfolio(result.data)
 
 
+def _broker(run: _Run) -> str:
+    result = run.call("broker_account", {})
+    if not result.ok:
+        run.offer(_BROKER_BUTTON)
+    return _render_broker(result.data) if result.ok else str(result.error)
+
+
 def _costs(run: _Run) -> str:
     run.call("suggest_screen", {"screen": "tools"})
     return "The Costs tool shows the exact NSE charges for a trade, including brokerage and taxes. Open it below."
@@ -319,6 +350,11 @@ def _route(run: _Run, text: str, page: str | None, ai_available: bool) -> str:
         return _stock_question(run, text, page, "live_quote", _render_quotes)
     if words & {"BROKERAGE", "CHARGES", "COSTS", "COST", "FEES", "TAX", "TAXES"}:
         return _costs(run)
+    if (
+        words & {"BROKER", "UPSTOX", "POSITIONS", "CASH", "FUNDS", "MARGIN"}
+        or {"MY", "ACCOUNT"} <= words
+    ):
+        return _broker(run)
     for kind, trigger in (
         ("portfolio_summary", {"PORTFOLIO", "HOLDINGS"}),
         ("watchlist", {"WATCHLIST"}),

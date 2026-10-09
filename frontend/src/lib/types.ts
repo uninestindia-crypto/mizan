@@ -825,3 +825,74 @@ export interface ChangelogEntry {
   improvements: string[];
   unchanged_protections: string[];
 }
+
+/** The view-only broker connection (Settings, Broker view). Percent values are percent points: 5 means 5%. */
+export interface BrokerStatus {
+  brokers: {
+    id: string;
+    label: string;
+    set_up: boolean;
+    connected: boolean;
+    waiting_for_sign_in: boolean;
+    key_ends_at: string | null;
+    callback_address: string;
+    message: string | null;
+  }[];
+  assistant_access: boolean;
+  available: boolean;
+}
+
+export interface BrokerHolding {
+  symbol: string;
+  exchange: string | null;
+  isin: string | null;
+  quantity: number;
+  t1_quantity: number;
+  average_price: number | null;
+  last_price: number | null;
+  close_price: number | null;
+  value: number | null;
+  invested: number | null;
+  pnl: number | null;
+  pnl_pct: number | null;
+  today: number | null;
+  weight_pct: number | null;
+}
+
+export interface BrokerPosition {
+  symbol: string;
+  exchange: string | null;
+  product: string;
+  quantity: number;
+  closed: boolean;
+  average_price: number | null;
+  last_price: number | null;
+  pnl: number | null;
+  realised: number | null;
+  unrealised: number | null;
+}
+
+export interface BrokerSnapshot {
+  broker: string;
+  connected: boolean;
+  view_only: boolean;
+  label: string;
+  fetched_at: string | null;
+  freshness: "UP_TO_DATE" | "OLDER" | "NONE";
+  message: string | null;
+  totals: {
+    value: number | null;
+    invested: number | null;
+    pnl: number | null;
+    pnl_pct: number | null;
+    today: number | null;
+    arriving_value: number | null;
+    arriving_note: string | null;
+  } | null;
+  cash: { available: number | null; in_use: number | null } | null;
+  holdings: BrokerHolding[];
+  positions: BrokerPosition[];
+  warnings: string[];
+  skipped: { holdings: number; positions: number };
+  notes: string[];
+}

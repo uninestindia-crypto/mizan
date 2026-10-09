@@ -22,6 +22,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { NavLink, useParams } from "react-router";
 import { AsOf } from "../components/common";
 import { AgentCliBridge } from "../components/AgentCliBridge";
+import { BrokerViewSettings } from "../components/BrokerViewSettings";
 import { DataFolderPicker } from "../components/DataFolderPicker";
 import { EnvImport } from "../components/EnvImport";
 import { HardwareAcceleratorCard } from "../components/HardwareAcceleratorCard";
@@ -50,6 +51,7 @@ const SECTIONS = [
   { id: "charges", label: "Broker charges", icon: Landmark },
   { id: "data", label: "Market data", icon: Database },
   { id: "accounts", label: "Accounts & keys", icon: KeyRound },
+  { id: "broker", label: "Broker view", icon: Eye },
   { id: "ai", label: "AI assistants", icon: Bot },
   { id: "about", label: "About", icon: Info },
 ];
@@ -84,6 +86,8 @@ export default function Settings() {
             <DataSection />
           ) : section === "accounts" ? (
             <Accounts />
+          ) : section === "broker" ? (
+            <BrokerViewSettings />
           ) : section === "ai" ? (
             <AiAssistants />
           ) : section === "about" ? (
