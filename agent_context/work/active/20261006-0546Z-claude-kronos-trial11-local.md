@@ -190,14 +190,47 @@ Untracked `agent_context/work/completed/20261006-antigravity-merge-and-branch-cl
 - Nothing has been scored. No forecast file exists locally yet. This run is the first and only trial-11 forecast run; a
   failure in cells 4-7 (inputs hash, prepare, selfcheck) happens before any forecast and does not count as a run.
 
+## Update, 2026-10-10: the run finished; the first worktree was removed by someone else
+
+- **Kaggle run 355816896 finished successfully** (19,141 s, 5.3 h) on a Tesla T4, `device: cuda`, Kronos-base, 5 paths per
+  name. The log shows: inputs SHA-256 `fdbbdd15...cd9c4` matched; "Kronos code: three files match the declared SHA-256 values";
+  tokenizer and weights "match the declared SHA-256"; `selfcheck` OK (45 names, 529 dates, 23,805 forecasts); then
+  "written kronos-forecasts.json (23,805 forecasts)". No out-of-memory error, no resume was needed.
+- **Downloaded** the single file `run/kronos-forecasts.json` (8,649,242 bytes, the 8.65 MB approved) from the private notebook
+  output via the Kaggle download endpoint. The pane saved it as `%USERPROFILE%\Downloads\new.json`. Checked fields: trial 11,
+  `NeoQuasar/Kronos-base`, revision `2b554741...`, samples 5, forecast_count 23,805 with 23,805 records, inputs_sha256
+  `fdbbdd15...cd9c4`, generator_sha256 `ef17b128...e49e8a`, runner_sha256 `b1356dcb...65815b` (equals my staged
+  `kronos_trial11.py`), device `cuda: Tesla T4`. File SHA-256 `49e4fdca09669f644364c228daa23b63a01150dd66ab041e47a880e52be54dfe`.
+- **Not scored yet.** Not copied anywhere in a repo yet.
+- **My first worktree no longer exists.** `D:\Quant OS Project\Mizan_workspaces\worktrees\feature-kronos-trial11-47f0075-20261006-054703`
+  and its branch `claude/kronos-trial11-local` are gone, and so is the remote branch `claude/dazzling-brown-yn5qu3`. Commit
+  `47f0075` is an ancestor of `main` (the branch was merged), and a session on 2026-10-09/10 cleaned up branches. I did not
+  remove it and do not know who did; I am not pursuing it. Nothing of mine was lost: the work there was uncommitted and the
+  record and staged files live outside it.
+- **Mistake, disclosed:** my first scoring command ran in the install-root checkout because `Set-Location` to the missing
+  worktree failed and the next lines ran anyway. `Copy-Item` into the missing folder failed (nothing written);
+  `uv run python scripts\score_kronos_trial11.py` then ran in `D:\Quant OS Project\Mizan` and printed
+  `REFUSED: no forecasts at ...\Mizan\reports\kronos_trial11\kronos-forecasts.json`, so **nothing was scored and no results
+  file or `SCORED.json` was written**. `git status` there shows only other sessions' changes; `uv.lock` and `pyproject.toml`
+  are unchanged. I cannot rule out that `uv run` synced the install root's ignored `.venv` to its lockfile.
+- `main` has moved on since the declaration (head `58f5eaa77`; `pyproject.toml`, `uv.lock` and about 1,900 data files changed).
+  The declared trial-11 files on `main` are byte-identical to `47f0075` (scorer, runner, ledger, inputs, generator, trial-10
+  scorer: same blob hashes). **Decision: score at `47f0075`**, the commit whose tests and `selfcheck` I verified, so the
+  harness, dependencies and data are those the declaration was frozen against.
+- **New workspace (claimed before creation):** `D:\Quant OS Project\Mizan_workspaces\worktrees\feature-kronos-trial11-score-47f0075-<UTC stamp>`,
+  new branch `claude/kronos-trial11-score`, revision `47f0075533fcda9868179487b349cdfb69a1c271`. **Created 2026-10-10 05:08 UTC:**
+  `D:\Quant OS Project\Mizan_workspaces\worktrees\feature-kronos-trial11-score-47f0075-20261010-050836`.
+- Observation, not mine: at this moment `git status` in the install root also lists several hundred uncommitted deletions under
+  `Learn from open source codebase/pybroker-master/`, which another session is making (it has just committed "remove PyBroker
+  license notices"). I did not touch them. This record also shows as modified there because a session committed it.
+
 ## Stop point
 
-Kaggle version 2 is running (GPU T4 x2). Waiting for its output `kronos-forecasts.json`; then download (state name, source and
-size and get the founder's yes), copy into the worktree, score once via `scripts/score_kronos_trial11.py`.
+Forecast file downloaded and verified (in Downloads, not yet in any repo). Next: create the new worktree at `47f0075`, copy the
+file in, score once.
 
 ## Next safe action
 
-When the founder has verified the phone and chosen the upload route: re-check Kaggle Settings shows the account verified,
-create the private dataset `kronos-trial11` from the three staged files, import `kronos-trial11-run.ipynb`, set GPU and
-internet on, Save & Run All, and stop on any CUDA out-of-memory without changing paths or batch size. Then step 5 of the
-plan (score once via `scripts/score_kronos_trial11.py`).
+Create the worktree, `uv sync --frozen --extra dev`, run the trial tests and `selfcheck`, copy the forecast file to
+`reports/kronos_trial11/kronos-forecasts.json`, run `uv run python scripts/score_kronos_trial11.py` once from inside the
+worktree (check `Get-Location` first), then write `RESULT.md`.
