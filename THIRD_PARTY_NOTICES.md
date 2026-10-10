@@ -41,7 +41,9 @@ SOFTWARE
 
 Source: https://github.com/edtechre/pybroker. Copyright (C) 2023 Edward West.
 
-`src/pybroker/` is a vendored copy of the PyBroker engine; each file keeps its own licence header. PyBroker is licensed under
+`src/pybroker/` is a vendored copy of the PyBroker engine. The per-file copyright and licence headers were removed from that copy
+on 2026-10-10 (commit `f75e8570a`), so they are not repeated in the files; this notice is where the source and licence are
+recorded. PyBroker is licensed under
 Apache 2.0 **with the Commons Clause License Condition v1.0**, which says the licence does not grant the right to "Sell" the
 software, where "Sell" means providing to third parties, for a fee or other consideration (including hosting or
 consulting/support services), a product or service whose value derives, entirely or substantially, from the functionality of
