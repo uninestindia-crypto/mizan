@@ -213,10 +213,14 @@ export function HardwareAcceleratorCard() {
                 </div>
                 <div className="mt-3 flex items-center justify-between border-t border-line/40 pt-2.5 text-[11px] text-ink-3">
                   <span>Target: {model.recommended_hardware}</span>
-                  <span className="flex items-center gap-1 font-medium text-up">
-                    <CheckCircle2 className="size-3" aria-hidden />
-                    In-Process
-                  </span>
+                  {model.status.startsWith("ACTIVE") || model.status === "READY" ? (
+                    <span className="flex items-center gap-1 font-medium text-up">
+                      <CheckCircle2 className="size-3" aria-hidden />
+                      In-Process
+                    </span>
+                  ) : (
+                    <span className="font-medium text-ink-3">Not running on this computer</span>
+                  )}
                 </div>
               </div>
             ))}

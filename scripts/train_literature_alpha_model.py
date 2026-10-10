@@ -3,7 +3,7 @@
 
 Unifies:
 1. Academic paper retrieval from arXiv (q-fin.ST, q-fin.PM) via ArxivClient.
-2. Semantic indexing using Google's EmbeddingGemma 2 via QuantPaperRAG.
+2. Semantic indexing via QuantPaperRAG (EmbeddingGemma 2 when installed, otherwise built-in keyword matching).
 3. Point-in-time factor extraction using Mizan's Qlib Alpha158 engine.
 4. Cross-sectional model training and out-of-sample evaluation via QlibModelAdapter.
 """
@@ -155,9 +155,10 @@ def run_pipeline(
     # -------------------------------------------------------------------------
     # STAGE 2: Semantic Representation with EmbeddingGemma 2
     # -------------------------------------------------------------------------
-    print("\n[*] STAGE 2: Embedding papers with Google EmbeddingGemma 2 & QuantPaperRAG ...")
+    print("\n[*] STAGE 2: Embedding papers & QuantPaperRAG ...")
     t0 = time.time()
     gemma = EmbeddingGemmaProvider(dimensions=512, mode="auto")
+    print(f"[*] Embedding backend: {gemma.label}")
     rag = QuantPaperRAG(embedding_provider=gemma)
     rag.index_papers(papers)
 

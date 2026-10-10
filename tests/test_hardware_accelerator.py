@@ -48,7 +48,7 @@ def test_hardware_topology_structure_and_devices() -> None:
     model_ids = [m.id for m in topo.local_models]
     assert "cand_mizan_v1" in model_ids
     assert "cand_ridge_v1" in model_ids
-    assert "embeddinggemma-270m" in model_ids
+    assert "embeddinggemma-2" in model_ids
 
 
 def test_hardware_topology_target_switching() -> None:

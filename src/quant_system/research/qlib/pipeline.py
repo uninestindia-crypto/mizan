@@ -2,7 +2,8 @@
 
 Orchestrates:
 1. arXiv research grounding (q-fin.ST, q-fin.PM) via ArxivClient.
-2. EmbeddingGemma 2 semantic embedding projection (16 dims via MRL).
+2. A fixed 16-number research-context vector from paper summaries, embedded by the provider's active
+   backend (EmbeddingGemma 2 when it is installed, otherwise built-in keyword matching).
 3. Real Upstox API v3 live market quotes via QuoteService.
 4. Qlib Alpha158 point-in-time causal factor calculation (64 dims).
 5. In-house Quant-SLM neural training from scratch on 3-year Nifty 50 historical market cache.
@@ -172,9 +173,9 @@ def run_live_slm_pipeline(
     for p in papers:
         print(f"    - {p.citation}")
 
-    # 3. Google EmbeddingGemma 2 MRL Projection (16 dimensions)
-    print("\n[*] 2. Projecting research context with Google EmbeddingGemma 2 (16-dim MRL)...")
+    # 3. Fixed research-context vector (16 numbers); the same vector is attached to every stock
     gemma = EmbeddingGemmaProvider(dimensions=128, mode="auto")
+    print(f"\n[*] 2. Building the research-context vector (16 numbers) with: {gemma.label}")
     paper_summary = " ".join([p.summary for p in papers])
     full_emb = gemma.embed_text(paper_summary)
     context_vector = np.array(full_emb[:16], dtype=np.float64)

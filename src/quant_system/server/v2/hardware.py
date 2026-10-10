@@ -14,6 +14,8 @@ import sys
 from dataclasses import asdict, dataclass
 from typing import Any, Literal
 
+from quant_system.research.embedding_gemma import real_model_status
+
 logger = logging.getLogger(__name__)
 
 AcceleratorTarget = Literal["auto", "npu", "gpu", "cpu"]
@@ -293,13 +295,31 @@ def _catalog_local_models(effective_target: str) -> list[LocalModelInfo]:
             status="READY",
             description="Single-instrument rolling walk-forward models evaluated across 101 governed trial evaluations with next-bar execution.",
         ),
-        LocalModelInfo(
-            id="embeddinggemma-270m",
-            name="EmbeddingGemma 2 (270M)",
-            category="Semantic Embeddings & Search",
-            size="~300 MB",
-            recommended_hardware="NPU / CPU",
-            status="READY",
-            description="Dense vector embeddings for AAOIFI Shariah standards, compliance guidelines, and market research retrieval.",
-        ),
+        _embedding_model_card(),
     ]
+
+
+def _embedding_model_card() -> LocalModelInfo:
+    """The EmbeddingGemma 2 card, with a status that says whether it can really run on this computer."""
+    found = real_model_status()
+    if found == "READY":
+        status = "READY"
+        note = "It runs on this computer."
+    elif found == "NEEDS_DOWNLOAD":
+        status = "NOT DOWNLOADED"
+        note = "It is not downloaded yet, so search uses built-in keyword matching for now."
+    else:
+        status = "NOT INSTALLED"
+        note = "It is not installed on this computer, so search uses built-in keyword matching."
+    return LocalModelInfo(
+        id="embeddinggemma-2",
+        name="EmbeddingGemma 2 (text, about 270M)",
+        category="Semantic Embeddings & Search",
+        size="~3 GB download",
+        recommended_hardware="NPU / CPU",
+        status=status,
+        description=(
+            "Google's embedding model. Finds the research papers closest in meaning to a question. "
+            f"{note} Halal results never use it."
+        ),
+    )

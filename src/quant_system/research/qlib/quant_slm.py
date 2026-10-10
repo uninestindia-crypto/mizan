@@ -2,7 +2,8 @@
 
 Combines:
 1. Qlib Alpha158 technical factor representations (64-158 dimensions).
-2. Google EmbeddingGemma 2 semantic embeddings derived from peer-reviewed arXiv research (16 dimensions).
+2. A fixed 16-number research-context vector derived from arXiv paper summaries. It is the same for every
+   stock and every date, so it carries no information that separates one stock from another.
 3. Multi-Head Factor Self-Attention and multi-task heads for Alpha Return, Direction, and Volatility.
 4. Pure vectorized NumPy implementation with AdamW optimization: zero dependency bloat,
    sub-2ms inference, and 100% deterministic reproducibility on Snapdragon Oryon CPU.

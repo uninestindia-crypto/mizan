@@ -224,6 +224,10 @@ class QuantPaperRAG:
         self.dense_weight = max(0.0, min(1.0, dense_weight))
         self.papers: list[PaperMetadata] = []
         self.dense_vectors: list[list[float]] = []
+        # Which backend generation made dense_vectors; vectors from two backends must never be compared.
+        self._dense_generation = (
+            self.embedding_provider.generation if self.embedding_provider is not None else 0
+        )
         self.doc_vectors: list[dict[str, float]] = []
         self.doc_lengths: list[float] = []
         self.idf: dict[str, float] = {}
@@ -250,11 +254,11 @@ class QuantPaperRAG:
 
         # 1. Update dense embeddings if provider is active
         if self.embedding_provider is not None and new_papers:
-            paper_texts = [
-                f"{p.title}. {p.summary} Category: {p.primary_category}" for p in new_papers
-            ]
-            new_dense = self.embedding_provider.embed_texts(paper_texts)
+            provider = self.embedding_provider
+            new_dense = provider.embed_texts([self._paper_text(p) for p in new_papers])
             self.dense_vectors.extend(new_dense)
+            if provider.generation != self._dense_generation:
+                self._rebuild_dense()
 
         # 2. Compute Document Frequencies
         df_counts: Counter[str] = Counter()
@@ -289,6 +293,18 @@ class QuantPaperRAG:
             norm = math.sqrt(sum(v * v for v in vec.values()))
             self.doc_vectors.append(vec)
             self.doc_lengths.append(norm if norm > 0 else 1.0)
+
+    @staticmethod
+    def _paper_text(paper: PaperMetadata) -> str:
+        return f"{paper.title}. {paper.summary} Category: {paper.primary_category}"
+
+    def _rebuild_dense(self) -> None:
+        """Embeds every paper again with the backend that is active now (it changed after the first vectors)."""
+        provider = self.embedding_provider
+        if provider is None:
+            return
+        self.dense_vectors = provider.embed_texts([self._paper_text(p) for p in self.papers])
+        self._dense_generation = provider.generation
 
     def search_and_index_arxiv(self, query: str, max_results: int = 5) -> int:
         """Queries arXiv live, parses results, and adds them to the semantic index."""
@@ -330,7 +346,10 @@ class QuantPaperRAG:
         dense_scores: list[float] = [0.0] * len(self.papers)
         retrieval_mode = "tfidf"
         if self.embedding_provider is not None and self.dense_vectors:
-            q_dense = self.embedding_provider.embed_text(question)
+            q_dense = self.embedding_provider.embed_text(question, kind="query")
+            if self.embedding_provider.generation != self._dense_generation:
+                self._rebuild_dense()
+                q_dense = self.embedding_provider.embed_text(question, kind="query")
             for idx, d_vec in enumerate(self.dense_vectors):
                 # Normalized vectors: dot product equals cosine similarity
                 dense_sim = sum(q_dense[k] * d_vec[k] for k in range(min(len(q_dense), len(d_vec))))
@@ -387,8 +406,15 @@ class QuantPaperRAG:
             metadata={
                 "retrieval_mode": retrieval_mode,
                 "dense_weight": self.dense_weight if self.embedding_provider else 0.0,
+                # What really produced the vectors, not just which model was asked for.
                 "embedding_model": (
-                    self.embedding_provider.model_name if self.embedding_provider else None
+                    self.embedding_provider.served_model if self.embedding_provider else None
+                ),
+                "embedding_label": (
+                    self.embedding_provider.label if self.embedding_provider else None
+                ),
+                "embedding_is_real_model": (
+                    self.embedding_provider.uses_real_model if self.embedding_provider else False
                 ),
                 "embedding_dimension": (
                     self.embedding_provider.dimensions if self.embedding_provider else None

@@ -1177,7 +1177,7 @@ def quant_slm_status() -> dict[str, Any]:
         "architecture": "Cross-Factor Self-Attention (Pure NumPy Vectorized) + AdamW",
         "pillars": [
             "arXiv Literature Grounding (q-fin.ST, q-fin.PM)",
-            "Google EmbeddingGemma 2 MRL Semantic Context (16 dims)",
+            "Research context: a fixed 16-number summary of the papers, the same for every stock",
             "Qlib Alpha158 Causal Technical Factors (64 dims)",
             "Upstox API v3 Live Market Quotes Streaming",
         ],

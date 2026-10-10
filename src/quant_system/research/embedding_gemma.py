@@ -1,29 +1,79 @@
-"""EmbeddingGemma 2 provider: On-device multimodal & text embeddings for Quant OS.
+"""EmbeddingGemma 2 text embeddings for Quant OS, with an honest account of what actually ran.
 
-Supports:
-- Matryoshka Representation Learning (MRL) dimension truncation (128, 256, 512, 768).
-- Multiple backends: Local Ollama / HTTP endpoint, in-process PyTorch/Transformers,
-  and deterministic synthetic fallback for offline/CI environments.
-- High-speed in-memory vector caching for sub-millisecond retrieval.
+EmbeddingGemma 2 (``google/embeddinggemma-2``, Google, October 2026, Apache 2.0) is a 740M-parameter multimodal embedding model built
+on Gemma 4. Quant OS only needs text, so the real backend loads its text-only configuration (about 270M parameters) through
+sentence-transformers, the library the model card recommends. That library applies the model's own mean pooling, 512 to 768
+projection and normalisation. This module adds the task prefixes the card requires, Matryoshka truncation (128, 256, 512, 768) and
+re-normalisation.
+
+Backends, tried in this order when ``mode="auto"``:
+
+- ``transformers``: the real model, in this process. Needs sentence-transformers and torch (neither is bundled with the installed
+  app) and a one-time download of about 3 GB. ``auto`` only picks it when the weights are already on this computer, so nothing
+  downloads by surprise.
+- ``ollama``: a local Ollama server. The model it serves is whatever ``QUANTOS_EMBEDDING_OLLAMA_MODEL`` names (default
+  ``embeddinggemma``, the first-generation model). It is never reported as EmbeddingGemma 2.
+- ``synthetic``: a deterministic keyword-and-hash substitute for CI and for computers with neither of the above. It is **not** a
+  neural model. ``label`` and ``uses_real_model`` always say which one produced the vectors.
 """
 
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import logging
 import math
 import os
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
 SUPPORTED_DIMENSIONS = (128, 256, 512, 768)
 DEFAULT_DIMENSION = 768
-DEFAULT_MODEL_NAME = "google/embeddinggemma-270m"
+DEFAULT_MODEL_NAME = "google/embeddinggemma-2"
 DEFAULT_OLLAMA_ENDPOINT = "http://localhost:11434/api/embeddings"
+DEFAULT_OLLAMA_MODEL = "embeddinggemma"
+# The task prefixes from the model card. Queries and documents are embedded differently on purpose.
+QUERY_PREFIX = "task: search result | query: "
+DOCUMENT_PREFIX = "title: none | text: "
+# The vision and audio towers are not needed for text; leaving them out loads about 270M of the 740M parameters.
+TEXT_ONLY_CONFIG: dict[str, Any] = {"vision_config": None, "audio_config": None}
+
+
+def _weights_cached(model_name: str = DEFAULT_MODEL_NAME) -> bool:
+    """True when the model's weights file is already in the Hugging Face cache on this computer."""
+    hub = os.getenv("HF_HUB_CACHE")
+    root = (
+        Path(hub)
+        if hub
+        else Path(os.getenv("HF_HOME") or Path.home() / ".cache" / "huggingface") / "hub"
+    )
+    snapshots = root / ("models--" + model_name.replace("/", "--")) / "snapshots"
+    try:
+        return any((snap / "model.safetensors").is_file() for snap in snapshots.iterdir())
+    except OSError:
+        return False
+
+
+def real_model_status(model_name: str = DEFAULT_MODEL_NAME) -> str:
+    """Whether the real model could run here, without loading anything.
+
+    ``READY`` (packages and weights present), ``NEEDS_DOWNLOAD`` (packages present, weights not yet on this computer) or
+    ``NOT_INSTALLED`` (the packages are missing).
+    """
+    try:
+        packages = all(
+            importlib.util.find_spec(name) for name in ("sentence_transformers", "torch")
+        )
+    except (ImportError, ValueError):
+        packages = False
+    if not packages:
+        return "NOT_INSTALLED"
+    return "READY" if _weights_cached(model_name) else "NEEDS_DOWNLOAD"
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,10 +85,13 @@ class EmbeddingStats:
     backend: str
     cached_hits: int
     total_embedded: int
+    is_real_model: bool = False
+    label: str = ""
+    fallback_reason: str | None = None
 
 
 class EmbeddingGemmaProvider:
-    """High-performance EmbeddingGemma 2 provider with Matryoshka truncation."""
+    """EmbeddingGemma 2 embeddings with Matryoshka truncation, and a truthful report of the backend that ran."""
 
     def __init__(
         self,
@@ -47,6 +100,7 @@ class EmbeddingGemmaProvider:
         mode: str = "auto",  # 'auto', 'ollama', 'transformers', 'synthetic'
         endpoint_url: str | None = None,
         cache_size: int = 4096,
+        ollama_model: str | None = None,
     ) -> None:
         if dimensions not in SUPPORTED_DIMENSIONS:
             valid_dims = ", ".join(str(d) for d in SUPPORTED_DIMENSIONS)
@@ -59,17 +113,66 @@ class EmbeddingGemmaProvider:
         self.mode = mode
         endpoint = endpoint_url or os.getenv("QUANTOS_EMBEDDING_ENDPOINT")
         self.endpoint_url: str = endpoint if endpoint else DEFAULT_OLLAMA_ENDPOINT
+        self.ollama_model: str = (
+            ollama_model or os.getenv("QUANTOS_EMBEDDING_OLLAMA_MODEL") or DEFAULT_OLLAMA_MODEL
+        )
         self.cache_size = max(64, cache_size)
 
         self._cache: dict[str, list[float]] = {}
         self._cache_hits = 0
         self._total_calls = 0
+        self._model: Any = None
+        self._model_ready = False
+        self._fallback_reason: str | None = None
+        self._generation = 0
+        self._switched_off = self.mode == "synthetic" or os.getenv("QUANTOS_SYNTHETIC_MODE") == "1"
         self._active_backend = self._determine_backend()
 
     @property
     def active_backend(self) -> str:
-        """Returns the currently active execution backend."""
+        """Returns the backend that produces vectors right now: transformers, ollama or synthetic."""
         return self._active_backend
+
+    @property
+    def generation(self) -> int:
+        """Counts backend changes. A holder of earlier vectors must rebuild them when this moves."""
+        return self._generation
+
+    @property
+    def uses_real_model(self) -> bool:
+        """True only once EmbeddingGemma 2 itself has produced vectors in this process."""
+        return self._active_backend == "transformers" and self._model_ready
+
+    @property
+    def served_model(self) -> str:
+        """The name of what actually produces the vectors."""
+        if self._active_backend == "transformers":
+            return self.model_name
+        if self._active_backend == "ollama":
+            return self.ollama_model
+        return "built-in keyword matching"
+
+    @property
+    def label(self) -> str:
+        """A plain sentence for a screen: what is producing the vectors."""
+        if self._active_backend == "transformers":
+            if self._model_ready:
+                return "EmbeddingGemma 2 (running on this computer)"
+            return "EmbeddingGemma 2 (loads the first time it is used)"
+        if self._active_backend == "ollama":
+            return f"A local model through Ollama ({self.ollama_model})"
+        return f"Built-in keyword matching (EmbeddingGemma 2 {self._why_not_real()})"
+
+    def _why_not_real(self) -> str:
+        if self._fallback_reason:
+            return "could not run here"
+        if self._switched_off:
+            return "is switched off"
+        reasons = {
+            "NOT_INSTALLED": "is not installed on this computer",
+            "NEEDS_DOWNLOAD": "has not been downloaded yet",
+        }
+        return reasons.get(real_model_status(self.model_name), "is not in use")
 
     def _determine_backend(self) -> str:
         """Determines the appropriate execution backend."""
@@ -78,7 +181,7 @@ class EmbeddingGemmaProvider:
 
         if os.getenv("QUANTOS_SYNTHETIC_MODE") == "1":
             logger.info(
-                "QUANTOS_SYNTHETIC_MODE=1 enabled; using synthetic EmbeddingGemma provider."
+                "QUANTOS_SYNTHETIC_MODE=1 enabled; using the built-in substitute for embeddings."
             )
             return "synthetic"
 
@@ -88,7 +191,11 @@ class EmbeddingGemmaProvider:
         if self.mode == "transformers":
             return "transformers"
 
-        # In 'auto' mode, test if Ollama endpoint is reachable
+        # In 'auto' mode the real model comes first, but only when it is already on this computer.
+        if real_model_status(self.model_name) == "READY":
+            return "transformers"
+
+        # Then a local Ollama server, if one answers quickly.
         try:
             import httpx
 
@@ -102,34 +209,27 @@ class EmbeddingGemmaProvider:
         except Exception:
             pass
 
-        # Check if transformers and torch are installed
-        try:
-            import importlib.util
-
-            if importlib.util.find_spec("torch") and importlib.util.find_spec("transformers"):
-                return "transformers"
-        except Exception:
-            pass
-
         # Safe zero-dependency fallback for standalone desktop and CI
         return "synthetic"
 
-    def embed_text(self, text: str) -> list[float]:
-        """Generates a normalized dense vector for a single text string."""
-        normalized_key = text.strip().lower()
-        if not normalized_key:
+    def _key(self, kind: str, clean_text: str) -> str:
+        return f"{kind}\x00{clean_text}"
+
+    def embed_text(self, text: str, *, kind: str = "document") -> list[float]:
+        """Generates a normalized dense vector for a single text. ``kind`` is ``document`` or ``query``."""
+        clean = text.strip()
+        if not clean:
             return [0.0] * self.dimensions
 
-        cached = self._cache.get(normalized_key)
+        cached = self._cache.get(self._key(kind, clean))
         if cached is not None:
             self._cache_hits += 1
             return cached
 
-        vectors = self.embed_texts([text])
-        return vectors[0]
+        return self.embed_texts([text], kind=kind)[0]
 
-    def embed_texts(self, texts: Sequence[str]) -> list[list[float]]:
-        """Generates normalized dense vectors for a sequence of texts."""
+    def embed_texts(self, texts: Sequence[str], *, kind: str = "document") -> list[list[float]]:
+        """Generates normalized dense vectors for a sequence of texts. ``kind`` is ``document`` or ``query``."""
         if not texts:
             return []
 
@@ -139,23 +239,17 @@ class EmbeddingGemmaProvider:
 
         for idx, text in enumerate(texts):
             clean_text = text.strip()
-            cache_key = clean_text.lower()
-            if cache_key in self._cache:
+            cached = self._cache.get(self._key(kind, clean_text))
+            if cached is not None:
                 self._cache_hits += 1
-                results.append(self._cache[cache_key])
+                results.append(cached)
             else:
                 results.append([])
                 to_compute_indices.append(idx)
                 to_compute_texts.append(clean_text)
 
         if to_compute_texts:
-            computed_vectors: list[list[float]]
-            if self._active_backend == "ollama":
-                computed_vectors = self._embed_via_ollama(to_compute_texts)
-            elif self._active_backend == "transformers":
-                computed_vectors = self._embed_via_transformers(to_compute_texts)
-            else:
-                computed_vectors = self._embed_synthetic(to_compute_texts)
+            computed_vectors = self._compute(to_compute_texts, kind)
 
             for text_str, vec, orig_idx in zip(
                 to_compute_texts, computed_vectors, to_compute_indices, strict=True
@@ -166,10 +260,33 @@ class EmbeddingGemmaProvider:
 
                 # Add to cache
                 if len(self._cache) < self.cache_size:
-                    self._cache[text_str.lower()] = processed
+                    self._cache[self._key(kind, text_str)] = processed
                 self._total_calls += 1
 
         return results
+
+    def _compute(self, texts: Sequence[str], kind: str) -> list[list[float]]:
+        """Runs the active backend; if a real backend fails, switches to the substitute and says so."""
+        backend = self._active_backend
+        if backend == "synthetic":
+            return self._embed_synthetic(texts)
+        try:
+            if backend == "transformers":
+                return self._embed_via_model(texts, kind)
+            return self._embed_via_ollama(texts)
+        except Exception as exc:
+            self._fall_back(backend, exc)
+            return self._embed_synthetic(texts)
+
+    def _fall_back(self, backend: str, exc: Exception) -> None:
+        """Stays on the substitute from now on, and forgets vectors from the backend that failed."""
+        self._fallback_reason = f"{backend} failed: {type(exc).__name__}: {exc}"
+        logger.warning("%s; using the built-in substitute from now on.", self._fallback_reason)
+        self._active_backend = "synthetic"
+        self._model_ready = False
+        self._model = None
+        self._cache.clear()
+        self._generation += 1
 
     def _apply_matryoshka_norm(self, vector: Sequence[float]) -> list[float]:
         """Applies Matryoshka slicing and L2 unit-norm normalization."""
@@ -184,66 +301,58 @@ class EmbeddingGemmaProvider:
         inv_norm = 1.0 / math.sqrt(norm_sq)
         return [round(x * inv_norm, 6) for x in truncated]
 
+    def _check_width(self, vectors: Sequence[Sequence[float]], source: str) -> None:
+        for vec in vectors:
+            if len(vec) < self.dimensions:
+                raise ValueError(
+                    f"{source} returned {len(vec)} numbers per text, fewer than the {self.dimensions} asked for"
+                )
+
+    def _load_model(self) -> Any:
+        """Loads EmbeddingGemma 2 (text only) once and keeps it for later calls."""
+        if self._model is None:
+            library = importlib.import_module("sentence_transformers")
+            self._model = library.SentenceTransformer(
+                self.model_name, config_kwargs=dict(TEXT_ONLY_CONFIG)
+            )
+        return self._model
+
+    def _embed_via_model(self, texts: Sequence[str], kind: str) -> list[list[float]]:
+        """Embeds with EmbeddingGemma 2 itself: its own pooling, projection and normalisation, plus the task prefix."""
+        prefix = QUERY_PREFIX if kind == "query" else DOCUMENT_PREFIX
+        model = self._load_model()
+        rows = model.encode(
+            [prefix + text for text in texts],
+            normalize_embeddings=True,
+            convert_to_numpy=True,
+            show_progress_bar=False,
+        )
+        vectors = [[float(v) for v in row] for row in rows]
+        self._check_width(vectors, "EmbeddingGemma 2")
+        self._model_ready = True
+        return vectors
+
     def _embed_via_ollama(self, texts: Sequence[str]) -> list[list[float]]:
-        """Queries local Ollama endpoint for embeddings."""
+        """Queries a local Ollama server for embeddings from the model named by ``ollama_model``."""
         import httpx
 
         vectors: list[list[float]] = []
-        try:
-            with httpx.Client(timeout=10.0) as client:
-                for text in texts:
-                    payload: dict[str, Any] = {
-                        "model": "embeddinggemma",
-                        "prompt": text,
-                        "options": {"embedding_dim": self.dimensions},
-                    }
-                    resp = client.post(self.endpoint_url, json=payload)
-                    resp.raise_for_status()
-                    data = resp.json()
-                    raw_vec = data.get("embedding", [])
-                    vectors.append(raw_vec)
-            return vectors
-        except Exception as exc:
-            logger.warning("Ollama embedding call failed (%s); falling back to synthetic.", exc)
-            return self._embed_synthetic(texts)
-
-    def _embed_via_transformers(self, texts: Sequence[str]) -> list[list[float]]:
-        """Generates embeddings using PyTorch & Hugging Face Transformers."""
-        try:
-            import importlib
-
-            torch = importlib.import_module("torch")
-            transformers = importlib.import_module("transformers")
-
-            tokenizer = transformers.AutoTokenizer.from_pretrained(self.model_name)
-            model = transformers.AutoModel.from_pretrained(self.model_name).eval()
-
-            inputs = tokenizer(
-                list(texts),
-                padding=True,
-                truncation=True,
-                max_length=8192,
-                return_tensors="pt",
-            )
-            with torch.no_grad():
-                outputs = model(**inputs)
-                mask = inputs["attention_mask"].unsqueeze(-1)
-                sum_embed = (outputs.last_hidden_state * mask).sum(dim=1)
-                counts = mask.sum(dim=1).clamp(min=1e-9)
-                mean_pooled = sum_embed / counts
-                raw_list = mean_pooled.cpu().tolist()
-                return [[float(v) for v in row] for row in raw_list]
-        except Exception as exc:
-            logger.warning(
-                "In-process transformers embedding failed (%s); falling back to synthetic.", exc
-            )
-            return self._embed_synthetic(texts)
+        with httpx.Client(timeout=10.0) as client:
+            for text in texts:
+                payload: dict[str, Any] = {"model": self.ollama_model, "prompt": text}
+                resp = client.post(self.endpoint_url, json=payload)
+                resp.raise_for_status()
+                data = resp.json()
+                vectors.append(data.get("embedding", []))
+        self._check_width(vectors, "Ollama")
+        return vectors
 
     def _embed_synthetic(self, texts: Sequence[str]) -> list[list[float]]:
         """Deterministic pseudo-semantic embedding generation for offline & CI testing.
 
         Maps financial and quantitative terms into correlated semantic subspace
-        clusters so cosine similarities behave predictably in tests.
+        clusters so cosine similarities behave predictably in tests. This is keyword
+        matching and hashing, not a neural model, and it ignores the query/document kind.
         """
         vectors: list[list[float]] = []
         # Key concept clusters for realistic synthetic similarity
@@ -308,11 +417,14 @@ class EmbeddingGemmaProvider:
         return vectors
 
     def get_stats(self) -> EmbeddingStats:
-        """Returns operational metrics and cache statistics."""
+        """Returns operational metrics, cache statistics and which backend really produced the vectors."""
         return EmbeddingStats(
             model_name=self.model_name,
             dimension=self.dimensions,
             backend=self._active_backend,
             cached_hits=self._cache_hits,
             total_embedded=self._total_calls,
+            is_real_model=self.uses_real_model,
+            label=self.label,
+            fallback_reason=self._fallback_reason,
         )

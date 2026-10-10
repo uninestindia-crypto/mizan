@@ -81,11 +81,11 @@ def run_walk_forward_backtest(
     print("[*] MIZAN QUANT-SLM: WALK-FORWARD OUT-OF-SAMPLE BACKTESTING ENGINE")
     print("=" * 75)
 
-    # 1. Literature Grounding & EmbeddingGemma 2 Projection
-    print("[*] 1. Generating EmbeddingGemma 2 semantic context vector (16 dims)...")
+    # 1. Literature grounding: one fixed research-context vector (16 numbers), the same for every stock
     arxiv_client = ArxivClient()
     papers = arxiv_client.get_curated_institutional_library()[:3]
     gemma = EmbeddingGemmaProvider(dimensions=128, mode="auto")
+    print(f"[*] 1. Building the research-context vector (16 numbers) with: {gemma.label}")
     paper_summary = " ".join([p.summary for p in papers])
     full_emb = gemma.embed_text(paper_summary)
     context_vector = np.array(full_emb[:16], dtype=np.float64)
