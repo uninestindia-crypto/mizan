@@ -27,6 +27,8 @@ from quant_system.alpha.model_catalog import (
     fetch_models,
     newest_models,
 )
+from quant_system.copilot.ai_choice import CLI_PREFIX
+from quant_system.copilot.providers import PROVIDER_LABELS
 from quant_system.lab import (
     COSTS_COVERED_FROM,
     TEMPLATES,
@@ -551,12 +553,29 @@ def get_settings() -> dict[str, Any]:
     return services().state.settings().model_dump(mode="json")
 
 
+def _check_ai_order(order: Any) -> None:
+    """The person's own order may name only AIs this app knows, each once. Models and levels are checked by Settings."""
+    known = {CLI_PREFIX + app_id for app_id in all_chat_cli_ids()} | set(PROVIDER_LABELS)
+    if not isinstance(order, list):
+        raise V2Error(422, "INVALID_SETTINGS", "The order of your AIs could not be read.")
+    seen: set[str] = set()
+    for entry in order:
+        entry_id = entry.get("id") if isinstance(entry, dict) else None
+        if entry_id not in known:
+            raise V2Error(422, "INVALID_SETTINGS", "Pick the AIs for your order from the list.")
+        if entry_id in seen:
+            raise V2Error(422, "INVALID_SETTINGS", "Each AI can be in your order only once.")
+        seen.add(entry_id)
+
+
 @router.put("/settings")
 def put_settings(patch: dict[str, Any]) -> dict[str, Any]:
     patch.pop("data_folder", None)  # set only through /data/folder, which validates it
     chosen_app = patch.get("ai_cli")
     if chosen_app is not None and chosen_app not in all_chat_cli_ids():
         raise V2Error(422, "INVALID_SETTINGS", "Pick one of the AI apps in the list.")
+    if "ai_order" in patch:
+        _check_ai_order(patch["ai_order"])
     try:
         return services().state.update_settings(patch).model_dump(mode="json")
     except ValidationError as err:

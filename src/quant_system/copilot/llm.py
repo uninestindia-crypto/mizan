@@ -172,6 +172,23 @@ def _default_resolver(provider: str, api_key: str, prefer: tuple[str, ...]) -> s
     return latest_model_id(provider, api_key, prefer=prefer)
 
 
+# The thinking levels each wire style takes. A level outside its list is not sent at all.
+_LEVELS: Final[dict[str, tuple[str, ...]]] = {
+    "anthropic": ("low", "medium", "high", "xhigh", "max"),
+    "openai": ("low", "medium", "high", "xhigh"),
+    "groq": ("low", "medium", "high"),
+    "openrouter": ("low", "medium", "high"),
+    "gemini": ("low", "medium", "high"),
+}
+# Thinking is paid for out of the same allowance as the answer, so a chosen level needs room beyond the usual 900.
+_THINKING_MIN_TOKENS: Final = 8000
+
+
+def _level_for(provider: str, level: str | None) -> str | None:
+    """The thinking level to send to this provider, or ``None`` when it takes none or none was chosen."""
+    return level if level and level in _LEVELS.get(provider, ()) else None
+
+
 @dataclass(slots=True)
 class ProviderChat:
     provider: str
@@ -179,6 +196,7 @@ class ProviderChat:
     model: str | None = None
     transport: Transport = urllib_transport
     resolve_model: ModelResolver = _default_resolver
+    thinking: str | None = None  # a level the person chose; sent only to a provider that takes one
 
     def __post_init__(self) -> None:
         if self.provider not in _PROVIDERS:
@@ -196,7 +214,17 @@ class ProviderChat:
             model = self.model or self.resolve_model(self.provider, self.api_key, prefer)
         except Exception as error:  # a catalogue failure is a plain reason, never a stack trace
             return ChatReply(None, 503, f"Could not choose a model: {self._clean(str(error))}")
-        raw = self._call(self._request(style, endpoint, model, system, user, max_tokens), timeout)
+        level = _level_for(self.provider, self.thinking)
+        tokens = max(max_tokens, _THINKING_MIN_TOKENS) if level else max_tokens
+        raw = self._call(
+            self._request(style, endpoint, model, system, user, tokens, level), timeout
+        )
+        if level and isinstance(raw, RawResponse) and raw.status == 400:
+            # This model does not take that setting. It is asked once more without it, so a question still gets an
+            # answer; the setting is the person's wish, not a reason to leave them without one.
+            raw = self._call(
+                self._request(style, endpoint, model, system, user, max_tokens, None), timeout
+            )
         if isinstance(raw, ChatReply):
             return replace(raw, model=model)
         if raw.status != 200:
@@ -227,21 +255,28 @@ class ProviderChat:
             return ChatReply(None, 503, "The AI service could not be reached.")
 
     def _request(
-        self, style: str, endpoint: str, model: str, system: str, user: str, max_tokens: int
+        self,
+        style: str,
+        endpoint: str,
+        model: str,
+        system: str,
+        user: str,
+        max_tokens: int,
+        level: str | None = None,
     ) -> urllib.request.Request:
         headers = {"Content-Type": "application/json", "User-Agent": "QuantOS/2.0"}
         if style == "anthropic":
             headers.update({"x-api-key": self.api_key, "anthropic-version": "2023-06-01"})
-            payload = _anthropic_payload(model, system, user, max_tokens)
+            payload = _anthropic_payload(model, system, user, max_tokens, level)
             url = endpoint
         elif style == "gemini":
             # In a header, not the URL, so the key never lands in a log or an error message.
             headers["x-goog-api-key"] = self.api_key
-            payload = _gemini_payload(system, user, max_tokens)
+            payload = _gemini_payload(system, user, max_tokens, level)
             url = endpoint.format(model=model)
         else:
             headers.update(self._openai_headers())
-            payload = _openai_payload(model, system, user)
+            payload = _openai_payload(model, system, user, self.provider, level)
             url = endpoint
         return urllib.request.Request(
             url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST"
@@ -271,27 +306,47 @@ class ProviderChat:
         return text.replace(self.api_key, "***")[:_ERROR_CHARS]
 
 
-def _openai_payload(model: str, system: str, user: str) -> dict[str, Any]:
-    return {
+def _openai_payload(
+    model: str, system: str, user: str, provider: str = "openai", level: str | None = None
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
         "model": model,
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
     }
+    if level:
+        # A gateway names the same setting differently from the provider that made the model.
+        if provider == "openrouter":
+            payload["reasoning"] = {"effort": level}
+        else:
+            payload["reasoning_effort"] = level
+    return payload
 
 
-def _anthropic_payload(model: str, system: str, user: str, max_tokens: int) -> dict[str, Any]:
-    return {
+def _anthropic_payload(
+    model: str, system: str, user: str, max_tokens: int, level: str | None = None
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
         "model": model,
         "max_tokens": max_tokens,
         "system": system,
         "messages": [{"role": "user", "content": user}],
     }
+    if level:
+        payload["thinking"] = {"type": "adaptive"}
+        payload["output_config"] = {"effort": level}
+    return payload
 
 
-def _gemini_payload(system: str, user: str, max_tokens: int) -> dict[str, Any]:
+def _gemini_payload(
+    system: str, user: str, max_tokens: int, level: str | None = None
+) -> dict[str, Any]:
+    config: dict[str, Any] = {"maxOutputTokens": max_tokens}
+    if level:
+        config["thinkingConfig"] = {"thinkingLevel": level}
     return {
         "systemInstruction": {"parts": [{"text": system}]},
         "contents": [{"role": "user", "parts": [{"text": user}]}],
-        "generationConfig": {"maxOutputTokens": max_tokens},
+        "generationConfig": config,
     }
 
 

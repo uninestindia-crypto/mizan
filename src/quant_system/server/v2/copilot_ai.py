@@ -7,9 +7,17 @@ answered is always reported to the chat.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any
 
-from quant_system.copilot.ai_choice import CLI_PREFIX, AiChoice, FallbackChat, plan_models
+from quant_system.copilot.ai_choice import (
+    CLI_PREFIX,
+    AiChoice,
+    FallbackChat,
+    OrderEntry,
+    plan_entries,
+)
+from quant_system.copilot.ai_prefs import DEFAULT_SPEED, AnswerPrefs, effective_thinking
 from quant_system.copilot.cli_chat import (
     CLI_LABELS,
     CLI_NOT_FOUND,
@@ -26,7 +34,9 @@ __all__ = [
     "ai_overview",
     "build_chat",
     "chat_model",
+    "chat_model_for",
     "current_choice",
+    "current_defaults",
     "run_test",
     "verify_models",
 ]
@@ -65,34 +75,106 @@ def current_choice() -> AiChoice:
         api=saved.ai_api,
         fallback=saved.ai_fallback,
         cli_priority=tuple(saved.cli_priority),
+        order=tuple(OrderEntry(e.id, e.model, e.thinking) for e in saved.ai_order),
     )
+
+
+def current_defaults() -> tuple[str, int]:
+    """``(speed, helpers)`` the person likes answers made with. Unreadable settings mean the usual."""
+    from quant_system.server.v2.router import services
+
+    try:
+        saved = services().state.settings().ai_defaults
+    except Exception:
+        return DEFAULT_SPEED, 1
+    return saved.speed, saved.helpers
 
 
 def _keyed() -> list[str]:
     return [p for p in PROVIDER_LABELS if (_lookup(p) or "").strip()]
 
 
-def _one(model_id: str, apps: dict[str, str]) -> ChatModel | None:
-    """One model by id: ``cli:claude`` for an app that is installed, a provider name for one with a saved key."""
+def _one(
+    model_id: str,
+    apps: dict[str, str],
+    *,
+    model: str | None = None,
+    thinking: str | None = None,
+) -> ChatModel | None:
+    """One AI by id: ``cli:claude`` for an app that is installed, a provider name for one with a saved key.
+
+    ``model`` and ``thinking`` are the person's choices for it. They are passed on only when set, so an AI with nothing
+    chosen is built exactly as it always was. A model name that is not safe to pass leaves the AI out.
+    """
+    chosen = bool(model or thinking)
     if model_id.startswith(CLI_PREFIX):
         name = model_id[len(CLI_PREFIX) :]
-        return CliChat(name, apps[name], runner=_RUNNER) if name in apps else None
+        if name not in apps:
+            return None
+        try:
+            if chosen:
+                return CliChat(name, apps[name], runner=_RUNNER, model=model, thinking=thinking)
+            return CliChat(name, apps[name], runner=_RUNNER)
+        except ValueError:
+            return None
     key = (_lookup(model_id) or "").strip() if model_id in PROVIDER_LABELS else ""
-    return _API(model_id, key) if key else None
+    if not key:
+        return None
+    return _API(model_id, key, model=model, thinking=thinking) if chosen else _API(model_id, key)
 
 
-def build_chat(choice: AiChoice) -> ChatModel | None:
-    """The model the chat asks: every AI that is set up, in the person's order. None when nothing is."""
+def _first(
+    entries: list[OrderEntry], prefs: AnswerPrefs, ready: set[str], fallback: bool
+) -> list[OrderEntry]:
+    """The order for one message: the AI it asked for goes first; the model and level it asked for go with it."""
+    if prefs.ai:
+        if prefs.ai not in ready:
+            return entries  # an AI that is not set up cannot be asked for; the saved order stands
+        rest = [e for e in entries if e.id != prefs.ai]
+        return [OrderEntry(prefs.ai, prefs.model, prefs.thinking), *(rest if fallback else [])]
+    if entries and (prefs.model or prefs.thinking):
+        head = entries[0]
+        return [
+            OrderEntry(head.id, prefs.model or head.model, prefs.thinking or head.thinking),
+            *entries[1:],
+        ]
+    return entries
+
+
+def build_chat(choice: AiChoice, prefs: AnswerPrefs | None = None) -> ChatModel | None:
+    """The model the chat asks: every AI that is set up, in the person's order. None when nothing is.
+
+    ``prefs`` are what this one message asked for (which AI, which model, how hard to think, how fast).
+    """
     apps = installed_apps()
-    order = plan_models(choice, set(apps), set(_keyed()))
-    models = [m for m in (_one(model_id, apps) for model_id in order) if m is not None]
+    keyed = set(_keyed())
+    entries = plan_entries(choice, set(apps), keyed)
+    speed = prefs.speed if prefs else None
+    if prefs is not None:
+        ready = {CLI_PREFIX + name for name in apps} | keyed
+        entries = _first(entries, prefs, ready, choice.fallback)
+    built = (
+        _one(e.id, apps, model=e.model, thinking=effective_thinking(e.thinking, speed))
+        for e in entries
+    )
+    models = [m for m in built if m is not None]
     if not models:
         return None
     return models[0] if len(models) == 1 else FallbackChat(models)
 
 
 def chat_model() -> ChatModel | None:
-    return build_chat(current_choice())
+    """The model the Copilot asks, as the person has set it up, at the speed they like by default."""
+    speed, _helpers = current_defaults()
+    return build_chat(
+        current_choice(), None if speed == DEFAULT_SPEED else AnswerPrefs(speed=speed)
+    )
+
+
+def chat_model_for(prefs: AnswerPrefs) -> ChatModel | None:
+    """The model for one message that asked for something other than the saved defaults."""
+    speed, _helpers = current_defaults()
+    return build_chat(current_choice(), replace(prefs, speed=prefs.speed or speed))
 
 
 def verify_models(ids: list[str]) -> list[ChatModel]:
@@ -134,7 +216,9 @@ def ai_overview() -> dict[str, Any]:
             "api": choice.api,
             "fallback": choice.fallback,
             "cli_priority": list(choice.cli_priority),
+            "order": [{"id": e.id, "model": e.model, "thinking": e.thinking} for e in choice.order],
         },
+        "defaults": dict(zip(("speed", "helpers"), current_defaults(), strict=True)),
         "ai_ready": bool(usable) or bool(_keyed()),
     }
 
@@ -177,14 +261,19 @@ def _remember(model_id: str | None, status: int) -> None:
     cli_bridge.record_probe(model_id[len(CLI_PREFIX) :], status == 200)
 
 
-def run_test(model_id: str | None) -> dict[str, Any]:
-    """One tiny question to one AI (or to whatever the Copilot would use), answered in plain words."""
+def run_test(
+    model_id: str | None, chosen_model: str | None = None, thinking: str | None = None
+) -> dict[str, Any]:
+    """One tiny question to one AI (or to whatever the Copilot would use), answered in plain words.
+
+    ``chosen_model`` and ``thinking`` test an AI exactly as the person set it up, so a setting it refuses shows here.
+    """
     apps = installed_apps()
     if model_id is None:
         model = build_chat(current_choice())
         message = _NOTHING_SET_UP
     else:
-        model = _one(model_id, apps)
+        model = _one(model_id, apps, model=chosen_model, thinking=thinking)
         message = explain_failure(CLI_NOT_FOUND) if model_id.startswith(CLI_PREFIX) else _NOT_SET_UP
     if model is None:
         return {"ok": False, "who": None, "message": message}

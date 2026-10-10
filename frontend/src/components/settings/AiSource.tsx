@@ -1,5 +1,6 @@
 import { ArrowDown, CheckCircle2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { orderView } from "../../lib/aiOrder";
 import {
   type AiChoice,
   type AiSettingsPatch,
@@ -9,19 +10,21 @@ import {
   settle,
   showAppSetup,
   summarise,
+  type TestTarget,
   testSubject,
   testTarget,
+  unconfirmed,
 } from "../../lib/aiSource";
 import { ApiError } from "../../lib/api";
 import { OFFLINE_MESSAGE } from "../../lib/copilot";
 import { Button, Callout, Card, CardHeader, Skeleton, Switch } from "../ui";
-import { AiSourceChoice } from "./AiSourceChoice";
-import { AiSourcePrefer } from "./AiSourcePrefer";
+import { AiOrder } from "./AiOrder";
 import { useAiStatus, useRefreshWhenAppsChange, useSaveAiChoice, useTestAi } from "./AiSourceQueries";
 import { AiSourceTest } from "./AiSourceTest";
+import { AiSpeed } from "./AiSpeed";
 
 const FALLBACK_NOTE =
-  "Your question is only ever sent to an AI you have set up. Turn this off to keep it to one kind.";
+  "Your question is only ever sent to an AI you have set up. Turn this off to ask only the first one on your list.";
 
 function saveFailure(error: unknown): string {
   if (error instanceof ApiError && error.code === "ENGINE_OFFLINE") return OFFLINE_MESSAGE;
@@ -45,7 +48,7 @@ function Summary({ status, choice, saved }: { status: AiStatus; choice: AiChoice
 function Fallback({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
   return (
     <div className="space-y-1">
-      <Switch checked={checked} onChange={onChange} label="If that AI can't answer, try the other kind" />
+      <Switch checked={checked} onChange={onChange} label="If an AI can't answer, try the next one on my list" />
       <p className="pl-11 text-[12.5px] text-ink-3">{FALLBACK_NOTE}</p>
     </div>
   );
@@ -58,22 +61,26 @@ function Loaded({ status }: { status: AiStatus }) {
   // change is dropped, and the screen shows what is really saved.
   const [wanted, setWanted] = useState<AiSettingsPatch>({});
   const choice = applyPatch(status.ai, wanted);
+  // A change is carried until the engine's own answer shows it, so a quick second click starts from the new list.
+  useEffect(() => {
+    setWanted((before) => unconfirmed(before, status));
+  }, [status]);
   const change = (patch: AiSettingsPatch) => {
     test.reset();
     setWanted((before) => ({ ...before, ...patch }));
-    void save.mutateAsync(patch).then(
-      () => setWanted((before) => settle(before, patch)),
-      () => setWanted((before) => settle(before, patch)),
-    );
+    // A save that fails drops the change, and the screen shows what is really saved.
+    void save.mutateAsync(patch).catch(() => setWanted((before) => settle(before, patch)));
   };
-  const target = testTarget(choice);
+  const view = orderView(status, choice);
+  const target: TestTarget = choice.order && choice.order.length > 0 ? (view.listed[0]?.entry ?? null) : testTarget(choice);
+  const speed = wanted.ai_defaults?.speed ?? status.defaults?.speed ?? "balanced";
   return (
     <div className="space-y-5">
       <Summary status={status} choice={choice} saved={save.isSuccess} />
       {save.isError && <Callout tone="danger">{saveFailure(save.error)}</Callout>}
-      <AiSourceChoice value={choice.source} onChange={(ai_source) => change({ ai_source })} />
-      <AiSourcePrefer status={status} choice={choice} onChange={change} />
+      <AiOrder status={status} choice={choice} onChange={change} />
       <Fallback checked={choice.fallback} onChange={(ai_fallback) => change({ ai_fallback })} />
+      <AiSpeed value={speed} onChange={(value) => change({ ai_defaults: { speed: value } })} />
       <AiSourceTest run={test} subject={testSubject(status, target)} target={target} />
       <button
         type="button"

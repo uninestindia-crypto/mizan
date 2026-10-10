@@ -18,8 +18,9 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
+from quant_system.copilot.ai_prefs import clean_model, clean_thinking
 from quant_system.server.v2.accounts import ACCOUNT_SCHEMA, AccountsMixin, migrate_accounts
 
 _SCHEMA = """
@@ -113,6 +114,31 @@ class BrokerSettings(BaseModel):
     dp_charge_per_sell: Decimal = Field(default=Decimal("0"), ge=0, le=1000)
 
 
+class AiOrderEntry(BaseModel):
+    """One AI in the person's order: an app (``cli:claude``) or a saved key's provider (``openai``)."""
+
+    id: str = Field(min_length=1, max_length=40)
+    model: str | None = Field(default=None, max_length=80)  # None: the AI's own newest choice
+    thinking: str | None = None  # None: the AI's usual level
+
+    @field_validator("model")
+    @classmethod
+    def _model_is_safe(cls, value: str | None) -> str | None:
+        return clean_model(value)
+
+    @field_validator("thinking")
+    @classmethod
+    def _thinking_is_known(cls, value: str | None) -> str | None:
+        return clean_thinking(value)
+
+
+class AiDefaults(BaseModel):
+    """How the person likes answers made when a message does not say otherwise."""
+
+    speed: Literal["quick", "balanced", "careful"] = "balanced"
+    helpers: int = Field(default=1, ge=1, le=3)
+
+
 class Settings(BaseModel):
     style: Literal["investor", "swing", "both"] | None = None
     money: MoneyRules = Field(default_factory=MoneyRules)
@@ -131,6 +157,9 @@ class Settings(BaseModel):
     ai_fallback: bool = True
     auto_update_cli: bool = False
     cli_priority: list[str] = Field(default_factory=list)
+    # The person's own order of AIs, apps and saved keys together. Empty means the built-in order is used.
+    ai_order: list[AiOrderEntry] = Field(default_factory=list, max_length=12)
+    ai_defaults: AiDefaults = Field(default_factory=AiDefaults)
 
 
 class Holding(BaseModel):

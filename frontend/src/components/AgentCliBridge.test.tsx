@@ -12,7 +12,7 @@ vi.mock("../lib/api", async (importOriginal) => {
   return { ...original, api: vi.fn() };
 });
 
-// The engine lists them in its own order: Antigravity, Claude Code, Codex.
+// The engine lists them in its own order: Antigravity, Claude Code, Codex. The screen shows the order the engine asks them.
 const LISTED = [
   app("antigravity", "NOT_INSTALLED"),
   app("codex", "NEEDS_SIGN_IN"),
@@ -37,7 +37,7 @@ describe("the words on the card", () => {
     await shown(LISTED);
     expect(screen.getByRole("heading", { level: 2, name: "Set up AI apps on this computer" })).toBeInTheDocument();
     const names = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
-    expect(names).toEqual(["Antigravity", "Claude Code", "Codex"]);
+    expect(names).toEqual(["Claude Code", "Codex", "Antigravity"]);
   });
 
   it.each(LINES)("%s: says who makes it and what it is in one plain line", async (name, maker, line) => {

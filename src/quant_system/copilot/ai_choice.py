@@ -16,7 +16,14 @@ from quant_system.copilot.cli_chat import CHAT_CLIS
 from quant_system.copilot.llm import ChatModel, ChatReply
 from quant_system.copilot.providers import PROVIDER_LABELS
 
-__all__ = ["CLI_PREFIX", "AiChoice", "FallbackChat", "plan_models"]
+__all__ = [
+    "CLI_PREFIX",
+    "AiChoice",
+    "FallbackChat",
+    "OrderEntry",
+    "plan_entries",
+    "plan_models",
+]
 
 logger = logging.getLogger(__name__)
 CLI_PREFIX = "cli:"
@@ -24,8 +31,21 @@ _TOO_LONG = 413
 
 
 @dataclass(frozen=True, slots=True)
+class OrderEntry:
+    """One AI to ask, with the model and thinking level the person chose for it (None: the AI's own usual)."""
+
+    id: str
+    model: str | None = None
+    thinking: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class AiChoice:
-    """What the person picked. ``cli`` and ``api`` name a favourite within their kind; None means the first ready."""
+    """What the person picked. ``cli`` and ``api`` name a favourite within their kind; None means the first ready.
+
+    ``order`` is the person's own list of AIs, apps and saved keys together. When it is empty the older choices above
+    (a kind first, a favourite, an app priority) decide, exactly as before.
+    """
 
     source: Literal["cli", "api"] = "cli"
     cli: str | None = None
@@ -33,6 +53,7 @@ class AiChoice:
     fallback: bool = True
     cli_priority: tuple[str, ...] = ()
     api_priority: tuple[str, ...] = ()
+    order: tuple[OrderEntry, ...] = ()
 
 
 def _ordered(
@@ -62,6 +83,30 @@ def _ordered(
     return ordered
 
 
+def plan_entries(
+    choice: AiChoice, cli_ready: Collection[str], api_ready: Collection[str]
+) -> list[OrderEntry]:
+    """The AIs to ask, in order, each with its chosen model and level.
+
+    With the person's own list, exactly the AIs on it that are set up, in that order (with the backup off, only the first
+    of them). Without one, the older rules decide and no model or level is chosen.
+    """
+    if choice.order:
+        ready = {CLI_PREFIX + name for name in cli_ready} | set(api_ready)
+        listed: list[OrderEntry] = []
+        for entry in choice.order:
+            if entry.id in ready and all(entry.id != seen.id for seen in listed):
+                listed.append(entry)
+        return listed if choice.fallback else listed[:1]
+    apps = [
+        CLI_PREFIX + name
+        for name in _ordered(cli_ready, CHAT_CLIS, choice.cli, choice.cli_priority)
+    ]
+    keys = _ordered(api_ready, tuple(PROVIDER_LABELS), choice.api, choice.api_priority)
+    first, second = (apps, keys) if choice.source == "cli" else (keys, apps)
+    return [OrderEntry(model_id) for model_id in (first + second if choice.fallback else first)]
+
+
 def plan_models(
     choice: AiChoice, cli_ready: Collection[str], api_ready: Collection[str]
 ) -> list[str]:
@@ -69,13 +114,7 @@ def plan_models(
 
     An id the person once chose that is no longer set up is simply left out.
     """
-    apps = [
-        CLI_PREFIX + name
-        for name in _ordered(cli_ready, CHAT_CLIS, choice.cli, choice.cli_priority)
-    ]
-    keys = _ordered(api_ready, tuple(PROVIDER_LABELS), choice.api, choice.api_priority)
-    first, second = (apps, keys) if choice.source == "cli" else (keys, apps)
-    return first + second if choice.fallback else first
+    return [entry.id for entry in plan_entries(choice, cli_ready, api_ready)]
 
 
 class FallbackChat:

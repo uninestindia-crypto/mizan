@@ -1,10 +1,10 @@
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { UseMutationResult } from "@tanstack/react-query";
-import { type AiTestResult, testLine } from "../../lib/aiSource";
+import { type AiTestResult, type TestTarget, testLine } from "../../lib/aiSource";
 import { plainFailure } from "../../lib/copilot";
 import { Button, Spinner } from "../ui";
 
-type TestRun = UseMutationResult<AiTestResult, Error, string | null>;
+type TestRun = UseMutationResult<AiTestResult, Error, TestTarget>;
 
 const WAIT_NOTE = "This can take up to a minute while the AI app starts.";
 
@@ -32,7 +32,7 @@ interface TestProps {
   run: TestRun;
   /** What the test is about, beside the button. Left out where the button already sits on that AI's own card. */
   subject?: string;
-  target: string | null;
+  target: TestTarget;
   /** A small quiet button instead of the full one, for a card that has its own main action. */
   quiet?: boolean;
 }

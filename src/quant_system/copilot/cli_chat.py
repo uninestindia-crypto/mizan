@@ -24,6 +24,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Final
 
+from quant_system.copilot.ai_prefs import clean_model, clean_thinking
 from quant_system.copilot.llm import MAX_PROMPT_CHARS, ChatReply
 
 __all__ = [
@@ -143,10 +144,26 @@ Env = Mapping[str, str]
 Runner = Callable[[list[str], str, float, Env], RunResult]
 
 
-def build_command(agent_id: str, executable: str) -> list[str]:
-    """The command line for one app, fixed here. Nothing from the chat is ever part of it."""
+# The thinking levels each app takes on its command line. "ultra" is Codex's own; the others do not know it.
+_EFFORT_FLAG_LEVELS: Final[tuple[str, ...]] = ("low", "medium", "high", "xhigh", "max")
+
+
+def build_command(
+    agent_id: str,
+    executable: str,
+    *,
+    model: str | None = None,
+    thinking: str | None = None,
+) -> list[str]:
+    """The command line for one app, fixed here. Nothing from the chat is ever part of it.
+
+    The person's chosen ``model`` and ``thinking`` level are added only when set. Both are checked first (a model name
+    cannot start with a dash), and the safety switches below are never left out.
+    """
+    chosen = clean_model(model)
+    level = clean_thinking(thinking)
     if agent_id == "claude":
-        return [
+        base = [
             executable,
             "-p",
             "--output-format",
@@ -157,10 +174,22 @@ def build_command(agent_id: str, executable: str) -> list[str]:
             "--max-turns",
             "1",
         ]
+        return base + _claude_style_options(chosen, level)
     if agent_id == "codex":
-        return [executable, "exec", "--sandbox", "read-only", "--skip-git-repo-check", "-"]
+        options = ["-m", chosen] if chosen else []
+        if level:
+            options += ["-c", f'model_reasoning_effort="{level}"']
+        return [
+            executable,
+            "exec",
+            "--sandbox",
+            "read-only",
+            "--skip-git-repo-check",
+            *options,
+            "-",
+        ]
     if agent_id == "antigravity":
-        return [executable, "-p", _ANTIGRAVITY_INSTRUCTION]
+        return [executable, "-p", _ANTIGRAVITY_INSTRUCTION, *_claude_style_options(chosen, level)]
     try:
         from quant_system.server.v2 import cli_bridge
 
@@ -169,6 +198,14 @@ def build_command(agent_id: str, executable: str) -> list[str]:
     except Exception:
         pass
     raise ValueError(f"{agent_id} cannot answer a chat.")
+
+
+def _claude_style_options(model: str | None, level: str | None) -> list[str]:
+    """``--model`` and ``--effort``, which Claude Code and Antigravity both take."""
+    options = ["--model", model] if model else []
+    if level in _EFFORT_FLAG_LEVELS:
+        options += ["--effort", str(level)]
+    return options
 
 
 def cli_environment(base: Env, path: str) -> dict[str, str]:
@@ -235,11 +272,20 @@ class CliChat:
         *,
         runner: Runner = run_cli,
         environment: Env | None = None,
+        model: str | None = None,
+        thinking: str | None = None,
     ) -> None:
-        build_command(agent_id, executable)  # refuses an app that cannot chat, at construction
+        # Refuses an app that cannot chat, or a model name that is not safe to pass, at construction.
+        build_command(agent_id, executable, model=model, thinking=thinking)
         self.agent_id = agent_id
         self.provider = f"cli:{agent_id}"
-        self.model: str | None = None
+        self._chosen_model = clean_model(
+            model
+        )  # what the person asked for; kept for every question
+        self.model: str | None = (
+            self._chosen_model
+        )  # a reply replaces it with the model that answered
+        self._thinking = clean_thinking(thinking)
         self._executable = executable
         self._runner = runner
         self._environment = environment
@@ -249,7 +295,9 @@ class CliChat:
     ) -> ChatReply:
         if len(system) + len(user) > MAX_PROMPT_CHARS:
             return ChatReply(None, 413, "The question is too long to send to a model.")
-        argv = build_command(self.agent_id, self._executable)
+        argv = build_command(
+            self.agent_id, self._executable, model=self._chosen_model, thinking=self._thinking
+        )
         try:
             run = self._runner(
                 argv, _prompt(system, user), max(timeout, MIN_TIMEOUT_SECONDS), self._env()
@@ -281,8 +329,8 @@ class CliChat:
             return self._failed(self._status(f"{text} {run.err}"), text or run.err)
         if not text:
             return ChatReply(None, 502, "The AI app returned no text.")
-        self.model = model
-        return ChatReply(text[:MAX_REPLY_CHARS], 200, None, None, model)
+        self.model = model or self._chosen_model
+        return ChatReply(text[:MAX_REPLY_CHARS], 200, None, None, model or self._chosen_model)
 
     def _answer(self, out: str) -> tuple[str, bool, str | None]:
         if self.agent_id == "claude":

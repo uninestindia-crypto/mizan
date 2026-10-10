@@ -19,6 +19,21 @@ export interface AiApp {
   ready: boolean;
 }
 
+/** One AI in the person's own order, with the model and thinking level they chose for it (null: its usual). */
+export interface OrderEntry {
+  /** An app is "cli:claude"; a saved key is its provider's name. */
+  id: string;
+  model: string | null;
+  thinking: string | null;
+}
+
+export type Speed = "quick" | "balanced" | "careful";
+
+export interface AiDefaults {
+  speed: Speed;
+  helpers: number;
+}
+
 export interface AiChoice {
   source: AiKind;
   cli: AppId | null;
@@ -26,6 +41,8 @@ export interface AiChoice {
   fallback: boolean;
   cli_priority?: string[];
   api_priority?: string[];
+  /** The person's own order. Empty or missing: the built-in order is used. */
+  order?: OrderEntry[];
 }
 
 /** What GET /api/v2/copilot/status says about the AI. Other fields it carries are not used here. */
@@ -34,6 +51,7 @@ export interface AiStatus {
   apps: AiApp[];
   ai: AiChoice;
   providers: ProviderOption[];
+  defaults?: AiDefaults;
 }
 
 export interface AiTestResult {
@@ -50,6 +68,8 @@ export interface AiSettings {
   ai_fallback: boolean;
   cli_priority?: string[];
   api_priority?: string[];
+  ai_order?: OrderEntry[];
+  ai_defaults?: Partial<AiDefaults>;
 }
 
 export type AiSettingsPatch = Partial<AiSettings>;
@@ -58,7 +78,8 @@ export const CLI_PREFIX = "cli:";
 /** Where the install and sign-in cards sit on the Settings screen, so "Set up" can take a person to them. */
 export const APPS_ANCHOR = "ai-apps-setup";
 
-const APP_ORDER: readonly string[] = ["antigravity", "claude", "codex"];
+// The engine asks the apps in this order when the person has not chosen one (copilot/cli_chat.py).
+const APP_ORDER: readonly string[] = ["claude", "codex", "antigravity"];
 const KEY_ORDER: readonly string[] = ["anthropic", "openai", "gemini", "groq", "deepseek", "mistral", "openrouter"];
 const APP_NAMES: Record<string, string> = { antigravity: "Antigravity", claude: "Claude Code", codex: "Codex" };
 
@@ -75,6 +96,7 @@ export function choiceFrom(saved: AiSettings): AiChoice {
     fallback: saved.ai_fallback,
     cli_priority: saved.cli_priority,
     api_priority: saved.api_priority,
+    order: saved.ai_order,
   };
 }
 
@@ -87,13 +109,50 @@ export function applyPatch(choice: AiChoice, patch: AiSettingsPatch): AiChoice {
     fallback: patch.ai_fallback ?? choice.fallback,
     cli_priority: patch.cli_priority ?? choice.cli_priority,
     api_priority: patch.api_priority ?? choice.api_priority,
+    order: patch.ai_order ?? choice.order,
   };
 }
 
 /** Drops from the changes still on their way the ones a finished save was about, unless a newer click replaced them. */
 export function settle(wanted: AiSettingsPatch, finished: AiSettingsPatch): AiSettingsPatch {
-  const keep = Object.entries(wanted).filter(([name, value]) => finished[name as keyof AiSettings] !== value);
+  const keep = Object.entries(wanted).filter(
+    ([name, value]) => JSON.stringify(finished[name as keyof AiSettings]) !== JSON.stringify(value),
+  );
   return Object.fromEntries(keep) as AiSettingsPatch;
+}
+
+/** Whether what the engine reports already shows a change, so the screen can stop carrying it itself. */
+function isConfirmed(status: Pick<AiStatus, "ai" | "defaults">, name: keyof AiSettings, value: unknown): boolean {
+  const { ai, defaults } = status;
+  switch (name) {
+    case "ai_source":
+      return ai.source === value;
+    case "ai_cli":
+      return ai.cli === value;
+    case "ai_api":
+      return ai.api === value;
+    case "ai_fallback":
+      return ai.fallback === value;
+    case "cli_priority":
+      return JSON.stringify(ai.cli_priority ?? []) === JSON.stringify(value);
+    case "api_priority":
+      return JSON.stringify(ai.api_priority ?? []) === JSON.stringify(value);
+    case "ai_order":
+      return JSON.stringify(ai.order ?? []) === JSON.stringify(value);
+    case "ai_defaults":
+      return Object.entries(value as Record<string, unknown>).every(
+        ([key, wanted]) => defaults?.[key as keyof AiDefaults] === wanted,
+      );
+  }
+}
+
+/**
+ * What the person changed that the engine has not yet shown back. A change is carried by the screen until the engine's
+ * own answer agrees with it, so a second click right after the first works from the new list, never the old one.
+ */
+export function unconfirmed(wanted: AiSettingsPatch, status: Pick<AiStatus, "ai" | "defaults">): AiSettingsPatch {
+  const keep = Object.entries(wanted).filter(([name, value]) => !isConfirmed(status, name as keyof AiSettings, value));
+  return keep.length === Object.keys(wanted).length ? wanted : (Object.fromEntries(keep) as AiSettingsPatch);
 }
 
 // -------------------------------------------------------------------------------------------------- the order
@@ -153,8 +212,29 @@ function keyEntries(providers: readonly ProviderOption[], favourite: string | nu
 
 type PlanSource = Pick<AiStatus, "apps" | "providers">;
 
+function listedEntries(status: PlanSource, order: readonly OrderEntry[]): PlanEntry[] {
+  const present = status.apps.filter((a) => a.installed && a.state !== "NOT_INSTALLED");
+  const apps = new Map(present.map((a) => [CLI_PREFIX + a.id, a]));
+  const keys = new Map(status.providers.filter((p) => p.ready).map((p) => [p.id, p]));
+  const seen = new Set<string>();
+  const out: PlanEntry[] = [];
+  for (const entry of order) {
+    const app = apps.get(entry.id);
+    const key = keys.get(entry.id);
+    if (seen.has(entry.id) || (!app && !key)) continue;
+    seen.add(entry.id);
+    if (app) out.push(appEntry(app));
+    else if (key) out.push({ kind: "api", id: key.id, name: key.label, state: "ready" });
+  }
+  return out;
+}
+
 /** Every AI that would be asked, in the order it would be asked. */
 export function buildPlan(status: PlanSource, choice: AiChoice): PlanEntry[] {
+  if (choice.order && choice.order.length > 0) {
+    const listed = listedEntries(status, choice.order);
+    return choice.fallback ? listed : listed.slice(0, 1);
+  }
   const apps = appEntries(status.apps, choice.cli, choice.cli_priority);
   const keys = keyEntries(status.providers, choice.api);
   const [first, second] = choice.source === "cli" ? [apps, keys] : [keys, apps];
@@ -243,6 +323,14 @@ export const UNKNOWN_HINT = "Not checked yet. Press Test this AI.";
 
 // ---------------------------------------------------------------------------------------------------- testing
 
+/** What a test asks: one AI by id, that AI as the person set it up, or null for whatever the Copilot would use. */
+export type TestTarget = string | null | OrderEntry;
+
+/** The id a test target names, or null. */
+export function targetId(target: TestTarget): string | null {
+  return target !== null && typeof target === "object" ? target.id : target;
+}
+
 /** The AI to test: the favourite for the chosen kind, or null for whatever the Copilot would use. */
 export function testTarget(choice: AiChoice): string | null {
   if (choice.source === "cli") return choice.cli ? CLI_PREFIX + choice.cli : null;
@@ -250,10 +338,11 @@ export function testTarget(choice: AiChoice): string | null {
 }
 
 /** What the test is about, for the line next to the button. */
-export function testSubject(status: Pick<AiStatus, "apps" | "providers">, target: string | null): string {
-  if (target === null) return "Tests whichever AI your questions go to first.";
-  const app = status.apps.find((a) => CLI_PREFIX + a.id === target);
-  const name = app ? app.label : (status.providers.find((p) => p.id === target)?.label ?? target);
+export function testSubject(status: Pick<AiStatus, "apps" | "providers">, target: TestTarget): string {
+  const id = targetId(target);
+  if (id === null) return "Tests whichever AI your questions go to first.";
+  const app = status.apps.find((a) => CLI_PREFIX + a.id === id);
+  const name = app ? app.label : (status.providers.find((p) => p.id === id)?.label ?? id);
   return `Tests ${name}.`;
 }
 

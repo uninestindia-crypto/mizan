@@ -3,10 +3,12 @@ import { useEffect, useRef } from "react";
 import { api } from "../../lib/api";
 import {
   type AiSettings,
+  type AiDefaults,
   type AiSettingsPatch,
   type AiStatus,
   type AiTestResult,
   choiceFrom,
+  type TestTarget,
 } from "../../lib/aiSource";
 import { useAgentClis } from "../../lib/queries";
 
@@ -41,7 +43,11 @@ export function useRefreshWhenAppsChange(): void {
 
 /** What the engine saved becomes what the screen shows at once; the next look confirms it. */
 function rememberSaved(qc: QueryClient, saved: AiSettings): void {
-  const withChoice = (old: AiStatus | undefined) => (old ? { ...old, ai: choiceFrom(saved) } : old);
+  const withChoice = (old: AiStatus | undefined): AiStatus | undefined => {
+    if (!old) return old;
+    const defaults = saved.ai_defaults ? ({ ...old.defaults, ...saved.ai_defaults } as AiDefaults) : old.defaults;
+    return { ...old, ai: choiceFrom(saved), defaults };
+  };
   qc.setQueryData<AiStatus>(aiStatusKey, withChoice);
   void qc.invalidateQueries({ queryKey: aiStatusKey });
 }
@@ -55,12 +61,20 @@ export function useSaveAiChoice() {
   });
 }
 
+function testBody(target: TestTarget): Record<string, string> {
+  if (target === null) return {};
+  if (typeof target === "string") return { model: target };
+  const body: Record<string, string> = { model: target.id };
+  if (target.model) body.chosen_model = target.model;
+  if (target.thinking) body.thinking = target.thinking;
+  return body;
+}
+
 /** One small question to one AI, or to whichever the Copilot would use. A finished test refreshes the chips. */
 export function useTestAi() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (model: string | null) =>
-      api<AiTestResult>("/api/v2/copilot/ai/test", "POST", model === null ? {} : { model }),
+    mutationFn: (target: TestTarget) => api<AiTestResult>("/api/v2/copilot/ai/test", "POST", testBody(target)),
     onSettled: () => void qc.invalidateQueries({ queryKey: aiStatusKey }),
   });
 }

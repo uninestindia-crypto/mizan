@@ -21,6 +21,8 @@ export interface Settings {
   ai_accelerator?: AcceleratorTarget;
   ai_cli?: string | null;
   cli_priority?: string[];
+  ai_order?: import("./aiSource").OrderEntry[];
+  ai_defaults?: import("./aiSource").AiDefaults;
 }
 
 export type AcceleratorTarget = "auto" | "npu" | "gpu" | "cpu";
@@ -791,7 +793,7 @@ export interface CliCapabilities {
 export interface AiModels {
   provider: string;
   total: number;
-  newest: { id: string; name: string; created: number | null }[];
+  newest: { id: string; name: string; created: number | null; max_input_tokens?: number; effort_levels?: string[] }[];
 }
 
 export interface CredentialTestResult {

@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { type AnswerPrefs, NO_PREFS } from "../../lib/answerPrefs";
 import { MAX_MESSAGE_CHARS, refusalSentence } from "../../lib/copilot";
 import { askInChat, chatListKey, forgetChat, isChatGone } from "../../lib/copilotHistory";
 import type { ChatAction, ChatMessage } from "./chatState";
@@ -26,6 +27,9 @@ export interface ChatSession {
   openChat: (id: string) => Promise<OpenResult>;
   /** A saved chat is being fetched. */
   openingChat: boolean;
+  /** How the next message asks to be answered. Nothing chosen means as Settings says. */
+  prefs: AnswerPrefs;
+  setPrefs: (prefs: AnswerPrefs) => void;
 }
 
 interface Question {
@@ -33,6 +37,7 @@ interface Question {
   page: string;
   requestId: number;
   chatId: string | null;
+  prefs: AnswerPrefs;
 }
 
 interface Around {
@@ -58,9 +63,9 @@ function failedWith(error: unknown, question: Question, around: Around): void {
 
 /** Asks the engine, which saves the question and the answer in the chat. */
 async function answer(question: Question, around: Around): Promise<void> {
-  const { messages, page, requestId, chatId } = question;
+  const { messages, page, requestId, chatId, prefs } = question;
   try {
-    const reply = await askInChat(messages, page, chatId);
+    const reply = await askInChat(messages, page, chatId, prefs);
     around.apply({ type: "replied", requestId, reply });
     around.saved();
   } catch (error) {
@@ -74,7 +79,7 @@ function makeAround(store: ChatStore, restore: (text: string) => void, saved: ()
 }
 
 /** Sending and retrying. An answer that arrives after the person moved to another chat is saved but not shown. */
-function useAsking(store: ChatStore, restore: (text: string) => void) {
+function useAsking(store: ChatStore, restore: (text: string) => void, prefs: { current: AnswerPrefs }) {
   const { live, apply } = store;
   const client = useQueryClient();
   const saved = useCallback(() => void client.invalidateQueries({ queryKey: chatListKey }), [client]);
@@ -84,11 +89,17 @@ function useAsking(store: ChatStore, restore: (text: string) => void) {
       const requestId = ++live.current.seq;
       const next = apply(make(requestId));
       if (next === before) return false;
-      const question = { messages: next.messages, page: live.current.page, requestId, chatId: next.chatId };
+      const question = {
+        messages: next.messages,
+        page: live.current.page,
+        requestId,
+        chatId: next.chatId,
+        prefs: prefs.current,
+      };
       void answer(question, makeAround(store, restore, saved));
       return true;
     },
-    [live, apply, store, restore, saved],
+    [live, apply, store, restore, saved, prefs],
   );
   const send = useCallback(
     (text: string) => {
@@ -107,7 +118,10 @@ export function useChatSession(page: string): ChatSession {
   const { apply, state } = store;
   const [draft, setDraft] = useState("");
   const restore = useCallback((text: string) => setDraft((current) => current || text), []);
-  const { send, retry } = useAsking(store, restore);
+  const [prefs, setPrefs] = useState<AnswerPrefs>(NO_PREFS);
+  const prefsNow = useRef(prefs);
+  prefsNow.current = prefs;
+  const { send, retry } = useAsking(store, restore, prefsNow);
   const { openChat, openingChat } = useOpenChat(store);
   useRememberedChat(state.chatId);
 
@@ -133,7 +147,9 @@ export function useChatSession(page: string): ChatSession {
       chatId,
       openChat,
       openingChat,
+      prefs,
+      setPrefs,
     }),
-    [messages, thinking, failed, failure, draft, send, retry, newChat, chatId, openChat, openingChat],
+    [messages, thinking, failed, failure, draft, send, retry, newChat, chatId, openChat, openingChat, prefs],
   );
 }

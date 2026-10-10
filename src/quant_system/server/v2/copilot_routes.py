@@ -14,10 +14,16 @@ from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, Field, StringConstraints, field_validator
 
 from quant_system.copilot.agent import AgentResult, CopilotAgent, Message, safe_page
 from quant_system.copilot.agent_store import AgentDraft, AgentRejectedError, AgentStore, SavedAgent
+from quant_system.copilot.ai_prefs import (
+    AnswerPrefs,
+    clean_model,
+    clean_thinking,
+    preset,
+)
 from quant_system.copilot.conversations import ConversationError, ConversationStore
 from quant_system.copilot.factpack import build_fact_pack
 from quant_system.copilot.llm import ChatModel
@@ -32,7 +38,7 @@ from quant_system.copilot.verify_jobs import TooBusyError, VerifyJobs
 from quant_system.copilot.workflow import RunGate, RunOptions, built_in_answer, run_workflow
 from quant_system.server.security import format_error_response
 from quant_system.server.v2 import copilot_ai, copilot_wiring
-from quant_system.server.v2.copilot_ai import chat_model, verify_models
+from quant_system.server.v2.copilot_ai import chat_model, chat_model_for, verify_models
 from quant_system.server.v2.copilot_validation import CopilotRoute
 
 logger = logging.getLogger(__name__)
@@ -60,8 +66,32 @@ class ChatMessage(BaseModel):
     content: str = Field(max_length=4000)
 
 
+class AnswerPrefsBody(BaseModel):
+    """How this one message wants to be answered. Anything left out is as the person set it in Settings."""
+
+    ai: str | None = Field(default=None, max_length=40)
+    model: str | None = Field(default=None, max_length=80)
+    thinking: str | None = Field(default=None, max_length=10)
+    speed: Literal["quick", "balanced", "careful"] | None = None
+    helpers: int | None = Field(default=None, ge=1, le=3)
+
+    @field_validator("model")
+    @classmethod
+    def _model_is_safe(cls, value: str | None) -> str | None:
+        return clean_model(value)
+
+    @field_validator("thinking")
+    @classmethod
+    def _thinking_is_known(cls, value: str | None) -> str | None:
+        return clean_thinking(value)
+
+    def prefs(self) -> AnswerPrefs:
+        return AnswerPrefs(self.ai, self.model, self.thinking, self.speed, self.helpers)
+
+
 class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1, max_length=40)
+    prefs: AnswerPrefsBody | None = None
     # Only a ceiling here: a path that does not look like a screen is ignored later, not refused.
     page: str | None = Field(default=None, max_length=1000)
     agent_id: str | None = Field(default=None, max_length=40)
@@ -110,6 +140,19 @@ class RunBody(BaseModel):
 class TestAiBody(BaseModel):
     # An app is "cli:claude", a saved key is its provider name. Left out, the AI the Copilot would use is tested.
     model: str | None = Field(default=None, max_length=40)
+    # The model and thinking level chosen for it, so the test asks the AI exactly as a question would.
+    chosen_model: str | None = Field(default=None, max_length=80)
+    thinking: str | None = Field(default=None, max_length=10)
+
+    @field_validator("chosen_model")
+    @classmethod
+    def _model_is_safe(cls, value: str | None) -> str | None:
+        return clean_model(value)
+
+    @field_validator("thinking")
+    @classmethod
+    def _thinking_is_known(cls, value: str | None) -> str | None:
+        return clean_thinking(value)
 
 
 # ------------------------------------------------------------------------------------- helpers
@@ -184,7 +227,7 @@ def models() -> dict[str, Any]:
 @router.post("/ai/test")
 def test_ai(body: TestAiBody) -> dict[str, Any]:
     """One tiny question to the chosen AI, so Settings can say plainly whether it works."""
-    return copilot_ai.run_test(body.model)
+    return copilot_ai.run_test(body.model, body.chosen_model, body.thinking)
 
 
 def _chat_scope(agent_id: str | None) -> tuple[frozenset[str] | None, str | None] | None:
@@ -201,11 +244,19 @@ def _ask_ai(
     registry: ToolRegistry,
     scope: tuple[frozenset[str] | None, str | None],
     shariah_mode: bool,
+    speed: str | None = None,
 ) -> AgentResult:
     allowed, instructions = scope
     history = [Message(m.role, m.content) for m in body.messages]
+    limits = preset(speed)
     try:
-        return CopilotAgent(model, registry).run(
+        return CopilotAgent(
+            model,
+            registry,
+            max_steps=limits.chat_steps,
+            call_timeout=limits.call_timeout,
+            deadline_seconds=limits.deadline,
+        ).run(
             history,
             page=safe_page(body.page),
             instructions=instructions,
@@ -227,12 +278,14 @@ def _answer_chat(body: ChatRequest) -> Any:
     page = safe_page(body.page)
     question = body.messages[-1].content
     mode = copilot_wiring.shariah_mode()
-    model = chat_model()
+    prefs = body.prefs.prefs() if body.prefs is not None else None
+    model = chat_model() if prefs is None else chat_model_for(prefs)
     if model is None:
         context = AnswerContext(page, False, allowed, shariah_mode=mode)
         answer = built_in_answer(question, registry, context, _CHAT_FAILED)
         return _reply(answer, "built_in", None)
-    result = _ask_ai(model, body, registry, scope, mode)
+    speed = prefs.speed if prefs is not None and prefs.speed else copilot_ai.current_defaults()[0]
+    result = _ask_ai(model, body, registry, scope, mode, speed)
     if not result.error:
         return _reply(result, "ai", model.provider)
     context = AnswerContext(page, True, allowed, False, shariah_mode=mode)

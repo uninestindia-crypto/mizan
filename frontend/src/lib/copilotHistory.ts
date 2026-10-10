@@ -1,6 +1,7 @@
 // Saved Copilot chats: what the engine sends for them, the calls that read and change them, and the small plain-words
 // helpers the history screen shares. Chats are kept on this computer by the engine; nothing here leaves it.
 
+import { type AnswerPrefs, prefsBody } from "./answerPrefs";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api, ApiError } from "./api";
 import { buildChatRequest, type ChatReply, type ChatTurn, normaliseReply } from "./copilot";
@@ -108,8 +109,18 @@ export const historyApi = {
 };
 
 /** Asks the Copilot, and saves the question and the answer in the chat. With no chat yet, a new one is started. */
-export async function askInChat(turns: readonly ChatTurn[], page: string | null, chatId: string | null) {
-  const body = { ...buildChatRequest(turns, page), conversation_id: chatId ?? "new" };
+export async function askInChat(
+  turns: readonly ChatTurn[],
+  page: string | null,
+  chatId: string | null,
+  prefs?: AnswerPrefs,
+) {
+  const asked = prefs ? prefsBody(prefs) : undefined;
+  const body = {
+    ...buildChatRequest(turns, page),
+    conversation_id: chatId ?? "new",
+    ...(asked ? { prefs: asked } : {}),
+  };
   return readSavedReply(await api<unknown>("/api/v2/copilot/chat", "POST", body));
 }
 

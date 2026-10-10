@@ -31,6 +31,11 @@ _FIELD: Final[dict[str, str]] = {
     "tools": "Check the items ticked for this assistant, then save again.",
     "steps": "Check the steps: each one must be a short piece of plain text. Then save again.",
     "body": "That could not be read. Reload the page and try again.",
+    "model": "That model name is not allowed. Pick one from the list.",
+    "chosen_model": "That model name is not allowed. Pick one from the list.",
+    "thinking": "Pick one of the thinking levels in the list.",
+    "speed": "Pick Quick, Balanced or Careful.",
+    "helpers": "Pick between one and three helpers.",
 }
 _TOO_SHORT: Final[dict[str, str]] = {
     "messages": "Type a question first, then press Send.",

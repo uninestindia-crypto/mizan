@@ -132,7 +132,7 @@ const CASES: Case[] = [
     apps: withApps(app("antigravity", "CONNECTED"), app("claude", "CONNECTED")),
     keys: withKeys("groq", "anthropic"),
     says:
-      "Right now your questions go to Antigravity, with Claude Code, " +
+      "Right now your questions go to Claude Code, with Antigravity, " +
       "your saved Anthropic (Claude) key and your saved Groq key as backups.",
   },
   {

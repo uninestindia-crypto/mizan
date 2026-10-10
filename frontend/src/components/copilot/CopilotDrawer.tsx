@@ -5,6 +5,7 @@ import { useCopilot } from "./CopilotProvider";
 import { DRAWER_NOTE_ID, DRAWER_TITLE_ID, DrawerHeader } from "./DrawerHeader";
 import { HistoryPanel } from "./history/HistoryPanel";
 import { useHistoryFocus } from "./history/useHistoryView";
+import { WaysToAnswer } from "./WaysToAnswer";
 
 // It starts below the top bar (h-14) so the Copilot button stays in reach and can close it again.
 const PANEL_STYLE =
@@ -30,6 +31,7 @@ function MessageArea({ input }: { input: RefObject<HTMLTextAreaElement | null> }
     <>
       <ChatThread />
       <div className="space-y-2 border-t border-line px-4 py-3">
+        <WaysToAnswer />
         <Composer ref={input} />
         <p className="text-[12px] text-ink-3">
           The Copilot explains and looks things up. Its answers are information, not advice, and it never places an
