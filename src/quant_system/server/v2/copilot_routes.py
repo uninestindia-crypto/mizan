@@ -17,7 +17,10 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, StringConstraints, field_validator
 
 from quant_system.copilot.agent import AgentResult, CopilotAgent, Message, safe_page
+from quant_system.copilot.agent_runs import AgentRuns, RunHandle
+from quant_system.copilot.agent_runs import TooBusyError as RunsBusyError
 from quant_system.copilot.agent_store import AgentDraft, AgentRejectedError, AgentStore, SavedAgent
+from quant_system.copilot.ai_choice import FallbackChat
 from quant_system.copilot.ai_prefs import (
     AnswerPrefs,
     clean_model,
@@ -26,6 +29,7 @@ from quant_system.copilot.ai_prefs import (
 )
 from quant_system.copilot.conversations import ConversationError, ConversationStore
 from quant_system.copilot.factpack import build_fact_pack
+from quant_system.copilot.helpers import TeamOfHelpers
 from quant_system.copilot.llm import ChatModel
 from quant_system.copilot.messages import explain_failure
 from quant_system.copilot.providers import provider_status
@@ -37,7 +41,7 @@ from quant_system.copilot.verify import VerifyOptions, verify_stock
 from quant_system.copilot.verify_jobs import TooBusyError, VerifyJobs
 from quant_system.copilot.workflow import RunGate, RunOptions, built_in_answer, run_workflow
 from quant_system.server.security import format_error_response
-from quant_system.server.v2 import copilot_ai, copilot_wiring
+from quant_system.server.v2 import copilot_actions_wiring, copilot_ai, copilot_wiring
 from quant_system.server.v2.copilot_ai import chat_model, chat_model_for, verify_models
 from quant_system.server.v2.copilot_validation import CopilotRoute
 
@@ -47,10 +51,14 @@ __all__ = ["router"]
 
 SYMBOL = r"^[A-Za-z0-9&-]{1,15}$"
 _jobs = VerifyJobs()
+_runs = AgentRuns()
 _gate = RunGate()
 _store: AgentStore | None = None
 _conversations: ConversationStore | None = None
 _NO_CHAT = "That chat no longer exists. Start a new chat."
+_NO_RUN = "That run is no longer available. Start it again."
+_RUNS_BUSY = "Several runs are already going. Wait for one to finish, then try again."
+_ANSWERED = "That change has already been answered."
 _NO_AI_KEY = "No AI is set up yet. Open Settings, then AI assistants, and pick one, or add a key under Accounts and keys."
 _BUSY = "Several second opinions are already running. Wait for one to finish, then try again."
 _NO_SECOND_OPINION = "That second opinion is no longer available. Start it again."
@@ -97,6 +105,10 @@ class ChatRequest(BaseModel):
     agent_id: str | None = Field(default=None, max_length=40)
     # "new" starts a saved chat, an id carries one on, and leaving it out keeps the chat unsaved (as before).
     conversation_id: str | None = Field(default=None, max_length=40)
+
+
+class DecisionBody(BaseModel):
+    approve: bool
 
 
 class NewChatBody(BaseModel):
@@ -332,6 +344,103 @@ def chat(body: ChatRequest) -> Any:
     answer["conversation_id"] = chat_id
     _remember(chat_id, body.messages[-1].content, answer)
     return answer
+
+
+# ------------------------------------------------------------------------------------- agent runs
+
+
+def _helper_count(prefs: AnswerPrefsBody | None) -> int:
+    """How many AIs work on a run, the lead included: what the message asked for, else what is saved."""
+    asked = prefs.helpers if prefs is not None else None
+    return asked or copilot_ai.current_defaults()[1]
+
+
+@router.post("/agent/runs", status_code=202, response_model=None)
+def start_agent_run(body: ChatRequest) -> Any:
+    """Starts the Copilot working on a task, step by step, asking before it changes anything."""
+    scope = _chat_scope(body.agent_id)
+    if scope is None:
+        return _fail(404, "NOT_FOUND", _NO_AGENT)
+    prefs = body.prefs.prefs() if body.prefs is not None else None
+    chain = copilot_ai.chain_for(prefs)
+    if not chain:
+        return _fail(422, "NO_AI_KEY", _NO_AI_KEY)
+    chat_id = _open_chat(body)
+    if chat_id == "":
+        return _fail(404, "NOT_FOUND", _NO_CHAT)
+    speed = prefs.speed if prefs is not None and prefs.speed else copilot_ai.current_defaults()[0]
+    team_size = _helper_count(body.prefs)
+    allowed, instructions = scope
+    question = body.messages[-1].content
+    history = [Message(m.role, m.content) for m in body.messages]
+    page, mode, registry = safe_page(body.page), copilot_wiring.shariah_mode(), _registry()
+    actions = copilot_actions_wiring.action_registry()
+
+    def work(handle: RunHandle) -> dict[str, Any]:
+        limits = preset(speed)
+        lead = chain[0] if len(chain) == 1 else FallbackChat(chain)
+        allowed_tools = None if allowed is None else set(allowed)
+        team = (
+            TeamOfHelpers(
+                chain,
+                registry,
+                slots=team_size - 1,
+                allowed=allowed_tools,
+                shariah_mode=mode,
+                page=page,
+                cancelled=handle.cancelled,
+                on_event=handle.emit,
+            )
+            if team_size > 1
+            else None
+        )
+        agent = CopilotAgent(
+            lead,
+            registry,
+            max_steps=limits.agent_steps,
+            call_timeout=limits.call_timeout,
+            deadline_seconds=limits.deadline * 3,
+            actions=handle.broker(actions),
+            helpers=team,
+            on_event=handle.emit,
+            cancelled=handle.cancelled,
+        )
+        result = agent.run(
+            history, page=page, instructions=instructions, allowed=allowed_tools, shariah_mode=mode
+        )
+        reply = _reply(result, "ai", lead.provider)
+        if chat_id:
+            reply["conversation_id"] = chat_id
+            _remember(chat_id, question, reply)
+        return reply
+
+    try:
+        return {"run_id": _runs.start(work, actions)}
+    except RunsBusyError:
+        return _fail(429, "TOO_BUSY", _RUNS_BUSY)
+
+
+@router.get("/agent/runs/{run_id}", response_model=None)
+def agent_run_progress(run_id: str, after: int = 0) -> Any:
+    found = _runs.get(run_id, max(0, after))
+    return found if found is not None else _fail(404, "NOT_FOUND", _NO_RUN)
+
+
+@router.delete("/agent/runs/{run_id}", response_model=None)
+def stop_agent_run(run_id: str) -> Any:
+    """Stops a run for good. A change still waiting for an answer is not done."""
+    if not _runs.cancel(run_id):
+        return _fail(404, "NOT_FOUND", _NO_RUN)
+    return {"cancelled": True}
+
+
+@router.post("/agent/runs/{run_id}/decisions/{action_id}", response_model=None)
+def decide_agent_action(run_id: str, action_id: str, body: DecisionBody) -> Any:
+    """The person's answer to one change the Copilot asked for. Approving carries it out, here, and only here."""
+    said = _runs.decide(run_id, action_id, body.approve)
+    if said is None:
+        return _fail(409, "ALREADY_ANSWERED", _ANSWERED)
+    return {"text": said}
 
 
 # ------------------------------------------------------------------------------------- saved chats

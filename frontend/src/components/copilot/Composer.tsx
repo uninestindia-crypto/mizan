@@ -10,6 +10,7 @@ const BOX_STYLE =
   "focus:ring-3 focus:ring-brand/15";
 
 const NOTE_ID = "copilot-length";
+const AGENT_HINT = "Describe a task, for example: check TCS and INFY and add either to my watchlist";
 
 /** How long the message is, once it is nearly too long. At the limit it says so in a plain sentence. */
 function LengthNote({ count }: { count: number }) {
@@ -26,7 +27,7 @@ function LengthNote({ count }: { count: number }) {
 
 /** The message box. Enter sends; Shift+Enter adds a new line. */
 export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_props, ref) {
-  const { draft, setDraft, send, thinking } = useCopilot();
+  const { draft, setDraft, send, thinking, mode } = useCopilot();
   const canSend = !thinking && draft.trim() !== "";
   const submit = () => {
     if (canSend && send(draft)) setDraft("");
@@ -57,7 +58,7 @@ export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_props
           aria-describedby={lengthNote(draft.length) ? NOTE_ID : undefined}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Ask about a stock"
+          placeholder={mode === "agent" ? AGENT_HINT : "Ask about a stock"}
           className={BOX_STYLE}
         />
         <Button type="submit" disabled={!canSend} icon={<SendHorizontal className="size-4" aria-hidden />}>

@@ -1,12 +1,17 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef, useState } from "react";
+import type { AgentView } from "../../lib/agentRun";
 import { type AnswerPrefs, NO_PREFS } from "../../lib/answerPrefs";
 import { MAX_MESSAGE_CHARS, refusalSentence } from "../../lib/copilot";
 import { askInChat, chatListKey, forgetChat, isChatGone } from "../../lib/copilotHistory";
 import type { ChatAction, ChatMessage } from "./chatState";
 import { type Apply, type ChatStore, useChatStore } from "./history/chatStore";
 import { type OpenResult, useOpenChat } from "./history/useOpenChat";
+import { type AgentRun, useAgentRun } from "./useAgentRun";
 import { useRememberedChat } from "./history/useRememberedChat";
+
+/** "chat" answers a question; "agent" works through a task in steps and asks before it changes anything. */
+export type ChatMode = "chat" | "agent";
 
 export interface ChatSession {
   messages: ChatMessage[];
@@ -30,6 +35,15 @@ export interface ChatSession {
   /** How the next message asks to be answered. Nothing chosen means as Settings says. */
   prefs: AnswerPrefs;
   setPrefs: (prefs: AnswerPrefs) => void;
+  mode: ChatMode;
+  /** Changing the mode is not possible while a question is being answered. */
+  setMode: (mode: ChatMode) => void;
+  /** The task being worked on, with its steps and the changes waiting for the person. Null when none is. */
+  agent: AgentView | null;
+  /** The person's answer to one change the Copilot asked for. */
+  decideChange: (actionId: string, approve: boolean) => void;
+  /** Stops the task being worked on. */
+  stopRun: () => void;
 }
 
 interface Question {
@@ -79,7 +93,17 @@ function makeAround(store: ChatStore, restore: (text: string) => void, saved: ()
 }
 
 /** Sending and retrying. An answer that arrives after the person moved to another chat is saved but not shown. */
-function useAsking(store: ChatStore, restore: (text: string) => void, prefs: { current: AnswerPrefs }) {
+interface Route {
+  mode: { current: ChatMode };
+  run: AgentRun;
+}
+
+function useAsking(
+  store: ChatStore,
+  restore: (text: string) => void,
+  prefs: { current: AnswerPrefs },
+  route: Route,
+) {
   const { live, apply } = store;
   const client = useQueryClient();
   const saved = useCallback(() => void client.invalidateQueries({ queryKey: chatListKey }), [client]);
@@ -96,10 +120,14 @@ function useAsking(store: ChatStore, restore: (text: string) => void, prefs: { c
         chatId: next.chatId,
         prefs: prefs.current,
       };
-      void answer(question, makeAround(store, restore, saved));
+      const around = makeAround(store, restore, saved);
+      if (route.mode.current === "agent") {
+        const failed = (error: unknown) => failedWith(error, question, around);
+        route.run.start(question, { apply: around.apply, saved, failed });
+      } else void answer(question, around);
       return true;
     },
-    [live, apply, store, restore, saved, prefs],
+    [live, apply, store, restore, saved, prefs, route],
   );
   const send = useCallback(
     (text: string) => {
@@ -115,20 +143,37 @@ function useAsking(store: ChatStore, restore: (text: string) => void, prefs: { c
 /** The conversation with the Copilot: what was said, what is awaited, and what the person is typing. */
 export function useChatSession(page: string): ChatSession {
   const store = useChatStore(page);
-  const { apply, state } = store;
+  const { apply, live, state } = store;
   const [draft, setDraft] = useState("");
   const restore = useCallback((text: string) => setDraft((current) => current || text), []);
   const [prefs, setPrefs] = useState<AnswerPrefs>(NO_PREFS);
   const prefsNow = useRef(prefs);
   prefsNow.current = prefs;
-  const { send, retry } = useAsking(store, restore, prefsNow);
-  const { openChat, openingChat } = useOpenChat(store);
+  const [mode, setModeState] = useState<ChatMode>("chat");
+  const modeNow = useRef(mode);
+  modeNow.current = mode;
+  const run = useAgentRun();
+  const route = useMemo(() => ({ mode: modeNow, run }), [run]);
+  const { send, retry } = useAsking(store, restore, prefsNow, route);
+  const opening = useOpenChat(store);
   useRememberedChat(state.chatId);
 
+  const { abandon } = run;
   const newChat = useCallback(() => {
+    abandon();
     forgetChat();
     apply({ type: "cleared" });
-  }, [apply]);
+  }, [apply, abandon]);
+  const openChat = useCallback(
+    async (id: string) => {
+      abandon();
+      return opening.openChat(id);
+    },
+    [abandon, opening],
+  );
+  const setMode = useCallback((next: ChatMode) => {
+    if (live.current.state.status !== "thinking") setModeState(next);
+  }, [live]);
 
   const { messages, status, failure, chatId } = state;
   const thinking = status === "thinking";
@@ -146,10 +191,33 @@ export function useChatSession(page: string): ChatSession {
       newChat,
       chatId,
       openChat,
-      openingChat,
+      openingChat: opening.openingChat,
       prefs,
       setPrefs,
+      mode,
+      setMode,
+      agent: run.view,
+      decideChange: run.decide,
+      stopRun: run.stop,
     }),
-    [messages, thinking, failed, failure, draft, send, retry, newChat, chatId, openChat, openingChat, prefs],
+    [
+      messages,
+      thinking,
+      failed,
+      failure,
+      draft,
+      send,
+      retry,
+      newChat,
+      chatId,
+      openChat,
+      opening.openingChat,
+      prefs,
+      mode,
+      setMode,
+      run.view,
+      run.decide,
+      run.stop,
+    ],
   );
 }

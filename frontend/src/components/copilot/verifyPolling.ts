@@ -12,9 +12,11 @@ export const MAX_FAILURES = 3;
 export const LOST_CONTACT = "QuantOS lost contact with this check. Start it again to get the answers.";
 export const CHECK_GONE = "This check is no longer available. Start it again.";
 
-export interface PollerOptions {
-  fetch: () => Promise<VerifyPoll>;
-  onPoll: (poll: VerifyPoll) => void;
+export interface PollerOptions<T extends { status: string } = VerifyPoll> {
+  fetch: () => Promise<T>;
+  onPoll: (poll: T) => void;
+  /** Whether to look again after this answer. By default: while the run is still "running". */
+  keepGoing?: (poll: T) => boolean;
   /** Called once, when polling gives up. The message is a plain sentence. */
   onGiveUp: (message: string) => void;
   intervalMs?: number;
@@ -27,7 +29,7 @@ export function describeFailure(error: unknown): { fatal: boolean; message: stri
   return { fatal: false, message: LOST_CONTACT };
 }
 
-class Poller {
+class Poller<T extends { status: string }> {
   private stopped = false;
   private inFlight = false;
   private failures = 0;
@@ -35,7 +37,7 @@ class Poller {
   private readonly interval: number;
   private readonly hidden: () => boolean;
 
-  constructor(private readonly options: PollerOptions) {
+  constructor(private readonly options: PollerOptions<T>) {
     this.interval = options.intervalMs ?? POLL_MS;
     this.hidden = options.isHidden ?? (() => document.hidden);
   }
@@ -78,10 +80,11 @@ class Poller {
     }
   }
 
-  private succeeded(poll: VerifyPoll): void {
+  private succeeded(poll: T): void {
     this.failures = 0;
     this.options.onPoll(poll);
-    if (poll.status === "running") this.later();
+    const again = this.options.keepGoing ? this.options.keepGoing(poll) : poll.status === "running";
+    if (again) this.later();
     else this.stop();
   }
 
@@ -98,8 +101,8 @@ class Poller {
 }
 
 /** Starts polling now and returns the function that stops it. */
-export function startPoller(options: PollerOptions): () => void {
-  const poller = new Poller(options);
+export function startPoller<T extends { status: string } = VerifyPoll>(options: PollerOptions<T>): () => void {
+  const poller = new Poller<T>(options);
   poller.start();
   return poller.stop;
 }

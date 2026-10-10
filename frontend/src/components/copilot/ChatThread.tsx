@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Button, Callout } from "../ui";
+import { AgentTimeline } from "./AgentTimeline";
 import { ChatMessageView } from "./ChatMessageView";
 import { useCopilot } from "./CopilotProvider";
 
@@ -64,12 +65,12 @@ function CouldNotAnswer({ sentence, onRetry }: { sentence: string | null; onRetr
 }
 
 export function ChatThread() {
-  const { messages, thinking, failed, failure, send, retry, openingChat } = useCopilot();
+  const { messages, thinking, failed, failure, send, retry, openingChat, agent } = useCopilot();
   const scroller = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const box = scroller.current;
     if (box) box.scrollTop = box.scrollHeight;
-  }, [messages.length, thinking, failed]);
+  }, [messages.length, thinking, failed, agent?.events.length, agent?.pending.length]);
 
   const empty = messages.length === 0 && !thinking && !failed;
   return (
@@ -80,7 +81,7 @@ export function ChatThread() {
         {messages.map((message) => (
           <ChatMessageView key={message.id} message={message} />
         ))}
-        {thinking && <Waiting>Thinking…</Waiting>}
+        {thinking && (agent ? <AgentTimeline /> : <Waiting>Thinking…</Waiting>)}
         {failed && <CouldNotAnswer sentence={failure} onRetry={retry} />}
       </div>
     </div>

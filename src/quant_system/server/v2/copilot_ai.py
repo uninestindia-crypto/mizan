@@ -32,7 +32,9 @@ from quant_system.server.v2 import cli_bridge, copilot_wiring
 
 __all__ = [
     "ai_overview",
+    "build_chain",
     "build_chat",
+    "chain_for",
     "chat_model",
     "chat_model_for",
     "current_choice",
@@ -141,8 +143,8 @@ def _first(
     return entries
 
 
-def build_chat(choice: AiChoice, prefs: AnswerPrefs | None = None) -> ChatModel | None:
-    """The model the chat asks: every AI that is set up, in the person's order. None when nothing is.
+def build_chain(choice: AiChoice, prefs: AnswerPrefs | None = None) -> list[ChatModel]:
+    """Every AI that is set up, one by one, in the person's order. Empty when nothing is.
 
     ``prefs`` are what this one message asked for (which AI, which model, how hard to think, how fast).
     """
@@ -157,10 +159,25 @@ def build_chat(choice: AiChoice, prefs: AnswerPrefs | None = None) -> ChatModel 
         _one(e.id, apps, model=e.model, thinking=effective_thinking(e.thinking, speed))
         for e in entries
     )
-    models = [m for m in built if m is not None]
+    return [m for m in built if m is not None]
+
+
+def build_chat(choice: AiChoice, prefs: AnswerPrefs | None = None) -> ChatModel | None:
+    """The model the chat asks: every AI that is set up, in the person's order. None when nothing is."""
+    models = build_chain(choice, prefs)
     if not models:
         return None
     return models[0] if len(models) == 1 else FallbackChat(models)
+
+
+def chain_for(prefs: AnswerPrefs | None) -> list[ChatModel]:
+    """The AIs for one run, one by one: as set up, at the speed the person likes unless the run asked for another."""
+    speed, _helpers = current_defaults()
+    if prefs is None:
+        return build_chain(
+            current_choice(), None if speed == DEFAULT_SPEED else AnswerPrefs(speed=speed)
+        )
+    return build_chain(current_choice(), replace(prefs, speed=prefs.speed or speed))
 
 
 def chat_model() -> ChatModel | None:

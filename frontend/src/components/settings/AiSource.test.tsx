@@ -444,6 +444,31 @@ describe("how answers are made", () => {
   });
 });
 
+describe("who works on a task", () => {
+  it("starts with just the Copilot and saves a larger team at once", async () => {
+    await shown();
+    const team = screen.getByRole("combobox", { name: "Who works on a task in agent mode" });
+    expect(team).toHaveValue("1");
+    expect(within(team).getAllByRole("option").map((o) => o.textContent)).toEqual([
+      "Just the Copilot",
+      "The Copilot and one helper",
+      "The Copilot and two helpers",
+    ]);
+    fireEvent.change(team, { target: { value: "2" } });
+    await waitFor(() => expect(sent("PUT", SETTINGS)).toEqual([{ ai_defaults: { helpers: 2 } }]));
+    await waitFor(() => expect(team).toHaveValue("2"));
+  });
+
+  it("keeps a quick change of speed and then team size, both saved", async () => {
+    await shown();
+    click(screen.getByRole("radio", { name: /Careful/ }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Who works on a task in agent mode" }), { target: { value: "3" } });
+    await waitFor(() => expect(sent("PUT", SETTINGS)).toHaveLength(2));
+    await waitFor(() => expect(screen.getByRole("radio", { name: /Careful/ })).toBeChecked());
+    expect(screen.getByRole("combobox", { name: "Who works on a task in agent mode" })).toHaveValue("3");
+  });
+});
+
 describe("the backup", () => {
   it("is on by default and explains itself in one line", async () => {
     await shown();

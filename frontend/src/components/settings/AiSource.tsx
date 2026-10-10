@@ -22,6 +22,7 @@ import { AiOrder } from "./AiOrder";
 import { useAiStatus, useRefreshWhenAppsChange, useSaveAiChoice, useTestAi } from "./AiSourceQueries";
 import { AiSourceTest } from "./AiSourceTest";
 import { AiSpeed } from "./AiSpeed";
+import { AiTeam } from "./AiTeam";
 
 const FALLBACK_NOTE =
   "Your question is only ever sent to an AI you have set up. Turn this off to ask only the first one on your list.";
@@ -67,13 +68,18 @@ function Loaded({ status }: { status: AiStatus }) {
   }, [status]);
   const change = (patch: AiSettingsPatch) => {
     test.reset();
-    setWanted((before) => ({ ...before, ...patch }));
+    setWanted((before) => ({
+      ...before,
+      ...patch,
+      ...(patch.ai_defaults ? { ai_defaults: { ...before.ai_defaults, ...patch.ai_defaults } } : {}),
+    }));
     // A save that fails drops the change, and the screen shows what is really saved.
     void save.mutateAsync(patch).catch(() => setWanted((before) => settle(before, patch)));
   };
   const view = orderView(status, choice);
   const target: TestTarget = choice.order && choice.order.length > 0 ? (view.listed[0]?.entry ?? null) : testTarget(choice);
   const speed = wanted.ai_defaults?.speed ?? status.defaults?.speed ?? "balanced";
+  const helpers = wanted.ai_defaults?.helpers ?? status.defaults?.helpers ?? 1;
   return (
     <div className="space-y-5">
       <Summary status={status} choice={choice} saved={save.isSuccess} />
@@ -81,6 +87,12 @@ function Loaded({ status }: { status: AiStatus }) {
       <AiOrder status={status} choice={choice} onChange={change} />
       <Fallback checked={choice.fallback} onChange={(ai_fallback) => change({ ai_fallback })} />
       <AiSpeed value={speed} onChange={(value) => change({ ai_defaults: { speed: value } })} />
+      <AiTeam
+        value={helpers}
+        onChange={(value) => change({ ai_defaults: { helpers: value } })}
+        label="Who works on a task in agent mode"
+        note="Helpers look into separate questions at the same time, each on its own. They cannot change anything."
+      />
       <AiSourceTest run={test} subject={testSubject(status, target)} target={target} />
       <button
         type="button"

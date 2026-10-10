@@ -6,8 +6,10 @@ import { type AnswerPrefs, isUsual, NO_PREFS, withAi } from "../../lib/answerPre
 import { Badge, Button, Select } from "../ui";
 import { useAiStatus, useSaveAiChoice } from "../settings/AiSourceQueries";
 import { AiSpeed } from "../settings/AiSpeed";
+import { AiTeam } from "../settings/AiTeam";
 import { ModelFields } from "../settings/ModelFields";
 import { useCopilot } from "./CopilotProvider";
+import type { ChatMode } from "./useChatSession";
 
 const USUAL_ORDER = "My usual order";
 const FIELD = "block text-[12px] font-medium text-ink-2";
@@ -22,6 +24,7 @@ interface PanelProps {
   status: AiStatus;
   prefs: AnswerPrefs;
   setPrefs: (prefs: AnswerPrefs) => void;
+  mode: ChatMode;
 }
 
 /** Makes what was chosen here the way answers are made from now on: that AI first, with its choices, at this speed. */
@@ -29,7 +32,12 @@ function useMakeDefault({ status, prefs, setPrefs }: PanelProps) {
   const save = useSaveAiChoice();
   const make = () => {
     const patch: Parameters<typeof save.mutate>[0] = {};
-    if (prefs.speed) patch.ai_defaults = { speed: prefs.speed };
+    if (prefs.speed || prefs.helpers) {
+      patch.ai_defaults = {
+        ...(prefs.speed ? { speed: prefs.speed } : {}),
+        ...(prefs.helpers ? { helpers: prefs.helpers } : {}),
+      };
+    }
     if (prefs.ai) {
       const rest = effectiveOrder(status, status.ai).filter((entry) => entry.id !== prefs.ai);
       const first = { id: prefs.ai, model: prefs.model, thinking: prefs.thinking };
@@ -41,7 +49,7 @@ function useMakeDefault({ status, prefs, setPrefs }: PanelProps) {
 }
 
 function Panel(props: PanelProps) {
-  const { status, prefs, setPrefs } = props;
+  const { status, prefs, setPrefs, mode } = props;
   const which = useId();
   const { make, save } = useMakeDefault(props);
   const speed: Speed = prefs.speed ?? status.defaults?.speed ?? "balanced";
@@ -70,6 +78,14 @@ function Panel(props: PanelProps) {
         <p className="text-[11.5px] text-ink-3">Pick an AI to choose its model and how hard it thinks.</p>
       )}
       <AiSpeed compact legend="Speed" value={speed} onChange={(value) => setPrefs({ ...prefs, speed: value })} />
+      {mode === "agent" && (
+        <AiTeam
+          label="Who works on the task"
+          value={prefs.helpers ?? status.defaults?.helpers ?? 1}
+          onChange={(helpers) => setPrefs({ ...prefs, helpers })}
+          note="Helpers look into separate questions at the same time, each on its own. They cannot change anything."
+        />
+      )}
       <div className="flex flex-wrap items-center gap-2 pt-1">
         {!isUsual(prefs) && (
           <>
@@ -93,12 +109,12 @@ function Panel(props: PanelProps) {
 }
 
 function Loaded() {
-  const { prefs, setPrefs } = useCopilot();
+  const { prefs, setPrefs, mode } = useCopilot();
   const status = useAiStatus();
   if (!status.data) {
     return <p className="text-[12px] text-ink-3">{status.isError ? "QuantOS could not check which AI is ready." : "Looking at your AIs…"}</p>;
   }
-  return <Panel status={status.data} prefs={prefs} setPrefs={setPrefs} />;
+  return <Panel status={status.data} prefs={prefs} setPrefs={setPrefs} mode={mode} />;
 }
 
 /**
@@ -111,18 +127,52 @@ export function WaysToAnswer() {
   const Chevron = open ? ChevronUp : ChevronDown;
   return (
     <div className="space-y-2">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((before) => !before)}
-        className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-ink-2 hover:text-ink"
-      >
-        <SlidersHorizontal className="size-3.5" aria-hidden />
-        Ways to answer
-        {!isUsual(prefs) && <Badge tone="brand">Changed</Badge>}
-        <Chevron className="size-3.5" aria-hidden />
-      </button>
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((before) => !before)}
+          className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-ink-2 hover:text-ink"
+        >
+          <SlidersHorizontal className="size-3.5" aria-hidden />
+          Ways to answer
+          {!isUsual(prefs) && <Badge tone="brand">Changed</Badge>}
+          <Chevron className="size-3.5" aria-hidden />
+        </button>
+        <ModeSwitch />
+      </div>
       {open && <Loaded />}
     </div>
+  );
+}
+
+const MODES: readonly { value: ChatMode; title: string }[] = [
+  { value: "chat", title: "Chat" },
+  { value: "agent", title: "Agent" },
+];
+
+/** Chat answers a question. Agent works through a task in steps and asks before it changes anything. */
+function ModeSwitch() {
+  const { mode, setMode, thinking } = useCopilot();
+  const name = useId();
+  return (
+    <fieldset className="m-0 border-0 p-0" disabled={thinking}>
+      <legend className="sr-only">Chat or task</legend>
+      <div className="inline-flex rounded-lg border border-line p-0.5">
+        {MODES.map((option) => {
+          const on = option.value === mode;
+          return (
+            <label
+              key={option.value}
+              title={option.value === "agent" ? "Works through a task step by step and asks you before it changes anything" : "Answers a question"}
+              className={`cursor-pointer rounded-md px-2.5 py-1 text-[12px] font-medium ${on ? "bg-brand text-white" : "text-ink-2 hover:text-ink"}`}
+            >
+              <input type="radio" name={name} className="sr-only" checked={on} onChange={() => setMode(option.value)} />
+              {option.title}
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }

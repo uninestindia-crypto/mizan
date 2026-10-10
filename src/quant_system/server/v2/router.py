@@ -506,11 +506,27 @@ def lab_templates() -> dict[str, Any]:
     }
 
 
+def run_and_save_lab(request: LabRequest) -> dict[str, Any]:
+    """Runs one test and keeps it. Every saved test counts toward how much a later result is discounted."""
+    svc = services()
+    try:
+        result = run_lab(
+            _index(),
+            request,
+            _broker(svc.state.settings()),
+            prior_trials=svc.state.lab_run_count(),
+        )
+    except LabError as err:
+        raise V2Error(400, "LAB_REFUSED", str(err)) from err
+    run_id = svc.state.save_lab_run(result)
+    stored = svc.state.lab_run(run_id)
+    assert stored is not None
+    return stored
+
+
 @router.post("/lab/runs")
 def create_lab_run(body: LabRunRequest) -> dict[str, Any]:
-    index = _index()
-    svc = services()
-    settings = svc.state.settings()
+    settings = services().state.settings()
     request = LabRequest(
         template_id=body.template_id,
         params=body.params,
@@ -522,14 +538,7 @@ def create_lab_run(body: LabRunRequest) -> dict[str, Any]:
         capital=body.capital or settings.money.capital,
         slippage_bps=body.slippage_bps,
     )
-    try:
-        result = run_lab(index, request, _broker(settings), prior_trials=svc.state.lab_run_count())
-    except LabError as err:
-        raise V2Error(400, "LAB_REFUSED", str(err)) from err
-    run_id = svc.state.save_lab_run(result)
-    stored = svc.state.lab_run(run_id)
-    assert stored is not None
-    return stored
+    return run_and_save_lab(request)
 
 
 @router.get("/lab/runs")
