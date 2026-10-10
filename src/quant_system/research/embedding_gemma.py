@@ -8,9 +8,11 @@ re-normalisation.
 
 Backends, tried in this order when ``mode="auto"``:
 
-- ``transformers``: the real model, in this process. Needs sentence-transformers and torch (neither is bundled with the installed
-  app) and a one-time download of about 3 GB. ``auto`` only picks it when the weights are already on this computer, so nothing
-  downloads by surprise.
+- ``transformers``: the real model, in this process. Needs sentence-transformers, torch, torchvision and pillow (the model's
+  processor imports the image libraries even for text; none is bundled with the installed app) and a one-time download of about
+  3 GB. ``auto`` only picks it when the weights are already on this computer, so nothing downloads by surprise. Measured on
+  the reference laptop (Snapdragon X, 8 cores, float32): load about 4 s, five short texts 0.35 s, one 1,300-token text 3.9 s,
+  peak memory about 2 GB. The checkpoint's own bfloat16 was 9 to 10 times slower on that CPU for the same vectors.
 - ``ollama``: a local Ollama server. The model it serves is whatever ``QUANTOS_EMBEDDING_OLLAMA_MODEL`` names (default
   ``embeddinggemma``, the first-generation model). It is never reported as EmbeddingGemma 2.
 - ``synthetic``: a deterministic keyword-and-hash substitute for CI and for computers with neither of the above. It is **not** a
@@ -42,6 +44,12 @@ QUERY_PREFIX = "task: search result | query: "
 DOCUMENT_PREFIX = "title: none | text: "
 # The vision and audio towers are not needed for text; leaving them out loads about 270M of the 740M parameters.
 TEXT_ONLY_CONFIG: dict[str, Any] = {"vision_config": None, "audio_config": None}
+# float32, not the checkpoint's bfloat16: the card allows both, and on a laptop CPU float32 measured 9 to 10 times faster with the
+# same vectors (cosine 0.9997 or better). The model's limit is 8,192 tokens; the library reports none, so it is set here.
+MODEL_DTYPE = "float32"
+MAX_TOKENS = 8192
+# What the model needs to load even for text only: its processor imports the image libraries.
+REQUIRED_PACKAGES = ("sentence_transformers", "torch", "torchvision", "PIL")
 
 
 def _weights_cached(model_name: str = DEFAULT_MODEL_NAME) -> bool:
@@ -66,9 +74,7 @@ def real_model_status(model_name: str = DEFAULT_MODEL_NAME) -> str:
     ``NOT_INSTALLED`` (the packages are missing).
     """
     try:
-        packages = all(
-            importlib.util.find_spec(name) for name in ("sentence_transformers", "torch")
-        )
+        packages = all(importlib.util.find_spec(name) for name in REQUIRED_PACKAGES)
     except (ImportError, ValueError):
         packages = False
     if not packages:
@@ -312,9 +318,13 @@ class EmbeddingGemmaProvider:
         """Loads EmbeddingGemma 2 (text only) once and keeps it for later calls."""
         if self._model is None:
             library = importlib.import_module("sentence_transformers")
-            self._model = library.SentenceTransformer(
-                self.model_name, config_kwargs=dict(TEXT_ONLY_CONFIG)
+            model = library.SentenceTransformer(
+                self.model_name,
+                config_kwargs=dict(TEXT_ONLY_CONFIG),
+                model_kwargs={"dtype": MODEL_DTYPE},
             )
+            model.max_seq_length = MAX_TOKENS
+            self._model = model
         return self._model
 
     def _embed_via_model(self, texts: Sequence[str], kind: str) -> list[list[float]]:

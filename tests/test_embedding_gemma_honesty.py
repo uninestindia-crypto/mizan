@@ -32,10 +32,18 @@ class FakeModel:
     """Records how the provider built and called it."""
 
     def __init__(
-        self, name: str, config_kwargs: dict[str, Any] | None, plan: dict[str, Any]
+        self,
+        name: str,
+        config_kwargs: dict[str, Any] | None,
+        model_kwargs: dict[str, Any] | None,
+        plan: dict[str, Any],
     ) -> None:
         self.name = name
         self.config_kwargs = config_kwargs
+        self.model_kwargs = model_kwargs
+        self.max_seq_length: int | None = (
+            None  # the real library reports no limit; the provider sets it
+        )
         self.calls: list[list[str]] = []
         self.kwargs: list[dict[str, Any]] = []
         self._plan = plan
@@ -54,10 +62,15 @@ def install_fake(monkeypatch: pytest.MonkeyPatch, **plan: Any) -> list[FakeModel
     built: list[FakeModel] = []
 
     class FakeSentenceTransformer:
-        def __new__(cls, name: str, config_kwargs: dict[str, Any] | None = None) -> FakeModel:  # type: ignore[misc]
+        def __new__(  # type: ignore[misc]
+            cls,
+            name: str,
+            config_kwargs: dict[str, Any] | None = None,
+            model_kwargs: dict[str, Any] | None = None,
+        ) -> FakeModel:
             if "init_error" in plan:
                 raise plan["init_error"]
-            model = FakeModel(name, config_kwargs, plan)
+            model = FakeModel(name, config_kwargs, model_kwargs, plan)
             built.append(model)
             return model
 
@@ -118,6 +131,9 @@ def test_the_real_model_is_loaded_text_only_once_with_the_card_prefixes(
         "vision_config": None,
         "audio_config": None,
     }  # text only, about 270M
+    # float32 (9 to 10 times faster than the checkpoint's bfloat16 on a laptop CPU) and the card's 8,192-token limit
+    assert model.model_kwargs == {"dtype": "float32"}
+    assert model.max_seq_length == 8192
     assert model.calls == [
         [DOCUMENT_PREFIX + "Deflated Sharpe ratio"],
         [QUERY_PREFIX + "how do I avoid overfitting"],
@@ -256,6 +272,32 @@ def test_auto_mode_uses_the_real_model_only_when_it_is_already_on_this_computer(
     )
     with patch("httpx.get", side_effect=OSError("no Ollama here")):
         assert EmbeddingGemmaProvider(mode="auto").active_backend == "synthetic"
+
+
+@pytest.mark.parametrize("missing", ["sentence_transformers", "torch", "torchvision", "PIL"])
+def test_the_model_is_not_ready_when_any_library_it_needs_is_missing(
+    monkeypatch: pytest.MonkeyPatch, missing: str
+) -> None:
+    # A real run found that the model's processor imports the image libraries even for text, so READY must name them too.
+    monkeypatch.setattr(embedding_gemma, "_weights_cached", lambda name=DEFAULT_MODEL_NAME: True)
+    with monkeypatch.context() as patched:
+        patched.setattr(
+            embedding_gemma.importlib.util,
+            "find_spec",
+            lambda name, *args: None if name == missing else object(),
+        )
+        assert embedding_gemma.real_model_status() == "NOT_INSTALLED"
+
+
+def test_the_model_is_ready_only_with_every_library_and_the_weights(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with monkeypatch.context() as patched:
+        patched.setattr(embedding_gemma.importlib.util, "find_spec", lambda name, *args: object())
+        patched.setattr(embedding_gemma, "_weights_cached", lambda name=DEFAULT_MODEL_NAME: True)
+        assert embedding_gemma.real_model_status() == "READY"
+        patched.setattr(embedding_gemma, "_weights_cached", lambda name=DEFAULT_MODEL_NAME: False)
+        assert embedding_gemma.real_model_status() == "NEEDS_DOWNLOAD"
 
 
 def test_the_status_check_reads_the_cache_without_importing_or_downloading(

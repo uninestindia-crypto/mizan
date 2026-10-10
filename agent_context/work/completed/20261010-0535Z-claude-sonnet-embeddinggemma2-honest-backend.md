@@ -84,3 +84,27 @@ All edits committed on `main`. Tracked tree clean except the cleared side-effect
 With the founder's permission, a real smoke test in an isolated scratch environment (not the project venv): install torch and
 sentence-transformers there, download `google/embeddinggemma-2`, embed a few finance sentences, and confirm width 768, unit norm after
 truncation, query/document prefix behaviour, and that `uses_real_model` becomes true.
+
+## Update: the real model was run (founder approved the install and the 3 GB download, 2026-10-10)
+
+Done in an isolated scratch environment (venv and Hugging Face cache under the session scratchpad; the project venv was not changed):
+`pip install --only-binary=:all: torch sentence-transformers httpx` (torch 2.14.1+cpu has an ARM64 wheel), then `pillow` and `torchvision`.
+
+What the real run found that the fake-module tests could not:
+
+1. The model's processor imports PIL and then torchvision even for text-only use. Without them the real backend failed to load and the provider
+   fell back and said "could not run here" (the fallback and the label worked as designed). `real_model_status()` had said READY in that state;
+   it now requires `sentence_transformers`, `torch`, `torchvision` and `PIL` (`REQUIRED_PACKAGES`), with a test per library.
+2. The checkpoint's bfloat16 is 9 to 10 times slower than float32 on this CPU (5 short texts 3.1 s against 0.35 s; one 1,300-token text 30 s
+   against 3.9 s) for the same vectors (cosine 0.9997 or better). The provider now loads with `model_kwargs={"dtype": "float32"}`.
+3. The library reports no maximum sequence length (an absurdly large number), so long inputs could run away. The provider now sets
+   `max_seq_length = 8192`, the card's limit.
+
+Final run of the finished provider (`mode="transformers"`): `uses_real_model` true, no fallback, 271,002,624 parameters (so the text-only config
+drops the image and audio towers), float32, 768 wide, unit norm, Matryoshka 128/256/512 unit norm, the right sentence ranked first (0.82
+against 0.47 to 0.64; the keyword substitute scored 0.99 for the match and about 0 for everything else), paper search served by the real model
+(top paper: the Deflated Sharpe Ratio paper, 0.747, `embedding_is_real_model` true). Tests after the fixes: 39 passed in the four related files.
+
+Still open: the real model is not in the installed app (torch, torchvision, pillow and a 3 GB download are not bundled), and nothing in the app
+builds `QuantPaperRAG`, so no screen can use paper search yet (only scripts and the optional `rag_engine` hook of the AI advisers do).
+Each provider object loads its own copy of the model (about 1.1 GB of weights), so a screen should share one provider.
