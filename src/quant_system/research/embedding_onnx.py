@@ -15,6 +15,7 @@ image, video and audio inputs, which a text-only caller feeds as empty arrays.
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import importlib
 import importlib.util
@@ -95,14 +96,22 @@ def default_model_dir() -> Path:
     return base / "data" / "quantos2" / "models" / "embeddinggemma-2"
 
 
-def runtime_available() -> bool:
-    """True when onnxruntime and tokenizers can be imported (they ship with the app)."""
+@functools.lru_cache(maxsize=1)
+def _runtime_importable() -> bool:
     try:
-        return all(
-            importlib.util.find_spec(name) is not None for name in ("onnxruntime", "tokenizers")
-        )
-    except (ImportError, ValueError):
+        importlib.import_module("onnxruntime")
+        importlib.import_module("tokenizers")
+    except (
+        Exception
+    ):  # a missing file, or a Windows runtime file the computer lacks, both mean "cannot run here"
+        logger.warning("onnxruntime or tokenizers could not be loaded", exc_info=True)
         return False
+    return True
+
+
+def runtime_available() -> bool:
+    """True when onnxruntime and tokenizers really load on this computer, so a download is never offered for a model that cannot start."""
+    return _runtime_importable()
 
 
 def files_present(model_dir: Path, files: Sequence[ModelFile] | None = None) -> bool:

@@ -480,3 +480,83 @@ def test_the_overall_status_combines_both_routes(
         embedding_gemma, "torch_route_status", lambda name=DEFAULT_MODEL_NAME: torch
     )
     assert embedding_gemma.real_model_status() == expected
+
+
+# ----------------------------------------------------------------------------- remembering paper vectors between runs
+
+
+def test_paper_vectors_are_remembered_so_a_restart_does_not_read_every_paper_again(
+    fake_onnx: type[FakeOnnxEmbedder], tmp_path: Path
+) -> None:
+    cache = tmp_path / "vectors.json"
+    first = EmbeddingGemmaProvider(
+        dimensions=256, mode="onnx", model_dir=tmp_path, cache_file=cache
+    )
+    docs = ["Deflated Sharpe ratio", "Limit order book depth"]
+    vectors = first.embed_texts(docs, kind="document")
+    assert cache.is_file()
+
+    again = EmbeddingGemmaProvider(
+        dimensions=256, mode="onnx", model_dir=tmp_path, cache_file=cache
+    )
+    before = sum(len(m.calls) for m in fake_onnx.built)
+    assert again.embed_texts(docs, kind="document") == vectors
+    assert sum(len(m.calls) for m in fake_onnx.built) == before  # the model was not asked again
+    assert again.get_stats().cached_hits == 2
+
+
+def test_what_a_person_asks_is_never_written_to_disk(
+    fake_onnx: type[FakeOnnxEmbedder], tmp_path: Path
+) -> None:
+    cache = tmp_path / "vectors.json"
+    provider = EmbeddingGemmaProvider(
+        dimensions=128, mode="onnx", model_dir=tmp_path, cache_file=cache
+    )
+    provider.embed_texts(["a paper about hedging"], kind="document")
+    provider.embed_text("my private question about my own holdings", kind="query")
+    saved = cache.read_text(encoding="utf-8")
+    assert "a paper about hedging" in saved
+    assert "private question" not in saved and '"query' not in saved
+
+
+def test_vectors_from_another_model_or_size_are_not_reused(
+    fake_onnx: type[FakeOnnxEmbedder], tmp_path: Path
+) -> None:
+    cache = tmp_path / "vectors.json"
+    EmbeddingGemmaProvider(
+        dimensions=256, mode="onnx", model_dir=tmp_path, cache_file=cache
+    ).embed_texts(["x"])
+    other_size = EmbeddingGemmaProvider(
+        dimensions=512, mode="onnx", model_dir=tmp_path, cache_file=cache
+    )
+    calls_before = sum(len(m.calls) for m in fake_onnx.built)
+    other_size.embed_texts(["x"])
+    assert sum(len(m.calls) for m in fake_onnx.built) == calls_before + 1  # it had to ask again
+
+
+def test_a_damaged_vector_file_is_ignored_not_fatal(
+    fake_onnx: type[FakeOnnxEmbedder], tmp_path: Path
+) -> None:
+    cache = tmp_path / "vectors.json"
+    cache.write_text("{not json", encoding="utf-8")
+    provider = EmbeddingGemmaProvider(
+        dimensions=128, mode="onnx", model_dir=tmp_path, cache_file=cache
+    )
+    assert len(provider.embed_text("hedging", kind="document")) == 128
+    cache.write_text('{"tag": 1, "vectors": [1, 2]}', encoding="utf-8")
+    assert (
+        len(
+            EmbeddingGemmaProvider(
+                dimensions=128, mode="onnx", model_dir=tmp_path, cache_file=cache
+            ).embed_text("x")
+        )
+        == 128
+    )
+
+
+def test_the_built_in_substitute_writes_no_vector_file(tmp_path: Path) -> None:
+    cache = tmp_path / "vectors.json"
+    EmbeddingGemmaProvider(dimensions=128, mode="synthetic", cache_file=cache).embed_texts(
+        ["hedging"]
+    )
+    assert not cache.exists()

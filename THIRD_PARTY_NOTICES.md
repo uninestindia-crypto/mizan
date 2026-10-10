@@ -52,3 +52,14 @@ the software.
 **Open question for the founder:** if QuantOS is ever offered for a fee, the shipped PyBroker copy may fall under that
 condition. This needs a decision (a commercial licence from the author, or replacing the engine) before any paid release.
 Nothing new is copied from PyBroker; ideas learned from it are written fresh.
+
+## EmbeddingGemma 2 and the libraries that run it (the Research screen)
+
+- **EmbeddingGemma 2** (Google, October 2026): Apache 2.0. The model is **not** inside the installer. The Research screen downloads one 8-bit text
+  build of it, once, when the person presses "Turn on smarter search", from the Hugging Face repository `onnx-community/embeddinggemma-2-ONNX` at one
+  pinned revision (Apache 2.0 per its model card; converted from Google's `google/embeddinggemma-2`). QuantOS checks the size and SHA-256 of every
+  downloaded file against the values written in `src/quant_system/research/embedding_onnx.py` and deletes anything that does not match.
+- **ONNX Runtime** (Microsoft): MIT licence. Runs the downloaded model. Shipped inside the app.
+- **tokenizers** (Hugging Face): Apache 2.0. Splits text into the pieces the model reads. Shipped inside the app.
+- **Microsoft Visual C++ runtime files** (`msvcp140.dll`, `msvcp140_1.dll`, `vcruntime140_1.dll`): redistributable files that Microsoft allows an application
+  to ship with itself, so ONNX Runtime also starts on a Windows that lacks them.

@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import json
 import logging
 import math
 import os
@@ -124,6 +125,7 @@ class EmbeddingGemmaProvider:
         cache_size: int = 4096,
         ollama_model: str | None = None,
         model_dir: Path | None = None,
+        cache_file: Path | None = None,
     ) -> None:
         if dimensions not in SUPPORTED_DIMENSIONS:
             valid_dims = ", ".join(str(d) for d in SUPPORTED_DIMENSIONS)
@@ -142,6 +144,8 @@ class EmbeddingGemmaProvider:
         self.cache_size = max(64, cache_size)
         self.model_dir: Path = Path(model_dir) if model_dir else embedding_onnx.default_model_dir()
         self._onnx: embedding_onnx.OnnxEmbedder | None = None
+        # Where vectors for documents are remembered between runs, so a restart does not read every paper again.
+        self.cache_file: Path | None = Path(cache_file) if cache_file else None
 
         self._cache: dict[str, list[float]] = {}
         self._cache_hits = 0
@@ -152,6 +156,7 @@ class EmbeddingGemmaProvider:
         self._generation = 0
         self._switched_off = self.mode == "synthetic" or os.getenv("QUANTOS_SYNTHETIC_MODE") == "1"
         self._active_backend = self._determine_backend()
+        self._load_disk_cache()
 
     @property
     def active_backend(self) -> str:
@@ -246,6 +251,49 @@ class EmbeddingGemmaProvider:
         # Safe zero-dependency fallback for standalone desktop and CI
         return "synthetic"
 
+    def _disk_tag(self) -> str:
+        """Names the exact model behind the vectors, so vectors from another model or size are never reused."""
+        if self._active_backend == "onnx":
+            return f"onnx-8bit:{embedding_onnx.REVISION}:{self.dimensions}"
+        if self._active_backend == "transformers":
+            return f"torch-float32:{self.model_name}:{self.dimensions}"
+        return ""
+
+    def _load_disk_cache(self) -> None:
+        tag = self._disk_tag()
+        if not tag or self.cache_file is None:
+            return
+        try:
+            data = json.loads(self.cache_file.read_text(encoding="utf-8"))
+            vectors = data["vectors"] if data.get("tag") == tag else {}
+            for key, vector in vectors.items():
+                if (
+                    len(self._cache) < self.cache_size
+                    and key.startswith(self._key("document", ""))
+                    and len(vector) == self.dimensions
+                ):
+                    self._cache[key] = [float(value) for value in vector]
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            return
+
+    def _save_disk_cache(self) -> None:
+        """Remembers document vectors only. What a person asks is never written to disk."""
+        tag = self._disk_tag()
+        if not tag or self.cache_file is None:
+            return
+        documents = {
+            key: vec
+            for key, vec in self._cache.items()
+            if key.startswith(self._key("document", ""))
+        }
+        try:
+            self.cache_file.parent.mkdir(parents=True, exist_ok=True)
+            temporary = self.cache_file.with_suffix(".tmp")
+            temporary.write_text(json.dumps({"tag": tag, "vectors": documents}), encoding="utf-8")
+            temporary.replace(self.cache_file)
+        except OSError:
+            logger.warning("Could not save the embedding cache", exc_info=True)
+
     def _key(self, kind: str, clean_text: str) -> str:
         return f"{kind}\x00{clean_text}"
 
@@ -296,6 +344,8 @@ class EmbeddingGemmaProvider:
                 if len(self._cache) < self.cache_size:
                     self._cache[self._key(kind, text_str)] = processed
                 self._total_calls += 1
+            if kind == "document":
+                self._save_disk_cache()
 
         return results
 
