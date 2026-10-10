@@ -14,6 +14,7 @@ root_dir = Path(__file__).parent.parent if '__file__' in globals() else Path.cwd
 added_files = [
     (str(root_dir / 'src' / 'quant_system' / 'server' / 'static'), 'quant_system/server/static'),
     (str(root_dir / 'configs'), 'configs'),
+    (str(root_dir / 'THIRD_PARTY_NOTICES.md'), '.'),
     (str(root_dir / 'data' / 'shariah'), 'data/shariah'),
     (str(root_dir / 'data' / 'fundamentals'), 'data/fundamentals'),
     (str(root_dir / 'data' / 'authorities' / 'nse-all-listed-equities.csv'), 'data/authorities'),
