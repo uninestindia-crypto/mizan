@@ -49,13 +49,32 @@ function Native($label) { if ($LASTEXITCODE -ne 0) { Fail "$label failed (exit c
 $python = Join-Path $root ".venv\Scripts\python.exe"
 if (-not (Test-Path -LiteralPath $python)) { $python = "python" }
 
+$carriers = @("pyproject.toml", "src/quant_system/__init__.py", "frontend/package.json", "frontend/package-lock.json",
+              "src/quant_system/server/static/index.html", "uv.lock", "installer/assets/LICENSE.txt", "LICENSE.txt",
+              "CHANGELOG.md", "src/quant_system/server/v2/updates.py", "frontend/src/pages/Settings.tsx") | Where-Object { Test-Path -LiteralPath $_ }
+
 try {
     # ------------------------------------------------------------------ 1. preconditions
     Step "Checking the repository"
     $branch = (git rev-parse --abbrev-ref HEAD).Trim()
     if ($branch -ne "main") { Fail "Releases are cut from main; this is '$branch'." }
-    $dirty = git status --porcelain --untracked-files=no
-    if ($dirty) { Fail "There are uncommitted changes to tracked files. Commit or stash them first:`n$dirty" }
+    $dirtyAll = git status --porcelain --untracked-files=no
+    $nonCarriers = @()
+    if ($dirtyAll) {
+        foreach ($line in ($dirtyAll -split "`r?`n")) {
+            if (-not $line.Trim()) { continue }
+            $path = ($line.Substring(3)).Trim()
+            if ($path -match ' -> ') { $path = ($path -split ' -> ')[-1].Trim() }
+            $path = $path.Trim('"')
+            $pathNorm = $path.Replace('/', '\')
+            $isCarrier = $false
+            foreach ($c in $carriers) {
+                if ($c.Replace('/', '\') -eq $pathNorm) { $isCarrier = $true; break }
+            }
+            if (-not $isCarrier) { $nonCarriers += $line }
+        }
+    }
+    if ($nonCarriers.Count -gt 0) { Fail "There are uncommitted changes to tracked files outside version carriers. Commit or stash them first:`n$($nonCarriers -join "`n")" }
     git fetch origin main --quiet; Native "git fetch"
     $behind = [int](git rev-list --count HEAD..origin/main)
     if ($behind -gt 0) { Fail "main is $behind commit(s) behind origin/main. Pull first." }
@@ -70,10 +89,15 @@ try {
     Write-Host ("Last release: {0}; user-visible changes since: {1}; due: {2}" -f $status.last_tag, $status.user_visible, $status.due)
     if (-not $status.due -and -not $Force) { Fail "No release is due yet. Use -Force to release anyway." }
     $problems = & $python scripts/bump_version.py --check
-    if ($LASTEXITCODE -eq 0) { $problems = $null }  # exit 0 means the files already agree
+    $alreadyAgreed = ($LASTEXITCODE -eq 0)
+    if ($alreadyAgreed) { $problems = $null }  # exit 0 means the files already agree
     if (-not $Version) {
-        $kind = if ($Bump) { $Bump } else { $status.suggested_bump }
-        $Version = (& $python scripts/bump_version.py --next $kind).Trim(); Native "bump_version --next"
+        if ($alreadyAgreed) {
+            $Version = (& $python -c "import quant_system; print(quant_system.__version__)").Trim()
+        } else {
+            $kind = if ($Bump) { $Bump } else { $status.suggested_bump }
+            $Version = (& $python scripts/bump_version.py --next $kind).Trim(); Native "bump_version --next"
+        }
     }
     if ($Version -notmatch '^\d+\.\d+\.\d+$') { Fail "'$Version' is not a version like 2.1.0." }
     $tag = "v$Version"
@@ -97,16 +121,23 @@ try {
 
     # ------------------------------------------------------------------ 4. bump and commit
     Step "Bumping every version file to $Version"
-    & $python scripts/bump_version.py $Version; Native "bump_version"
-    $carriers = @("pyproject.toml", "src/quant_system/__init__.py", "frontend/package.json", "frontend/package-lock.json",
-                  "src/quant_system/server/static/index.html", "uv.lock", "installer/assets/LICENSE.txt", "LICENSE.txt",
-                  "CHANGELOG.md", "src/quant_system/server/v2/updates.py", "frontend/src/pages/Settings.tsx") | Where-Object { Test-Path -LiteralPath $_ }
+    $checkProblems = & $python scripts/bump_version.py --check
+    if ($LASTEXITCODE -ne 0) {
+        & $python scripts/bump_version.py $Version; Native "bump_version"
+    } else {
+        Write-Host "Version files already agree on $Version." -ForegroundColor Green
+    }
     git add -- @carriers
-    $message = "chore(release): v$Version`n`nRelease $Version. See the GitHub release notes for what changed."
-    if ($CoAuthor) { $message += "`n`n$CoAuthor" }
-    git commit -q -m $message; Native "git commit"
-    $sha = (git rev-parse --short HEAD).Trim()
-    Write-Host "Committed $sha"
+    $staged = git diff --cached --name-only
+    if ($staged) {
+        $message = "chore(release): v$Version`n`nRelease $Version. See the GitHub release notes for what changed."
+        if ($CoAuthor) { $message += "`n`n$CoAuthor" }
+        git commit -q -m $message; Native "git commit"
+        $sha = (git rev-parse --short HEAD).Trim()
+        Write-Host "Committed $sha"
+    } else {
+        Write-Host "Carriers already committed." -ForegroundColor Green
+    }
 
     # ------------------------------------------------------------------ 5. build from the release commit
     Step "Building the installer (this takes several minutes)"
@@ -126,11 +157,12 @@ try {
     }
     Set-Content -LiteralPath $sums -Value $lines -Encoding ascii
     $notesFile = "dist\RELEASE_NOTES_v$Version.md"
+    $setupLeaf = Split-Path $setup -Leaf
     $footer = @"
 
 ## Install
 
-Download ``QuantOS_v${Version}_Setup.exe`` and run it. The installer is not code-signed yet, so Windows SmartScreen may
+Download ``$setupLeaf`` and run it. The installer is not code-signed yet, so Windows SmartScreen may
 ask you to confirm ("More info", then "Run anyway"). Your data and settings are kept when you update over an older install.
 
 ## Checksums (SHA-256)
