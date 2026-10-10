@@ -1,10 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { errorMessage } from "../../lib/api";
-import { keys, useLaunchCli } from "../../lib/queries";
+import { CLI_CAPABILITIES_KEY, keys, useLaunchCli } from "../../lib/queries";
 import type { AgentCli } from "../../lib/types";
 import { aiStatusKey, useTestAi } from "../settings/AiSourceQueries";
-import { type SetupAction, signInNote } from "./appWords";
+import { launchNote, type SetupAction } from "./appWords";
 
 /** Starts an install or a sign-in. A background job reports itself on the card; only a sign-in window needs a note. */
 export function useAppSetup() {
@@ -19,7 +19,7 @@ export function useAppSetup() {
     launch.mutate(
       { agent_id: agentId, action },
       {
-        onSuccess: (data) => setNote(agentId, signInNote(action, data.job)),
+        onSuccess: (data) => setNote(agentId, launchNote(action, data)),
         onError: (err) => setError(errorMessage(err)),
       },
     );
@@ -47,7 +47,11 @@ export function useRefreshWhenJobEnds(apps: readonly AgentCli[] | undefined): vo
     const now = endedJobs(apps);
     const before = known.current;
     known.current = now;
-    if (before && [...now].some((id) => !before.has(id))) void qc.invalidateQueries({ queryKey: aiStatusKey });
+    if (before && [...now].some((id) => !before.has(id))) {
+      void qc.invalidateQueries({ queryKey: aiStatusKey });
+      // An update can bring new models, so every app's model list is read again the next time it is opened.
+      void qc.invalidateQueries({ queryKey: [CLI_CAPABILITIES_KEY] });
+    }
   }, [apps, qc]);
 }
 

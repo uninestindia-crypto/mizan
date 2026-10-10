@@ -691,6 +691,11 @@ export interface AgentCliJob {
   accepts_code: boolean;
   output: string[];
   seconds: number;
+  /** How long ago it ended, or null while it runs. A screen shows the result for a while and then lets it go. */
+  ended_seconds_ago: number | null;
+  /** The app's version when an update began and when it ended. */
+  before: string | null;
+  after: string | null;
 }
 
 export interface AgentCli {
@@ -710,7 +715,8 @@ export interface AgentCli {
   signin_mode: "browser" | "terminal";
   job: AgentCliJob | null;
   can_update?: boolean;
-  update_available?: boolean;
+  /** null: nobody has checked. The engine never guesses that a newer version exists. */
+  update_available?: boolean | null;
   update_steps?: string[];
   is_custom?: boolean;
   auto_update?: boolean | number;
@@ -730,20 +736,35 @@ export interface CustomCli {
   created_at: string;
 }
 
+/** The levels of thinking a model accepts, as the app or the provider reported them. */
+export interface CliThinking {
+  levels: string[];
+  default: string | null;
+}
+
 export interface CliModel {
   id: string;
   name: string;
-  provider: string;
   description: string;
-  context_window?: string;
+  /** How much it can read at once, in tokens, when the app or provider says. */
+  context_window: number | null;
+  /** The day it came out (YYYY-MM-DD), when known. */
+  released: string | null;
+  /** The newest of its kind, shown only where an older one exists to compare. */
+  newest: boolean;
+  /** The app's own first choice. */
   recommended: boolean;
+  thinking: CliThinking | null;
+  /** When the level is part of the model's name: level -> the exact name to use. */
+  variants: Record<string, string> | null;
 }
 
 export interface CliFeature {
   name: string;
   description: string;
-  status: "active" | "available";
 }
+
+export type CliModelSource = "app" | "app_saved" | "account" | "app_and_account" | "none";
 
 export interface CliCapabilities {
   agent_id: string;
@@ -752,10 +773,18 @@ export interface CliCapabilities {
   installed: boolean;
   authenticated: boolean;
   version: string | null;
+  is_custom: boolean;
   models: CliModel[];
+  /** Every thinking level any listed model accepts, lowest first. */
+  thinking_levels: string[];
   features: CliFeature[];
-  update_available: boolean;
-  latest_version: string | null;
+  source: CliModelSource;
+  /** One plain sentence on where the list came from. */
+  source_note: string;
+  /** When the app's own saved list was last refreshed, if that is where this came from. */
+  saved_list_checked: string | null;
+  /** A plain reason the list is empty or incomplete. */
+  note: string | null;
   last_fetched: string;
 }
 

@@ -52,6 +52,9 @@ export function job(over: Partial<AgentCliJob> = {}): AgentCliJob {
     accepts_code: false,
     output: [],
     seconds: 3.2,
+    ended_seconds_ago: null,
+    before: null,
+    after: null,
     ...over,
   };
 }

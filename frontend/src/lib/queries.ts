@@ -382,12 +382,22 @@ export function useRefreshAgentClis() {
   });
 }
 
+/** What the engine says when a step is started: the job, and whether the click joined a job already running. */
+export interface LaunchCliReply {
+  success: boolean;
+  message: string;
+  job?: import("./types").AgentCliJob;
+  /** The click did not start a new job; it joined the one already running (which may be a different step). */
+  joined?: boolean;
+  action?: string;
+}
+
 /** Starts an install, sign-in, or update for one AI app on this computer. The engine runs it in the background. */
 export function useLaunchCli() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { agent_id: string; action: "signin" | "install" | "update" }) =>
-      api<{ success: boolean; message: string; job?: import("./types").AgentCliJob }>("/api/v2/cli/launch", "POST", body),
+      api<LaunchCliReply>("/api/v2/cli/launch", "POST", body),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: keys.agentClis });
     },
@@ -403,12 +413,25 @@ export function useSendCliCode() {
   });
 }
 
+/** Every app's model list starts with this, so one call can mark them all out of date. */
+export const CLI_CAPABILITIES_KEY = "cli-capabilities";
+
 export function useCliCapabilities(agentId: string, enabled: boolean) {
   return useQuery({
-    queryKey: ["cli-capabilities", agentId],
+    queryKey: [CLI_CAPABILITIES_KEY, agentId],
     queryFn: () => api<import("./types").CliCapabilities>(`/api/v2/cli/${agentId}/capabilities`),
     enabled,
     staleTime: 5 * 60_000,
+  });
+}
+
+/** Asks the app for its models again right now, past anything remembered, and shows the new answer. */
+export function useRefreshCliCapabilities(agentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      api<import("./types").CliCapabilities>(`/api/v2/cli/${agentId}/capabilities?refresh=true`),
+    onSuccess: (data) => qc.setQueryData([CLI_CAPABILITIES_KEY, agentId], data),
   });
 }
 
@@ -424,7 +447,7 @@ export function useCliAutoUpdate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (enabled: boolean) =>
-      api<{ auto_update_cli: boolean; jobs_started: unknown[] }>("/api/v2/cli/auto-update", "POST", enabled),
+      api<{ auto_update_cli: boolean; jobs_started: unknown[] }>("/api/v2/cli/auto-update", "POST", { enabled }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["cli-auto-update"] });
       void qc.invalidateQueries({ queryKey: keys.status });

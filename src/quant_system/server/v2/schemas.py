@@ -140,6 +140,10 @@ class CliLaunchRequest(BaseModel):
     custom_command: str | None = Field(default=None, max_length=500)
 
 
+class CliAutoUpdateRequest(BaseModel):
+    enabled: bool
+
+
 class CliCodeRequest(BaseModel):
     text: str = Field(min_length=1, max_length=500)
 

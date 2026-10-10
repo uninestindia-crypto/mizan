@@ -11,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from quant_system.server.app import app
-from quant_system.server.v2 import cli_bridge
+from quant_system.server.v2 import cli_bridge, cli_models
 from quant_system.server.v2.cli_bridge import (
     SUPPORTED_AGENTS,
     launch_agent_session,
@@ -167,16 +167,29 @@ def test_cli_launch_api_endpoint(
     assert res_data["command"] == "claude"
 
 
-def test_cli_capabilities_endpoint(client: TestClient) -> None:
-    resp = client.get("/api/v2/cli/antigravity/capabilities")
-    assert resp.status_code == 200
-    data = resp.json()
+def test_cli_capabilities_endpoint(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The list is whatever the app itself says today, so a made-up name appears only if the app printed it."""
+    monkeypatch.setattr(
+        cli_bridge,
+        "list_cli_status",
+        lambda force=False: [
+            {"id": "antigravity", "installed": True, "authenticated": True, "version": "1.3.3"}
+        ],
+    )
+    monkeypatch.setattr(cli_models, "_executable", lambda agent: "C:\\agy.exe")
+    monkeypatch.setattr(
+        cli_models,
+        "_capture",
+        lambda args, timeout, merge=False: (0, "gemini-9-flash-high\tGemini 9 Flash (High)\n"),
+    )
+    cli_models.clear_cache()
+    data = client.get("/api/v2/cli/antigravity/capabilities").json()
     assert data["agent_id"] == "antigravity"
-    assert "models" in data
-    assert "features" in data
-    assert len(data["models"]) > 0
-    assert any("gemini-2.5-pro" in m["id"] for m in data["models"])
-    assert any(f["id"] == "multi_agent" for f in data["features"])
+    assert [m["id"] for m in data["models"]] == ["gemini-9-flash"]
+    assert data["thinking_levels"] == ["high"] and data["source"] == "app"
+    assert "models" in data and "features" in data
+    assert not any(f["name"] == "Quant Model Governance & Invariants" for f in data["features"])
+    cli_models.clear_cache()
 
 
 def test_cli_auto_update_endpoints(client: TestClient, headers: dict[str, str]) -> None:

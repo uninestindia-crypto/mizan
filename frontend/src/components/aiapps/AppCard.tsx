@@ -1,10 +1,12 @@
-import { ArrowUpCircle, CheckCircle2, ChevronDown, ChevronUp, Cpu, Download, LogIn, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { ArrowUpCircle, CheckCircle2, Cpu, Download, LogIn, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { useCliCapabilities, useDeleteCustomCli, useSetCustomCliAutoUpdate } from "../../lib/queries";
+import { useDeleteCustomCli, useSetCustomCliAutoUpdate } from "../../lib/queries";
+import { versionNumber } from "../../lib/thinking";
 import type { AgentCli } from "../../lib/types";
 import { AiSourceTest } from "../settings/AiSourceTest";
 import { Badge, Button, Callout } from "../ui";
 import { JobProgress } from "./JobProgress";
+import { ModelsPanel } from "./ModelsPanel";
 import { canAnswer, nextStep, oneLine, plainName, type SetupAction, stateWords, testModel } from "./appWords";
 import { useAppTest } from "./useAppSetup";
 
@@ -23,6 +25,7 @@ interface CardProps extends AppProps {
 
 function Heading({ agent }: { agent: AgentCli }) {
   const state = stateWords(agent);
+  const version = agent.installed ? versionNumber(agent.version) : null;
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
       <div className="flex items-center gap-2.5">
@@ -34,7 +37,10 @@ function Heading({ agent }: { agent: AgentCli }) {
             <h3 className="text-[14px] font-semibold text-ink">{plainName(agent)}</h3>
             {agent.is_custom && <Badge tone="brand">Company app</Badge>}
           </div>
-          <div className="text-[11.5px] text-ink-3">by {agent.maker}</div>
+          <div className="text-[11.5px] text-ink-3">
+            <span>by {agent.maker}</span>
+            {version && <span> · version {version}</span>}
+          </div>
         </div>
       </div>
       <Badge tone={state.tone}>
@@ -42,6 +48,28 @@ function Heading({ agent }: { agent: AgentCli }) {
         {state.text}
       </Badge>
     </div>
+  );
+}
+
+/** How long a finished step stays on the card before it is let go. */
+const RESULT_SHOWN_SECONDS = 600;
+
+/** What a step that just finished says. A person can dismiss it. */
+function Finished({ job }: { job: NonNullable<AgentCli["job"]> }) {
+  const [dismissed, setDismissed] = useState<string | null>(null);
+  if (dismissed === job.id) return null;
+  return (
+    <Callout
+      tone="success"
+      className="mt-3"
+      action={
+        <Button size="sm" variant="ghost" onClick={() => setDismissed(job.id)}>
+          Dismiss
+        </Button>
+      }
+    >
+      {job.message}
+    </Callout>
   );
 }
 
@@ -141,94 +169,6 @@ function Actions(props: AppProps) {
   );
 }
 
-function CliCapabilitiesSection({ agentId, name, installed }: { agentId: string; name: string; installed: boolean }) {
-  const [open, setOpen] = useState(false);
-  const caps = useCliCapabilities(agentId, open && installed);
-
-  if (!installed) return null;
-
-  return (
-    <div className="mt-3 border-t border-line/60 pt-2.5">
-      <button
-        type="button"
-        aria-label={`Inspect models and features of ${name}`}
-        onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between py-1 text-[12px] font-medium text-ink-2 hover:text-ink transition-colors"
-      >
-        <span className="flex items-center gap-1.5">
-          <Sparkles className="size-3.5 text-brand" aria-hidden />
-          <span>Live Models & Features</span>
-        </span>
-        <span className="flex items-center gap-1 text-[11px] text-ink-3">
-          {caps.data?.models ? `${caps.data.models.length} models` : "Inspect"}
-          {open ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-        </span>
-      </button>
-
-      {open && (
-        <div className="mt-2 space-y-3 rounded-lg bg-surface-2/60 p-2.5 text-[12px]">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-3">
-              Supported Models
-            </span>
-            <button
-              type="button"
-              disabled={caps.isFetching}
-              onClick={() => void caps.refetch()}
-              className="flex items-center gap-1 text-[11px] text-brand hover:underline disabled:opacity-50"
-            >
-              <RefreshCw className={`size-3 ${caps.isFetching ? "animate-spin" : ""}`} />
-              <span>{caps.isFetching ? "Fetching..." : "Fetch Live"}</span>
-            </button>
-          </div>
-
-          {caps.isLoading ? (
-            <div className="py-2 text-center text-[11px] text-ink-3">Fetching live models...</div>
-          ) : caps.data?.models && caps.data.models.length > 0 ? (
-            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-              {caps.data.models.map((m) => (
-                <div key={m.id} className="rounded border border-line/60 bg-surface p-2 text-[11.5px]">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-ink">{m.name}</span>
-                    {m.recommended && (
-                      <span className="rounded bg-brand/10 px-1.5 py-0.5 text-[10px] font-medium text-brand">
-                        Recommended
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-0.5 text-[11px] text-ink-3 leading-snug">{m.description}</p>
-                  {m.context_window && (
-                    <div className="mt-1 text-[10px] text-ink-3">Context: {m.context_window}</div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-[11px] text-ink-3">No models loaded. Click "Fetch Live" to query.</div>
-          )}
-
-          <div className="pt-2 border-t border-line/40">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-3 mb-1.5">
-              CLI Features
-            </div>
-            <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
-              {caps.data?.features?.map((f, i) => (
-                <div key={i} className="flex items-start gap-1.5 text-[11px]">
-                  <CheckCircle2 className="size-3 text-emerald-500 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-medium text-ink">{f.name}: </span>
-                    <span className="text-ink-3">{f.description}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function CustomCliControls({ agent }: { agent: AgentCli }) {
   const toggleAutoUpdate = useSetCustomCliAutoUpdate();
   const deleteCli = useDeleteCustomCli();
@@ -271,6 +211,10 @@ export function AppCard(props: CardProps) {
   const { agent, note } = props;
   const running = agent.job?.state === "RUNNING";
   const failed = agent.job?.state === "FAILED" ? agent.job : null;
+  const finished =
+    agent.job?.state === "DONE" && (agent.job.ended_seconds_ago ?? RESULT_SHOWN_SECONDS) < RESULT_SHOWN_SECONDS
+      ? agent.job
+      : null;
   return (
     <div
       data-app-name={agent.name}
@@ -281,6 +225,7 @@ export function AppCard(props: CardProps) {
         <p className="mt-2.5 text-[12.5px] leading-relaxed text-ink-2">{oneLine(agent)}</p>
         {agent.job && running && <JobProgress agentId={agent.id} job={agent.job} />}
         {failed && <Failure job={failed} />}
+        {finished && <Finished job={finished} />}
         {note && !running && (
           <Callout tone="info" className="mt-3">
             {note}
@@ -289,7 +234,7 @@ export function AppCard(props: CardProps) {
       </div>
       <div>
         <Actions agent={agent} busy={props.busy} onStep={props.onStep} onRecheck={props.onRecheck} />
-        <CliCapabilitiesSection agentId={agent.id} name={plainName(agent)} installed={agent.installed} />
+        <ModelsPanel agentId={agent.id} name={plainName(agent)} installed={agent.installed} />
         <CustomCliControls agent={agent} />
       </div>
       {!agent.installed && !agent.is_custom && (

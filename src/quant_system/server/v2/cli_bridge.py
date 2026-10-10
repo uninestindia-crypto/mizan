@@ -24,9 +24,8 @@ import sys
 import threading
 import time
 import uuid
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
@@ -72,6 +71,8 @@ class AgentCliDef:
     # Claude's fallback sign-in page shows a code that must be typed back into the CLI.
     accepts_code: bool = False
     update: tuple[InstallStep, ...] = ()
+    # The app's own update command (arguments after the program). Tried first: it knows how it was installed.
+    update_command: tuple[str, ...] = ()
 
 
 _NODE_STEP = InstallStep(
@@ -101,6 +102,7 @@ SUPPORTED_AGENTS: tuple[AgentCliDef, ...] = (
                 "irm https://antigravity.google/cli/install.ps1 | iex",
             ),
         ),
+        update_command=("update",),
         signin_mode="browser",
         # One tiny prompt: if there is no session yet, Antigravity opens the Google sign-in page.
         signin_args=("-p", "Reply with exactly the single word OK", "--output-format", "json"),
@@ -119,6 +121,7 @@ SUPPORTED_AGENTS: tuple[AgentCliDef, ...] = (
         extra_dirs=(r"%APPDATA%\npm",),
         install=(InstallStep("Installing Codex", "npm", "@openai/codex"),),
         update=(InstallStep("Updating Codex", "npm", "@openai/codex@latest"),),
+        update_command=("update",),
         signin_mode="browser",
         signin_args=("login",),
         status_args=("login", "status"),
@@ -148,6 +151,7 @@ SUPPORTED_AGENTS: tuple[AgentCliDef, ...] = (
                 "irm https://claude.ai/install.ps1 | iex",
             ),
         ),
+        update_command=("update",),
         signin_mode="browser",
         signin_args=("auth", "login"),
         status_args=("auth", "status"),
@@ -353,12 +357,7 @@ def _inspect_cli(agent: AgentCliDef) -> dict[str, Any]:
             resolved_cmd, resolved_path = cmd, found
             break
 
-    version: str | None = None
-    if resolved_path:
-        code, text = _run_hidden([resolved_path, "--version"], timeout=8.0)
-        lines = text.strip().splitlines()
-        if code == 0 and lines:
-            version = lines[0][:80]
+    version = _version_of(resolved_path)
 
     authenticated, auth_detail = (
         _check_auth_status(agent, resolved_path) if resolved_path else (False, "Not installed")
@@ -389,7 +388,8 @@ def _inspect_cli(agent: AgentCliDef) -> dict[str, Any]:
         "install_steps": [step.display() for step in agent.install],
         "update_steps": [step.display() for step in (agent.update or agent.install)],
         "can_update": resolved_path is not None,
-        "update_available": False,
+        # Whether a newer version exists is only known by running the app's own check, so it is not claimed here.
+        "update_available": None,
         "run_cmd": agent.run_cmd,
         "is_custom": is_custom_agent(agent.id),
     }
@@ -444,6 +444,8 @@ class _Job:
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     interactive: bool = False  # keep stdin open so a sign-in code can be passed through
     process: subprocess.Popen[str] | None = None
+    before: str | None = None  # the version when an update began
+    after: str | None = None  # the version when it ended
 
 
 _jobs: dict[str, _Job] = {}
@@ -455,6 +457,7 @@ def job_snapshot(agent_id: str) -> dict[str, Any] | None:
         job = _jobs.get(agent_id)
         if job is None:
             return None
+        now = time.monotonic()
         return {
             "id": job.id,
             "action": job.action,
@@ -463,7 +466,11 @@ def job_snapshot(agent_id: str) -> dict[str, Any] | None:
             "url": job.url,
             "accepts_code": job.interactive and job.state == "RUNNING",
             "output": job.output[-6:],
-            "seconds": round((job.finished or time.monotonic()) - job.started, 1),
+            "seconds": round((job.finished or now) - job.started, 1),
+            # How long ago it ended, so a screen can show the result for a while and then let it go.
+            "ended_seconds_ago": None if job.finished is None else round(now - job.finished, 1),
+            "before": job.before,
+            "after": job.after,
         }
 
 
@@ -471,6 +478,23 @@ def _set(job: _Job, **changes: Any) -> None:
     with _jobs_lock:
         for name, value in changes.items():
             setattr(job, name, value)
+
+
+def _kill_tree(process: subprocess.Popen[str]) -> None:
+    """Stop a program and everything it started. ``kill`` alone leaves an installer's child programs running."""
+    if sys.platform == "win32":
+        try:
+            subprocess.run(
+                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                capture_output=True,
+                check=False,
+                timeout=15,
+                creationflags=_NO_WINDOW,
+            )
+            return
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    process.kill()
 
 
 def _stream(job: _Job, args: list[str], timeout: float) -> int:
@@ -491,7 +515,7 @@ def _stream(job: _Job, args: list[str], timeout: float) -> int:
         _set(job, output=[*job.output, str(error)])
         return 1
     job.process = process
-    killer = threading.Timer(timeout, process.kill)
+    killer = threading.Timer(timeout, _kill_tree, args=(process,))
     killer.start()
     try:
         assert process.stdout is not None
@@ -615,38 +639,87 @@ def _run_signin(job: _Job, agent: AgentCliDef) -> None:
         _set(job, state="FAILED", message="Sign-in was not completed. You can try again.")
 
 
+def _program(agent: AgentCliDef) -> str | None:
+    return next((found for c in agent.commands if (found := _find(c))), None)
+
+
+def _version_of(path: str | None) -> str | None:
+    """The first line the program prints for ``--version``, or ``None`` when it cannot say."""
+    if not path:
+        return None
+    code, text = _run_hidden([path, "--version"], timeout=8.0)
+    lines = text.strip().splitlines()
+    return lines[0][:80] if code == 0 and lines else None
+
+
+_VERSION_NUMBER = re.compile(r"\d+(?:\.\d+)+")
+
+
+def _plain_version(text: str | None) -> str | None:
+    """``codex-cli 0.162.1`` -> ``0.162.1``: the number a person recognises."""
+    if text is None:
+        return None
+    found = _VERSION_NUMBER.search(text)
+    return found.group(0) if found else text
+
+
+def _update_message(agent: AgentCliDef, before: str | None, after: str | None) -> str:
+    """What the person is told when an update ends: whether anything really changed."""
+    old, new = _plain_version(before), _plain_version(after)
+    if new is None:
+        return f"{agent.name} finished updating, but its new version could not be read."
+    if old == new:
+        return f"{agent.name} is already up to date (version {new})."
+    if old:
+        return f"{agent.name} was updated from version {old} to {new}."
+    return f"{agent.name} is up to date (version {new})."
+
+
 def _run_update(job: _Job, agent: AgentCliDef) -> None:
-    steps = list(agent.update if agent.update else agent.install)
-    if any(step.kind == "npm" for step in steps) and _find("npm") is None:
-        steps.insert(0, _NODE_STEP)
-    for step in steps:
-        _set(job, message=step.label + "...")
-        command = _step_command(step)
-        if command is None:
-            _set(
-                job,
-                state="FAILED",
-                message="Cannot update without required package manager.",
-            )
+    executable = _program(agent)
+    before = _version_of(executable)
+    _set(job, before=before)
+    finished = False
+    if agent.update_command and executable:
+        # The app's own update knows how it was installed, so it is tried before re-running an installer.
+        _set(job, message=f"Checking for a newer {agent.name}...")
+        if _stream(job, [executable, *agent.update_command], JOB_MAX_SECONDS["update"]) == 0:
+            finished = True
+        else:
+            _set(job, message=f"{agent.name} could not update itself. Trying the installer...")
+    if not finished:
+        steps = list(agent.update if agent.update else agent.install)
+        if not steps:
+            _set(job, state="FAILED", message=f"There is no way to update {agent.name} yet.")
             return
-        if _stream(job, command, JOB_MAX_SECONDS["update"]) != 0:
-            _set(
-                job, state="FAILED", message=f"{step.label} did not finish. See the details below."
-            )
-            return
+        if any(step.kind == "npm" for step in steps) and _find("npm") is None:
+            steps.insert(0, _NODE_STEP)
+        for step in steps:
+            _set(job, message=step.label + "...")
+            command = _step_command(step)
+            if command is None:
+                _set(
+                    job,
+                    state="FAILED",
+                    message="Cannot update without required package manager.",
+                )
+                return
+            if _stream(job, command, JOB_MAX_SECONDS["update"]) != 0:
+                _set(
+                    job,
+                    state="FAILED",
+                    message=f"{step.label} did not finish. See the details below.",
+                )
+                return
     invalidate_cache()
-    resolved_path = next((found for c in agent.commands if (found := _find(c))), None)
-    version = None
-    if resolved_path:
-        code, text = _run_hidden([resolved_path, "--version"], timeout=8.0)
-        lines = text.strip().splitlines()
-        if code == 0 and lines:
-            version = lines[0][:80]
-    _set(
-        job,
-        state="DONE",
-        message=f"{agent.name} is updated to {version or 'the latest version'}.",
-    )
+    from quant_system.server.v2 import cli_models
+
+    cli_models.clear_cache()  # a new version may offer different models
+    after = _version_of(_program(agent))
+    _set(job, state="DONE", after=after, message=_update_message(agent, before, after))
+
+
+_ACTION_WORDS = {"install": "setting up", "signin": "signing in", "update": "updating"}
 
 
 def start_agent_job(
@@ -689,15 +762,40 @@ def start_agent_job(
         threading.Thread(target=work, name=f"QuantOS-cli-{agent_id}-{action}", daemon=True).start()
     snapshot = job_snapshot(agent_id)
     assert snapshot is not None
-    return {"success": True, "action": action, "job": snapshot, "message": snapshot["message"]}
+    joined = running is not None
+    message = str(snapshot["message"])
+    if joined and snapshot["action"] != action:
+        # The click did not start what was asked, and the person is told so instead of watching the wrong job.
+        busy = _ACTION_WORDS.get(str(snapshot["action"]), "another step")
+        message = f"{agent.name} is busy {busy}. Try again when it has finished."
+    return {
+        "success": True,
+        "action": snapshot["action"] if joined else action,
+        "job": snapshot,
+        "message": message,
+        "joined": joined,
+    }
 
 
-def auto_update_all_clis() -> list[dict[str, Any]]:
-    """Checks all installed CLIs and triggers background updates."""
+def _custom_auto_update_flags() -> dict[str, bool]:
+    """Which company apps the person asked to keep up to date."""
+    try:
+        from quant_system.server.v2.router import services
+
+        return {
+            str(i["id"]): bool(i.get("auto_update")) for i in services().state.list_custom_clis()
+        }
+    except Exception:
+        return {}
+
+
+def auto_update_all_clis(*, include_built_in: bool = True) -> list[dict[str, Any]]:
+    """Update every installed app in the background. A company app is updated only if it was asked to be."""
     started: list[dict[str, Any]] = []
+    custom = _custom_auto_update_flags()
     for agent in all_agents():
-        resolved_path = next((found for c in agent.commands if (found := _find(c))), None)
-        if resolved_path:
+        wanted = custom.get(agent.id, False) if agent.id in custom else include_built_in
+        if wanted and _program(agent):
             try:
                 started.append(start_agent_job(agent.id, "update"))
             except Exception as err:
@@ -705,260 +803,23 @@ def auto_update_all_clis() -> list[dict[str, Any]]:
     return started
 
 
-def fetch_cli_capabilities(agent_id: str, force_refresh: bool = False) -> dict[str, Any]:
-    """Fetch live models and features for the given CLI."""
-    agent = get_agent(agent_id)
-    if agent is None:
-        raise ValueError(f"Unknown AI app: {agent_id}")
+def start_cli_auto_updates(
+    enabled: Callable[[], bool], *, first_delay: float = 90.0, interval: float = 86_400.0
+) -> Callable[[], None]:
+    """Keep the apps up to date: a little after start, then once a day. Returns the function that stops it."""
+    stop = threading.Event()
 
-    status_list = list_cli_status(force=force_refresh)
-    info = next((s for s in status_list if s["id"] == agent_id), None)
-    installed = bool(info and info.get("installed"))
-    authenticated = bool(info and info.get("authenticated"))
-    version = str(info.get("version") or "") if info else ""
-
-    models: list[dict[str, Any]] = []
-    features: list[dict[str, Any]] = []
-
-    if is_custom_agent(agent_id):
-        models = [
-            {
-                "id": f"{agent_id}-default",
-                "name": f"{agent.name} Model",
-                "provider": agent.maker,
-                "description": f"Custom Company Model via {agent.name}",
-                "context_window": "128,000+ tokens",
-                "recommended": True,
-            }
-        ]
-        features = [
-            {
-                "name": "Company CLI Integration",
-                "description": "Custom enterprise CLI agent bridge",
-            },
-            {"name": "Automatic Updates", "description": "Automated update via company pipeline"},
-        ]
-        return {
-            "agent_id": agent_id,
-            "agent_name": agent.name,
-            "installed": installed,
-            "authenticated": authenticated,
-            "version": version or None,
-            "models": models,
-            "features": features,
-            "latest_version": version or None,
-            "last_fetched": datetime.now(UTC).isoformat(),
-        }
-
-    if agent_id == "antigravity":
-        # Check if user has GEMINI_API_KEY saved to query live model catalog
-        gemini_key = os.environ.get("GEMINI_API_KEY", "").strip() or None
-        live_fetched: list[dict[str, Any]] = []
-        if gemini_key:
+    def loop() -> None:
+        delay = first_delay
+        while not stop.wait(delay):
             try:
-                from quant_system.alpha.model_catalog import fetch_models
+                auto_update_all_clis(include_built_in=enabled())
+            except Exception as err:
+                logger.warning("Automatic app update could not run: %s", err)
+            delay = interval
 
-                live_models = fetch_models("gemini", gemini_key, refresh=force_refresh)
-                live_fetched = [
-                    {
-                        "id": m.id,
-                        "name": m.name,
-                        "provider": "Google DeepMind",
-                        "description": "Live Gemini Model from Google AI Studio",
-                        "context_window": "1,000,000 - 2,000,000 tokens",
-                        "recommended": "2.5" in m.id or "3.8" in m.id or "pro" in m.id,
-                    }
-                    for m in live_models
-                ]
-            except Exception as e:
-                logger.debug("Could not fetch live Google Gemini models: %s", e)
-
-        if live_fetched:
-            models = live_fetched
-        else:
-            models = [
-                {
-                    "id": "gemini-2.5-pro",
-                    "name": "Gemini 2.5 Pro",
-                    "provider": "Google DeepMind",
-                    "description": "DeepMind Advanced Reasoning, Long Context & Code Synthesis",
-                    "context_window": "2,000,000 tokens",
-                    "recommended": True,
-                },
-                {
-                    "id": "gemini-2.5-flash",
-                    "name": "Gemini 2.5 Flash",
-                    "provider": "Google DeepMind",
-                    "description": "Ultra-fast Agentic Reasoning with High Throughput",
-                    "context_window": "1,000,000 tokens",
-                    "recommended": True,
-                },
-                {
-                    "id": "gemini-3.8-flash",
-                    "name": "Gemini 3.8 Flash (High)",
-                    "provider": "Google DeepMind",
-                    "description": "State-of-the-Art DeepMind Agentic Reasoning Engine",
-                    "context_window": "1,000,000 tokens",
-                    "recommended": True,
-                },
-                {
-                    "id": "gemini-2.0-flash",
-                    "name": "Gemini 2.0 Flash",
-                    "provider": "Google DeepMind",
-                    "description": "Low Latency Multimodal & Autonomous Tool Calling",
-                    "context_window": "1,000,000 tokens",
-                    "recommended": False,
-                },
-                {
-                    "id": "gemini-1.5-pro",
-                    "name": "Gemini 1.5 Pro",
-                    "provider": "Google DeepMind",
-                    "description": "General Purpose Deep Reasoning with 2M Token Context",
-                    "context_window": "2,000,000 tokens",
-                    "recommended": False,
-                },
-            ]
-
-        features = [
-            {
-                "id": "multi_agent",
-                "name": "Multi-Agent System & Subagents",
-                "description": "Hierarchical agent delegation (invoke_subagent, define_subagent) for autonomous development.",
-                "status": "active",
-            },
-            {
-                "id": "mcp",
-                "name": "Model Context Protocol (MCP)",
-                "description": "Native integration with standard MCP servers, Chrome DevTools, SQLite, and custom tools.",
-                "status": "active",
-            },
-            {
-                "id": "sandbox",
-                "name": "Autonomous Execution Sandbox",
-                "description": "Secure command execution, background task management, and reactive wakeups.",
-                "status": "active",
-            },
-            {
-                "id": "governance",
-                "name": "Quant Model Governance & Invariants",
-                "description": "Real-time sync with agent_context/, goalpost tripwires (G1-G7), and immutable ledgers.",
-                "status": "active",
-            },
-            {
-                "id": "verification",
-                "name": "Automated Linting & Verification Guards",
-                "description": "Automated Ruff, strict Mypy, secret scanning, and reproducible test suites.",
-                "status": "active",
-            },
-            {
-                "id": "skills",
-                "name": "Interactive Slash Commands & Custom Skills",
-                "description": "Modular skill engine for specialized quant trading, Shariah filtering, and data engineering.",
-                "status": "active",
-            },
-        ]
-    elif agent_id == "claude":
-        models = [
-            {
-                "id": "claude-3-7-sonnet-20250219",
-                "name": "Claude 3.7 Sonnet",
-                "provider": "Anthropic",
-                "description": "Hybrid Reasoning & Fast Thinking",
-                "context_window": "200,000 tokens",
-                "recommended": True,
-            },
-            {
-                "id": "claude-3-5-sonnet-20241022",
-                "name": "Claude 3.5 Sonnet",
-                "provider": "Anthropic",
-                "description": "High Performance Code & Architecture",
-                "context_window": "200,000 tokens",
-                "recommended": True,
-            },
-            {
-                "id": "claude-3-5-haiku-20241022",
-                "name": "Claude 3.5 Haiku",
-                "provider": "Anthropic",
-                "description": "Rapid Utility & Inline Assistance",
-                "context_window": "200,000 tokens",
-                "recommended": False,
-            },
-        ]
-        features = [
-            {
-                "id": "bash",
-                "name": "Bash Tool Execution",
-                "description": "Direct shell command execution inside worktrees.",
-                "status": "active",
-            },
-            {
-                "id": "edit",
-                "name": "File Editing & Multi-edit",
-                "description": "Contiguous patch application and search/replace.",
-                "status": "active",
-            },
-            {
-                "id": "mcp",
-                "name": "MCP Server Client",
-                "description": "Model Context Protocol tools and resources support.",
-                "status": "active",
-            },
-        ]
-    elif agent_id == "codex":
-        models = [
-            {
-                "id": "o3-mini",
-                "name": "o3-mini",
-                "provider": "OpenAI",
-                "description": "High-Efficiency Reasoning for Code & STEM",
-                "context_window": "200,000 tokens",
-                "recommended": True,
-            },
-            {
-                "id": "o1",
-                "name": "o1",
-                "provider": "OpenAI",
-                "description": "Deep Reasoning Model with Broad General Knowledge",
-                "context_window": "200,000 tokens",
-                "recommended": True,
-            },
-            {
-                "id": "gpt-4o",
-                "name": "GPT-4o",
-                "provider": "OpenAI",
-                "description": "Flagship Multimodal Omnimodel",
-                "context_window": "128,000 tokens",
-                "recommended": False,
-            },
-        ]
-        features = [
-            {
-                "id": "sandbox",
-                "name": "Sandboxed Execution",
-                "description": "Read-only and governed execution environments.",
-                "status": "active",
-            },
-            {
-                "id": "diff",
-                "name": "Diff & Patch Generation",
-                "description": "Targeted file modifications and unified diffs.",
-                "status": "active",
-            },
-        ]
-
-    return {
-        "agent_id": agent_id,
-        "name": agent.name,
-        "maker": agent.maker,
-        "installed": installed,
-        "authenticated": authenticated,
-        "version": version or None,
-        "models": models,
-        "features": features,
-        "update_available": False,
-        "latest_version": version or None,
-        "last_fetched": datetime.now(UTC).isoformat(),
-    }
+    threading.Thread(target=loop, name="QuantOS-cli-auto-update", daemon=True).start()
+    return stop.set
 
 
 # ------------------------------------------------------------------------------ terminal use

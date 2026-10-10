@@ -49,13 +49,14 @@ from quant_system.server.v2.broker_routes import router as broker_router
 from quant_system.server.v2.cli_bridge import (
     all_chat_cli_ids,
     auto_update_all_clis,
-    fetch_cli_capabilities,
     invalidate_cache,
     launch_agent_session,
     list_cli_status,
     send_job_input,
     start_agent_job,
+    start_cli_auto_updates,
 )
+from quant_system.server.v2.cli_models import fetch_cli_capabilities
 from quant_system.server.v2.copilot_routes import router as copilot_router
 from quant_system.server.v2.credentials import (
     AI_KEY_NAMES,
@@ -78,6 +79,7 @@ from quant_system.server.v2.portfolio_accounts import ACCOUNT_KINDS, account_row
 from quant_system.server.v2.portfolio_risk import NO_HOLDINGS, risk_from_quantities, unavailable
 from quant_system.server.v2.schemas import (
     AccountRequest,
+    CliAutoUpdateRequest,
     CliCodeRequest,
     CliLaunchRequest,
     CostsRequest,
@@ -1077,8 +1079,8 @@ def get_cli_auto_update() -> dict[str, Any]:
 
 
 @router.post("/cli/auto-update")
-def post_cli_auto_update(body: dict[str, Any]) -> dict[str, Any]:
-    enabled = bool(body.get("enabled", False))
+def post_cli_auto_update(body: CliAutoUpdateRequest) -> dict[str, Any]:
+    enabled = body.enabled
     services().state.update_settings({"auto_update_cli": enabled})
     started: list[dict[str, Any]] = []
     if enabled:
@@ -1258,10 +1260,15 @@ def _run_auto_update_with(app: FastAPI) -> None:
     async def lifespan(scope: FastAPI) -> AsyncIterator[Any]:
         services().auto.start()
         services().notifier.start()
+        # The AI apps are kept up to date a little after start and then daily, for the apps the person chose.
+        stop_app_updates = start_cli_auto_updates(
+            lambda: services().state.settings().auto_update_cli
+        )
         try:
             async with inner(scope) as state:
                 yield state
         finally:
+            stop_app_updates()
             services().notifier.stop()
             services().auto.stop()
 

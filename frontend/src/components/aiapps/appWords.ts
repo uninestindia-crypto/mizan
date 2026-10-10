@@ -28,6 +28,15 @@ export function signInNote(action: SetupAction, job: unknown): string | null {
   return action === "signin" && !job ? SIGN_IN_WINDOW_NOTE : null;
 }
 
+/** What the engine said about a started step, as a note under the app: the sign-in window, or "it is busy with". */
+export function launchNote(
+  action: SetupAction,
+  reply: { job?: { action: string } | null; joined?: boolean; message?: string },
+): string | null {
+  if (reply.joined && reply.job && reply.job.action !== action) return reply.message ?? null;
+  return signInNote(action, reply.job);
+}
+
 /** The name a person knows the app by, without the word the engine adds for programmers. */
 export function plainName(agent: Pick<AgentCli, "name">): string {
   return agent.name.replace(/\s+CLI$/i, "");

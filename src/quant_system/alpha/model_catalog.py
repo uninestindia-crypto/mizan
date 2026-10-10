@@ -43,14 +43,25 @@ class ModelCatalogError(RuntimeError):
     """The provider's model list could not be read."""
 
 
+# The thinking levels a provider can report, lowest to highest.
+EFFORT_LEVELS: tuple[str, ...] = ("low", "medium", "high", "xhigh", "max")
+
+
 @dataclass(frozen=True, slots=True)
 class ModelEntry:
     id: str
     name: str
     created: float | None  # epoch seconds, when the provider reports it
+    max_input_tokens: int | None = None  # how much it can read at once, when the provider says
+    effort_levels: tuple[str, ...] = ()  # thinking levels the provider says this model accepts
 
     def as_dict(self) -> dict[str, Any]:
-        return {"id": self.id, "name": self.name, "created": self.created}
+        out: dict[str, Any] = {"id": self.id, "name": self.name, "created": self.created}
+        if self.max_input_tokens is not None:
+            out["max_input_tokens"] = self.max_input_tokens
+        if self.effort_levels:
+            out["effort_levels"] = list(self.effort_levels)
+        return out
 
 
 def _http_get_json(url: str, headers: dict[str, str], timeout: float) -> Any:
@@ -115,6 +126,28 @@ def _is_chat_model(provider: str, model_id: str) -> bool:
     return not (provider == "openai" and _SNAPSHOT.search(lowered))
 
 
+def _anthropic_entry(item: dict[str, Any]) -> ModelEntry:
+    """One Anthropic model with what its own listing says it can do (never a guess from its name)."""
+    capabilities = item.get("capabilities")
+    effort = capabilities.get("effort") if isinstance(capabilities, dict) else None
+    levels: tuple[str, ...] = ()
+    if isinstance(effort, dict):
+        levels = tuple(
+            level
+            for level in EFFORT_LEVELS
+            if isinstance(effort.get(level), dict) and effort[level].get("supported") is True
+        )
+    window = item.get("max_input_tokens")
+    tokens = window if isinstance(window, int) and not isinstance(window, bool) else None
+    return ModelEntry(
+        str(item["id"]),
+        str(item.get("display_name") or item["id"]),
+        _epoch(item.get("created_at")),
+        tokens,
+        levels,
+    )
+
+
 def _openai_style(payload: Any) -> list[ModelEntry]:
     out: list[ModelEntry] = []
     for item in payload.get("data", []) if isinstance(payload, dict) else []:
@@ -143,13 +176,7 @@ def _fetch(provider: str, api_key: str | None) -> list[ModelEntry]:
             {"x-api-key": key, "anthropic-version": "2023-06-01"},
             timeout,
         )
-        return [
-            ModelEntry(
-                str(i["id"]), str(i.get("display_name") or i["id"]), _epoch(i.get("created_at"))
-            )
-            for i in payload.get("data", [])
-            if i.get("id")
-        ]
+        return [_anthropic_entry(i) for i in payload.get("data", []) if i.get("id")]
     if provider == "gemini":
         # The key goes in a header, not the URL, so it never appears in an error message or a log.
         payload = _get_json(

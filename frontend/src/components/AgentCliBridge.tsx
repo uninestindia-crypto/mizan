@@ -88,6 +88,11 @@ export function AgentCliBridge() {
             {setup.error}
           </Callout>
         )}
+        {setAutoUpdate.isError && (
+          <Callout tone="danger" className="mb-4">
+            Automatic updating could not be changed. {errorMessage(setAutoUpdate.error)}
+          </Callout>
+        )}
         <Apps setup={setup} recheck={() => refresh.mutate()} />
       </Card>
       <AddCustomCliModal open={showAddModal} onOpenChange={setShowAddModal} />

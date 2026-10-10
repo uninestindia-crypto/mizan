@@ -73,19 +73,19 @@ const STATES: [string, AgentCli["state"], string, string[]][] = [
     "installed but not signed in",
     "NEEDS_SIGN_IN",
     "Installed, not signed in",
-    ["Sign in to Codex", "Update Codex", "Inspect models and features of Codex"],
+    ["Sign in to Codex", "Update Codex", "Models and thinking levels of Codex"],
   ],
   [
     "installed and not checked yet",
     "UNKNOWN",
     "Installed, not checked yet",
-    ["Sign in to Codex", "Update Codex", "Test this AI", "Inspect models and features of Codex"],
+    ["Sign in to Codex", "Update Codex", "Test this AI", "Models and thinking levels of Codex"],
   ],
   [
     "signed in",
     "CONNECTED",
     "Signed in",
-    ["Update Codex", "Test this AI", "Inspect models and features of Codex"],
+    ["Update Codex", "Test this AI", "Models and thinking levels of Codex"],
   ],
 ];
 
@@ -103,7 +103,7 @@ describe("the state of an app and its one next step", () => {
       "Sign in to Antigravity",
       "Update Antigravity",
       "Test this AI",
-      "Inspect models and features of Antigravity",
+      "Models and thinking levels of Antigravity",
     ]);
   });
 
@@ -112,7 +112,7 @@ describe("the state of an app and its one next step", () => {
     expect(buttonsIn(cardOf("Antigravity"))).toEqual([
       "Update Antigravity",
       "Test this AI",
-      "Inspect models and features of Antigravity",
+      "Models and thinking levels of Antigravity",
     ]);
     expect(cardOf("Antigravity").getByText("Signed in")).toBeInTheDocument();
   });
