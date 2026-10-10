@@ -17,8 +17,8 @@ const CONTEXT = {
 const tab = (id: string, label: string): PortfolioTab => ({ id, label, render: () => <p>{label} content</p> });
 
 describe("the Portfolio tabs", () => {
-  it("lists Holdings, then Fundamentals", () => {
-    expect(PORTFOLIO_TABS.map((t) => t.id)).toEqual(["holdings", "fundamentals"]);
+  it("lists Holdings, then Fundamentals, then Risk", () => {
+    expect(PORTFOLIO_TABS.map((t) => t.id)).toEqual(["holdings", "fundamentals", "risk"]);
   });
 
   it("shows a single tab's content with no row of tabs", () => {

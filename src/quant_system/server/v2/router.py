@@ -661,9 +661,11 @@ def _valued(holdings: list[Any], svc: Any) -> list[dict[str, Any]]:
 
 
 @router.get("/portfolio/risk")
-def get_portfolio_risk() -> dict[str, Any]:
-    """How the hand-entered holdings have moved together over the last year. Describes the past; not a forecast."""
-    holdings = services().state.holdings()
+def get_portfolio_risk(account: str = "all") -> dict[str, Any]:
+    """How the holdings in view (all accounts, or one) have moved together over the last year. Not a forecast."""
+    svc = services()
+    scope = _scope(svc.state.accounts(), account)
+    holdings = [h for h in svc.state.holdings() if scope[0] is None or h.account_id == scope[0]]
     if not holdings:
         return unavailable(NO_HOLDINGS)
     quantities: dict[str, float] = {}

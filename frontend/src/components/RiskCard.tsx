@@ -11,8 +11,8 @@ const HEAVY_BY = 5;
  * portfolio, how many independent holdings it behaves like, and each holding's share of the risk next to its share of the
  * money. It describes the past; it never forecasts, and the card says so.
  */
-export function RiskCard({ source }: { source: "portfolio" | "broker" }) {
-  const risk = useRisk(source);
+export function RiskCard({ source, account = "all" }: { source: "portfolio" | "broker"; account?: string }) {
+  const risk = useRisk(source, account);
 
   if (risk.isPending) return <Skeleton className="h-40" />;
   if (risk.isError) {

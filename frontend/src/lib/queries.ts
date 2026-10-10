@@ -564,11 +564,16 @@ export function useBrokerAssistantAccess() {
   });
 }
 
-/** How the holdings have moved together over the last year. `portfolio` is the hand-entered list, `broker` the broker's. */
-export function useRisk(source: "portfolio" | "broker") {
+/**
+ * How the holdings have moved together over the last year. `portfolio` is the hand-entered list (all accounts, or the one
+ * in `account`), `broker` the broker's.
+ */
+export function useRisk(source: "portfolio" | "broker", account: string = "all") {
+  const portfolioAddress =
+    account === "all" ? "/api/v2/portfolio/risk" : `/api/v2/portfolio/risk?account=${encodeURIComponent(account)}`;
   return useQuery({
-    queryKey: ["risk", source],
-    queryFn: () => api<PortfolioRisk>(source === "portfolio" ? "/api/v2/portfolio/risk" : "/api/v2/broker/risk"),
+    queryKey: ["risk", source, source === "portfolio" ? account : "all"],
+    queryFn: () => api<PortfolioRisk>(source === "portfolio" ? portfolioAddress : "/api/v2/broker/risk"),
     staleTime: 5 * 60_000,
     retry: false,
   });

@@ -17,6 +17,7 @@ from quant_system.server.v2.broker_routes import broker_view_service
 from quant_system.server.v2.portfolio_risk import NO_HOLDINGS, NOTE
 from tests.broker_fakes import make_rig
 from tests.copilot_fakes import make_context
+from tests.test_portfolio_accounts import _add, _new_account
 from tests.test_portfolio_risk import FakeIndex, rng_returns, series, walk
 from tests.test_v2_api import (  # noqa: F401, F811  (shared fixtures)
     client,
@@ -72,6 +73,37 @@ def test_with_holdings_the_risk_route_answers_in_the_shared_shape(
         assert sum(h["money_pct"] for h in body["holdings"]) == pytest.approx(100.0, abs=0.2)
     else:
         assert body["message"]
+
+
+def test_the_risk_route_follows_the_account_in_view_like_the_portfolio_does(
+    ready: TestClient,  # noqa: F811
+    headers: dict[str, str],  # noqa: F811
+) -> None:
+    spouse = _new_account(ready, headers, "Spouse demat")
+    _add(ready, headers, "AAA", 10, None)
+    _add(ready, headers, "BBB", 4, spouse)
+    one = ready.get(f"/api/v2/portfolio/risk?account={spouse}")
+    assert one.status_code == 200
+    assert "AAA" not in one.text  # the other account's stock is nowhere in it
+    both = ready.get("/api/v2/portfolio/risk").json()
+    assert both["available"] is False or {h["symbol"] for h in both["holdings"]} == {"AAA", "BBB"}
+
+
+def test_an_account_that_does_not_exist_is_a_plain_404(
+    ready: TestClient,  # noqa: F811
+) -> None:
+    response = ready.get("/api/v2/portfolio/risk?account=999")
+    assert response.status_code == 404 and response.json()["error"]["code"] == "ACCOUNT_NOT_FOUND"
+
+
+def test_an_account_with_nothing_in_it_says_there_is_nothing_to_look_at(
+    ready: TestClient,  # noqa: F811
+    headers: dict[str, str],  # noqa: F811
+) -> None:
+    empty = _new_account(ready, headers, "Parent demat")
+    _add(ready, headers, "AAA", 10, None)
+    body = ready.get(f"/api/v2/portfolio/risk?account={empty}").json()
+    assert body["available"] is False and body["message"] == NO_HOLDINGS
 
 
 def test_the_risk_route_needs_market_data_and_says_where_to_connect_it(client: TestClient) -> None:  # noqa: F811

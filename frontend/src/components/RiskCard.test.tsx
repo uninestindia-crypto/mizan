@@ -32,10 +32,10 @@ const RISK = {
 };
 const NOTHING = { ...RISK, available: false, message: "There are no holdings to look at yet.", window: null, volatility_pct: null, effective_bets: null, diversification: null, shrinkage: null, holdings: [] };
 
-function show(source: "portfolio" | "broker" = "portfolio") {
+function show(source: "portfolio" | "broker" = "portfolio", account = "all") {
   return renderApp(
     <TooltipProvider>
-      <RiskCard source={source} />
+      <RiskCard source={source} account={account} />
     </TooltipProvider>,
   );
 }
@@ -110,6 +110,13 @@ describe("How your holdings move together", () => {
     expect(await screen.findByText("18.4%")).toBeInTheDocument();
     const asked = vi.mocked(api).mock.calls.map(([path]) => String(path));
     expect(asked).toEqual(["/api/v2/broker/risk"]);
+  });
+
+  it("asks for one account's holdings when one account is in view, and the plain address for all of them", async () => {
+    routeApi({ "GET /api/v2/portfolio/risk?account=3": RISK });
+    show("portfolio", "3");
+    expect(await screen.findByText("18.4%")).toBeInTheDocument();
+    expect(vi.mocked(api).mock.calls.map(([path]) => String(path))).toEqual(["/api/v2/portfolio/risk?account=3"]);
   });
 
   it("shows a calm message if the answer cannot load, not an error page", async () => {

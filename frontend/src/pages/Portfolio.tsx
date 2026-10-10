@@ -1,5 +1,6 @@
 import { Plus, Users } from "lucide-react";
 import { useState } from "react";
+import { BrokerAccountCard } from "../components/BrokerAccountCard";
 import { DataGate } from "../components/common";
 import { type LotDraft, HoldingFormDialog, draftFromRow } from "../components/portfolio/HoldingFormDialog";
 import { ManageAccountsDialog } from "../components/portfolio/ManageAccountsDialog";
@@ -34,6 +35,9 @@ export default function Portfolio() {
           </>
         }
       />
+      <div className="mb-5">
+        <BrokerAccountCard />
+      </div>
       <DataGate>
         <PortfolioBody choice={choice} choose={choose} onEdit={edit} onAdd={add} />
       </DataGate>
