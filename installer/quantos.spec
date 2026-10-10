@@ -1,9 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller specification for QuantOS Standalone Windows x64 Executable (quantos.exe)."""
 
+import os
 import sys
 from pathlib import Path
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_all, collect_data_files, collect_submodules
 
 block_cipher = None
 
@@ -54,12 +55,28 @@ hidden_imports = [
     'quant_system.release',
 ] + collect_submodules('quant_system') + collect_submodules('websockets')
 
+# The Research screen runs EmbeddingGemma 2 (the 8-bit build, downloaded from inside the app) through these two. onnxruntime ships
+# native DLLs and both are loaded with importlib, so they are collected explicitly instead of trusting the import scan.
+extra_datas, extra_binaries, extra_hidden = [], [], []
+for _package in ('onnxruntime', 'tokenizers'):
+    _datas, _binaries, _hidden = collect_all(_package)
+    extra_datas += _datas
+    extra_binaries += _binaries
+    extra_hidden += _hidden
+
+# onnxruntime needs the Microsoft C++ runtime. Windows 11 has it; an older Windows may not, so the app carries its own copy
+# (the files Microsoft allows an app to ship), taken from this computer when the installer is built.
+_system32 = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32'
+for _name in ('msvcp140.dll', 'msvcp140_1.dll', 'vcruntime140_1.dll'):
+    if (_system32 / _name).is_file():
+        extra_binaries.append((str(_system32 / _name), '.'))
+
 a = Analysis(
     ['../launcher.py'],
     pathex=['../src', '..'],
-    binaries=[],
-    datas=added_files,
-    hiddenimports=hidden_imports,
+    binaries=extra_binaries,
+    datas=added_files + extra_datas,
+    hiddenimports=hidden_imports + extra_hidden,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -95,9 +112,9 @@ exe = EXE(
 a_studio = Analysis(
     ['../quantos_studio.py'],
     pathex=['../src', '..'],
-    binaries=[],
-    datas=added_files,
-    hiddenimports=hidden_imports,
+    binaries=extra_binaries,
+    datas=added_files + extra_datas,
+    hiddenimports=hidden_imports + extra_hidden,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

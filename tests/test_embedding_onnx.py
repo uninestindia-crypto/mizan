@@ -145,7 +145,7 @@ def test_status_needs_the_runtime_then_the_files(
     download_model(tmp_path, files=files, base_url=BASE, revision=embedding_onnx.REVISION)
     assert onnx_status(tmp_path) == "READY"
     with monkeypatch.context() as patched:
-        patched.setattr(embedding_onnx.importlib.util, "find_spec", lambda name, *a: None)
+        patched.setattr(embedding_onnx, "runtime_available", lambda: False)
         assert onnx_status(tmp_path) == "NOT_INSTALLED"
 
 
@@ -496,3 +496,23 @@ def test_the_real_model_gives_meaningful_unit_vectors() -> None:
     assert scores.index(max(scores)) == 0 and max(scores) > 0.7
     batch_vs_single = embedder.embed([docs[1]])[0]
     assert sum(a * b for a, b in zip(batch_vs_single, vectors[2], strict=True)) > 0.999
+
+
+def test_the_runtime_counts_as_available_only_if_it_really_loads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    embedding_onnx._runtime_importable.cache_clear()
+    real_import = importlib.import_module
+
+    def broken(name: str, package: str | None = None) -> Any:
+        if name == "onnxruntime":
+            raise ImportError("DLL load failed while importing onnxruntime_pybind11_state")
+        return real_import(name, package)
+
+    monkeypatch.setattr(importlib, "import_module", broken)
+    assert (
+        embedding_onnx.runtime_available() is False
+    )  # present on disk but cannot start: no download is offered
+    monkeypatch.setattr(importlib, "import_module", real_import)
+    embedding_onnx._runtime_importable.cache_clear()
+    assert embedding_onnx.runtime_available() is True

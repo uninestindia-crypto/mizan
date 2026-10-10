@@ -170,7 +170,9 @@ class ResearchService:
         self._downloader = downloader
         self._fetcher = fetcher
         self._provider_factory = provider_factory or (
-            lambda directory: EmbeddingGemmaProvider(mode="auto", model_dir=directory)
+            lambda directory: EmbeddingGemmaProvider(
+                mode="auto", model_dir=directory, cache_file=library_file.with_name("vectors.json")
+            )
         )
         self._lock = threading.RLock()
         self._rag: QuantPaperRAG | None = None

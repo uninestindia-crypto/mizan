@@ -1,7 +1,7 @@
 MIZAN QUANT OS DESKTOP STUDIO & SHARIAH WEALTH ENGINE
 END USER LICENSE AGREEMENT AND TERMS OF USE
 
-Version 3.3.0 (Last Updated: October 2026)
+Version 3.4.0 (Last Updated: October 2026)
 
 IMPORTANT — READ CAREFULLY BEFORE INSTALLING:
 This End User License Agreement ("Agreement") is a legal agreement between you ("User" or "you") and Mizan Quant OS Technologies ("Licensor", "we", or "us") regarding your installation and use of Mizan Quant OS Desktop Studio, including the QuantOS Quantitative Trading Suite and the Mizan Shariah Wealth Engine (collectively, the "Software").

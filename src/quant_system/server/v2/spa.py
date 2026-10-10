@@ -19,6 +19,7 @@ CLIENT_ROUTES = (
     "/lab/{rest:path}",
     "/portfolio",
     "/fundamentals",
+    "/research",
     "/paper",
     "/paper/{rest:path}",
     "/tools",
