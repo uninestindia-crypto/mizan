@@ -63,6 +63,26 @@ model with five averaged paths, judged against 11 attempts, scored once. **PR #4
   scored; any other is discarded unscored.** Never run with fewer paths or a smaller model.
 - **Honest expectation:** it fails. Trial 10 lost to cash; a bigger model has to clear a 0.95 deflated Sharpe from 0.013.
 
+## Update, 2026-10-10: trial 11 ran on a Kaggle GPU and was scored once. `RESEARCH_ONLY`.
+
+Done by a laptop session on the founder's instruction, from a separate worktree, branch `claude/kronos-trial11-score`
+(pushed, no pull request). Full write-up: `reports/kronos_trial11/RESULT.md`.
+
+- **Run:** Kaggle notebook, private dataset, GPU T4, 5.3 hours, no out-of-memory. The first and only complete run.
+  The forecast file's recorded fields match the declaration (Kronos-base, 5 paths, 23,805 forecasts, inputs SHA-256
+  `fdbbdd15...cd9c4`). Forecasts SHA-256 `49e4fdca...e54dfe`.
+- **Result:** candidate Sharpe +0.138, net +1.23%, deflated Sharpe 0.0773 against 0.95 (11 trials), max drawdown 6.6%,
+  6,977 trades. Beats the best noise seed and ALWAYS_TRADE; the gate fails. Rank IC t 0.89 and top-quintile edge
+  t -0.01, so no ranking edge. It sits slightly above cash with a t-statistic near 0.2; that is not evidence of an edge.
+- **Trial 11 is spent.** `SCORED.json` exists in the trial folder and the scorer refuses a second scoring under any file
+  name. **The cloud container's CPU backup run, if it ever finishes, must be discarded unscored.** Nothing follows
+  trial 11: any further attempt is ordinal 12 with its own dated declaration.
+- **Kaggle gotchas for whoever repeats a GPU run:** Kaggle unpacks a `.gz` upload, so the inputs file arrives as
+  `kronos-inputs.json` and must be re-gzipped with `mtime=0` and an empty name to reproduce the declared hash (the notebook
+  asserted the hash before any forecast); the built-in browser cannot attach files.
+- **Not done:** no independent re-score; `agent_context/CURRENT.md` is not updated (claimed elsewhere, so a notice is
+  filed instead); trial 10's ledger row in `reports/kronos_trial/TRIAL-LEDGER.md` is still "not yet run".
+
 ## Decisions waiting for the founder
 
 1. **Whether to start the cloud book at all.** `20260924-NOTICE-paper-books-system-test-running.md` forbids another
