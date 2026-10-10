@@ -253,7 +253,9 @@ def _batch_throughput(
 def _resolved_revision() -> str | None:
     """The exact commit of the checkpoint that was downloaded, from the HF cache layout."""
     try:
-        from huggingface_hub import constants  # type: ignore[import-not-found]  # noqa: PLC0415
+        from huggingface_hub import (
+            constants,  # type: ignore[import-not-found,unused-ignore]  # noqa: PLC0415
+        )
 
         cache = Path(constants.HF_HUB_CACHE)
     except Exception:  # noqa: BLE001

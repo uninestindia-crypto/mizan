@@ -28,6 +28,10 @@ dependencies = [
     "diskcache>=5.4.0",
     "joblib>=1.2.0",
     "progressbar2>=4.1.1",
+    # Runs EmbeddingGemma 2 (8-bit ONNX text model, downloaded from inside the app) for the Research screen, with no
+    # PyTorch. Both ship ARM64 and x64 Windows wheels.
+    "onnxruntime>=1.20.0",
+    "tokenizers>=0.20.0",
 ]
 
 [project.optional-dependencies]
