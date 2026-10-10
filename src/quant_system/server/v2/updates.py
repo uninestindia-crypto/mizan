@@ -209,7 +209,7 @@ class UpdateChecker:
 
 OFFLINE_CHANGELOG: list[dict[str, Any]] = [
     {
-        "version": "3.2.1",
+        "version": "3.3.0",
         "date": "2026-10-10",
         "title": "Desktop Studio Startup Fix & Clean WebSockets Packaging",
         "whats_new": [
