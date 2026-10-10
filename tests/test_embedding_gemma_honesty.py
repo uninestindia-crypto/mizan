@@ -266,7 +266,7 @@ def test_auto_mode_uses_the_real_model_only_when_it_is_already_on_this_computer(
         embedding_gemma, "real_model_status", lambda name=DEFAULT_MODEL_NAME: "READY"
     )
     assert EmbeddingGemmaProvider(mode="auto").active_backend == "transformers"
-    # packages without the weights must not start a 3 GB download behind the user's back
+    # packages without the weights must not start a 1.5 GB download behind the user's back
     monkeypatch.setattr(
         embedding_gemma, "real_model_status", lambda name=DEFAULT_MODEL_NAME: "NEEDS_DOWNLOAD"
     )
@@ -365,7 +365,7 @@ def test_the_hardware_card_says_whether_the_model_can_really_run(
     assert card.status == status
     assert words in card.description
     assert card.name == "EmbeddingGemma 2 (text, about 270M)"
-    assert card.size == "~3 GB download"
+    assert card.size == "~1.5 GB download"
     # the product promises halal results never come from an AI model
     assert "Halal results never use it" in card.description
     assert "AAOIFI" not in card.description

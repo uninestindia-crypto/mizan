@@ -32,7 +32,7 @@ function topology(embeddingStatus: string) {
         id: "embeddinggemma-2",
         name: "EmbeddingGemma 2 (text, about 270M)",
         category: "Semantic Embeddings & Search",
-        size: "~3 GB download",
+        size: "~1.5 GB download",
         recommended_hardware: "NPU / CPU",
         status: embeddingStatus,
         description: "Google's embedding model.",

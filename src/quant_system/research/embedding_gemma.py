@@ -10,7 +10,7 @@ Backends, tried in this order when ``mode="auto"``:
 
 - ``transformers``: the real model, in this process. Needs sentence-transformers, torch, torchvision and pillow (the model's
   processor imports the image libraries even for text; none is bundled with the installed app) and a one-time download of about
-  3 GB. ``auto`` only picks it when the weights are already on this computer, so nothing downloads by surprise. Measured on
+  1.5 GB. ``auto`` only picks it when the weights are already on this computer, so nothing downloads by surprise. Measured on
   the reference laptop (Snapdragon X, 8 cores, float32): load about 4 s, five short texts 0.35 s, one 1,300-token text 3.9 s,
   peak memory about 2 GB. The checkpoint's own bfloat16 was 9 to 10 times slower on that CPU for the same vectors.
 - ``ollama``: a local Ollama server. The model it serves is whatever ``QUANTOS_EMBEDDING_OLLAMA_MODEL`` names (default

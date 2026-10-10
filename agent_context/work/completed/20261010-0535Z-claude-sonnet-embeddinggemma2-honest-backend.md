@@ -108,3 +108,11 @@ against 0.47 to 0.64; the keyword substitute scored 0.99 for the match and about
 Still open: the real model is not in the installed app (torch, torchvision, pillow and a 3 GB download are not bundled), and nothing in the app
 builds `QuantPaperRAG`, so no screen can use paper search yet (only scripts and the optional `rag_engine` hook of the AI advisers do).
 Each provider object loads its own copy of the model (about 1.1 GB of weights), so a screen should share one provider.
+
+## Correction: the download is 1.5 GB, not 3 GB
+
+Earlier lines in this record, the hardware card, the docs and a test said "about 3 GB". That came from the Hugging Face page's `usedStorage`
+(3,014,689,355 bytes), which counts more than the file you download. Measured on 2026-10-10 after the real download: the model cache is 1.5 GB
+(`model.safetensors` is 744M parameters at 2 bytes each), and the libraries it needs (torch, torchvision, transformers, sentence-transformers,
+pillow) are 1.1 GB, of which torch alone is 539 MB. The installed app is 115 MB, so bundling would roughly add 2.6 GB. The card now says
+"~1.5 GB download".
