@@ -353,3 +353,42 @@ def test_the_result_is_plain_data_the_screen_can_show() -> None:
 @pytest.mark.parametrize("symbol", ["aaa", " AAA "])
 def test_the_symbol_is_normalised(symbol: str) -> None:
     assert _pack(symbol=symbol).symbol == "AAA"
+
+
+def test_chained_pipeline_passes_prior_opinions_to_subsequent_models() -> None:
+    calls: list[tuple[str, str]] = []
+
+    def make_responder(name: str):
+        def _respond(_s: str, user: str) -> str:
+            calls.append((name, user))
+            return opinion_json("POSITIVE" if name == "m1" else "NEGATIVE")
+
+        return _respond
+
+    m1 = StubModel("m1", make_responder("m1"))
+    m2 = StubModel("m2", make_responder("m2"))
+    m3 = StubModel("m3", make_responder("m3"))
+
+    result = verify_stock([m1, m2, m3], _pack(), VerifyOptions(chained=True))
+    assert result.asked == 3 and result.answered == 3
+    assert len(calls) == 3
+    # First model sees no prior analyst opinions
+    assert "Prior Stage" not in calls[0][1]
+    # Second model sees Stage 1 opinion from m1
+    assert "Analyst 1 (m1" in calls[1][1]
+    assert "POSITIVE" in calls[1][1]
+    # Third model sees Stage 1 (m1) and Stage 2 (m2)
+    assert "Analyst 1 (m1" in calls[2][1]
+    assert "Analyst 2 (m2" in calls[2][1]
+
+
+def test_chained_pipeline_infinite_models_supported() -> None:
+    # Test that more than 6 models (e.g. 12 models) run without being capped by MAX_MODELS
+    panel = _models(*["POSITIVE"] * 12)
+    result = verify_stock(panel, _pack(), VerifyOptions(chained=True))
+    assert result.asked == 12
+    assert result.answered == 12
+    assert len(result.verdicts) == 12
+    # Ensure no truncation note was added
+    assert not any("first 6" in note for note in result.notes)
+

@@ -63,7 +63,11 @@ def test_with_nothing_set_up_there_is_nothing_to_ask() -> None:
 
 
 def test_an_app_that_cannot_chat_is_never_planned() -> None:
-    assert plan_models(AiChoice(), ["antigravity"], []) == []
+    assert plan_models(AiChoice(), ["unsupported_agent"], []) == []
+
+
+def test_antigravity_is_planned_when_ready() -> None:
+    assert plan_models(AiChoice(), ["antigravity"], []) == ["cli:antigravity"]
 
 
 def test_only_keys_when_no_app_is_installed() -> None:

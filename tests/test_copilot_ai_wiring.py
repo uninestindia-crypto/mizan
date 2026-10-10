@@ -142,7 +142,7 @@ def test_the_choice_can_be_changed_and_is_kept(client: TestClient, headers: dict
 
 
 @pytest.mark.parametrize(
-    "patch", [{"ai_source": "magic"}, {"ai_cli": "antigravity"}, {"ai_api": "x" * 100}]
+    "patch", [{"ai_source": "magic"}, {"ai_cli": "gemini"}, {"ai_api": "x" * 100}]
 )
 def test_a_choice_that_makes_no_sense_is_refused(
     client: TestClient, headers: dict[str, str], patch: dict[str, Any]
@@ -175,13 +175,13 @@ def test_the_status_lists_the_apps_and_counts_a_signed_in_one_as_ready(
         cli_bridge,
         "list_cli_status",
         lambda force=False: _states(
-            claude="CONNECTED", codex="NEEDS_SIGN_IN", antigravity="CONNECTED"
+            claude="CONNECTED", codex="NEEDS_SIGN_IN", antigravity="CONNECTED", other="CONNECTED"
         ),
     )
     body = client.get("/api/v2/copilot/status").json()
     apps = {a["id"]: a for a in body["apps"]}
-    assert set(apps) == {"claude", "codex"}  # an app that cannot chat is not offered
-    assert apps["claude"]["ready"] is True and apps["codex"]["ready"] is False
+    assert set(apps) == {"antigravity", "claude", "codex"}  # an app that cannot chat is not offered
+    assert apps["claude"]["ready"] is True and apps["codex"]["ready"] is False and apps["antigravity"]["ready"] is True
     assert body["ai_ready"] is True and body["ai"]["source"] == "cli"
 
 
@@ -200,13 +200,13 @@ def test_no_key_and_no_app_is_not_ready(
 def test_testing_an_app_that_answers_says_so_and_records_that_it_is_signed_in(
     client: TestClient, headers: dict[str, str], wire: Wire, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    wire.apps, wire.run = {"gemini": "/x/gemini"}, RunResult(0, "OK")
+    wire.apps, wire.run = {"antigravity": "/x/agy"}, RunResult(0, "OK")
     seen: list[tuple[str, bool]] = []
     monkeypatch.setattr(cli_bridge, "record_probe", lambda agent, ok: seen.append((agent, ok)))
     body = client.post(
-        "/api/v2/copilot/ai/test", json={"model": "cli:gemini"}, headers=headers
+        "/api/v2/copilot/ai/test", json={"model": "cli:antigravity"}, headers=headers
     ).json()
-    assert body["ok"] is True and "Gemini" in body["who"] and seen == [("gemini", True)]
+    assert body["ok"] is True and "Antigravity" in body["who"] and seen == [("antigravity", True)]
 
 
 def test_testing_an_app_that_is_signed_out_says_how_to_fix_it(

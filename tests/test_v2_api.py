@@ -366,7 +366,7 @@ def test_secrets_are_stored_but_never_returned(client: TestClient, headers: dict
 
 def test_ai_tools_are_detected_without_installing_anything(client: TestClient) -> None:
     tools = client.get("/api/v2/ai-tools").json()
-    assert [t["command"] for t in tools] == ["claude", "codex", "gemini"]
+    assert [t["command"] for t in tools] == ["agy", "claude", "codex"]
     assert all("install" in t for t in tools)
 
 

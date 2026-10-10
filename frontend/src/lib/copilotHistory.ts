@@ -133,9 +133,9 @@ export function useChatList(query: string) {
 // ------------------------------------------------------------------------------------------------ plain wording
 
 const ANSWERED_BY: Record<string, string> = {
+  "cli:antigravity": "Antigravity",
   "cli:claude": "Claude Code",
   "cli:codex": "Codex",
-  "cli:gemini": "Gemini",
   anthropic: "Claude (Anthropic)",
   openai: "OpenAI",
   gemini: "Google Gemini",

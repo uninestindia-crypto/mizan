@@ -96,6 +96,7 @@ export interface ModelView {
   key: string;
   name: string;
   modelName: string | null;
+  stage: number;
   answered: boolean;
   reading: string | null;
   error: string | null;
@@ -146,6 +147,7 @@ function modelView(verdict: ModelVerdict, index: number, models: readonly Provid
     key: `${blind.provider}-${blind.model ?? ""}-${index}`,
     name: providerName(blind.provider, models),
     modelName: blind.model,
+    stage: index + 1,
     answered,
     reading: answered ? blind.reading : null,
     error: answered ? null : blind.error?.trim() || "No reason was given.",

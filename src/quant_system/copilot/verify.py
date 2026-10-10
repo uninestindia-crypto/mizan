@@ -20,7 +20,13 @@ from dataclasses import dataclass
 from quant_system.copilot.factpack import FactPack
 from quant_system.copilot.llm import ChatModel
 from quant_system.copilot.messages import CANCELLED_TEXT
-from quant_system.copilot.verify_opinion import Opinion, Question, ask_for_opinion, build_question
+from quant_system.copilot.verify_opinion import (
+    Opinion,
+    Question,
+    ask_for_opinion,
+    build_chained_question,
+    build_question,
+)
 from quant_system.copilot.verify_summary import ModelVerdict, VerificationResult, summarise
 
 __all__ = ["MAX_MODELS", "VerifyOptions", "verify_stock"]
@@ -48,6 +54,8 @@ class VerifyOptions:
     # Asked before every call that has not started yet. When it says True the call is not made. A call already in
     # flight cannot be recalled, so it still finishes.
     cancelled: Callable[[], bool] | None = None
+    chained: bool = False  # Sequential critique & recheck pipeline
+    max_models: int | None = None  # None allows unlimited / infinite models
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,6 +108,50 @@ def _run_panel(
     return done
 
 
+def _run_chained_pipeline(
+    panel: Sequence[ChatModel],
+    pack: FactPack,
+    options: VerifyOptions,
+    on_opinion: Callable[[Opinion], None] | None,
+    cancelled: Callable[[], bool],
+) -> dict[tuple[int, str], Opinion]:
+    done: dict[tuple[int, str], Opinion] = {}
+    facts = pack.render()
+    prior_opinions: list[Opinion] = []
+    total = len(panel)
+
+    for index, model in enumerate(panel):
+        if cancelled():
+            opinion = Opinion(
+                model.provider,
+                model.model,
+                "blind",
+                False,
+                error=CANCELLED_TEXT,
+            )
+            done[(index, "blind")] = opinion
+            if on_opinion:
+                on_opinion(opinion)
+            continue
+
+        q_text = build_chained_question(
+            pack.symbol,
+            facts,
+            prior_opinions,
+            pick_context=options.pick_context,
+            stage_index=index + 1,
+            total_stages=total,
+        )
+        question = Question("blind", q_text, options.timeout)
+        opinion = _ask(model, question, cancelled)
+        done[(index, "blind")] = opinion
+        prior_opinions.append(opinion)
+        if on_opinion:
+            on_opinion(opinion)
+
+    return done
+
+
 def _verdicts(count: int, done: dict[tuple[int, str], Opinion]) -> list[ModelVerdict]:
     return [
         ModelVerdict(done[(i, "blind")], done.get((i, "informed")), done.get((i, "recheck")))
@@ -127,20 +179,24 @@ def verify_stock(
     options: VerifyOptions | None = None,
     on_opinion: Callable[[Opinion], None] | None = None,
 ) -> VerificationResult:
-    """Ask each model separately and summarise. Never raises; a model that fails is reported, not hidden.
+    """Ask each model in priority order and summarise. Supports infinite models and sequential chained rechecks.
 
     When there is nothing to show (no price facts) or no one to ask, nobody is asked and the result says why.
     Once ``options.cancelled`` says True, calls that have not started are skipped; calls already out cannot be recalled.
     """
     options = options or VerifyOptions()
-    panel = list(models)[:MAX_MODELS]
+    limit = options.max_models if options.max_models is not None else (None if options.chained else MAX_MODELS)
+    panel = list(models)[:limit] if limit is not None else list(models)
     if not pack.usable:
         return _nothing(pack, _no_facts(pack.symbol))
     if not panel:
         return _nothing(pack, NO_MODELS)
-    cut = [f"Only the first {MAX_MODELS} AI models were asked."] if len(models) > MAX_MODELS else []
-    if options.recheck and not pack.reorderable:
+    cut = [f"Only the first {limit} AI models were asked."] if limit is not None and len(models) > limit else []
+    if options.recheck and not pack.reorderable and not options.chained:
         cut.append(NOT_REORDERABLE)
     cancelled = options.cancelled or (lambda: False)
-    done = _run_panel(panel, _jobs(len(panel), pack, options), on_opinion, cancelled)
+    if options.chained:
+        done = _run_chained_pipeline(panel, pack, options, on_opinion, cancelled)
+    else:
+        done = _run_panel(panel, _jobs(len(panel), pack, options), on_opinion, cancelled)
     return summarise(pack, _verdicts(len(panel), done), len(panel), cut)

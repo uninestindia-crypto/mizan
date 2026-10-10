@@ -14,10 +14,9 @@ export const AI_STATUS = "/api/v2/copilot/status";
 export const AI_TEST = "/api/v2/copilot/ai/test";
 
 const MAKERS: Record<string, [string, string]> = {
+  antigravity: ["Antigravity", "Google"],
   claude: ["Claude Code", "Anthropic"],
   codex: ["Codex", "OpenAI"],
-  gemini: ["Gemini", "Google"],
-  antigravity: ["Antigravity", "Google"],
 };
 
 /** An app as the engine lists it. The engine's own wording is kept in, to show that this screen does not use it. */
@@ -37,7 +36,7 @@ export function app(id: string, state: AgentCli["state"] = "CONNECTED", over: Pa
     authenticated: signed,
     auth_detail: "Using the ANTHROPIC_API_KEY key saved in QuantOS",
     state,
-    signin_mode: id === "gemini" ? "terminal" : "browser",
+    signin_mode: "browser",
     job: null,
     ...over,
   };

@@ -387,7 +387,7 @@ def test_the_commands_match_each_vendors_documentation() -> None:
     assert agents["codex"].signin_args == ("login",)
     assert agents["codex"].status_args == ("login", "status")
     # Nothing here may ask a person to type a command: browser sign-in never opens a terminal.
-    assert all(a.signin_mode == "browser" for a in agents.values() if a.id != "gemini")
+    assert all(a.signin_mode == "browser" for a in agents.values())
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="reads the Windows PATH and terminal launchers")
@@ -579,18 +579,9 @@ def test_the_launch_endpoint_starts_a_job_for_install_and_signin(
     assert started == [("codex", "install"), ("codex", "signin")]
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="reads the Windows PATH and terminal launchers")
-def test_gemini_sign_in_is_the_one_that_needs_a_terminal(
-    client: TestClient, headers: dict[str, str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    popen = MagicMock()
-    monkeypatch.setattr(cli_bridge.subprocess, "Popen", popen)
-    monkeypatch.setattr(cli_bridge, "find_windows_terminal", lambda: None)
-    response = client.post(
-        "/api/v2/cli/launch", json={"agent_id": "gemini", "action": "signin"}, headers=headers
-    )
-    assert response.status_code == 200 and response.json()["command"] == "gemini"
-    assert popen.called
+def test_all_supported_agents_use_browser_signin() -> None:
+    for agent in cli_bridge.SUPPORTED_AGENTS:
+        assert agent.signin_mode == "browser"
 
 
 def test_an_unknown_agent_is_refused(client: TestClient, headers: dict[str, str]) -> None:

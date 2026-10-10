@@ -1,6 +1,8 @@
-import { RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
+import { useState } from "react";
 import { errorMessage } from "../lib/api";
-import { useAgentClis, useRefreshAgentClis } from "../lib/queries";
+import { useAgentClis, useCliAutoUpdate, useCliAutoUpdateStatus, useRefreshAgentClis } from "../lib/queries";
+import { AddCustomCliModal } from "./aiapps/AddCustomCliModal";
 import { AppCard } from "./aiapps/AppCard";
 import { inOrder } from "./aiapps/appWords";
 import { useAppSetup, useRefreshWhenJobEnds } from "./aiapps/useAppSetup";
@@ -39,27 +41,56 @@ function Apps({ setup, recheck }: { setup: Setup; recheck: () => void }) {
 export function AgentCliBridge() {
   const refresh = useRefreshAgentClis();
   const setup = useAppSetup();
+  const autoUpdateStatus = useCliAutoUpdateStatus();
+  const setAutoUpdate = useCliAutoUpdate();
+  const [showAddModal, setShowAddModal] = useState(false);
   useRefreshWhenJobEnds(useAgentClis().data);
-  const check = (
-    <Button
-      size="sm"
-      variant="ghost"
-      icon={<RefreshCw className="size-3.5" aria-hidden />}
-      loading={refresh.isPending}
-      onClick={() => refresh.mutate()}
-    >
-      Check status
-    </Button>
+
+  const isAutoUpdate = autoUpdateStatus.data?.auto_update_cli ?? false;
+
+  const headerActions = (
+    <div className="flex flex-wrap items-center gap-3">
+      <label className="flex items-center gap-1.5 cursor-pointer text-[12px] text-ink-2 select-none hover:text-ink">
+        <input
+          type="checkbox"
+          checked={isAutoUpdate}
+          disabled={setAutoUpdate.isPending}
+          onChange={(e) => setAutoUpdate.mutate(e.target.checked)}
+          className="size-3.5 rounded border-line text-brand focus:ring-brand"
+        />
+        <span>Update apps automatically</span>
+      </label>
+      <Button
+        size="sm"
+        variant="ghost"
+        icon={<RefreshCw className="size-3.5" aria-hidden />}
+        loading={refresh.isPending}
+        onClick={() => refresh.mutate()}
+      >
+        Check status
+      </Button>
+      <Button
+        size="sm"
+        variant="secondary"
+        icon={<Plus className="size-3.5" aria-hidden />}
+        onClick={() => setShowAddModal(true)}
+      >
+        Add company app
+      </Button>
+    </div>
   );
   return (
-    <Card>
-      <CardHeader title="Set up AI apps on this computer" subtitle={SUBTITLE} action={check} />
-      {setup.error && (
-        <Callout tone="danger" className="mb-4">
-          {setup.error}
-        </Callout>
-      )}
-      <Apps setup={setup} recheck={() => refresh.mutate()} />
-    </Card>
+    <>
+      <Card>
+        <CardHeader title="Set up AI apps on this computer" subtitle={SUBTITLE} action={headerActions} />
+        {setup.error && (
+          <Callout tone="danger" className="mb-4">
+            {setup.error}
+          </Callout>
+        )}
+        <Apps setup={setup} recheck={() => refresh.mutate()} />
+      </Card>
+      <AddCustomCliModal open={showAddModal} onOpenChange={setShowAddModal} />
+    </>
   );
 }

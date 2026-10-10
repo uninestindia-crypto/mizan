@@ -4,21 +4,19 @@ import type { AgentCli } from "../../lib/types";
 // The words and rules behind the "Set up AI apps on this computer" card. Plain language only: no engine names, no commands.
 
 /** The apps the Copilot can ask a question. The rest can be set up but cannot answer yet. */
-const ANSWERING: readonly string[] = ["claude", "codex", "gemini"];
+const ANSWERING: readonly string[] = ["antigravity", "claude", "codex"];
 
 const ONE_LINE: Record<string, string> = {
+  antigravity: "Google's AI assistant. Sign in with your Google account.",
   claude: "Anthropic's AI assistant. Sign in with your Claude account.",
   codex: "OpenAI's AI assistant. Sign in with your ChatGPT account.",
-  gemini: "Google's AI assistant. Sign in with your Google account.",
-  antigravity: "Google's AI app. It cannot answer Copilot questions yet.",
 };
 
 const SIGN_IN_WINDOW_NOTE =
-  "A sign-in window opened. Choose “Login with Google” there and finish in your browser, " +
-  "then come back and press Check again.";
+  "A sign-in window opened. Finish in your browser, then come back and press Check again.";
 
-export type NextStep = "install" | "signin" | "done";
-export type SetupAction = "install" | "signin";
+export type NextStep = "install" | "signin" | "update" | "done";
+export type SetupAction = "install" | "signin" | "update";
 
 export interface StateWords {
   text: string;
@@ -36,8 +34,8 @@ export function plainName(agent: Pick<AgentCli, "name">): string {
 }
 
 /** One plain line about what the app is. An app this screen has no line for gets a plain default. */
-export function oneLine(agent: Pick<AgentCli, "id" | "maker">): string {
-  return ONE_LINE[agent.id] ?? `An AI app from ${agent.maker}.`;
+export function oneLine(agent: Pick<AgentCli, "id" | "maker" | "description">): string {
+  return ONE_LINE[agent.id] ?? agent.description ?? `An AI app from ${agent.maker}.`;
 }
 
 /** What a person can do next: install it, sign in to it, or nothing because it is ready. */
@@ -47,8 +45,8 @@ export function nextStep(agent: Pick<AgentCli, "installed" | "state">): NextStep
 }
 
 /** Whether the Copilot can ask this app a question, so "Test this AI" makes sense for it. */
-export function canAnswer(agent: Pick<AgentCli, "id">): boolean {
-  return ANSWERING.includes(agent.id);
+export function canAnswer(agent: Pick<AgentCli, "id" | "is_custom">): boolean {
+  return ANSWERING.includes(agent.id) || agent.is_custom === true;
 }
 
 /** The id the engine's test takes for this app. */
@@ -63,10 +61,12 @@ const STATES: Record<AgentCli["state"], StateWords> = {
   CONNECTED: { text: "Signed in", tone: "up" },
 };
 
-/** The state in words. While an install or sign-in runs, that is what the badge says. */
+/** The state in words. While an install, sign-in or update runs, that is what the badge says. */
 export function stateWords(agent: Pick<AgentCli, "state" | "job">): StateWords {
   if (agent.job?.state === "RUNNING") {
-    return { text: agent.job.action === "install" ? "Installing" : "Signing in", tone: "brand" };
+    const actionLabel =
+      agent.job.action === "install" ? "Installing" : agent.job.action === "update" ? "Updating" : "Signing in";
+    return { text: actionLabel, tone: "brand" };
   }
   return STATES[agent.state] ?? STATES.NOT_INSTALLED;
 }

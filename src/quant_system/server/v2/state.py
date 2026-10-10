@@ -7,6 +7,7 @@ a look at the same history, and the verdict's multiplicity adjustment depends on
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 import threading
 import uuid
@@ -81,6 +82,19 @@ CREATE TABLE IF NOT EXISTS paper_placements(
     recorded_at TEXT NOT NULL,
     PRIMARY KEY(book_id, as_of, symbol, side)
 );
+CREATE TABLE IF NOT EXISTS custom_clis(
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    maker TEXT NOT NULL,
+    command TEXT NOT NULL,
+    install_cmd TEXT NOT NULL DEFAULT '',
+    update_cmd TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    docs_url TEXT NOT NULL DEFAULT '',
+    status_args TEXT NOT NULL DEFAULT '',
+    auto_update INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+);
 """
 
 
@@ -112,9 +126,11 @@ class Settings(BaseModel):
     ai_accelerator: Literal["auto", "npu", "gpu", "cpu"] = "auto"
     # Which AI answers the Copilot. The AI app already signed in on this computer comes first; a saved key backs it up.
     ai_source: Literal["cli", "api"] = "cli"
-    ai_cli: Literal["claude", "codex", "gemini"] | None = None
+    ai_cli: str | None = None
     ai_api: str | None = Field(default=None, max_length=40)
     ai_fallback: bool = True
+    auto_update_cli: bool = False
+    cli_priority: list[str] = Field(default_factory=list)
 
 
 class Holding(BaseModel):
@@ -194,6 +210,68 @@ class AppState(AccountsMixin):
         with self._lock, self._connect() as conn:
             conn.execute("DELETE FROM watchlist WHERE symbol = ?", (symbol.strip().upper(),))
         return self.watchlist()
+
+    # ---------------------------------------------------------------------- custom CLIs
+
+    def list_custom_clis(self) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT id, name, maker, command, install_cmd, update_cmd, description, docs_url, status_args, auto_update, created_at "
+                "FROM custom_clis ORDER BY created_at"
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_custom_cli(self, cli_id: str) -> dict[str, Any] | None:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT id, name, maker, command, install_cmd, update_cmd, description, docs_url, status_args, auto_update, created_at "
+                "FROM custom_clis WHERE id = ?",
+                (cli_id,),
+            ).fetchone()
+            return dict(row) if row else None
+
+    def add_custom_cli(self, data: dict[str, Any]) -> dict[str, Any]:
+        cli_id = str(data.get("id") or str(uuid.uuid4())[:8]).strip()
+        cli_id = re.sub(r"[^a-zA-Z0-9_-]", "_", cli_id).lower()
+        now = _now()
+        record = {
+            "id": cli_id,
+            "name": str(data.get("name") or "Custom CLI").strip(),
+            "maker": str(data.get("maker") or "Company").strip(),
+            "command": str(data.get("command") or "").strip(),
+            "install_cmd": str(data.get("install_cmd") or "").strip(),
+            "update_cmd": str(data.get("update_cmd") or "").strip(),
+            "description": str(data.get("description") or "").strip(),
+            "docs_url": str(data.get("docs_url") or "").strip(),
+            "status_args": str(data.get("status_args") or "--version").strip(),
+            "auto_update": 1 if data.get("auto_update") else 0,
+            "created_at": now,
+        }
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                "INSERT INTO custom_clis(id, name, maker, command, install_cmd, update_cmd, description, docs_url, status_args, auto_update, created_at) "
+                "VALUES (:id, :name, :maker, :command, :install_cmd, :update_cmd, :description, :docs_url, :status_args, :auto_update, :created_at) "
+                "ON CONFLICT(id) DO UPDATE SET "
+                "name = excluded.name, maker = excluded.maker, command = excluded.command, "
+                "install_cmd = excluded.install_cmd, update_cmd = excluded.update_cmd, "
+                "description = excluded.description, docs_url = excluded.docs_url, "
+                "status_args = excluded.status_args, auto_update = excluded.auto_update",
+                record,
+            )
+        return record
+
+    def delete_custom_cli(self, cli_id: str) -> bool:
+        with self._lock, self._connect() as conn:
+            cur = conn.execute("DELETE FROM custom_clis WHERE id = ?", (cli_id,))
+            return cur.rowcount > 0
+
+    def set_custom_cli_auto_update(self, cli_id: str, enabled: bool) -> bool:
+        with self._lock, self._connect() as conn:
+            cur = conn.execute(
+                "UPDATE custom_clis SET auto_update = ? WHERE id = ?",
+                (1 if enabled else 0, cli_id),
+            )
+            return cur.rowcount > 0
 
     # ------------------------------------------------------------------------ holdings
 

@@ -78,11 +78,11 @@ describe("signing in", () => {
   });
 
   it("tells a person what to do in the window that opened, and looks again on request", async () => {
-    await shown([app("gemini", "UNKNOWN")], () => ({ [`POST ${LAUNCH}`]: { success: true, message: "Opened." } }));
-    expect(buttonsIn(cardOf("Gemini"))).toEqual(["Sign in to Gemini", "Check again", "Test this AI"]);
-    click(cardOf("Gemini").getByRole("button", { name: "Sign in to Gemini" }));
-    expect(await screen.findByText(/A sign-in window opened\. Choose “Login with Google” there/)).toBeInTheDocument();
-    click(cardOf("Gemini").getByRole("button", { name: "Check again" }));
+    await shown([app("codex", "UNKNOWN", { signin_mode: "terminal" })], () => ({ [`POST ${LAUNCH}`]: { success: true, message: "Opened." } }));
+    expect(buttonsIn(cardOf("Codex"))).toContain("Check again");
+    click(cardOf("Codex").getByRole("button", { name: "Sign in to Codex" }));
+    expect(await screen.findByText(/A sign-in window opened/)).toBeInTheDocument();
+    click(cardOf("Codex").getByRole("button", { name: "Check again" }));
     await waitFor(() => expect(sent("GET", RECHECK)).toHaveLength(1));
   });
 });

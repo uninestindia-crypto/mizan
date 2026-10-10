@@ -38,6 +38,7 @@ __all__ = [
     "RunResult",
     "build_command",
     "cli_environment",
+    "get_cli_label",
     "run_cli",
 ]
 
@@ -48,12 +49,27 @@ CLI_UNSUPPORTED: Final = 493
 CLI_FAILED: Final = 494
 
 # The apps that can answer a chat, in the order the Copilot prefers them.
-CHAT_CLIS: Final[tuple[str, ...]] = ("claude", "codex", "gemini")
+CHAT_CLIS: Final[tuple[str, ...]] = ("claude", "codex", "antigravity")
 CLI_LABELS: Final[dict[str, str]] = {
     "claude": "Claude Code (your Claude sign-in)",
     "codex": "Codex (your ChatGPT sign-in)",
-    "gemini": "Gemini (your Google sign-in)",
+    "antigravity": "Antigravity (your Google sign-in)",
 }
+
+
+def get_cli_label(agent_id: str) -> str:
+    """Returns the plain label for a built-in or custom company CLI."""
+    if agent_id in CLI_LABELS:
+        return CLI_LABELS[agent_id]
+    try:
+        from quant_system.server.v2 import cli_bridge
+
+        agent = cli_bridge.get_agent(agent_id)
+        if agent is not None:
+            return f"{agent.name} ({agent.maker})"
+    except Exception:
+        pass
+    return f"{agent_id.replace('_', ' ').title()}"
 
 MIN_TIMEOUT_SECONDS: Final = (
     120.0  # these apps take a while to start; a web call's wait is too short
@@ -67,7 +83,7 @@ _PREAMBLE = (
     "coding task: do not use any tool, read any file or run any command. Follow the instructions below and "
     "reply with the answer only."
 )
-_GEMINI_INSTRUCTION = (
+_ANTIGRAVITY_INSTRUCTION = (
     "Answer the instructions given on standard input. Use no tools, read no files, run no commands."
 )
 
@@ -142,8 +158,15 @@ def build_command(agent_id: str, executable: str) -> list[str]:
         ]
     if agent_id == "codex":
         return [executable, "exec", "--sandbox", "read-only", "--skip-git-repo-check", "-"]
-    if agent_id == "gemini":
-        return [executable, "-p", _GEMINI_INSTRUCTION]
+    if agent_id == "antigravity":
+        return [executable, "-p", _ANTIGRAVITY_INSTRUCTION]
+    try:
+        from quant_system.server.v2 import cli_bridge
+
+        if cli_bridge.is_custom_agent(agent_id):
+            return [executable, "-p", _ANTIGRAVITY_INSTRUCTION]
+    except Exception:
+        pass
     raise ValueError(f"{agent_id} cannot answer a chat.")
 
 

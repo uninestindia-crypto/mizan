@@ -31,14 +31,35 @@ class AiChoice:
     cli: str | None = None
     api: str | None = None
     fallback: bool = True
+    cli_priority: tuple[str, ...] = ()
+    api_priority: tuple[str, ...] = ()
 
 
-def _ordered(ready: Collection[str], order: Sequence[str], favourite: str | None) -> list[str]:
-    present = [name for name in order if name in ready]
-    if favourite in present:
-        present.remove(str(favourite))
-        present.insert(0, str(favourite))
-    return present
+def _ordered(
+    ready: Collection[str],
+    default_order: Sequence[str],
+    favourite: str | None,
+    priority: Sequence[str] = (),
+) -> list[str]:
+    valid_names = set(default_order) | set(priority)
+    ordered: list[str] = []
+    seen: set[str] = set()
+
+    for name in priority:
+        if name in ready and name not in seen:
+            ordered.append(name)
+            seen.add(name)
+
+    if favourite and favourite in ready and favourite in valid_names and favourite not in seen:
+        ordered.insert(0, str(favourite))
+        seen.add(str(favourite))
+
+    for name in default_order:
+        if name in ready and name not in seen:
+            ordered.append(name)
+            seen.add(name)
+
+    return ordered
 
 
 def plan_models(
@@ -48,8 +69,11 @@ def plan_models(
 
     An id the person once chose that is no longer set up is simply left out.
     """
-    apps = [CLI_PREFIX + name for name in _ordered(cli_ready, CHAT_CLIS, choice.cli)]
-    keys = _ordered(api_ready, tuple(PROVIDER_LABELS), choice.api)
+    apps = [
+        CLI_PREFIX + name
+        for name in _ordered(cli_ready, CHAT_CLIS, choice.cli, choice.cli_priority)
+    ]
+    keys = _ordered(api_ready, tuple(PROVIDER_LABELS), choice.api, choice.api_priority)
     first, second = (apps, keys) if choice.source == "cli" else (keys, apps)
     return first + second if choice.fallback else first
 

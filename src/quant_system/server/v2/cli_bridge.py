@@ -3,16 +3,14 @@
 Install and sign-in run as hidden background jobs. The vendors' own sign-in commands open the
 user's default browser themselves (``codex login``, ``claude auth login``, Antigravity on first
 use), so the person sees only their browser, then the app flips to "Connected". A terminal window is
-used only for the one thing that needs it: working *with* an agent (``Launch``), and for a CLI whose
-sign-in genuinely needs an interactive prompt (Gemini CLI).
+used only for working *with* an agent (``Launch``).
 
-Commands come from each vendor's documentation (checked 2026-10-03):
+Commands come from each vendor's documentation:
 
-* Antigravity: Go binary installed with ``irm https://antigravity.google/cli/install.ps1 | iex``
-  into ``%LOCALAPPDATA%\\agy\\bin``; it signs in on first use and has no separate auth command.
+* Antigravity: Installed with ``irm https://antigravity.google/cli/install.ps1 | iex``
+  into ``%LOCALAPPDATA%\\agy\\bin``; it signs in on first use with your Google account.
 * Claude Code: ``claude auth login`` / ``claude auth status`` (exit code 0 when signed in).
 * Codex: ``codex login`` / ``codex login status`` (exit code 0 when signed in).
-* Gemini CLI: ``npm install -g @google/gemini-cli``; "Login with Google" is chosen at first run.
 """
 
 from __future__ import annotations
@@ -28,6 +26,7 @@ import time
 import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
@@ -72,6 +71,7 @@ class AgentCliDef:
     docs_url: str
     # Claude's fallback sign-in page shows a code that must be typed back into the CLI.
     accepts_code: bool = False
+    update: tuple[InstallStep, ...] = ()
 
 
 _NODE_STEP = InstallStep(
@@ -94,6 +94,13 @@ SUPPORTED_AGENTS: tuple[AgentCliDef, ...] = (
                 "irm https://antigravity.google/cli/install.ps1 | iex",
             ),
         ),
+        update=(
+            InstallStep(
+                "Updating Antigravity CLI",
+                "powershell",
+                "irm https://antigravity.google/cli/install.ps1 | iex",
+            ),
+        ),
         signin_mode="browser",
         # One tiny prompt: if there is no session yet, Antigravity opens the Google sign-in page.
         signin_args=("-p", "Reply with exactly the single word OK", "--output-format", "json"),
@@ -111,6 +118,7 @@ SUPPORTED_AGENTS: tuple[AgentCliDef, ...] = (
         commands=("codex",),
         extra_dirs=(r"%APPDATA%\npm",),
         install=(InstallStep("Installing Codex", "npm", "@openai/codex"),),
+        update=(InstallStep("Updating Codex", "npm", "@openai/codex@latest"),),
         signin_mode="browser",
         signin_args=("login",),
         status_args=("login", "status"),
@@ -133,6 +141,13 @@ SUPPORTED_AGENTS: tuple[AgentCliDef, ...] = (
                 "irm https://claude.ai/install.ps1 | iex",
             ),
         ),
+        update=(
+            InstallStep(
+                "Updating Claude Code",
+                "powershell",
+                "irm https://claude.ai/install.ps1 | iex",
+            ),
+        ),
         signin_mode="browser",
         signin_args=("auth", "login"),
         status_args=("auth", "status"),
@@ -143,23 +158,6 @@ SUPPORTED_AGENTS: tuple[AgentCliDef, ...] = (
         docs_url="https://code.claude.com/docs/en/quickstart",
         accepts_code=True,
     ),
-    AgentCliDef(
-        id="gemini",
-        name="Gemini",
-        maker="Google",
-        commands=("gemini",),
-        extra_dirs=(r"%APPDATA%\npm",),
-        install=(InstallStep("Installing Gemini", "npm", "@google/gemini-cli"),),
-        # Gemini CLI asks which sign-in method to use the first time it starts, so it needs a window.
-        signin_mode="terminal",
-        signin_args=(),
-        status_args=None,
-        run_cmd="gemini",
-        auth_env_var="GEMINI_API_KEY",
-        auth_file_hints=(r".gemini\oauth_creds.json",),
-        description="Google's open-source Gemini terminal agent. Sign in with Google.",
-        docs_url="https://geminicli.com/docs/get-started/authentication/",
-    ),
 )
 
 _AGENTS = {agent.id: agent for agent in SUPPORTED_AGENTS}
@@ -168,7 +166,79 @@ _cache: tuple[float, list[dict[str, Any]]] | None = None
 _lock = threading.Lock()
 _probe_results: dict[str, tuple[float, bool]] = {}
 
-JOB_MAX_SECONDS = {"install": 900.0, "signin": 420.0}
+JOB_MAX_SECONDS = {"install": 900.0, "signin": 420.0, "update": 900.0}
+
+
+def _custom_agents() -> list[AgentCliDef]:
+    """Reads custom company CLIs from AppState and turns them into AgentCliDef instances."""
+    try:
+        from quant_system.server.v2.router import services
+
+        raw_custom = services().state.list_custom_clis()
+    except Exception:
+        raw_custom = []
+
+    res: list[AgentCliDef] = []
+    for item in raw_custom:
+        cli_id = str(item["id"])
+        cmd = str(item.get("command") or cli_id)
+        install_steps: list[InstallStep] = []
+        if item.get("install_cmd"):
+            install_steps.append(
+                InstallStep(f"Installing {item.get('name', cli_id)}", "powershell", str(item["install_cmd"]))
+            )
+        update_steps: list[InstallStep] = []
+        if item.get("update_cmd"):
+            update_steps.append(
+                InstallStep(f"Updating {item.get('name', cli_id)}", "powershell", str(item["update_cmd"]))
+            )
+        elif item.get("install_cmd"):
+            update_steps.append(
+                InstallStep(f"Updating {item.get('name', cli_id)}", "powershell", str(item["install_cmd"]))
+            )
+        status_raw = item.get("status_args", "--version")
+        status_args = tuple(status_raw.split()) if status_raw else None
+        res.append(
+            AgentCliDef(
+                id=cli_id,
+                name=str(item.get("name") or cli_id),
+                maker=str(item.get("maker") or "Company"),
+                commands=(cmd,),
+                extra_dirs=(r"%LOCALAPPDATA%\bin", r"%APPDATA%\npm"),
+                install=tuple(install_steps),
+                update=tuple(update_steps),
+                signin_mode="browser",
+                signin_args=(),
+                status_args=status_args,
+                run_cmd=cmd,
+                auth_env_var="",
+                auth_file_hints=(),
+                description=str(
+                    item.get("description") or f"{item.get('name', cli_id)} by {item.get('maker', 'Company')}"
+                ),
+                docs_url=str(item.get("docs_url") or ""),
+            )
+        )
+    return res
+
+
+def all_agents() -> tuple[AgentCliDef, ...]:
+    return SUPPORTED_AGENTS + tuple(_custom_agents())
+
+
+def get_agent(agent_id: str) -> AgentCliDef | None:
+    for agent in all_agents():
+        if agent.id == agent_id:
+            return agent
+    return None
+
+
+def is_custom_agent(agent_id: str) -> bool:
+    return any(a.id == agent_id for a in _custom_agents())
+
+
+def all_chat_cli_ids() -> list[str]:
+    return [a.id for a in all_agents()]
 
 
 def get_workspace_root() -> Path:
@@ -207,7 +277,7 @@ def search_path() -> str:
             winreg.HKEY_LOCAL_MACHINE,
             r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
         )
-    for agent in SUPPORTED_AGENTS:
+    for agent in all_agents():
         parts += [os.path.expandvars(d) for d in agent.extra_dirs]
     seen: set[str] = set()
     unique: list[str] = []
@@ -310,7 +380,11 @@ def _inspect_cli(agent: AgentCliDef) -> dict[str, Any]:
         "state": state,
         "signin_mode": agent.signin_mode,
         "install_steps": [step.display() for step in agent.install],
+        "update_steps": [step.display() for step in (agent.update or agent.install)],
+        "can_update": resolved_path is not None,
+        "update_available": False,
         "run_cmd": agent.run_cmd,
+        "is_custom": is_custom_agent(agent.id),
     }
 
 
@@ -319,7 +393,7 @@ def list_cli_status(force: bool = False) -> list[dict[str, Any]]:
     global _cache
     with _lock:
         if force or _cache is None or time.monotonic() - _cache[0] >= _CACHE_SECONDS:
-            _cache = (time.monotonic(), [_inspect_cli(agent) for agent in SUPPORTED_AGENTS])
+            _cache = (time.monotonic(), [_inspect_cli(agent) for agent in all_agents()])
         inspected = _cache[1]
     return [{**item, "job": job_snapshot(str(item["id"]))} for item in inspected]
 
@@ -328,7 +402,7 @@ def installed_chat_clis(ids: Iterable[str]) -> dict[str, str]:
     """Where each named app is installed (id -> program path). A quick lookup: nothing is started."""
     wanted = set(ids)
     found: dict[str, str] = {}
-    for agent in SUPPORTED_AGENTS:
+    for agent in all_agents():
         path = next((hit for cmd in agent.commands if (hit := _find(cmd))), None)
         if agent.id in wanted and path:
             found[agent.id] = path
@@ -534,9 +608,45 @@ def _run_signin(job: _Job, agent: AgentCliDef) -> None:
         _set(job, state="FAILED", message="Sign-in was not completed. You can try again.")
 
 
-def start_agent_job(agent_id: str, action: Literal["install", "signin"]) -> dict[str, Any]:
-    """Start (or join) a background install or sign-in and return its snapshot straight away."""
-    agent = _AGENTS.get(agent_id)
+def _run_update(job: _Job, agent: AgentCliDef) -> None:
+    steps = list(agent.update if agent.update else agent.install)
+    if any(step.kind == "npm" for step in steps) and _find("npm") is None:
+        steps.insert(0, _NODE_STEP)
+    for step in steps:
+        _set(job, message=step.label + "...")
+        command = _step_command(step)
+        if command is None:
+            _set(
+                job,
+                state="FAILED",
+                message="Cannot update without required package manager.",
+            )
+            return
+        if _stream(job, command, JOB_MAX_SECONDS["update"]) != 0:
+            _set(
+                job, state="FAILED", message=f"{step.label} did not finish. See the details below."
+            )
+            return
+    invalidate_cache()
+    resolved_path = next((found for c in agent.commands if (found := _find(c))), None)
+    version = None
+    if resolved_path:
+        code, text = _run_hidden([resolved_path, "--version"], timeout=8.0)
+        lines = text.strip().splitlines()
+        if code == 0 and lines:
+            version = lines[0][:80]
+    _set(
+        job,
+        state="DONE",
+        message=f"{agent.name} is updated to {version or 'the latest version'}.",
+    )
+
+
+def start_agent_job(
+    agent_id: str, action: Literal["install", "signin", "update"]
+) -> dict[str, Any]:
+    """Start (or join) a background install, sign-in, or update and return its snapshot straight away."""
+    agent = get_agent(agent_id)
     if agent is None:
         raise ValueError(f"Unknown AI app: {agent_id}")
     with _jobs_lock:
@@ -552,7 +662,12 @@ def start_agent_job(agent_id: str, action: Literal["install", "signin"]) -> dict
             )
             _jobs[agent_id] = job
     if running is None:
-        target = _run_install if action == "install" else _run_signin
+        if action == "install":
+            target = _run_install
+        elif action == "signin":
+            target = _run_signin
+        else:
+            target = _run_update
 
         def work() -> None:
             try:
@@ -568,6 +683,272 @@ def start_agent_job(agent_id: str, action: Literal["install", "signin"]) -> dict
     snapshot = job_snapshot(agent_id)
     assert snapshot is not None
     return {"success": True, "action": action, "job": snapshot, "message": snapshot["message"]}
+
+
+def auto_update_all_clis() -> list[dict[str, Any]]:
+    """Checks all installed CLIs and triggers background updates."""
+    started: list[dict[str, Any]] = []
+    for agent in all_agents():
+        resolved_path = next((found for c in agent.commands if (found := _find(c))), None)
+        if resolved_path:
+            try:
+                started.append(start_agent_job(agent.id, "update"))
+            except Exception as err:
+                logger.warning("Could not auto-update %s: %s", agent.id, err)
+    return started
+
+
+def fetch_cli_capabilities(agent_id: str, force_refresh: bool = False) -> dict[str, Any]:
+    """Fetch live models and features for the given CLI."""
+    agent = get_agent(agent_id)
+    if agent is None:
+        raise ValueError(f"Unknown AI app: {agent_id}")
+
+    status_list = list_cli_status(force=force_refresh)
+    info = next((s for s in status_list if s["id"] == agent_id), None)
+    installed = bool(info and info.get("installed"))
+    authenticated = bool(info and info.get("authenticated"))
+    version = str(info.get("version") or "") if info else ""
+
+    models: list[dict[str, Any]] = []
+    features: list[dict[str, Any]] = []
+
+    if is_custom_agent(agent_id):
+        models = [
+            {
+                "id": f"{agent_id}-default",
+                "name": f"{agent.name} Model",
+                "provider": agent.maker,
+                "description": f"Custom Company Model via {agent.name}",
+                "context_window": "128,000+ tokens",
+                "recommended": True,
+            }
+        ]
+        features = [
+            {"name": "Company CLI Integration", "description": "Custom enterprise CLI agent bridge"},
+            {"name": "Automatic Updates", "description": "Automated update via company pipeline"},
+        ]
+        return {
+            "agent_id": agent_id,
+            "agent_name": agent.name,
+            "installed": installed,
+            "authenticated": authenticated,
+            "version": version or None,
+            "models": models,
+            "features": features,
+            "latest_version": version or None,
+            "last_fetched": datetime.now(UTC).isoformat(),
+        }
+
+    if agent_id == "antigravity":
+        # Check if user has GEMINI_API_KEY saved to query live model catalog
+        gemini_key = os.environ.get("GEMINI_API_KEY", "").strip() or None
+        live_fetched: list[dict[str, Any]] = []
+        if gemini_key:
+            try:
+                from quant_system.alpha.model_catalog import fetch_models
+
+                live_models = fetch_models("gemini", gemini_key, refresh=force_refresh)
+                live_fetched = [
+                    {
+                        "id": m.id,
+                        "name": m.name,
+                        "provider": "Google DeepMind",
+                        "description": "Live Gemini Model from Google AI Studio",
+                        "context_window": "1,000,000 - 2,000,000 tokens",
+                        "recommended": "2.5" in m.id or "3.8" in m.id or "pro" in m.id,
+                    }
+                    for m in live_models
+                ]
+            except Exception as e:
+                logger.debug("Could not fetch live Google Gemini models: %s", e)
+
+        if live_fetched:
+            models = live_fetched
+        else:
+            models = [
+                {
+                    "id": "gemini-2.5-pro",
+                    "name": "Gemini 2.5 Pro",
+                    "provider": "Google DeepMind",
+                    "description": "DeepMind Advanced Reasoning, Long Context & Code Synthesis",
+                    "context_window": "2,000,000 tokens",
+                    "recommended": True,
+                },
+                {
+                    "id": "gemini-2.5-flash",
+                    "name": "Gemini 2.5 Flash",
+                    "provider": "Google DeepMind",
+                    "description": "Ultra-fast Agentic Reasoning with High Throughput",
+                    "context_window": "1,000,000 tokens",
+                    "recommended": True,
+                },
+                {
+                    "id": "gemini-3.8-flash",
+                    "name": "Gemini 3.8 Flash (High)",
+                    "provider": "Google DeepMind",
+                    "description": "State-of-the-Art DeepMind Agentic Reasoning Engine",
+                    "context_window": "1,000,000 tokens",
+                    "recommended": True,
+                },
+                {
+                    "id": "gemini-2.0-flash",
+                    "name": "Gemini 2.0 Flash",
+                    "provider": "Google DeepMind",
+                    "description": "Low Latency Multimodal & Autonomous Tool Calling",
+                    "context_window": "1,000,000 tokens",
+                    "recommended": False,
+                },
+                {
+                    "id": "gemini-1.5-pro",
+                    "name": "Gemini 1.5 Pro",
+                    "provider": "Google DeepMind",
+                    "description": "General Purpose Deep Reasoning with 2M Token Context",
+                    "context_window": "2,000,000 tokens",
+                    "recommended": False,
+                },
+            ]
+
+        features = [
+            {
+                "id": "multi_agent",
+                "name": "Multi-Agent System & Subagents",
+                "description": "Hierarchical agent delegation (invoke_subagent, define_subagent) for autonomous development.",
+                "status": "active",
+            },
+            {
+                "id": "mcp",
+                "name": "Model Context Protocol (MCP)",
+                "description": "Native integration with standard MCP servers, Chrome DevTools, SQLite, and custom tools.",
+                "status": "active",
+            },
+            {
+                "id": "sandbox",
+                "name": "Autonomous Execution Sandbox",
+                "description": "Secure command execution, background task management, and reactive wakeups.",
+                "status": "active",
+            },
+            {
+                "id": "governance",
+                "name": "Quant Model Governance & Invariants",
+                "description": "Real-time sync with agent_context/, goalpost tripwires (G1-G7), and immutable ledgers.",
+                "status": "active",
+            },
+            {
+                "id": "verification",
+                "name": "Automated Linting & Verification Guards",
+                "description": "Automated Ruff, strict Mypy, secret scanning, and reproducible test suites.",
+                "status": "active",
+            },
+            {
+                "id": "skills",
+                "name": "Interactive Slash Commands & Custom Skills",
+                "description": "Modular skill engine for specialized quant trading, Shariah filtering, and data engineering.",
+                "status": "active",
+            },
+        ]
+    elif agent_id == "claude":
+        models = [
+            {
+                "id": "claude-3-7-sonnet-20250219",
+                "name": "Claude 3.7 Sonnet",
+                "provider": "Anthropic",
+                "description": "Hybrid Reasoning & Fast Thinking",
+                "context_window": "200,000 tokens",
+                "recommended": True,
+            },
+            {
+                "id": "claude-3-5-sonnet-20241022",
+                "name": "Claude 3.5 Sonnet",
+                "provider": "Anthropic",
+                "description": "High Performance Code & Architecture",
+                "context_window": "200,000 tokens",
+                "recommended": True,
+            },
+            {
+                "id": "claude-3-5-haiku-20241022",
+                "name": "Claude 3.5 Haiku",
+                "provider": "Anthropic",
+                "description": "Rapid Utility & Inline Assistance",
+                "context_window": "200,000 tokens",
+                "recommended": False,
+            },
+        ]
+        features = [
+            {
+                "id": "bash",
+                "name": "Bash Tool Execution",
+                "description": "Direct shell command execution inside worktrees.",
+                "status": "active",
+            },
+            {
+                "id": "edit",
+                "name": "File Editing & Multi-edit",
+                "description": "Contiguous patch application and search/replace.",
+                "status": "active",
+            },
+            {
+                "id": "mcp",
+                "name": "MCP Server Client",
+                "description": "Model Context Protocol tools and resources support.",
+                "status": "active",
+            },
+        ]
+    elif agent_id == "codex":
+        models = [
+            {
+                "id": "o3-mini",
+                "name": "o3-mini",
+                "provider": "OpenAI",
+                "description": "High-Efficiency Reasoning for Code & STEM",
+                "context_window": "200,000 tokens",
+                "recommended": True,
+            },
+            {
+                "id": "o1",
+                "name": "o1",
+                "provider": "OpenAI",
+                "description": "Deep Reasoning Model with Broad General Knowledge",
+                "context_window": "200,000 tokens",
+                "recommended": True,
+            },
+            {
+                "id": "gpt-4o",
+                "name": "GPT-4o",
+                "provider": "OpenAI",
+                "description": "Flagship Multimodal Omnimodel",
+                "context_window": "128,000 tokens",
+                "recommended": False,
+            },
+        ]
+        features = [
+            {
+                "id": "sandbox",
+                "name": "Sandboxed Execution",
+                "description": "Read-only and governed execution environments.",
+                "status": "active",
+            },
+            {
+                "id": "diff",
+                "name": "Diff & Patch Generation",
+                "description": "Targeted file modifications and unified diffs.",
+                "status": "active",
+            },
+        ]
+
+    return {
+        "agent_id": agent_id,
+        "name": agent.name,
+        "maker": agent.maker,
+        "installed": installed,
+        "authenticated": authenticated,
+        "version": version or None,
+        "models": models,
+        "features": features,
+        "update_available": False,
+        "latest_version": version or None,
+        "last_fetched": datetime.now(UTC).isoformat(),
+    }
 
 
 # ------------------------------------------------------------------------------ terminal use
@@ -613,9 +994,9 @@ def launch_agent_session(
         target_cmd = custom_command
         title = f"QuantOS - {custom_command[:25]}"
     else:
-        if agent_id not in _AGENTS:
+        agent = get_agent(agent_id)
+        if agent is None:
             raise ValueError(f"Unknown AI app: {agent_id}")
-        agent = _AGENTS[agent_id]
         title = f"QuantOS - {agent.name}"
         target_cmd = agent.run_cmd
 

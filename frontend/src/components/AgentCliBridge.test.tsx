@@ -12,12 +12,11 @@ vi.mock("../lib/api", async (importOriginal) => {
   return { ...original, api: vi.fn() };
 });
 
-// The engine lists them in its own order: Antigravity, Codex, Claude Code, Gemini.
+// The engine lists them in its own order: Antigravity, Claude Code, Codex.
 const LISTED = [
-  app("antigravity", "UNKNOWN"),
+  app("antigravity", "NOT_INSTALLED"),
   app("codex", "NEEDS_SIGN_IN"),
   app("claude"),
-  app("gemini", "NOT_INSTALLED"),
 ];
 const click = (element: HTMLElement) => fireEvent.click(element);
 const bodyText = () => document.body.textContent ?? "";
@@ -28,10 +27,9 @@ beforeEach(() => {
 afterEach(cleanup);
 
 const LINES = [
+  ["Antigravity", "by Google", "Google's AI assistant. Sign in with your Google account."],
   ["Claude Code", "by Anthropic", "Anthropic's AI assistant. Sign in with your Claude account."],
   ["Codex", "by OpenAI", "OpenAI's AI assistant. Sign in with your ChatGPT account."],
-  ["Gemini", "by Google", "Google's AI assistant. Sign in with your Google account."],
-  ["Antigravity", "by Google", "Google's AI app. It cannot answer Copilot questions yet."],
 ] as const;
 
 describe("the words on the card", () => {
@@ -39,7 +37,7 @@ describe("the words on the card", () => {
     await shown(LISTED);
     expect(screen.getByRole("heading", { level: 2, name: "Set up AI apps on this computer" })).toBeInTheDocument();
     const names = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
-    expect(names).toEqual(["Claude Code", "Codex", "Gemini", "Antigravity"]);
+    expect(names).toEqual(["Antigravity", "Claude Code", "Codex"]);
   });
 
   it.each(LINES)("%s: says who makes it and what it is in one plain line", async (name, maker, line) => {
@@ -63,7 +61,7 @@ describe("the words on the card", () => {
     await shown(LISTED);
     const sentence =
       "QuantOS downloads the official app from Google and sets it up for you. It can take a few minutes.";
-    expect(cardOf("Gemini").getByText(sentence)).toBeInTheDocument();
+    expect(cardOf("Antigravity").getByText(sentence)).toBeInTheDocument();
     expect(document.querySelector("code")).toBeNull();
     expect(screen.queryByText(/What Install will run/)).toBeNull();
   });
@@ -71,9 +69,24 @@ describe("the words on the card", () => {
 
 const STATES: [string, AgentCli["state"], string, string[]][] = [
   ["not installed", "NOT_INSTALLED", "Not installed", ["Install Codex"]],
-  ["installed but not signed in", "NEEDS_SIGN_IN", "Installed, not signed in", ["Sign in to Codex"]],
-  ["installed and not checked yet", "UNKNOWN", "Installed, not checked yet", ["Sign in to Codex", "Test this AI"]],
-  ["signed in", "CONNECTED", "Signed in", ["Test this AI"]],
+  [
+    "installed but not signed in",
+    "NEEDS_SIGN_IN",
+    "Installed, not signed in",
+    ["Sign in to Codex", "Update Codex", "Inspect models and features of Codex"],
+  ],
+  [
+    "installed and not checked yet",
+    "UNKNOWN",
+    "Installed, not checked yet",
+    ["Sign in to Codex", "Update Codex", "Test this AI", "Inspect models and features of Codex"],
+  ],
+  [
+    "signed in",
+    "CONNECTED",
+    "Signed in",
+    ["Update Codex", "Test this AI", "Inspect models and features of Codex"],
+  ],
 ];
 
 describe("the state of an app and its one next step", () => {
@@ -84,14 +97,23 @@ describe("the state of an app and its one next step", () => {
     expect(buttonsIn(card)).toEqual(buttons);
   });
 
-  it("offers Antigravity the same steps, but no test, because it cannot answer Copilot questions yet", async () => {
+  it("offers Antigravity install, update and test steps since it answers Copilot questions", async () => {
     await shown([app("antigravity", "UNKNOWN")]);
-    expect(buttonsIn(cardOf("Antigravity"))).toEqual(["Sign in to Antigravity"]);
+    expect(buttonsIn(cardOf("Antigravity"))).toEqual([
+      "Sign in to Antigravity",
+      "Update Antigravity",
+      "Test this AI",
+      "Inspect models and features of Antigravity",
+    ]);
   });
 
-  it("leaves a signed-in Antigravity with nothing to press", async () => {
+  it("leaves a signed-in Antigravity ready with update, capabilities and test", async () => {
     await shown([app("antigravity", "CONNECTED")]);
-    expect(buttonsIn(cardOf("Antigravity"))).toEqual([]);
+    expect(buttonsIn(cardOf("Antigravity"))).toEqual([
+      "Update Antigravity",
+      "Test this AI",
+      "Inspect models and features of Antigravity",
+    ]);
     expect(cardOf("Antigravity").getByText("Signed in")).toBeInTheDocument();
   });
 });
@@ -99,20 +121,20 @@ describe("the state of an app and its one next step", () => {
 describe("nothing here needs a terminal", () => {
   it("has no button, link or box for a terminal, a launch or a command of one's own", async () => {
     await shown(LISTED);
-    const names = [...buttonsIn(cardOf("Claude Code")), ...buttonsIn(cardOf("Codex")), ...buttonsIn(cardOf("Gemini"))];
+    const names = [...buttonsIn(cardOf("Claude Code")), ...buttonsIn(cardOf("Codex")), ...buttonsIn(cardOf("Antigravity"))];
     expect(names.filter((n) => /terminal|launch|command|advanced/i.test(n))).toEqual([]);
     expect(screen.queryAllByRole("textbox")).toEqual([]);
     expect(document.querySelector("details")).toBeNull();
   });
 
   it("only ever asks the engine to install or to sign in", async () => {
-    await shown(LISTED, startsJob("gemini", job({ action: "install" })));
-    click(cardOf("Gemini").getByRole("button", { name: "Install Gemini" }));
+    await shown(LISTED, startsJob("antigravity", job({ action: "install" })));
+    click(cardOf("Antigravity").getByRole("button", { name: "Install Antigravity" }));
     await waitFor(() => expect(callsTo("POST", LAUNCH)).toHaveLength(1));
     click(cardOf("Codex").getByRole("button", { name: "Sign in to Codex" }));
     await waitFor(() => expect(callsTo("POST", LAUNCH)).toHaveLength(2));
     expect(callsTo("POST", LAUNCH)).toEqual([
-      { agent_id: "gemini", action: "install" },
+      { agent_id: "antigravity", action: "install" },
       { agent_id: "codex", action: "signin" },
     ]);
   });
@@ -120,7 +142,7 @@ describe("nothing here needs a terminal", () => {
 
 const JUMPS = [
   ["Codex", "Sign in to Codex"],
-  ["Gemini", "Install Gemini"],
+  ["Antigravity", "Install Antigravity"],
 ] as const;
 
 describe("the Set up button on the AI choice above", () => {
