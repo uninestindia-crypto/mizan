@@ -5,8 +5,12 @@ import { Link, useParams } from "react-router";
 import { PriceChart, type PriceRange } from "../components/charts";
 import { AsOf, DataGate } from "../components/common";
 import { SecondOpinionButton } from "../components/copilot/SecondOpinionButton";
-import { HoldingDialog } from "../components/HoldingDialog";
+import { FundamentalsSection } from "../components/fundamentals/FundamentalsSection";
 import { LivePrice } from "../components/live/LivePrice";
+import { useWatchGuard } from "../components/mode/useWatchGuard";
+import { HoldingFormDialog } from "../components/portfolio/HoldingFormDialog";
+import { rememberedChoice } from "../components/portfolio/useAccountChoice";
+import { StockProofPanel } from "../components/proof/StockProofPanel";
 import { Badge, Button, Callout, Card, CardHeader, Delta, EmptyState, Input, Segmented, Skeleton, Stat, Switch } from "../components/ui";
 import { ApiError } from "../lib/api";
 import { date, inr, int, num, pct, tone } from "../lib/format";
@@ -25,6 +29,9 @@ function StockPage({ symbol }: { symbol: string }) {
   const stock = useStock(symbol);
   const bars = useBars(symbol);
   const watch = useWatchlistToggle();
+  const guard = useWatchGuard(symbol);
+  const wantWatch = !stock.data?.in_watchlist;
+  const toggleWatch = () => guard.ask(wantWatch, () => watch.mutate({ symbol, add: wantWatch }));
   const [range, setRange] = useState<PriceRange>("1Y");
   const [kind, setKind] = useState<"candles" | "line">("candles");
   const [averages, setAverages] = useState(true);
@@ -94,7 +101,7 @@ function StockPage({ symbol }: { symbol: string }) {
             variant="secondary"
             icon={stock.data?.in_watchlist ? <BookmarkCheck className="size-4 text-brand" aria-hidden /> : <Bookmark className="size-4" aria-hidden />}
             loading={watch.isPending}
-            onClick={() => watch.mutate({ symbol, add: !stock.data?.in_watchlist })}
+            onClick={toggleWatch}
           >
             {stock.data?.in_watchlist ? "Watching" : "Watch"}
           </Button>
@@ -107,6 +114,8 @@ function StockPage({ symbol }: { symbol: string }) {
           </Link>
         </div>
       </header>
+
+      <StockProofPanel symbol={symbol} />
 
       {breaks.map((a) => (
         <Callout key={`${a.ex_date}-${a.subject}`} tone="warn" title={`${a.subject} on ${date(a.ex_date)}: the price drop here is not lost money`}>
@@ -189,7 +198,15 @@ function StockPage({ symbol }: { symbol: string }) {
           </Card>
         </div>
       </div>
-      <HoldingDialog open={adding} onOpenChange={setAdding} initial={{ symbol, avg_price: snap ? String(snap.close) : "" }} lockSymbol />
+      <FundamentalsSection symbol={symbol} />
+      {guard.dialog}
+      <HoldingFormDialog
+        open={adding}
+        onOpenChange={setAdding}
+        initial={{ symbol, avg_price: snap ? String(snap.close) : "" }}
+        viewing={rememberedChoice()}
+        lockSymbol
+      />
     </div>
   );
 }

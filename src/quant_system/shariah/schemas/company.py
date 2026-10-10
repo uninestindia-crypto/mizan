@@ -9,6 +9,14 @@ class ComplianceStatus(StrEnum):
     QUESTIONABLE = "QUESTIONABLE"
 
 
+class DataStatus(StrEnum):
+    """How far the figures behind a verdict have been checked. Never stronger than a check backs."""
+
+    UNVERIFIED_SAMPLE = "UNVERIFIED_SAMPLE"
+    VERIFIED_FILING = "VERIFIED_FILING"
+    STALE = "STALE"
+
+
 class ScreeningStandard(StrEnum):
     AAOIFI = "AAOIFI"
     TASIS = "TASIS"
@@ -89,6 +97,25 @@ class CompanySummary(BaseModel):
     avg_36m_market_cap: float
     aaoifi_status: ComplianceStatus
     tasis_status: ComplianceStatus
+    data_status: DataStatus = Field(
+        default=DataStatus.UNVERIFIED_SAMPLE,
+        description="How far the figures behind these results are checked",
+    )
+    verdict_source: str = Field(
+        default="sample",
+        description="Where the verdict came from: 'filing' (the company's own results on NSE) or 'sample'",
+    )
+    as_of: str | None = Field(
+        default=None,
+        description="Period end of the filing the verdict rests on, when it rests on one",
+    )
+    overall_status: ComplianceStatus | None = Field(
+        default=None,
+        description=(
+            "The one verdict of the company's own filing (the word its badge shows), when the verdict rests on one. "
+            "Empty for the sample, where the two statuses above say all there is to say"
+        ),
+    )
     purification_ratio: float
     is_nifty_50: bool = False
     is_nifty_500: bool = True
@@ -110,6 +137,15 @@ class SearchSuggestion(BaseModel):
     current_price: float
     aaoifi_status: ComplianceStatus
     tasis_status: ComplianceStatus
+    data_status: DataStatus = DataStatus.UNVERIFIED_SAMPLE
+    verdict_source: str = Field(
+        default="sample",
+        description="Where the verdict came from: 'filing' (the company's own results on NSE) or 'sample'",
+    )
+    as_of: str | None = Field(
+        default=None,
+        description="Period end of the filing the verdict rests on, when it rests on one",
+    )
 
 
 class CompanyProfile(BaseModel):
@@ -150,10 +186,21 @@ class CompanyDetail(BaseModel):
     sector_compliant: bool
     sector_failure_reason: str | None = None
 
+    data_status: DataStatus = DataStatus.UNVERIFIED_SAMPLE
+    verdict_source: str = Field(
+        default="sample",
+        description="Where the verdict came from: 'filing' (the company's own results on NSE) or 'sample'",
+    )
+    as_of: str | None = Field(
+        default=None,
+        description="Period end of the filing the verdict rests on, when it rests on one",
+    )
+
     aaoifi_status: ComplianceStatus
-    aaoifi_debt_ratio: float
-    aaoifi_cash_ratio: float
-    aaoifi_rec_ratio: float
+    # None when the market-value standard could not be worked out (a filing, but no price history)
+    aaoifi_debt_ratio: float | None
+    aaoifi_cash_ratio: float | None
+    aaoifi_rec_ratio: float | None
     aaoifi_imp_ratio: float
 
     tasis_status: ComplianceStatus

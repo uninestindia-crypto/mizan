@@ -30,6 +30,9 @@ data/downloads/
 !data/evidence/**/*.log
 !data/shariah/*.db
 !data/shariah/*.duckdb
+# SQLite side files made while a database is open; never part of the bundled data
+data/shariah/*.db-shm
+data/shariah/*.db-wal
 
 # Credentials and machine-local configuration
 .env

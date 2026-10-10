@@ -2,6 +2,8 @@ param(
     # Optional Authenticode command, Inno Setup syntax: "$f" is replaced by the quoted file.
     # Example: -SignCommand 'signtool sign /fd sha256 /tr http://timestamp.digicert.com /td sha256 /a $f'
     [string]$SignCommand = "",
+    # A build without Microsoft's WebView2 installer inside it (a quick local build). A release never uses this.
+    [switch]$SkipWebView2,
     [string]$Iscc = ""
 )
 
@@ -33,6 +35,25 @@ if (-not (Test-Path -LiteralPath $studioExe)) {
 
 Write-Host "  -> Inno Setup compiler: $compiler"
 $arguments = @("/Qp")
+
+# Microsoft's WebView2 installer is fetched here, at build time, and checked: it must carry a valid Microsoft
+# signature, or the build stops. It is never stored in the repository.
+if ($SkipWebView2) {
+    Write-Host "  -> Building WITHOUT the WebView2 installer (-SkipWebView2): not for release" -ForegroundColor DarkYellow
+} else {
+    $prereqDir = Join-Path $projectRoot "dist\prereq"
+    New-Item -ItemType Directory -Force -Path $prereqDir | Out-Null
+    $webView2Setup = Join-Path $prereqDir "MicrosoftEdgeWebview2Setup.exe"
+    Write-Host "  -> Fetching Microsoft's WebView2 installer"
+    Invoke-WebRequest -UseBasicParsing -Uri "https://go.microsoft.com/fwlink/p/?LinkId=2124703" -OutFile $webView2Setup
+    $signature = Get-AuthenticodeSignature -LiteralPath $webView2Setup
+    if ($signature.Status -ne "Valid" -or $signature.SignerCertificate.Subject -notmatch "O=Microsoft Corporation") {
+        Remove-Item -LiteralPath $webView2Setup -Force
+        throw "The WebView2 installer is not validly signed by Microsoft Corporation ($($signature.Status)). Build stopped."
+    }
+    Write-Host "  -> WebView2 installer signature verified (Microsoft Corporation)" -ForegroundColor Green
+    $arguments += "/DWebView2Setup=$webView2Setup"
+}
 if ($SignCommand) {
     $arguments += "/Squantos=$SignCommand"
     $arguments += "/DSignToolName=quantos"

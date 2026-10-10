@@ -7,6 +7,7 @@ something QuantOS cannot screen, never guessed at.
 
 from __future__ import annotations
 
+import logging
 import math
 from collections.abc import Mapping
 from typing import Any
@@ -20,8 +21,11 @@ from quant_system.copilot.registry import (
     bound,
     failure,
 )
+from quant_system.copilot.screening_proof import proof_result
 from quant_system.copilot.tools_market import PERCENT_NOTE, SYMBOL, pct
 from quant_system.shariah.schemas.screening import SAMPLE_DATA_NOTICE, UNVERIFIED_SAMPLE
+
+logger = logging.getLogger(__name__)
 
 SCREENING_DISCLAIMER = (
     "A screening aid built on published thresholds, not a religious ruling (fatwa). It does not replace a "
@@ -143,14 +147,46 @@ def _covered(symbol: str, row: Mapping[str, Any]) -> ToolResult:
     return ToolResult(True, f"{symbol}: {verdicts} (sample data)", data)
 
 
+def _proof_of(source: Any, symbol: str) -> dict[str, Any] | None:
+    """The Shariah engine's proof for a stock, when the screening data can give one. Otherwise the sample decides."""
+    fetch = getattr(source, "proof", None)
+    if not callable(fetch):
+        return None
+    try:
+        proof = fetch(symbol)
+    except Exception:  # a proof that cannot be had must never stop the sample from answering
+        logger.warning("the Shariah proof for %s could not be had", symbol, exc_info=True)
+        return None
+    return proof if isinstance(proof, dict) else None
+
+
+def _decisive(proof: dict[str, Any] | None) -> bool:
+    """A proof that decides on its own: from a company's filing, or from its business alone. Not the old sample."""
+    return (
+        proof is not None
+        and proof.get("data_status") != UNVERIFIED_SAMPLE
+        and proof.get("verdict") != "NOT_SCREENED"
+    )
+
+
+def _with_disclaimer(result: ToolResult) -> ToolResult:
+    return ToolResult(True, result.summary, {**result.data, "disclaimer": SCREENING_DISCLAIMER})
+
+
 def shariah_check(ctx: ToolContext, args: Mapping[str, Any]) -> ToolResult:
     if ctx.shariah is None:
         return failure("no screening data", "Shariah screening data is not available.")
     symbol = str(args["symbol"]).strip().upper()
+    proof = _proof_of(ctx.shariah, symbol)
+    if proof is not None and _decisive(proof):
+        return _with_disclaimer(proof_result(symbol, proof))
+    # An unreadable sample is still said, in plain words, and never hidden behind "not screened".
     row = ctx.shariah.company(symbol)
-    if row is None:
-        return _not_covered(symbol, ctx.shariah.company_count())
-    return _covered(symbol, row)
+    if row is not None:
+        return _covered(symbol, row)
+    if proof is not None and proof.get("data_status") != UNVERIFIED_SAMPLE:
+        return _with_disclaimer(proof_result(symbol, proof))
+    return _not_covered(symbol, ctx.shariah.company_count())
 
 
 def fundamentals(ctx: ToolContext, args: Mapping[str, Any]) -> ToolResult:

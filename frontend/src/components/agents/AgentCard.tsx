@@ -4,13 +4,13 @@ import { type Agent, type AgentTool, toolLabels } from "../../lib/agents";
 import { plural } from "../../lib/format";
 import { Card } from "../ui";
 
-/** Says what really happens: without an AI key this agent stops at once and points here. */
+/** Says what really happens: with no AI set up this agent stops at once and points here. */
 function AiNote() {
   return (
     <p className="mt-2 text-[12.5px] text-warn">
-      Needs an AI key. Add one in{" "}
-      <Link to="/settings/accounts" className="font-medium underline">
-        Settings, then Accounts and keys
+      Needs an AI. Choose one in{" "}
+      <Link to="/settings/ai" className="font-medium underline">
+        Settings, then AI assistants
       </Link>
       .
     </p>
@@ -21,7 +21,7 @@ interface Props {
   agent: Agent;
   tools: AgentTool[] | undefined;
   actions: ReactNode;
-  /** True only once the engine has said that no AI key is saved. Until then the note is not shown. */
+  /** True only once the engine has said that no AI is set up. Until then the note is not shown. */
   noAiKey: boolean;
   children?: ReactNode;
 }

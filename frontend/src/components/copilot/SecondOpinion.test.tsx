@@ -72,14 +72,14 @@ describe("the Second opinion window", () => {
     expect(screen.getByText(intro)).toBeInTheDocument();
   });
 
-  it("offers no way to start, and a way to add a key, when no model is ready", async () => {
+  it("offers no way to start, and a way to choose an AI, when no model is ready", async () => {
     fakeEngine([{ id: "openai", label: "OpenAI", ready: false }]);
     await openDialog();
-    expect(await screen.findByText("Add at least one AI key to get a second opinion.")).toBeInTheDocument();
+    expect(await screen.findByText("Set up an AI first: choose Settings, then AI assistants.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Ask the models" })).toBeNull();
     expect(screen.queryByRole("checkbox")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Add an AI key" }));
-    await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/settings/accounts"));
+    fireEvent.click(screen.getByRole("button", { name: "Choose an AI" }));
+    await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/settings/ai"));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 

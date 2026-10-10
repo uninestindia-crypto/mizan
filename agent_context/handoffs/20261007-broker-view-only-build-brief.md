@@ -232,7 +232,9 @@ Edited (small changes). Each claimed one needs the NOTICE:
 ### 7.1 The allowlist (`endpoints.py`)
 
 ```python
-UPSTOX_AUTHORIZE_URL = "https://api.upstox.com/v2/login/authorization/dialog"  # opened in the person's browser only
+UPSTOX_AUTHORIZE_URL = (
+    "https://api.upstox.com/v2/login/authorization/dialog"  # opened in the person's browser only
+)
 UPSTOX_TOKEN_URL = "https://api.upstox.com/v2/login/authorization/token"
 UPSTOX_LOGOUT_URL = "https://api.upstox.com/v2/logout"
 UPSTOX_HOLDINGS_URL = "https://api.upstox.com/v2/portfolio/long-term-holdings"
@@ -242,13 +244,15 @@ CALLBACK_PORT = 47610
 CALLBACK_PATH = "/upstox/callback"
 CALLBACK_ADDRESS = "http://127.0.0.1:47610/upstox/callback"
 
-ALLOWED_CALLS: frozenset[tuple[str, str]] = frozenset({
-    ("POST", UPSTOX_TOKEN_URL),
-    ("DELETE", UPSTOX_LOGOUT_URL),
-    ("GET", UPSTOX_HOLDINGS_URL),
-    ("GET", UPSTOX_POSITIONS_URL),
-    ("GET", UPSTOX_FUNDS_URL),
-})
+ALLOWED_CALLS: frozenset[tuple[str, str]] = frozenset(
+    {
+        ("POST", UPSTOX_TOKEN_URL),
+        ("DELETE", UPSTOX_LOGOUT_URL),
+        ("GET", UPSTOX_HOLDINGS_URL),
+        ("GET", UPSTOX_POSITIONS_URL),
+        ("GET", UPSTOX_FUNDS_URL),
+    }
+)
 ```
 
 Every read goes through one helper, `_get(url, query)`, which asserts `("GET", url) in ALLOWED_CALLS` before calling

@@ -1,0 +1,3 @@
+`tcs_2024-09-30_consolidated_trimmed.xml` is Tata Consultancy Services' consolidated results filing for the six months ended 30 Sep 2024, as published by NSE (https://nsearchives.nseindia.com/corporate/xbrl/INDAS_112733_1265368_10102024065944.xml). It is public data. Only the contexts, units and the facts the tests assert on were kept; every kept line is unchanged, including the filing's own quirk that the year-to-date context `FourD` is declared with the quarter's dates.
+
+`industry_list_sample.csv` is six lines of NSE's public Nifty Total Market list (https://nsearchives.nseindia.com/content/indices/ind_niftytotalmarket_list.csv), unchanged, used to test the industry-group reader.

@@ -3,6 +3,9 @@ import { Link } from "react-router";
 import { Sparkline } from "../components/charts";
 import { Illustration } from "../components/common";
 import { DownloadData } from "../components/DataFolderPicker";
+import { PaperBookNote } from "../components/mode/PaperBookNote";
+import { ShariahBadge } from "../components/mode/ShariahBadge";
+import { useModeLabels } from "../components/mode/useModeLabels";
 import { Badge, Button, Callout, Card, CardHeader, Delta, EmptyState, PageHeader, Skeleton, Stat } from "../components/ui";
 import { date, dateTime, inr, inrCompact, inrSigned, int, pct, tone } from "../lib/format";
 import { usePaperBooks, usePaperMine, usePaperUpdates, useStatus } from "../lib/queries";
@@ -156,6 +159,7 @@ function MyBookRow({ book }: { book: PaperBookSummary }) {
 
 function BookCard({ book }: { book: PaperBook }) {
   const waiting = book.status === "WAITING";
+  const labels = useModeLabels((book.positions ?? []).map((p) => p.symbol));
   return (
     <Card>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -192,6 +196,7 @@ function BookCard({ book }: { book: PaperBook }) {
           {(book.positions ?? []).length > 0 && (
             <div className="mt-5 overflow-x-auto">
               <CardHeader title="Largest positions" subtitle="Marked at the latest close in the market data" className="mb-2" />
+              <PaperBookNote labels={labels} className="mb-3" />
               <table className="w-full min-w-[560px] text-sm">
                 <thead>
                   <tr className="border-y border-line bg-surface-2/60 text-[12px] font-semibold uppercase tracking-wide text-ink-3">
@@ -207,9 +212,12 @@ function BookCard({ book }: { book: PaperBook }) {
                   {(book.positions ?? []).map((p) => (
                     <tr key={p.symbol}>
                       <td className="px-3 py-2 font-medium text-ink">
-                        <Link to={`/stock/${p.symbol}`} className="hover:underline">
-                          {p.symbol}
-                        </Link>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <Link to={`/stock/${p.symbol}`} className="hover:underline">
+                            {p.symbol}
+                          </Link>
+                          <ShariahBadge compact symbol={p.symbol} status={labels.statusOf(p.symbol)} />
+                        </div>
                       </td>
                       <td className="num px-3 py-2 text-ink-2">{date(p.entry_date)}</td>
                       <td className="num px-3 py-2 text-right text-ink-2">{int(p.shares)}</td>

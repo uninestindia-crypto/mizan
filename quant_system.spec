@@ -11,6 +11,10 @@ block_cipher = None
 added_files = [
     ('src/quant_system/server/static', 'quant_system/server/static'),
     ('configs', 'configs'),
+    ('data/shariah', 'data/shariah'),
+    ('data/fundamentals', 'data/fundamentals'),
+    ('data/authorities/nse-all-listed-equities.csv', 'data/authorities'),
+    ('data/authorities/nse-trading-holidays.json', 'data/authorities'),
 ]
 
 hidden_imports = [
@@ -62,7 +66,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -98,7 +102,7 @@ exe_studio = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,  # Windowed GUI application - NO black terminal window
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -117,7 +121,7 @@ coll = COLLECT(
     a_studio.zipfiles,
     a_studio.datas,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     name='quantos',
 )

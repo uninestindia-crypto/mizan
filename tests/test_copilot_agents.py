@@ -187,8 +187,8 @@ def test_a_recipe_runs_with_no_ai_key_from_the_built_in_answers() -> None:
         and "AAOIFI" in replies[1]
         and "Alpha wins a large order" in replies[2]
     )
-    assert not any("add an AI key" in r.lower() for r in replies)  # said once, in the note
-    assert "No AI key is set up" in str(result.note)
+    assert not any("choose an AI" in r.lower() for r in replies)  # said once, in the note
+    assert "No AI is set up" in str(result.note)
     assert {p.kind for p in result.proposals} == {"second_opinion", "navigate"}
 
 
@@ -211,8 +211,8 @@ def test_an_agent_that_needs_an_ai_is_refused_without_one_and_offered_the_next_c
     result = run_workflow(
         _recipe("recipe-watchlist-review"), _registry(), RunOptions(needs_ai=True)
     )
-    assert result.steps == [] and "needs an AI key" in str(result.note)
-    assert result.proposals[0].path == "/settings/accounts"
+    assert result.steps == [] and "needs an AI to work" in str(result.note)
+    assert result.proposals[0].path == "/settings/ai"
 
 
 # ------------------------------------------------------------------------------------- running, with an AI

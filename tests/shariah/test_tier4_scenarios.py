@@ -39,7 +39,7 @@ async def test_scenario_1_first_time_investor_journey(client: AsyncClient, oracl
     # Step 2: Basket Selection
     baskets = oracle.get_thematic_baskets()
     tech_basket = next(b for b in baskets if b["id"] == "halal-tech-giants")
-    assert tech_basket["expected_cagr"] == 0.148
+    assert len(tech_basket["constituents"]) == 5
 
     # Step 3: Capital Allocation (₹50,000 budget)
     budget = 50000.0

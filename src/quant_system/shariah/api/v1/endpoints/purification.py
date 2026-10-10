@@ -18,6 +18,7 @@ from quant_system.shariah.services.purification_service import (
     ensure_ledger_table,
     get_latest_ledger_hash,
     get_purification_receipt_by_id,
+    ledger_entry_from_row,
     verify_ledger_chain,
 )
 
@@ -28,7 +29,10 @@ router = APIRouter(prefix="/purification", tags=["Dividend Purification & Crypto
     "/calculate",
     response_model=PurificationCalculateResponse,
     summary="Calculate Dividend Purification Breakdown",
-    description="Calculates exact impermissible interest portion to be donated to charity based on company's non-operating income ratio.",
+    description=(
+        "Works out the part of a dividend that comes from impermissible income and is to be given away, "
+        "using the company's ratio from the sample."
+    ),
 )
 async def calculate_purification(
     request: PurificationCalculateRequest,
@@ -49,7 +53,7 @@ async def calculate_purification(
     "/ledger",
     response_model=PurificationLedgerListResponse,
     summary="List Local Purification Ledger Entries",
-    description="Returns recorded dividend purification events with SHA-256 cryptographic chain verification.",
+    description="Returns the recorded purification entries and whether their SHA-256 chain still checks out.",
 )
 async def list_ledger(
     limit: int = Query(default=100, ge=1, le=500),
@@ -71,30 +75,7 @@ async def list_ledger(
     cursor = await db.execute(sql, (limit, offset))
     rows = await cursor.fetchall()
 
-    items = []
-    for r in rows:
-        items.append(
-            PurificationLedgerEntry(
-                id=r["id"],
-                entry_uuid=r["entry_uuid"],
-                ticker=r["ticker"],
-                company_name=r["company_name"],
-                record_date=r["record_date"],
-                payment_date=r["payment_date"],
-                shares_held=r["shares_held"],
-                dps_inr=float(r["dps_inr"]),
-                gross_dividend=float(r["gross_dividend"]),
-                purification_ratio=float(r["purification_ratio"]),
-                purification_payable=float(r["purification_payable"]),
-                net_permissible_dividend=float(r["net_permissible_dividend"]),
-                charity_name=r["charity_name"],
-                disbursement_status=r["disbursement_status"],
-                notes=r["notes"],
-                prev_entry_hash=r["prev_entry_hash"],
-                entry_hash=r["entry_hash"],
-                timestamp=str(r["timestamp"]),
-            )
-        )
+    items = [ledger_entry_from_row(dict(r)) for r in rows]
 
     return PurificationLedgerListResponse(
         total_entries=total,
@@ -108,8 +89,11 @@ async def list_ledger(
     "/ledger",
     response_model=PurificationLedgerEntry,
     status_code=201,
-    summary="Record Entry into Immutable Purification Ledger",
-    description="Records a declared dividend event into the local SQLite ledger, chained with an immutable SHA-256 cryptographic hash.",
+    summary="Record Entry in the Purification Ledger",
+    description=(
+        "Records a declared dividend event in the local ledger, chained to the entry before it with a "
+        "SHA-256 hash (hash version 2), so a later edit to it is detected."
+    ),
 )
 async def create_ledger_entry(
     entry_data: PurificationLedgerCreate,
@@ -123,8 +107,11 @@ async def create_ledger_entry(
 
 @router.get(
     "/ledger/verify",
-    summary="Cryptographic Chain Audit & Tamper Detection",
-    description="Traverses the sequential SHA-256 hash chain from genesis to detect unauthorized modifications or data tampering.",
+    summary="Check the Ledger Chain for Later Edits",
+    description=(
+        "Walks the hash chain from the first entry and reports the first entry that was edited after it was "
+        "written. Each entry is checked with the hash version that wrote it."
+    ),
 )
 async def verify_chain(
     db: aiosqlite.Connection = Depends(get_async_db),
@@ -136,7 +123,10 @@ async def verify_chain(
     "/receipt/{entry_id}",
     response_model=PurificationReceipt,
     summary="Generate Printable Charity & Tax Receipt",
-    description="Retrieves a ledger entry by ID or UUID and generates a printable donation receipt with cryptographic verification hash.",
+    description=(
+        "Retrieves a ledger entry by ID or UUID and writes a printable donation receipt that shows its hash "
+        "and hash version."
+    ),
 )
 async def get_receipt(
     entry_id: str = Path(..., description="Ledger row ID or UUID string"),

@@ -4,6 +4,9 @@ import { Link } from "react-router";
 import { ageLabel, date, daysSince, pct } from "../lib/format";
 import { useSearch, useStatus } from "../lib/queries";
 import type { VerdictLevel } from "../lib/types";
+import { ModeFilterNote } from "./mode/ModeFilterNote";
+import { ShariahBadge } from "./mode/ShariahBadge";
+import { useModeFilter } from "./mode/useModeFilter";
 import { Badge, Button, Card, cx, EmptyState, ProgressBar, Spinner } from "./ui";
 
 const images = import.meta.glob<string>("../assets/illustrations/*.png", { eager: true, import: "default" });
@@ -84,7 +87,8 @@ export function SymbolSearch({
   // While the answer for the latest keystroke is still on its way, the list on screen belongs to an
   // earlier query ("reli" for "relia"); never offer or pick from it.
   const fresh = results.isPlaceholderData ? [] : (results.data ?? []);
-  const options = fresh.filter((r) => !exclude.includes(r.symbol)).slice(0, 8);
+  const filter = useModeFilter(fresh.filter((r) => !exclude.includes(r.symbol)), "symbol-search");
+  const options = filter.visible.slice(0, 8);
   const [enterPending, setEnterPending] = useState(false);
   const pick = (symbol: string) => {
     onPick(symbol);
@@ -138,7 +142,8 @@ export function SymbolSearch({
         className="h-10 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-sm text-ink placeholder:text-ink-3 hover:border-line-strong focus:border-brand focus:outline-none focus:ring-3 focus:ring-brand/15"
       />
       {open && query.trim() && (
-        <ul id={listId} role="listbox" className="absolute left-0 right-0 top-11 z-30 max-h-72 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-[var(--shadow-pop)]">
+        <div className="absolute left-0 right-0 top-11 z-30 rounded-xl border border-line bg-surface shadow-[var(--shadow-pop)]">
+        <ul id={listId} role="listbox" className="max-h-72 overflow-y-auto p-1">
           {options.length === 0 && <li className="px-3 py-2.5 text-sm text-ink-3">{results.isFetching ? "Searching…" : "No matches"}</li>}
           {options.map((r, i) => (
             <li
@@ -156,10 +161,17 @@ export function SymbolSearch({
                 <span className="font-semibold text-ink">{r.symbol}</span>
                 <span className="ml-2 truncate text-ink-3">{r.name}</span>
               </span>
-              {r.is_etf ? <Badge tone="violet">ETF</Badge> : null}
+              <span className="flex shrink-0 items-center gap-1.5">
+                <ShariahBadge compact status={filter.statusOf(r.symbol)} />
+                {r.is_etf ? <Badge tone="violet">ETF</Badge> : null}
+              </span>
             </li>
           ))}
         </ul>
+        <div onMouseDown={(e) => e.preventDefault()}>
+          <ModeFilterNote filter={filter} className="border-t border-line px-3 py-2" />
+        </div>
+        </div>
       )}
     </div>
   );

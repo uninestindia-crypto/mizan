@@ -55,6 +55,10 @@ class PurificationLedgerEntry(BaseModel):
     prev_entry_hash: str
     entry_hash: str
     timestamp: str | None = None
+    hash_version: int = Field(
+        default=1,
+        description="Which hash rule protects this row: 1 covers the id and amount, 2 covers six figures",
+    )
 
 
 class PurificationLedgerListResponse(BaseModel):
@@ -77,5 +81,6 @@ class PurificationReceipt(BaseModel):
     charity_name: str | None = None
     disbursement_status: str
     timestamp: str
+    hash_version: int = 1
     charity_disclaimer: str
     printable_receipt: str

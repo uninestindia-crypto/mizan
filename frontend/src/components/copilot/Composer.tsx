@@ -57,7 +57,7 @@ export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_props
           aria-describedby={lengthNote(draft.length) ? NOTE_ID : undefined}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Ask about a stock or a screen"
+          placeholder="Ask about a stock"
           className={BOX_STYLE}
         />
         <Button type="submit" disabled={!canSend} icon={<SendHorizontal className="size-4" aria-hidden />}>

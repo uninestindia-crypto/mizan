@@ -22,6 +22,9 @@ added_files = [
     (str(root_dir / 'configs'), 'configs'),
     (str(root_dir / 'assets'), 'assets'),
     (str(root_dir / 'data' / 'shariah'), 'data/shariah'),
+    (str(root_dir / 'data' / 'fundamentals'), 'data/fundamentals'),
+    (str(root_dir / 'data' / 'authorities' / 'nse-all-listed-equities.csv'), 'data/authorities'),
+    (str(root_dir / 'data' / 'authorities' / 'nse-trading-holidays.json'), 'data/authorities'),
     (str(root_dir / 'data' / 'evidence' / 'models'), 'data/evidence/models'),
 ]
 
@@ -76,7 +79,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -114,7 +117,7 @@ exe_studio = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,  # Windowed GUI application - NO black terminal window
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -135,7 +138,7 @@ coll = COLLECT(
     a_studio.zipfiles,
     a_studio.datas,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     name='quantos',
 )

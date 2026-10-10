@@ -5,12 +5,17 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-import pybroker
-from quant_system.backtest.pybroker_adapter import (
+import pytest
+
+# PyBroker's data layer needs the optional research extra (alpaca-py); the standard install does not have it.
+pytest.importorskip("alpaca", reason="the optional research extra (alpaca-py) is not installed")
+
+import pybroker  # noqa: E402
+from quant_system.backtest.pybroker_adapter import (  # noqa: E402
     PyBrokerBacktestAdapter,
     bars_to_dataframe,
 )
-from quant_system.core.domain import PriceBar
+from quant_system.core.domain import PriceBar  # noqa: E402
 
 
 def _make_dummy_bars(symbol: str, count: int = 50) -> list[PriceBar]:

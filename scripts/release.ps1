@@ -87,12 +87,9 @@ try {
     # ------------------------------------------------------------------ 3. gates
     if (-not $SkipTests) {
         Step "Gates: lint, types, tests (tracked files only, so another agent's unfinished file cannot block this)"
-        $tracked = @(git ls-files "*.py")
-        # --force-exclude keeps pyproject's excludes (.agents, dist, ...) in force for an explicit file list, as in CI.
-        & $python -m ruff check --force-exclude @tracked; Native "ruff check"
-        & $python -m ruff format --check --force-exclude @tracked; Native "ruff format"
-        $typed = @(git ls-files "src/*.py" "scripts/*.py" "launcher.py" ":!:src/pybroker/*")
-        & $python -m mypy @typed; Native "mypy"
+        & $python -m ruff check src tests scripts launcher.py quantos_studio.py; Native "ruff check"
+        & $python -m ruff format --check src tests scripts launcher.py quantos_studio.py; Native "ruff format"
+        & $python -m mypy src scripts launcher.py; Native "mypy"
         & $python -m pytest tests -q -p no:cacheprovider; Native "pytest"
     } else {
         Write-Host "`nGates skipped (-SkipTests)." -ForegroundColor Yellow

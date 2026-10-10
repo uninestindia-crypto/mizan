@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from unittest.mock import MagicMock
@@ -35,6 +36,58 @@ def test_supported_agents_registry() -> None:
     assert "codex" in agent_ids
     assert "claude" in agent_ids
     assert "gemini" in agent_ids
+
+
+def _everything_an_app_card_says(monkeypatch: pytest.MonkeyPatch) -> dict[str, list[str]]:
+    """Each app's name, install steps and the sentences a finished install, sign-in and missing program leave."""
+    monkeypatch.setattr(cli_bridge, "_find", lambda command: f"/bin/{command}")
+    monkeypatch.setattr(cli_bridge, "_stream", lambda job, args, timeout: 0)
+    monkeypatch.setattr(cli_bridge, "invalidate_cache", lambda: None)
+    monkeypatch.setattr(cli_bridge, "_check_auth_status", lambda agent, executable: (True, ""))
+    monkeypatch.setattr(cli_bridge, "_probe_results", {})
+    shown: dict[str, list[str]] = {}
+    for agent in SUPPORTED_AGENTS:
+        installed = cli_bridge._Job(agent.id, "install")
+        cli_bridge._run_install(installed, agent)
+        signed_in = cli_bridge._Job(agent.id, "signin", output=['{"status": "SUCCESS"}'])
+        cli_bridge._run_signin(signed_in, agent)
+        shown[agent.id] = [
+            agent.name,
+            *(step.label for step in agent.install),
+            installed.message,
+            signed_in.message,
+        ]
+    monkeypatch.setattr(cli_bridge, "_find", lambda command: None)
+    for agent in SUPPORTED_AGENTS:
+        missing = cli_bridge._Job(agent.id, "signin")
+        cli_bridge._run_signin(missing, agent)
+        shown[agent.id].append(missing.message)
+    return shown
+
+
+def test_the_sentences_an_app_card_shows_name_each_app_in_plain_words(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    shown = _everything_an_app_card_says(monkeypatch)
+    assert shown["codex"][-3:-1] == ["Codex is installed.", "Codex is connected."]
+    assert shown["gemini"][-3:-1] == ["Gemini is installed.", "Gemini is connected."]
+    assert shown["gemini"][-1] == "Gemini is not installed yet."
+    assert shown["gemini"][1] == "Installing Gemini"
+
+
+def test_nothing_a_person_reads_uses_the_developers_word_cli(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    words = [text for texts in _everything_an_app_card_says(monkeypatch).values() for text in texts]
+    assert len(words) > 12
+    assert [text for text in words if re.search(r"\bCLI\b", text)] == []
+
+
+def test_an_unknown_app_is_named_in_plain_words() -> None:
+    with pytest.raises(ValueError, match="Unknown AI app: nope"):
+        cli_bridge.start_agent_job("nope", "install")
+    with pytest.raises(ValueError, match="Unknown AI app: nope"):
+        launch_agent_session("nope")
 
 
 def test_list_cli_status_returns_all_agents() -> None:

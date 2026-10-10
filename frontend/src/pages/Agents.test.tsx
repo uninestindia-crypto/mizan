@@ -48,34 +48,34 @@ describe("the Agents screen", () => {
     expect(screen.getByText(next)).toBeInTheDocument();
   });
 
-  it("says what really happens when no AI key is saved: it needs one, and where to add it", async () => {
+  it("says what really happens when no AI is set up: it needs one, and where to choose it", async () => {
     engine({ "GET /api/v2/copilot/models": AI_OFF });
     renderApp(<Agents />);
     const news = await screen.findByRole("heading", { name: "Read the news" });
     const note = within(news.closest("article") as HTMLElement);
-    const sentence = "Needs an AI key. Add one in Settings, then Accounts and keys.";
+    const sentence = "Needs an AI. Choose one in Settings, then AI assistants.";
     await note.findByText((_, el) => el?.tagName === "P" && el.textContent === sentence);
-    const link = note.getByRole("link", { name: "Settings, then Accounts and keys" });
-    expect(link).toHaveAttribute("href", "/settings/accounts");
+    const link = note.getByRole("link", { name: "Settings, then AI assistants" });
+    expect(link).toHaveAttribute("href", "/settings/ai");
     expect(note.getByRole("button", { name: "Run" })).toBeEnabled();
-    expect(within(card("Check a stock, step by step")).queryByText(/Needs an AI key/)).toBeNull();
+    expect(within(card("Check a stock, step by step")).queryByText(/Needs an AI/)).toBeNull();
     expect(document.body.textContent).not.toContain("Works best with an AI key");
   });
 
-  it("shows no AI key note when a key is saved, and none while it is not yet known", async () => {
+  it("shows no AI note when an AI is ready, and none while it is not yet known", async () => {
     const pending = deferred<unknown>();
     engine({ "GET /api/v2/copilot/models": () => pending.promise });
     const first = renderApp(<Agents />);
     await screen.findByRole("heading", { name: "Read the news" });
-    expect(screen.queryByText(/Needs an AI key/)).toBeNull();
+    expect(screen.queryByText(/Needs an AI/)).toBeNull();
     await act(async () => pending.resolve(AI_READY));
-    expect(screen.queryByText(/Needs an AI key/)).toBeNull();
+    expect(screen.queryByText(/Needs an AI/)).toBeNull();
     first.unmount();
     engine({ "GET /api/v2/copilot/models": () => { throw new Error("offline"); } });
     renderApp(<Agents />);
     await screen.findByRole("heading", { name: "Read the news" });
     await waitFor(() => expect(callsTo("GET", "/api/v2/copilot/models").length).toBeGreaterThan(1));
-    expect(screen.queryByText(/Needs an AI key/)).toBeNull();
+    expect(screen.queryByText(/Needs an AI/)).toBeNull();
   });
 
   it("says plainly, with a way to retry, when the agents cannot be loaded", async () => {

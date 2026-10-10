@@ -3,6 +3,9 @@ import { ArrowDown, ArrowUp, Clock3, Search } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { AsOf, DataGate } from "../components/common";
+import { ModeFilterNote } from "../components/mode/ModeFilterNote";
+import { ShariahBadge } from "../components/mode/ShariahBadge";
+import { type ModeFilter, useModeFilter } from "../components/mode/useModeFilter";
 import { Badge, Card, cx, Delta, PageHeader, Segmented, Skeleton, Tooltip } from "../components/ui";
 import { date, int, num, pct } from "../lib/format";
 import { useScreener } from "../lib/queries";
@@ -71,6 +74,8 @@ function Screener() {
     });
   }, [screener.data, preset, sort, query]);
 
+  const filter = useModeFilter(rows, "markets", { statusFrom: screener.data?.rows.map((r) => r.symbol) });
+
   const choosePreset = (id: Preset) => {
     const def = PRESETS.find((p) => p.id === id)!;
     setPreset(id);
@@ -122,6 +127,7 @@ function Screener() {
           </Tooltip>
         ))}
       </div>
+      <ModeFilterNote filter={filter} coverage />
       <Card padded={false} className="overflow-hidden">
         {screener.isPending ? (
           <div className="space-y-2 p-5">
@@ -130,11 +136,11 @@ function Screener() {
             ))}
           </div>
         ) : (
-          <VirtualTable rows={rows} latest={latest} sort={sort} onSort={(key) => setSort((s) => ({ key, desc: s.key === key ? !s.desc : key !== "symbol" && key !== "vol_1y" }))} />
+          <VirtualTable rows={filter.visible} filter={filter} latest={latest} sort={sort} onSort={(key) => setSort((s) => ({ key, desc: s.key === key ? !s.desc : key !== "symbol" && key !== "vol_1y" }))} />
         )}
       </Card>
       <p className="text-[12.5px] text-ink-3">
-        {int(rows.length)} shown. Returns are price-only (dividends excluded) and computed on each stock's own sessions. Stocks with older data are marked
+        {int(filter.visible.length)} shown. Returns are price-only (dividends excluded) and computed on each stock's own sessions. Stocks with older data are marked
         with a clock.
       </p>
     </div>
@@ -143,11 +149,13 @@ function Screener() {
 
 function VirtualTable({
   rows,
+  filter,
   latest,
   sort,
   onSort,
 }: {
   rows: ScreenerRow[];
+  filter: ModeFilter<ScreenerRow>;
   latest: string | null;
   sort: { key: SortKey; desc: boolean };
   onSort: (key: SortKey) => void;
@@ -198,6 +206,7 @@ function VirtualTable({
                         {r.is_etf ? <Badge tone="violet">ETF</Badge> : null}
                         {r.security_type === "PCA" && <Badge tone="warn">Surveillance</Badge>}
                         {r.series === "BE" && <Badge tone="warn">T2T</Badge>}
+                        <ShariahBadge compact status={filter.statusOf(r.symbol)} />
                         {stale && (
                           <Tooltip content={`Data to ${date(r.asof)}`}>
                             <Clock3 className="size-3.5 text-warn" aria-label={`Data to ${date(r.asof)}`} />

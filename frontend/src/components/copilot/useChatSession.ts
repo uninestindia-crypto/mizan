@@ -1,12 +1,11 @@
-import { useCallback, useMemo, useReducer, useRef, useState } from "react";
-import {
-  buildChatRequest,
-  copilotApi,
-  MAX_MESSAGE_CHARS,
-  normaliseReply,
-  refusalSentence,
-} from "../../lib/copilot";
-import { type ChatAction, type ChatMessage, type ChatState, chatReducer, initialChat } from "./chatState";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo, useState } from "react";
+import { MAX_MESSAGE_CHARS, refusalSentence } from "../../lib/copilot";
+import { askInChat, chatListKey, forgetChat, isChatGone } from "../../lib/copilotHistory";
+import type { ChatAction, ChatMessage } from "./chatState";
+import { type Apply, type ChatStore, useChatStore } from "./history/chatStore";
+import { type OpenResult, useOpenChat } from "./history/useOpenChat";
+import { useRememberedChat } from "./history/useRememberedChat";
 
 export interface ChatSession {
   messages: ChatMessage[];
@@ -19,58 +18,78 @@ export interface ChatSession {
   setDraft: (text: string) => void;
   send: (text: string) => boolean;
   retry: () => void;
+  /** Starts an empty thread. The chat that was open stays saved. */
   newChat: () => void;
+  /** The saved chat this thread belongs to, or null while it has none yet. */
+  chatId: string | null;
+  /** Puts a saved chat in the thread, so the next question carries it on. */
+  openChat: (id: string) => Promise<OpenResult>;
+  /** A saved chat is being fetched. */
+  openingChat: boolean;
 }
-
-type Apply = (action: ChatAction) => ChatState;
 
 interface Question {
   messages: ChatMessage[];
   page: string;
   requestId: number;
+  chatId: string | null;
 }
 
-/** Asks the engine. A message it refuses goes back into the box, so the person can change it rather than retype it. */
-async function answer(question: Question, apply: Apply, restore: (text: string) => void): Promise<void> {
-  const { messages, page, requestId } = question;
+interface Around {
+  apply: Apply;
+  /** Whether the answer to this question is still the one awaited. The person may have moved to another chat. */
+  isAwaited: (requestId: number) => boolean;
+  restore: (text: string) => void;
+  /** A chat was saved, so the list of chats is out of date. */
+  saved: () => void;
+}
+
+/** A message the engine refuses goes back into the box, so the person can change it rather than retype it. */
+function failedWith(error: unknown, question: Question, around: Around): void {
+  const { messages, requestId } = question;
+  const awaited = around.isAwaited(requestId);
+  const refusal = refusalSentence(error) ?? undefined;
+  const last = messages[messages.length - 1];
+  if (awaited && refusal && last?.role === "user") around.restore(last.content);
+  const chatGone = awaited && isChatGone(error);
+  if (chatGone) forgetChat();
+  around.apply({ type: "failed", requestId, refusal, chatGone });
+}
+
+/** Asks the engine, which saves the question and the answer in the chat. */
+async function answer(question: Question, around: Around): Promise<void> {
+  const { messages, page, requestId, chatId } = question;
   try {
-    const raw = await copilotApi.chat(buildChatRequest(messages, page));
-    apply({ type: "replied", requestId, reply: normaliseReply(raw) });
+    const reply = await askInChat(messages, page, chatId);
+    around.apply({ type: "replied", requestId, reply });
+    around.saved();
   } catch (error) {
-    const refusal = refusalSentence(error) ?? undefined;
-    const last = messages[messages.length - 1];
-    if (refusal && last?.role === "user") restore(last.content);
-    apply({ type: "failed", requestId, refusal });
+    failedWith(error, question, around);
   }
 }
 
-/** The conversation with the Copilot: what was said, what is awaited, and what the person is typing. */
-export function useChatSession(page: string): ChatSession {
-  const [state, dispatch] = useReducer(chatReducer, initialChat);
-  const [draft, setDraft] = useState("");
-  const live = useRef({ state, page, seq: 0 });
-  live.current.page = page;
+function makeAround(store: ChatStore, restore: (text: string) => void, saved: () => void): Around {
+  const { live, apply } = store;
+  return { apply, restore, saved, isAwaited: (id) => live.current.state.pending === id };
+}
 
-  // Reduce here as well as in React so a second click in the same instant sees the first one's effect.
-  const apply = useCallback<Apply>((action) => {
-    live.current.state = chatReducer(live.current.state, action);
-    dispatch(action);
-    return live.current.state;
-  }, []);
-
+/** Sending and retrying. An answer that arrives after the person moved to another chat is saved but not shown. */
+function useAsking(store: ChatStore, restore: (text: string) => void) {
+  const { live, apply } = store;
+  const client = useQueryClient();
+  const saved = useCallback(() => void client.invalidateQueries({ queryKey: chatListKey }), [client]);
   const begin = useCallback(
     (make: (requestId: number) => ChatAction): boolean => {
       const before = live.current.state;
       const requestId = ++live.current.seq;
       const next = apply(make(requestId));
       if (next === before) return false;
-      const question = { messages: next.messages, page: live.current.page, requestId };
-      void answer(question, apply, (text) => setDraft((current) => current || text));
+      const question = { messages: next.messages, page: live.current.page, requestId, chatId: next.chatId };
+      void answer(question, makeAround(store, restore, saved));
       return true;
     },
-    [apply],
+    [live, apply, store, restore, saved],
   );
-
   const send = useCallback(
     (text: string) => {
       const content = text.trim().slice(0, MAX_MESSAGE_CHARS);
@@ -79,13 +98,42 @@ export function useChatSession(page: string): ChatSession {
     [begin],
   );
   const retry = useCallback(() => void begin((requestId) => ({ type: "retried", requestId })), [begin]);
-  const newChat = useCallback(() => void apply({ type: "cleared" }), [apply]);
+  return { send, retry };
+}
 
-  const { messages, status, failure } = state;
+/** The conversation with the Copilot: what was said, what is awaited, and what the person is typing. */
+export function useChatSession(page: string): ChatSession {
+  const store = useChatStore(page);
+  const { apply, state } = store;
+  const [draft, setDraft] = useState("");
+  const restore = useCallback((text: string) => setDraft((current) => current || text), []);
+  const { send, retry } = useAsking(store, restore);
+  const { openChat, openingChat } = useOpenChat(store);
+  useRememberedChat(state.chatId);
+
+  const newChat = useCallback(() => {
+    forgetChat();
+    apply({ type: "cleared" });
+  }, [apply]);
+
+  const { messages, status, failure, chatId } = state;
   const thinking = status === "thinking";
   const failed = status === "failed";
   return useMemo(
-    () => ({ messages, thinking, failed, failure, draft, setDraft, send, retry, newChat }),
-    [messages, thinking, failed, failure, draft, send, retry, newChat],
+    () => ({
+      messages,
+      thinking,
+      failed,
+      failure,
+      draft,
+      setDraft,
+      send,
+      retry,
+      newChat,
+      chatId,
+      openChat,
+      openingChat,
+    }),
+    [messages, thinking, failed, failure, draft, send, retry, newChat, chatId, openChat, openingChat],
   );
 }

@@ -10,9 +10,12 @@ vi.mock("../../lib/api", async (importOriginal) => {
   return { ...original, api: vi.fn() };
 });
 
+const STARTER_QUESTIONS = ["Is TCS halal?", "How is INFY doing?", "News on RELIANCE", "What can you do?"];
+
 describe("the Copilot drawer", () => {
   beforeEach(() => {
     vi.mocked(api).mockReset();
+    window.localStorage.clear();
   });
   afterEach(cleanup);
 
@@ -80,19 +83,24 @@ describe("the Copilot drawer", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
-  it("offers the starter questions on an empty chat and sends one when clicked", async () => {
+  it.each(STARTER_QUESTIONS)("offers the starter question %s on an empty chat", async (text) => {
     chatWith(reply());
     renderApp(<Shell />);
     openDrawer();
-    for (const text of ["Is TCS halal?", "How is INFY doing?", "News on RELIANCE", "What can you do?"]) {
-      expect(await screen.findByRole("button", { name: text })).toBeInTheDocument();
-    }
-    fireEvent.click(screen.getByRole("button", { name: "Is TCS halal?" }));
+    expect(await screen.findByRole("button", { name: text })).toBeInTheDocument();
+  });
+
+  it("sends a starter question when clicked, as the first message of a new saved chat", async () => {
+    chatWith(reply());
+    renderApp(<Shell />);
+    openDrawer();
+    fireEvent.click(await screen.findByRole("button", { name: "Is TCS halal?" }));
     expect(await screen.findByText("TCS passes both standards.")).toBeInTheDocument();
     expect(callsTo("POST", CHAT)[0]?.[2]).toEqual({
       messages: [{ role: "user", content: "Is TCS halal?" }],
       page: "/stock/TCS",
       agent_id: null,
+      conversation_id: "new",
     });
     expect(screen.queryByRole("button", { name: "News on RELIANCE" })).toBeNull();
   });
@@ -165,9 +173,28 @@ describe("the Copilot drawer", () => {
   });
 });
 
+type KeyButton = { label: string; path: string };
+const KEY_BUTTONS: [string, KeyButton][] = [
+  ["the new button", { label: "Choose an AI", path: "/settings/ai" }],
+  ["the old button, which is still tolerated", { label: "Add an AI key", path: "/settings/accounts" }],
+];
+const SAID_TWICE: [string, string, KeyButton][] = [
+  [
+    "the new words",
+    "Which stock?\n\nTo ask open-ended questions, set up an AI: open Settings, then AI assistants.",
+    { label: "Choose an AI", path: "/settings/ai" },
+  ],
+  [
+    "the old words, which are still tolerated",
+    "Which stock?\n\nTo ask open-ended questions, add an AI key: open Settings, then Accounts and keys.",
+    { label: "Add an AI key", path: "/settings/accounts" },
+  ],
+];
+
 describe("what a reply shows", () => {
   beforeEach(() => {
     vi.mocked(api).mockReset();
+    window.localStorage.clear();
   });
   afterEach(cleanup);
 
@@ -245,52 +272,52 @@ describe("what a reply shows", () => {
     expect(screen.queryByRole("button", { name: "Go elsewhere" })).toBeNull();
   });
 
-  it("says quietly that a built-in answer is built in, with a way to add an AI key", async () => {
+  it("says quietly that a built-in answer is built in, with a way to choose an AI", async () => {
     await ask(reply({ mode: "built_in", provider: null, model: null }));
     const note = await screen.findByText(/Answered from QuantOS's built-in answers\./);
-    const sentence = "Answered from QuantOS's built-in answers. Add an AI key for open-ended questions.";
+    const sentence = "Answered from QuantOS's built-in answers. Choose an AI for open-ended questions.";
     expect(note.textContent?.replace(/\s+/g, " ").trim()).toBe(sentence);
-    fireEvent.click(within(note).getByRole("button", { name: "Add an AI key" }));
-    await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/settings/accounts"));
+    fireEvent.click(within(note).getByRole("button", { name: "Choose an AI" }));
+    await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/settings/ai"));
   });
 
-  it("shows one Add an AI key button, not two, when the engine also sends one", async () => {
-    const addKey = { kind: "navigate", label: "Add an AI key", path: "/settings/accounts", symbol: null };
-    await ask(reply({ mode: "built_in", provider: null, model: null, proposals: [addKey] }));
+  it.each(KEY_BUTTONS)("shows one Choose an AI button, not two, when the engine sends %s", async (_name, proposal) => {
+    const sent = { kind: "navigate", symbol: null, ...proposal };
+    await ask(reply({ mode: "built_in", provider: null, model: null, proposals: [sent] }));
     await screen.findByText(/Answered from QuantOS's built-in answers\./);
-    expect(screen.getAllByRole("button", { name: "Add an AI key" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Choose an AI" })).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Add an AI key" })).toBeNull();
   });
 
   it("does not show the built-in line when an AI model answered, and names only the company", async () => {
     await ask(reply());
     await screen.findByText("TCS passes both standards.");
     expect(screen.queryByText(/built-in answers/)).toBeNull();
-    expect(screen.getByText("Answered by an AI model from OpenAI.")).toBeInTheDocument();
+    expect(screen.getByText("Answered by OpenAI")).toBeInTheDocument();
     expect(screen.queryByText(/gpt-x/)).toBeNull();
   });
 
-  it("never shows a model id or a provider id, even for a company it cannot name", async () => {
+  it("never shows a model id or a provider id, and says nothing for a company it cannot name", async () => {
     await ask(reply({ provider: "anthropic-model", model: "claude-model-9" }));
     await screen.findByText("TCS passes both standards.");
-    expect(screen.getByText("Answered by an AI model.")).toBeInTheDocument();
+    expect(screen.queryByText(/Answered by/)).toBeNull();
     expect(screen.queryByText(/claude-model-9|anthropic-model/)).toBeNull();
   });
 
-  it("does not say twice to add an AI key when the reply already says it", async () => {
-    const text = "Which stock?\n\nTo ask open-ended questions, add an AI key: open Settings, then Accounts and keys.";
-    const addKey = { kind: "navigate", label: "Add an AI key", path: "/settings/accounts", symbol: null };
-    await ask(reply({ reply: text, mode: "built_in", provider: null, model: null, proposals: [addKey] }));
-    await screen.findByText(/add an AI key: open Settings/);
+  it.each(SAID_TWICE)("does not say twice to choose an AI, in %s", async (_n, text, proposal) => {
+    const sent = { kind: "navigate", symbol: null, ...proposal };
+    await ask(reply({ reply: text, mode: "built_in", provider: null, model: null, proposals: [sent] }));
+    await screen.findByText(/open Settings, then/);
     expect(screen.queryByText(/Answered from QuantOS's built-in answers/)).toBeNull();
     expect(screen.queryByText(/for open-ended questions\./)).toBeNull();
-    expect(screen.getAllByRole("button", { name: "Add an AI key" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: proposal.label })).toHaveLength(1);
   });
 
   it("adds no footer after a rejected key, and still gives one clear button", async () => {
     const text = "That AI service did not accept your key. Open Settings, then Accounts and keys, and check it.";
     await ask(reply({ reply: text, mode: "built_in", provider: null, model: null }));
     await screen.findByText(/did not accept your key/);
-    expect(screen.queryByText(/Add an AI key for open-ended questions/)).toBeNull();
+    expect(screen.queryByText(/Choose an AI for open-ended questions/)).toBeNull();
     expect(screen.queryByText(/Answered from QuantOS's built-in answers/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Check your AI keys" }));
     await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/settings/accounts"));
@@ -306,6 +333,7 @@ describe("what a reply shows", () => {
 describe("when the Copilot cannot answer", () => {
   beforeEach(() => {
     vi.mocked(api).mockReset();
+    window.localStorage.clear();
   });
   afterEach(cleanup);
 

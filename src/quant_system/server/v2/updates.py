@@ -23,14 +23,35 @@ import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
-REPOSITORY = os.environ.get("QUANTOS_UPDATE_REPO", "uninestindia-crypto/quant-system")
+REPOSITORY = os.environ.get("QUANTOS_UPDATE_REPO", "uninestindia-crypto/mizan")
 CACHE_SECONDS = 6 * 3600
 _NOTES_LIMIT = 1500
 _VERSION = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
 
 Fetcher = Callable[[], dict[str, Any] | None]
+
+
+@dataclass(frozen=True, slots=True)
+class ReleaseAssets:
+    """The files a one-click update needs from the newest release."""
+
+    version: str
+    installer_name: str
+    installer_url: str
+    checksums_url: str | None
+
+
+def _asset_url(assets: list[Any], matches: Callable[[str], bool]) -> tuple[str, str] | None:
+    """``(name, download address)`` of the first release file whose name matches, or None."""
+    for asset in assets:
+        name = str(asset.get("name", "")) if isinstance(asset, dict) else ""
+        url = str(asset.get("browser_download_url") or "") if isinstance(asset, dict) else ""
+        if name and url and matches(name):
+            return name, url
+    return None
 
 
 def parse_version(text: str) -> tuple[int, int, int] | None:
@@ -91,6 +112,22 @@ class UpdateChecker:
         self._fetch: Fetcher = fetch or fetch_latest_release
         self._lock = threading.Lock()
         self._cached: tuple[float, dict[str, Any]] | None = None
+        self._release: dict[str, Any] | None = None
+
+    def install_assets(self) -> ReleaseAssets | None:
+        """The installer and fingerprint file of the newest release, when it is newer than this one."""
+        with self._lock:
+            release, cached = self._release, self._cached
+        if release is None or cached is None or not cached[1]["update_available"]:
+            return None
+        files = [a for a in release.get("assets") or [] if isinstance(a, dict)]
+        installer = _asset_url(files, lambda name: name.endswith("_Setup.exe"))
+        sums = _asset_url(files, lambda name: name.upper().startswith("SHA256SUMS"))
+        if installer is None:
+            return None
+        return ReleaseAssets(
+            str(cached[1]["latest"]), installer[0], installer[1], sums[1] if sums else None
+        )
 
     def check(self, force: bool = False) -> dict[str, Any]:
         with self._lock:
@@ -117,6 +154,7 @@ class UpdateChecker:
             release = self._fetch()
         except Exception:  # an update check must never raise into the app
             release = None
+        self._release = release or None
         if not release:
             return base
         tag = str(release.get("tag_name") or "")
@@ -171,7 +209,37 @@ class UpdateChecker:
 
 OFFLINE_CHANGELOG: list[dict[str, Any]] = [
     {
-        "version": "3.0.0",
+        "version": "3.2.0",
+        "date": "2026-10-09",
+        "title": "Shariah results from company filings, fundamentals, several accounts, a clearer top bar and one-click updates",
+        "whats_new": [
+            'Shariah results now come from each company\'s own filing wherever QuantOS holds one, with the filing behind every figure and a plain "out of date" label when the filing is old. You can read newer filings from inside the app',
+            "Fundamentals: a new screen where you set the filters and sorting yourself and compare up to four companies side by side. Each Stock page shows the company's results from its own filings with the formula and the filing behind every figure, and your Portfolio has a Fundamentals tab. Nothing is ranked or called good or bad",
+            "Several accounts in your Portfolio: see them together or one at a time, add, edit and remove accounts, and Add to portfolio now asks which account. Each purchase shows how long it has been held, as a fact, with no tax amounts",
+            "A top bar that tells you where you are and what needs attention: the screen and its parent, a real search field, whether the market is open, how fresh prices are, whether live prices are on and when an update is waiting",
+            "Update and restart: Settings, About can download the new version, check it against the fingerprint published with the release, install it and open QuantOS again. Windows may ask you to confirm",
+            "AI apps: install and sign in to Claude Code, Codex and Gemini from one plain card, with no terminal. Choose in Settings which AI answers the Copilot, and every chat is kept on this computer so you can search and carry one on",
+        ],
+        "fixes": [
+            "A stock whose two Shariah standards disagree now reads the same result on its badge, its card and the screener tab",
+            "The market chip says Market open, Market closed or a holiday when it knows the NSE holiday list, and says Market hours otherwise",
+            "Add to portfolio on a stock page no longer files into the first account for people who keep several",
+            '"Coding agents" is now "AI apps", and developer words no longer appear in anything you read',
+        ],
+        "improvements": [
+            "Company results for 412 NSE companies ship with the app, so Fundamentals and Shariah screens work on a brand-new laptop with no internet. They are out of date until you read newer filings, and say so",
+            "Back and forward buttons sit in the new top bar",
+        ],
+        "unchanged_protections": [
+            "Keys stay strictly encrypted in local Windows Credential Manager and are never sent to external servers",
+            "Zero unauthorized live-broker order execution — all autonomous decisions strictly sandboxed and verified",
+            "Halal results come only from deterministic screening rules applied to a company's own figures, never from an AI model",
+            "Company results are facts from filings, not advice, and old data is always labelled",
+            "Decimal-exact financial accounting and statutory NSE transaction cost schedules preserved",
+        ],
+    },
+    {
+        "version": "3.1.0",
         "date": "2026-10-08",
         "title": "Mizan Quant OS: Quant SLM Engine, Microsoft Qlib Multi-Factor Architecture & Factory-New Installer",
         "whats_new": [
@@ -308,7 +376,7 @@ OFFLINE_CHANGELOG: list[dict[str, Any]] = [
             "Start and follow live paper trading books directly within the desktop UI",
             "Built-in market data downloader for factory-new laptops without pre-existing data",
             "Direct support for Google Gemini, DeepSeek, and Mistral API keys in AI Assistant",
-            "Auto-discovery of local market data and browser-based CLI authentication",
+            "Auto-discovery of local market data and browser-based sign-in for AI apps",
         ],
         "fixes": [
             "Repaired statutory transaction cost display across order sizes",
@@ -329,7 +397,7 @@ OFFLINE_CHANGELOG: list[dict[str, Any]] = [
         "title": "Windows Shell Integration & Multi-Agent Bridge",
         "whats_new": [
             "Fixed taskbar icon identity and tray integration on Windows x64",
-            "Multi-agent CLI bridge and 1-click credential hub",
+            "Install and sign in to several AI apps with one click",
         ],
         "fixes": [
             "Clean exit handling on Windows process shutdowns",

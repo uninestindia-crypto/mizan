@@ -34,8 +34,7 @@ NOT_REORDERABLE = (
     "when the facts are reordered was not checked."
 )
 NO_MODELS = (
-    "No AI models were chosen. Pick at least one, or add an AI key: "
-    "open Settings, then Accounts and keys."
+    "No AI models were chosen. Pick at least one, or set one up: open Settings, then AI assistants."
 )
 
 

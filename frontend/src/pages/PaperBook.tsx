@@ -4,7 +4,11 @@ import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { EquityChart, type EquitySeries } from "../components/charts";
 import { DataGate } from "../components/common";
+import { PaperBookNote } from "../components/mode/PaperBookNote";
+import { ShariahBadge } from "../components/mode/ShariahBadge";
+import { useModeLabels } from "../components/mode/useModeLabels";
 import { OrderTicket } from "../components/OrderTicket";
+import { PaperPositionsCard } from "../components/PaperPositions";
 import { PlacementTrackingCard } from "../components/PlacementTrackingCard";
 import {
   Badge,
@@ -12,14 +16,13 @@ import {
   Callout,
   Card,
   CardHeader,
-  Delta,
   EmptyState,
   PageHeader,
   Skeleton,
   Stat,
 } from "../components/ui";
 import { errorMessage } from "../lib/api";
-import { date, inr, inrCompact, inrSigned, int, pct, tone } from "../lib/format";
+import { date, inr, inrCompact, int, pct, tone } from "../lib/format";
 import { usePaperBook, useStopPaperBook } from "../lib/queries";
 import type { PaperBookDetail, PaperStatus } from "../lib/types";
 
@@ -142,6 +145,7 @@ function PaperBookDetailView({
     ];
   }, [book.curve]);
 
+  const labels = useModeLabels(book.trades.map((t) => t.symbol));
   const targetWhat =
     book.scope.kind === "stocks"
       ? (book.scope.symbols ?? []).join(", ") || "None"
@@ -259,54 +263,12 @@ function PaperBookDetailView({
 
       <PlacementTrackingCard tracking={book.tracking} />
 
-      {/* Card: What it holds */}
-      <Card>
-        <CardHeader title="What it holds" />
-        {book.positions.length === 0 ? (
-          <p className="text-sm text-ink-3">It holds no shares yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
-              <thead>
-                <tr className="border-y border-line bg-surface-2/60 text-[12px] font-semibold uppercase tracking-wide text-ink-3">
-                  <th className="px-3 py-2 text-left">Stock</th>
-                  <th className="px-3 py-2 text-right">Shares</th>
-                  <th className="px-3 py-2 text-right">Average price</th>
-                  <th className="px-3 py-2 text-right">Last close</th>
-                  <th className="px-3 py-2 text-right">Value</th>
-                  <th className="px-3 py-2 text-right">Share of book</th>
-                  <th className="px-3 py-2 text-right">Unrealised</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {book.positions.map((p) => (
-                  <tr key={p.symbol}>
-                    <td className="px-3 py-2 font-medium text-ink">
-                      <Link to={`/stock/${p.symbol}`} className="hover:underline">
-                        {p.symbol}
-                      </Link>
-                    </td>
-                    <td className="num px-3 py-2 text-right text-ink-2">{int(p.quantity)}</td>
-                    <td className="num px-3 py-2 text-right text-ink-2">{inr(p.average_price)}</td>
-                    <td className="num px-3 py-2 text-right text-ink-2">{inr(p.last_close)}</td>
-                    <td className="num px-3 py-2 text-right text-ink-2">{inr(p.market_value, 0)}</td>
-                    <td className="num px-3 py-2 text-right text-ink-2">{pct(p.weight, 1, false)}</td>
-                    <td className="px-3 py-2 text-right">
-                      <Delta value={p.unrealized_pnl} strong>
-                        {inrSigned(p.unrealized_pnl)}
-                      </Delta>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+      <PaperPositionsCard positions={book.positions} bookName={book.name} />
 
       {/* Card: Trades so far */}
       <Card>
         <CardHeader title="Trades so far" />
+        {book.trades.length > 0 && <PaperBookNote labels={labels} className="mb-3" />}
         {book.trades.length === 0 ? (
           <p className="text-sm text-ink-3">No trades yet. The first orders fill at the next session's open.</p>
         ) : (
@@ -330,9 +292,12 @@ function PaperBookDetailView({
                       <Badge tone={t.side === "BUY" ? "up" : "down"}>{t.side}</Badge>
                     </td>
                     <td className="px-3 py-2 font-medium text-ink">
-                      <Link to={`/stock/${t.symbol}`} className="hover:underline">
-                        {t.symbol}
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <Link to={`/stock/${t.symbol}`} className="hover:underline">
+                          {t.symbol}
+                        </Link>
+                        <ShariahBadge compact symbol={t.symbol} status={labels.statusOf(t.symbol)} />
+                      </div>
                     </td>
                     <td className="num px-3 py-2 text-right text-ink-2">{int(t.quantity)}</td>
                     <td className="num px-3 py-2 text-right text-ink-2">{inr(t.price)}</td>

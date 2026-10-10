@@ -10,6 +10,7 @@ from quant_system.shariah.schemas.basket import (
     BasketExportRequest,
     BasketExportResponse,
     BrokerOrder,
+    PriceStatus,
 )
 from quant_system.shariah.services.basket_service import get_basket_by_id
 
@@ -39,6 +40,17 @@ ANGEL_ONE_TOKENS: dict[str, str] = {
 }
 
 
+def _require_prices(constituents: list[BasketConstituent]) -> list[tuple[BasketConstituent, float]]:
+    """Pair each stock with its price, refusing to guess one for a stock that has none."""
+    missing = [c.symbol for c in constituents if c.current_price is None]
+    if missing:
+        raise ValueError(
+            "An order sheet needs a price for every share, and these have no price yet: "
+            f"{', '.join(missing)}."
+        )
+    return [(c, float(c.current_price)) for c in constituents if c.current_price is not None]
+
+
 def allocate_capital_to_basket(
     constituents: list[BasketConstituent],
     capital: float,
@@ -56,9 +68,8 @@ def allocate_capital_to_basket(
     warnings: list[str] = []
     total_cost = 0.0
 
-    for c in constituents:
+    for c, price in _require_prices(constituents):
         sym = c.symbol
-        price = float(c.current_price or 1000.0)
         weight = float(c.weight)
         alloc_amt = capital * weight
         shares = int(alloc_amt // price)
@@ -328,7 +339,7 @@ async def export_basket_orders(
 ) -> BasketExportResponse | None:
     """
     Main broker export orchestrator:
-    1. Loads basket constituents with live market prices.
+    1. Loads basket constituents with their sample prices (and refuses if a stock has none).
     2. Runs capital allocation engine with minimum 1-share floor.
     3. Formats batch order sheets for Zerodha, Upstox, Groww, or AngelOne.
     """
@@ -365,6 +376,12 @@ async def export_basket_orders(
             orders_data, request.order_type
         )
         warnings.append(f"Unrecognized broker '{request.broker}'. Defaulted to Zerodha CNC format.")
+
+    if any(c.price_status is PriceStatus.SAMPLE for c in basket_detail.constituents):
+        warnings.append(
+            "These are sample prices, not live prices, so the share counts are examples only."
+        )
+    warnings.append("QuantOS does not place orders. Use this sheet in your own broker's app.")
 
     return BasketExportResponse(
         basket_id=basket_detail.id,

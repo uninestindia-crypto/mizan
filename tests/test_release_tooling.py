@@ -304,7 +304,7 @@ def test_build_notes_maintenance_only() -> None:
     assert "# QuantOS v1.0.1" in notes or "# Mizan Quant OS v1.0.1" in notes
     assert "This release has maintenance changes only." in notes
     assert (
-        "Full changelog: https://github.com/uninestindia-crypto/quant-system/compare/v1.0.0...v1.0.1"
+        "Full changelog: https://github.com/uninestindia-crypto/mizan/compare/v1.0.0...v1.0.1"
         in notes
         or "Full changelog: https://github.com/uninestindia-crypto/mizan/compare/v1.0.0...v1.0.1"
         in notes
