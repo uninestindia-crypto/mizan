@@ -167,6 +167,10 @@ class ToolRegistry:
     def names(self) -> list[str]:
         return list(self._specs)
 
+    def specs(self, allowed: set[str] | None = None) -> list[ToolSpec]:
+        """The tools in the order they were added, limited to ``allowed`` when it is given."""
+        return [s for s in self._specs.values() if allowed is None or s.name in allowed]
+
     def label(self, name: str) -> str:
         spec = self._specs.get(name)
         return spec.label if spec else name

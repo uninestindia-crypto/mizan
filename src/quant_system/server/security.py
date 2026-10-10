@@ -163,6 +163,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         "/api/v1/assistant/capabilities",
     }
 
+    # Calls an AI app on this computer makes to the Copilot's tools. They carry a per-run bearer token instead of a
+    # browser's CSRF token (a web page has no way to learn it), and the Host and Origin checks above still apply.
+    CSRF_EXEMPT_PREFIXES: tuple[str, ...] = ("/api/v2/copilot/agent/tools/",)
+
     # State-mutating HTTP methods
     MUTATING_METHODS: set[str] = {"POST", "PUT", "DELETE", "PATCH"}
 
@@ -233,6 +237,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if (
             request.method in self.MUTATING_METHODS
             and request.url.path not in self.CSRF_EXEMPT_PATHS
+            and not request.url.path.startswith(self.CSRF_EXEMPT_PREFIXES)
         ):
             csrf_token = request.headers.get("X-CSRF-Token")
             if not csrf_token:

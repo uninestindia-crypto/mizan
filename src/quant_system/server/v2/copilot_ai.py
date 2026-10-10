@@ -18,6 +18,7 @@ from quant_system.copilot.ai_choice import (
     plan_entries,
 )
 from quant_system.copilot.ai_prefs import DEFAULT_SPEED, AnswerPrefs, effective_thinking
+from quant_system.copilot.cli_agent import AGENT_APPS
 from quant_system.copilot.cli_chat import (
     CLI_LABELS,
     CLI_NOT_FOUND,
@@ -32,6 +33,7 @@ from quant_system.server.v2 import cli_bridge, copilot_wiring
 
 __all__ = [
     "ai_overview",
+    "agent_choices",
     "build_chain",
     "build_chat",
     "chain_for",
@@ -180,6 +182,16 @@ def chain_for(prefs: AnswerPrefs | None) -> list[ChatModel]:
     return build_chain(current_choice(), replace(prefs, speed=prefs.speed or speed))
 
 
+def agent_choices(app_id: str, prefs: AnswerPrefs | None) -> tuple[str | None, str | None]:
+    """The model and thinking level to run an AI app with: as saved for it, or as this run asked for it."""
+    speed, _helpers = current_defaults()
+    saved = next((e for e in current_choice().order if e.id == CLI_PREFIX + app_id), None)
+    asked_for_it = prefs is not None and prefs.ai == CLI_PREFIX + app_id
+    model = prefs.model if asked_for_it and prefs else (saved.model if saved else None)
+    level = prefs.thinking if asked_for_it and prefs else (saved.thinking if saved else None)
+    return model, effective_thinking(level, prefs.speed if prefs and prefs.speed else speed)
+
+
 def chat_model() -> ChatModel | None:
     """The model the Copilot asks, as the person has set it up, at the speed they like by default."""
     speed, _helpers = current_defaults()
@@ -236,6 +248,12 @@ def ai_overview() -> dict[str, Any]:
             "order": [{"id": e.id, "model": e.model, "thinking": e.thinking} for e in choice.order],
         },
         "defaults": dict(zip(("speed", "helpers"), current_defaults(), strict=True)),
+        # The apps that can do the work of an agent run, on top of being able to chat: installed, and not known signed out.
+        "agent_apps": [
+            CLI_PREFIX + a["id"]
+            for a in apps
+            if a["id"] in AGENT_APPS and a["installed"] and a["state"] != "NEEDS_SIGN_IN"
+        ],
         "ai_ready": bool(usable) or bool(_keyed()),
     }
 

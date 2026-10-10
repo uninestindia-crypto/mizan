@@ -904,7 +904,7 @@ def test_the_team_size_and_speed_come_from_the_message_then_from_settings(
 def test_the_run_routes_obey_the_same_name_rules_as_every_other_copilot_route() -> None:
     paths = [r.path for r in copilot_routes.router.routes if hasattr(r, "path")]
     runs_paths = [p for p in paths if "/agent/" in p]
-    assert len(runs_paths) == 4
+    assert len(runs_paths) == 5
     for path in runs_paths:
         assert not any(w in path for w in ("order", "buy", "sell", "trade", "place", "execute")), (
             path

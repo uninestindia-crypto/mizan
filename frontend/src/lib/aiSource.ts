@@ -52,6 +52,8 @@ export interface AiStatus {
   ai: AiChoice;
   providers: ProviderOption[];
   defaults?: AiDefaults;
+  /** The apps ("cli:claude") that can do the whole work of an agent task themselves, installed and not signed out. */
+  agent_apps?: string[];
 }
 
 export interface AiTestResult {

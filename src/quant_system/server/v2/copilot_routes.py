@@ -9,11 +9,12 @@ and an AI service that is down, is HTTP 200 with a plain-language reply; only a 
 from __future__ import annotations
 
 import logging
+import os
 import sqlite3
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Body, Header, Request
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, StringConstraints, field_validator
 
 from quant_system.copilot.agent import AgentResult, CopilotAgent, Message, safe_page
@@ -27,6 +28,8 @@ from quant_system.copilot.ai_prefs import (
     clean_thinking,
     preset,
 )
+from quant_system.copilot.app_run import run_with_app
+from quant_system.copilot.cli_agent import AGENT_APPS
 from quant_system.copilot.conversations import ConversationError, ConversationStore
 from quant_system.copilot.factpack import build_fact_pack
 from quant_system.copilot.helpers import TeamOfHelpers
@@ -41,7 +44,7 @@ from quant_system.copilot.verify import VerifyOptions, verify_stock
 from quant_system.copilot.verify_jobs import TooBusyError, VerifyJobs
 from quant_system.copilot.workflow import RunGate, RunOptions, built_in_answer, run_workflow
 from quant_system.server.security import format_error_response
-from quant_system.server.v2 import copilot_actions_wiring, copilot_ai, copilot_wiring
+from quant_system.server.v2 import cli_bridge, copilot_actions_wiring, copilot_ai, copilot_wiring
 from quant_system.server.v2.copilot_ai import chat_model, chat_model_for, verify_models
 from quant_system.server.v2.copilot_validation import CopilotRoute
 
@@ -59,6 +62,7 @@ _NO_CHAT = "That chat no longer exists. Start a new chat."
 _NO_RUN = "That run is no longer available. Start it again."
 _RUNS_BUSY = "Several runs are already going. Wait for one to finish, then try again."
 _ANSWERED = "That change has already been answered."
+_APP_NOT_HERE = "That AI app is not installed on this computer. Open Settings, then AI assistants, and set it up."
 _NO_AI_KEY = "No AI is set up yet. Open Settings, then AI assistants, and pick one, or add a key under Accounts and keys."
 _BUSY = "Several second opinions are already running. Wait for one to finish, then try again."
 _NO_SECOND_OPINION = "That second opinion is no longer available. Start it again."
@@ -82,6 +86,7 @@ class AnswerPrefsBody(BaseModel):
     thinking: str | None = Field(default=None, max_length=10)
     speed: Literal["quick", "balanced", "careful"] | None = None
     helpers: int | None = Field(default=None, ge=1, le=3)
+    runner: str | None = Field(default=None, max_length=40)
 
     @field_validator("model")
     @classmethod
@@ -93,8 +98,18 @@ class AnswerPrefsBody(BaseModel):
     def _thinking_is_known(cls, value: str | None) -> str | None:
         return clean_thinking(value)
 
+    @field_validator("runner")
+    @classmethod
+    def _runner_is_known(cls, value: str | None) -> str | None:
+        allowed = {"built_in", *(f"cli:{app}" for app in AGENT_APPS)}
+        if value is not None and value not in allowed:
+            raise ValueError("Pick who does the work from the list.")
+        return value
+
     def prefs(self) -> AnswerPrefs:
-        return AnswerPrefs(self.ai, self.model, self.thinking, self.speed, self.helpers)
+        return AnswerPrefs(
+            self.ai, self.model, self.thinking, self.speed, self.helpers, self.runner
+        )
 
 
 class ChatRequest(BaseModel):
@@ -355,13 +370,68 @@ def _helper_count(prefs: AnswerPrefsBody | None) -> int:
     return asked or copilot_ai.current_defaults()[1]
 
 
+def _start_app_run(
+    body: ChatRequest, request: Request, scope: Any, prefs: AnswerPrefs, chat_id: str | None
+) -> Any:
+    """A task done by an AI app on this computer, with nothing to use but the Copilot's own tools."""
+    app_id = str(prefs.runner).removeprefix("cli:")
+    executable = copilot_ai.installed_apps().get(app_id)
+    if executable is None:
+        return _fail(422, "APP_NOT_INSTALLED", _APP_NOT_HERE)
+    speed = prefs.speed or copilot_ai.current_defaults()[0]
+    model, thinking = copilot_ai.agent_choices(app_id, prefs)
+    allowed, instructions = scope
+    question = body.messages[-1].content
+    history = [Message(m.role, m.content) for m in body.messages]
+    page, mode, registry = safe_page(body.page), copilot_wiring.shariah_mode(), _registry()
+    actions = copilot_actions_wiring.action_registry()
+    base_url = str(request.base_url).rstrip("/")
+
+    def work(handle: RunHandle) -> dict[str, Any]:
+        result = run_with_app(
+            app_id=app_id,
+            executable=executable,
+            handle=handle,
+            attach=lambda tools: _runs.attach_tools(handle.run_id, tools),
+            base_url=base_url,
+            registry=registry,
+            actions=actions,
+            allowed=None if allowed is None else set(allowed),
+            instructions=instructions,
+            shariah_mode=mode,
+            history=history,
+            page=page,
+            limits=preset(speed),
+            model=model,
+            thinking=thinking,
+            environment=os.environ,
+            search_path=cli_bridge.search_path(),
+            kill=cli_bridge._kill_tree,
+        )
+        reply = _reply(result, "ai", f"cli:{app_id}")
+        if chat_id:
+            reply["conversation_id"] = chat_id
+            _remember(chat_id, question, reply)
+        return reply
+
+    try:
+        return {"run_id": _runs.start(work, actions)}
+    except RunsBusyError:
+        return _fail(429, "TOO_BUSY", _RUNS_BUSY)
+
+
 @router.post("/agent/runs", status_code=202, response_model=None)
-def start_agent_run(body: ChatRequest) -> Any:
+def start_agent_run(body: ChatRequest, request: Request) -> Any:
     """Starts the Copilot working on a task, step by step, asking before it changes anything."""
     scope = _chat_scope(body.agent_id)
     if scope is None:
         return _fail(404, "NOT_FOUND", _NO_AGENT)
     prefs = body.prefs.prefs() if body.prefs is not None else None
+    if prefs is not None and prefs.runner not in (None, "built_in"):
+        chat_id = _open_chat(body)
+        if chat_id == "":
+            return _fail(404, "NOT_FOUND", _NO_CHAT)
+        return _start_app_run(body, request, scope, prefs, chat_id)
     chain = copilot_ai.chain_for(prefs)
     if not chain:
         return _fail(422, "NO_AI_KEY", _NO_AI_KEY)
@@ -418,6 +488,25 @@ def start_agent_run(body: ChatRequest) -> Any:
         return {"run_id": _runs.start(work, actions)}
     except RunsBusyError:
         return _fail(429, "TOO_BUSY", _RUNS_BUSY)
+
+
+@router.post("/agent/tools/{run_id}", response_model=None)
+def agent_tools_call(
+    run_id: str,
+    body: dict[str, Any] = Body(...),  # noqa: B008
+    authorization: str | None = Header(default=None),
+) -> Any:
+    """Where an AI app doing a run asks for the Copilot's tools. Only that run's own token is accepted."""
+    tools = _runs.tools_for(run_id)
+    if tools is None:
+        return JSONResponse(status_code=404, content={"error": "no such run"})
+    bearer = authorization.removeprefix("Bearer ").strip() if authorization else None
+    status, content = tools.handle(body, bearer)
+    return (
+        Response(status_code=status)
+        if content is None
+        else JSONResponse(status_code=status, content=content)
+    )
 
 
 @router.get("/agent/runs/{run_id}", response_model=None)

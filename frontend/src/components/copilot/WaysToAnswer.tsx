@@ -2,7 +2,7 @@ import { CheckCircle2, ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-
 import { useId, useState } from "react";
 import { effectiveOrder, orderView, withKept } from "../../lib/aiOrder";
 import type { AiStatus, Speed } from "../../lib/aiSource";
-import { type AnswerPrefs, isUsual, NO_PREFS, withAi } from "../../lib/answerPrefs";
+import { afterSaving, type AnswerPrefs, isSavable, isUsual, NO_PREFS, withAi } from "../../lib/answerPrefs";
 import { Badge, Button, Select } from "../ui";
 import { useAiStatus, useSaveAiChoice } from "../settings/AiSourceQueries";
 import { AiSpeed } from "../settings/AiSpeed";
@@ -12,6 +12,7 @@ import { useCopilot } from "./CopilotProvider";
 import type { ChatMode } from "./useChatSession";
 
 const USUAL_ORDER = "My usual order";
+const THE_COPILOT = "The Copilot, with my usual AIs";
 const FIELD = "block text-[12px] font-medium text-ink-2";
 
 /** The AIs that can be asked for by name: the ones on the list first, then the ones that are ready but not on it. */
@@ -38,14 +39,49 @@ function useMakeDefault({ status, prefs, setPrefs }: PanelProps) {
         ...(prefs.helpers ? { helpers: prefs.helpers } : {}),
       };
     }
-    if (prefs.ai) {
+    if (prefs.ai && !prefs.runner) {
       const rest = effectiveOrder(status, status.ai).filter((entry) => entry.id !== prefs.ai);
       const first = { id: prefs.ai, model: prefs.model, thinking: prefs.thinking };
       patch.ai_order = withKept([first, ...rest], status, status.ai);
     }
-    save.mutate(patch, { onSuccess: () => setPrefs(NO_PREFS) });
+    save.mutate(patch, { onSuccess: () => setPrefs(afterSaving(prefs)) });
   };
   return { make, save };
+}
+
+/** The AI apps that can do a whole task themselves, with the name a person knows them by. */
+function taskApps(status: AiStatus) {
+  return (status.agent_apps ?? []).map((id) => ({ id, name: status.apps.find((app) => `cli:${app.id}` === id)?.name ?? id }));
+}
+
+/** In agent mode: the Copilot works through the task itself, or one of the person's AI apps does the work. */
+function WhoDoesTheWork({ status, prefs, setPrefs }: Omit<PanelProps, "mode">) {
+  const who = useId();
+  const apps = taskApps(status);
+  if (apps.length === 0) return null;
+  const chosen = apps.find((app) => app.id === prefs.runner);
+  const pick = (id: string) => setPrefs(id ? { ...withAi(prefs, id), runner: id } : { ...withAi(prefs, null), runner: null });
+  return (
+    <div className="space-y-1.5">
+      <label className={FIELD} htmlFor={who}>
+        Who does the work
+      </label>
+      <Select id={who} value={chosen?.id ?? ""} onChange={(e) => pick(e.target.value)}>
+        <option value="">{THE_COPILOT}</option>
+        {apps.map((app) => (
+          <option key={app.id} value={app.id}>
+            {app.name}
+          </option>
+        ))}
+      </Select>
+      {chosen && (
+        <p className="text-[11.5px] text-ink-3">
+          {chosen.name} does the whole task itself. It can only use the same lookups as the Copilot, it cannot see your files, and it asks you before it
+          changes anything.
+        </p>
+      )}
+    </div>
+  );
 }
 
 function Panel(props: PanelProps) {
@@ -54,19 +90,25 @@ function Panel(props: PanelProps) {
   const { make, save } = useMakeDefault(props);
   const speed: Speed = prefs.speed ?? status.defaults?.speed ?? "balanced";
   const ais = askable(status);
+  const doing = mode === "agent" ? taskApps(status).find((app) => app.id === prefs.runner) : undefined;
   return (
     <div className="space-y-3 rounded-lg border border-line bg-surface-2/60 p-3">
-      <label className={FIELD} htmlFor={which}>
-        Which AI
-      </label>
-      <Select id={which} value={prefs.ai ?? ""} onChange={(e) => setPrefs(withAi(prefs, e.target.value || null))}>
-        <option value="">{USUAL_ORDER}</option>
-        {ais.map((ai) => (
-          <option key={ai.id} value={ai.id}>
-            {ai.name}
-          </option>
-        ))}
-      </Select>
+      {mode === "agent" && <WhoDoesTheWork status={status} prefs={prefs} setPrefs={setPrefs} />}
+      {!doing && (
+        <>
+          <label className={FIELD} htmlFor={which}>
+            Which AI
+          </label>
+          <Select id={which} value={prefs.ai ?? ""} onChange={(e) => setPrefs(withAi(prefs, e.target.value || null))}>
+            <option value="">{USUAL_ORDER}</option>
+            {ais.map((ai) => (
+              <option key={ai.id} value={ai.id}>
+                {ai.name}
+              </option>
+            ))}
+          </Select>
+        </>
+      )}
       {prefs.ai ? (
         <ModelFields
           key={prefs.ai}
@@ -78,7 +120,7 @@ function Panel(props: PanelProps) {
         <p className="text-[11.5px] text-ink-3">Pick an AI to choose its model and how hard it thinks.</p>
       )}
       <AiSpeed compact legend="Speed" value={speed} onChange={(value) => setPrefs({ ...prefs, speed: value })} />
-      {mode === "agent" && (
+      {mode === "agent" && !doing && (
         <AiTeam
           label="Who works on the task"
           value={prefs.helpers ?? status.defaults?.helpers ?? 1}
@@ -89,9 +131,11 @@ function Panel(props: PanelProps) {
       <div className="flex flex-wrap items-center gap-2 pt-1">
         {!isUsual(prefs) && (
           <>
-            <Button size="sm" variant="secondary" loading={save.isPending} onClick={make}>
-              Make this my usual
-            </Button>
+            {isSavable(prefs) && (
+              <Button size="sm" variant="secondary" loading={save.isPending} onClick={make}>
+                Make this my usual
+              </Button>
+            )}
             <Button size="sm" variant="ghost" onClick={() => setPrefs(NO_PREFS)}>
               Back to my usual
             </Button>

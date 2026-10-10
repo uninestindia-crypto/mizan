@@ -68,6 +68,8 @@ class AnswerPrefs:
     thinking: str | None = None
     speed: str | None = None
     helpers: int | None = None
+    # Who does the work of an agent run: None or "built_in" for the Copilot's own loop, else an AI app ("cli:claude").
+    runner: str | None = None
 
 
 def preset(speed: str | None) -> SpeedPreset:

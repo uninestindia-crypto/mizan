@@ -115,6 +115,10 @@ class RunHandle:
         self._runs = runs
         self._run = run
 
+    @property
+    def run_id(self) -> str:
+        return self._run.id
+
     def emit(self, kind: str, text: str, ok: bool = True, **data: Any) -> None:
         self._runs._add_event(self._run, kind, text, ok, data)
 
@@ -209,6 +213,7 @@ class AgentRuns:
         self._lock = threading.RLock()
         self._runs: dict[str, _Run] = {}
         self._actions: dict[str, ActionRegistry] = {}
+        self._tools: dict[str, Any] = {}
 
     # ------------------------------------------------------------------------------------------ start
 
@@ -254,6 +259,19 @@ class AgentRuns:
                 "result": run.result,
                 "error": run.error,
             }
+
+    def attach_tools(self, run_id: str, tools: Any) -> None:
+        """The tools one run offers to an AI app. They exist only as long as the run is kept."""
+        with self._lock:
+            if run_id in self._runs:
+                self._tools[run_id] = tools
+
+    def tools_for(self, run_id: str) -> Any | None:
+        with self._lock:
+            run = self._runs.get(run_id)
+            if run is None or run.status not in ("running", "waiting"):
+                return None  # a finished run offers nothing, whatever token is shown
+            return self._tools.get(run_id)
 
     def cancel(self, run_id: str) -> bool:
         """Stop a run the person no longer wants. Changes still waiting for an answer are not done."""
@@ -363,9 +381,11 @@ class AgentRuns:
         ]:
             del self._runs[run_id]
             self._actions.pop(run_id, None)
+            self._tools.pop(run_id, None)
         while len(self._runs) >= MAX_KEPT:
             finished = [i for i, r in self._runs.items() if r.status not in ("running", "waiting")]
             if not finished:
                 break
             del self._runs[finished[0]]
             self._actions.pop(finished[0], None)
+            self._tools.pop(finished[0], None)

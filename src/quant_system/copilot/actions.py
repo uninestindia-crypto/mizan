@@ -88,6 +88,9 @@ class ActionRegistry:
     def get(self, name: str) -> ActionSpec | None:
         return self._specs.get(name)
 
+    def specs(self) -> list[ActionSpec]:
+        return list(self._specs.values())
+
     def describe(self) -> str:
         lines = []
         for spec in self._specs.values():
