@@ -84,7 +84,9 @@ def test_codex_is_run_read_only_and_reads_the_question_from_standard_input() -> 
     assert argv[-1] == "-"
 
 
-def test_antigravity_gets_only_a_fixed_instruction_and_the_question_arrives_on_standard_input() -> None:
+def test_antigravity_gets_only_a_fixed_instruction_and_the_question_arrives_on_standard_input() -> (
+    None
+):
     argv = build_command("antigravity", EXE)
     assert argv[1] == "-p" and "standard input" in argv[2]
 

@@ -185,16 +185,22 @@ def _custom_agents() -> list[AgentCliDef]:
         install_steps: list[InstallStep] = []
         if item.get("install_cmd"):
             install_steps.append(
-                InstallStep(f"Installing {item.get('name', cli_id)}", "powershell", str(item["install_cmd"]))
+                InstallStep(
+                    f"Installing {item.get('name', cli_id)}", "powershell", str(item["install_cmd"])
+                )
             )
         update_steps: list[InstallStep] = []
         if item.get("update_cmd"):
             update_steps.append(
-                InstallStep(f"Updating {item.get('name', cli_id)}", "powershell", str(item["update_cmd"]))
+                InstallStep(
+                    f"Updating {item.get('name', cli_id)}", "powershell", str(item["update_cmd"])
+                )
             )
         elif item.get("install_cmd"):
             update_steps.append(
-                InstallStep(f"Updating {item.get('name', cli_id)}", "powershell", str(item["install_cmd"]))
+                InstallStep(
+                    f"Updating {item.get('name', cli_id)}", "powershell", str(item["install_cmd"])
+                )
             )
         status_raw = item.get("status_args", "--version")
         status_args = tuple(status_raw.split()) if status_raw else None
@@ -214,7 +220,8 @@ def _custom_agents() -> list[AgentCliDef]:
                 auth_env_var="",
                 auth_file_hints=(),
                 description=str(
-                    item.get("description") or f"{item.get('name', cli_id)} by {item.get('maker', 'Company')}"
+                    item.get("description")
+                    or f"{item.get('name', cli_id)} by {item.get('maker', 'Company')}"
                 ),
                 docs_url=str(item.get("docs_url") or ""),
             )
@@ -725,7 +732,10 @@ def fetch_cli_capabilities(agent_id: str, force_refresh: bool = False) -> dict[s
             }
         ]
         features = [
-            {"name": "Company CLI Integration", "description": "Custom enterprise CLI agent bridge"},
+            {
+                "name": "Company CLI Integration",
+                "description": "Custom enterprise CLI agent bridge",
+            },
             {"name": "Automatic Updates", "description": "Automated update via company pipeline"},
         ]
         return {

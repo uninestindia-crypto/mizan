@@ -243,5 +243,3 @@ def test_custom_cli_endpoints_crud(client: TestClient, headers: dict[str, str]) 
     # 7. Confirm deleted
     after_del = client.get("/api/v2/cli/custom")
     assert "acme-copilot" not in [c["id"] for c in after_del.json()]
-
-

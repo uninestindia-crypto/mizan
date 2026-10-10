@@ -71,6 +71,7 @@ def get_cli_label(agent_id: str) -> str:
         pass
     return f"{agent_id.replace('_', ' ').title()}"
 
+
 MIN_TIMEOUT_SECONDS: Final = (
     120.0  # these apps take a while to start; a web call's wait is too short
 )

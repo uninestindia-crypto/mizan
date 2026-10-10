@@ -181,7 +181,11 @@ def test_the_status_lists_the_apps_and_counts_a_signed_in_one_as_ready(
     body = client.get("/api/v2/copilot/status").json()
     apps = {a["id"]: a for a in body["apps"]}
     assert set(apps) == {"antigravity", "claude", "codex"}  # an app that cannot chat is not offered
-    assert apps["claude"]["ready"] is True and apps["codex"]["ready"] is False and apps["antigravity"]["ready"] is True
+    assert (
+        apps["claude"]["ready"] is True
+        and apps["codex"]["ready"] is False
+        and apps["antigravity"]["ready"] is True
+    )
     assert body["ai_ready"] is True and body["ai"]["source"] == "cli"
 
 

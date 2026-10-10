@@ -185,13 +185,21 @@ def verify_stock(
     Once ``options.cancelled`` says True, calls that have not started are skipped; calls already out cannot be recalled.
     """
     options = options or VerifyOptions()
-    limit = options.max_models if options.max_models is not None else (None if options.chained else MAX_MODELS)
+    limit = (
+        options.max_models
+        if options.max_models is not None
+        else (None if options.chained else MAX_MODELS)
+    )
     panel = list(models)[:limit] if limit is not None else list(models)
     if not pack.usable:
         return _nothing(pack, _no_facts(pack.symbol))
     if not panel:
         return _nothing(pack, NO_MODELS)
-    cut = [f"Only the first {limit} AI models were asked."] if limit is not None and len(models) > limit else []
+    cut = (
+        [f"Only the first {limit} AI models were asked."]
+        if limit is not None and len(models) > limit
+        else []
+    )
     if options.recheck and not pack.reorderable and not options.chained:
         cut.append(NOT_REORDERABLE)
     cancelled = options.cancelled or (lambda: False)

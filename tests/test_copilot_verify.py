@@ -391,4 +391,3 @@ def test_chained_pipeline_infinite_models_supported() -> None:
     assert len(result.verdicts) == 12
     # Ensure no truncation note was added
     assert not any("first 6" in note for note in result.notes)
-
