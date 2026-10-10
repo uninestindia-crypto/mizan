@@ -7,7 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.4.0] - 2026-10-10
+
+### Added
+- Research: a new screen. Ask a question in plain words and get the finance research papers closest to it, with the authors, the year, the field and how strongly each one matches. A switch can also look for new papers on arXiv and keep them in your library.
+- Smarter search with one button: Turn on smarter search downloads Google's EmbeddingGemma 2 once (about 330 MB, checked file by file, and you can cancel and carry on later). After that, search matches by meaning, on your own computer, with no internet. What you type is never saved or sent anywhere. Until you turn it on, search matches the words in your question, and the screen says so.
+
+### Fixed
+- Settings, AI assistants now shows whether EmbeddingGemma 2 is ready, not downloaded or not installed, instead of showing it as running when it was not.
+- The Quant SLM page no longer says it uses EmbeddingGemma 2. Its 16 research numbers are one fixed set that is the same for every stock.
+- Choosing an AI app in Settings only accepts apps that exist, and a second opinion again asks at most six AIs.
+
+### Preserved Guards
+- Keys stay strictly encrypted in local Windows Credential Manager and are never sent to external servers
+- Zero unauthorized live-broker order execution — all autonomous decisions strictly sandboxed and verified
+- Halal results come only from deterministic screening rules applied to a company's own figures, never from an AI model
+- Company results are facts from filings, not advice, and old data is always labelled
+- Decimal-exact financial accounting and statutory NSE transaction cost schedules preserved
+
+---
+
 ## [3.3.0] - 2026-10-10
+
+### Added
+- Broker view: connect your Upstox account to see your holdings and cash inside QuantOS (Settings, Broker view). It is view only: QuantOS can read your account and can never place, change or cancel an order.
+- Portfolio, Risk tab: how much your holdings move together and each holding's share of the risk, for each account.
+- Strategy Lab: every result shows a range for how much of it could be luck.
+- AI apps: Antigravity is supported, you can put your AI apps in the order you prefer, add your own, and ask for second opinions one after another.
+
+### Fixed
+- Research tools now report a real information ratio instead of a made-up one.
+
+### Preserved Guards
+- Keys stay strictly encrypted in local Windows Credential Manager and are never sent to external servers
+- Zero unauthorized live-broker order execution — all autonomous decisions strictly sandboxed and verified
+- Halal results come only from deterministic screening rules applied to a company's own figures, never from an AI model
+- Company results are facts from filings, not advice, and old data is always labelled
+- Decimal-exact financial accounting and statutory NSE transaction cost schedules preserved
+
+---
+
+## [3.2.1] - 2026-10-10
 
 ### Added
 - Seamless startup reliability: QuantOS Studio now launches cleanly on all Windows environments without background protocol stalls

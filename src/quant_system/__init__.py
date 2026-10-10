@@ -6,7 +6,7 @@ import os
 import tempfile
 from pathlib import Path
 
-__version__ = "3.3.0"
+__version__ = "3.4.0"
 
 # Enforce 100% drive isolation: all runtime caches, logs, tempfiles, and data stay on the installation drive
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
