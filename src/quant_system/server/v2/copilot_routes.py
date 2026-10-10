@@ -80,7 +80,7 @@ class RenameChatBody(BaseModel):
 
 class VerifyRequest(BaseModel):
     symbol: str = Field(pattern=SYMBOL)
-    providers: list[str] = Field(min_length=1)
+    providers: list[str] = Field(min_length=1, max_length=6)
     pick_note: str | None = Field(default=None, max_length=300)
     recheck: bool = True
     chained: bool = True

@@ -47,6 +47,7 @@ from quant_system.server.v2.aitools import detect_cli_tools
 from quant_system.server.v2.auto_update import AutoUpdater
 from quant_system.server.v2.broker_routes import router as broker_router
 from quant_system.server.v2.cli_bridge import (
+    all_chat_cli_ids,
     auto_update_all_clis,
     fetch_cli_capabilities,
     invalidate_cache,
@@ -551,6 +552,9 @@ def get_settings() -> dict[str, Any]:
 @router.put("/settings")
 def put_settings(patch: dict[str, Any]) -> dict[str, Any]:
     patch.pop("data_folder", None)  # set only through /data/folder, which validates it
+    chosen_app = patch.get("ai_cli")
+    if chosen_app is not None and chosen_app not in all_chat_cli_ids():
+        raise V2Error(422, "INVALID_SETTINGS", "Pick one of the AI apps in the list.")
     try:
         return services().state.update_settings(patch).model_dump(mode="json")
     except ValidationError as err:

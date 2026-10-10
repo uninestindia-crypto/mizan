@@ -122,7 +122,8 @@ def _app_row(row: dict[str, Any]) -> dict[str, Any]:
 
 def ai_overview() -> dict[str, Any]:
     """The apps that can chat, the saved keys, the person's choice, and whether anything is ready to answer."""
-    apps = [_app_row(r) for r in cli_bridge.list_cli_status()]
+    chat_ids = set(cli_bridge.all_chat_cli_ids())
+    apps = [_app_row(r) for r in cli_bridge.list_cli_status() if r["id"] in chat_ids]
     choice = current_choice()
     usable = [a for a in apps if a["ready"] or a["state"] in _UNKNOWN_STATES]
     return {
