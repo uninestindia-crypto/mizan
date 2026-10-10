@@ -1146,10 +1146,37 @@ function ChangelogCard() {
 
   const fallbackEntries: ChangelogEntry[] = [
     {
+      version: "3.5.0",
+      date: "2026-10-10",
+      title: "Choose your AIs, their models and how hard they think, and let the Copilot work through a task for you",
+      is_current: true,
+      whats_new: [
+        "Update on the AI apps now tells you what happened. Check for updates runs each app's own update and shows its version before and after, or says it is already up to date. The tick box to update the apps automatically now saves, and keeps them current once a day.",
+        "Newest models, read live: Claude Code, Codex and Antigravity now list the models they really offer, with the newest marked and the thinking levels each one supports. Nothing is shown that the app did not report.",
+        "Your AIs in your order: Settings, AI assistants has one list for your AI apps and your saved keys. Move them up or down, and pick the model and how hard each one thinks.",
+        "Ways to answer: on any Copilot message you can choose which AI answers, which model, how hard it thinks, Quick, Balanced or Careful, and how many helpers work on a task. One button makes your choice the usual.",
+        "Agent mode: switch the Copilot from Chat to Agent and give it a task. It looks things up step by step, shows every step as it happens, and asks you before it changes anything, such as adding or removing a watchlist stock or running a strategy test. Strategy tests are limited per task, because every test makes the next result harder to believe.",
+        "Hand a task to Claude Code: in Agent mode you can choose who does the work. Claude Code can only use the Copilot's own lookups, cannot see your files, and still asks you before any change. Codex and Antigravity keep answering questions in Chat.",
+      ],
+      fixes: [
+        "The out-of-date list of AI models that the app used to show is gone. Models now come from the apps themselves.",
+      ],
+      improvements: [
+        "A task that you stop, or that takes too long, hands back what it found so far instead of nothing.",
+      ],
+      unchanged_protections: [
+        "Keys stay strictly encrypted in local Windows Credential Manager and are never sent to external servers",
+        "Zero unauthorized live-broker order execution — all autonomous decisions strictly sandboxed and verified",
+        "Halal results come only from deterministic screening rules applied to a company's own figures, never from an AI model",
+        "Company results are facts from filings, not advice, and old data is always labelled",
+        "Decimal-exact financial accounting and statutory NSE transaction cost schedules preserved",
+        "The Copilot never places an order, and every change it asks for waits for your Approve or Skip",
+      ],
+    },
+    {
       version: "3.4.0",
       date: "2026-10-10",
       title: "Research: find finance papers by meaning, with Google's EmbeddingGemma 2 turned on by one button",
-      is_current: true,
       whats_new: [
         "Research: a new screen. Ask a question in plain words, such as how do I avoid overfitting a backtest, and get the finance research papers closest to it, with the authors, the year, the field and how strongly each one matches. A switch can also look for new papers on arXiv and keep them in your library.",
         "Smarter search with one button: Turn on smarter search downloads Google's EmbeddingGemma 2 once (about 330 MB, checked file by file, and you can cancel and carry on later). After that, search matches by meaning, on your own computer, with no internet. What you type is never saved or sent anywhere.",
