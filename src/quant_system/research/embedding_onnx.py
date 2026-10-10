@@ -33,7 +33,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 REPOSITORY = "onnx-community/embeddinggemma-2-ONNX"
-REVISION = "daa72c51243991dfcaf9f9137d2c573d8f7790c0"
+REVISION = "daa72c51243991dfcaf9f9137d2c573d8f7790c0"  # pragma: allowlist secret
 BASE_URL = f"https://huggingface.co/{REPOSITORY}/resolve/{REVISION}/"
 GRAPH_FILE = "onnx/model_quantized.onnx"
 MARKER_FILE = ".verified"
@@ -55,17 +55,17 @@ MODEL_FILES: tuple[ModelFile, ...] = (
     ModelFile(
         "onnx/model_quantized.onnx",
         495_165,
-        "d06edd601f851c633a2519304cbeb8dc6170d7ceb61b436625c17fb9b6e74953",
+        "d06edd601f851c633a2519304cbeb8dc6170d7ceb61b436625c17fb9b6e74953",  # pragma: allowlist secret
     ),
     ModelFile(
         "onnx/model_quantized.onnx_data",
         313_724_928,
-        "278a7ff1248c3618e4bd11a607fc54f7bdc7778854230f3956d3f86bd9db4f3b",
+        "278a7ff1248c3618e4bd11a607fc54f7bdc7778854230f3956d3f86bd9db4f3b",  # pragma: allowlist secret
     ),
     ModelFile(
         "tokenizer.json",
         32_170_510,
-        "4d777ef5bdc1aa36227abdfb77c3e49e7b9c892d16e1b6bda41c393504828be4",
+        "4d777ef5bdc1aa36227abdfb77c3e49e7b9c892d16e1b6bda41c393504828be4",  # pragma: allowlist secret
     ),
 )
 TOTAL_BYTES = sum(item.size for item in MODEL_FILES)
