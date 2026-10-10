@@ -1,4 +1,0 @@
-interface:
-  display_name: "PyBroker Optimizer"
-  short_description: "Tune PyBroker strategy hyperparameters with Optuna search"
-  default_prompt: "Use $pybroker-optimize to search hyperparameters for a PyBroker strategy with Strategy.optimize and report the best parameters and test metrics."
