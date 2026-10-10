@@ -76,6 +76,7 @@ from quant_system.server.v2.paper_books import PaperBooks
 from quant_system.server.v2.portfolio import paper_books, portfolio_summary
 from quant_system.server.v2.portfolio_accounts import ACCOUNT_KINDS, account_rows, positions
 from quant_system.server.v2.portfolio_risk import NO_HOLDINGS, risk_from_quantities, unavailable
+from quant_system.server.v2.research_routes import router as research_router
 from quant_system.server.v2.schemas import (
     AccountRequest,
     CliCodeRequest,
@@ -1229,6 +1230,7 @@ def register_api(app: FastAPI) -> None:
     app.include_router(copilot_router, prefix="/api/v2")
     app.include_router(live_router, prefix="/api/v2")
     app.include_router(broker_router, prefix="/api/v2")
+    app.include_router(research_router, prefix="/api/v2")
     app.include_router(market_holidays_router, prefix="/api/v2")
     app.include_router(fundamentals_router, prefix="/api/v2")
     app.include_router(update_router, prefix="/api/v2")

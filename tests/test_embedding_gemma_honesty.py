@@ -242,7 +242,7 @@ def test_the_substitute_says_why_the_model_is_not_in_use(
     monkeypatch: pytest.MonkeyPatch, status: str, words: str
 ) -> None:
     monkeypatch.setattr(
-        embedding_gemma, "real_model_status", lambda name=DEFAULT_MODEL_NAME: status
+        embedding_gemma, "real_model_status", lambda name=DEFAULT_MODEL_NAME, model_dir=None: status
     )
     monkeypatch.delenv("QUANTOS_SYNTHETIC_MODE", raising=False)
     with patch("httpx.get", side_effect=OSError("no Ollama here")):
@@ -263,12 +263,16 @@ def test_auto_mode_uses_the_real_model_only_when_it_is_already_on_this_computer(
 ) -> None:
     monkeypatch.delenv("QUANTOS_SYNTHETIC_MODE", raising=False)
     monkeypatch.setattr(
-        embedding_gemma, "real_model_status", lambda name=DEFAULT_MODEL_NAME: "READY"
+        embedding_gemma,
+        "real_model_status",
+        lambda name=DEFAULT_MODEL_NAME, model_dir=None: "READY",
     )
     assert EmbeddingGemmaProvider(mode="auto").active_backend == "transformers"
     # packages without the weights must not start a 1.5 GB download behind the user's back
     monkeypatch.setattr(
-        embedding_gemma, "real_model_status", lambda name=DEFAULT_MODEL_NAME: "NEEDS_DOWNLOAD"
+        embedding_gemma,
+        "real_model_status",
+        lambda name=DEFAULT_MODEL_NAME, model_dir=None: "NEEDS_DOWNLOAD",
     )
     with patch("httpx.get", side_effect=OSError("no Ollama here")):
         assert EmbeddingGemmaProvider(mode="auto").active_backend == "synthetic"
@@ -286,7 +290,7 @@ def test_the_model_is_not_ready_when_any_library_it_needs_is_missing(
             "find_spec",
             lambda name, *args: None if name == missing else object(),
         )
-        assert embedding_gemma.real_model_status() == "NOT_INSTALLED"
+        assert embedding_gemma.torch_route_status() == "NOT_INSTALLED"
 
 
 def test_the_model_is_ready_only_with_every_library_and_the_weights(
@@ -295,9 +299,9 @@ def test_the_model_is_ready_only_with_every_library_and_the_weights(
     with monkeypatch.context() as patched:
         patched.setattr(embedding_gemma.importlib.util, "find_spec", lambda name, *args: object())
         patched.setattr(embedding_gemma, "_weights_cached", lambda name=DEFAULT_MODEL_NAME: True)
-        assert embedding_gemma.real_model_status() == "READY"
+        assert embedding_gemma.torch_route_status() == "READY"
         patched.setattr(embedding_gemma, "_weights_cached", lambda name=DEFAULT_MODEL_NAME: False)
-        assert embedding_gemma.real_model_status() == "NEEDS_DOWNLOAD"
+        assert embedding_gemma.torch_route_status() == "NEEDS_DOWNLOAD"
 
 
 def test_the_status_check_reads_the_cache_without_importing_or_downloading(
@@ -353,7 +357,7 @@ def test_paper_search_metadata_tells_the_truth_for_the_substitute() -> None:
     ("found", "status", "words"),
     [
         ("READY", "READY", "It runs on this computer."),
-        ("NEEDS_DOWNLOAD", "NOT DOWNLOADED", "not downloaded yet"),
+        ("NEEDS_DOWNLOAD", "NOT DOWNLOADED", "Open Research and choose Turn on smarter search"),
         ("NOT_INSTALLED", "NOT INSTALLED", "not installed on this computer"),
     ],
 )
@@ -365,7 +369,7 @@ def test_the_hardware_card_says_whether_the_model_can_really_run(
     assert card.status == status
     assert words in card.description
     assert card.name == "EmbeddingGemma 2 (text, about 270M)"
-    assert card.size == "~1.5 GB download"
+    assert card.size == "~330 MB download"
     # the product promises halal results never come from an AI model
     assert "Halal results never use it" in card.description
     assert "AAOIFI" not in card.description
@@ -375,3 +379,104 @@ def test_the_quant_slm_status_does_not_claim_a_model_it_does_not_run() -> None:
     pillars = quant_slm_status()["pillars"]
     assert not any("EmbeddingGemma" in line for line in pillars)
     assert any("the same for every stock" in line for line in pillars)
+
+
+# ----------------------------------------------------------------------------- the downloadable (ONNX) route
+
+
+class FakeOnnxEmbedder:
+    """Stands in for embedding_onnx.OnnxEmbedder and records what it was asked."""
+
+    built: list[FakeOnnxEmbedder] = []
+    fail = False
+
+    def __init__(self, model_dir: Path) -> None:
+        self.model_dir = model_dir
+        self.calls: list[list[str]] = []
+        FakeOnnxEmbedder.built.append(self)
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        self.calls.append(list(texts))
+        if FakeOnnxEmbedder.fail:
+            raise RuntimeError("the model file is damaged")
+        return [[float((sum(map(ord, t)) + i * 31) % 17 + 1) for i in range(768)] for t in texts]
+
+
+@pytest.fixture
+def fake_onnx(monkeypatch: pytest.MonkeyPatch) -> type[FakeOnnxEmbedder]:
+    FakeOnnxEmbedder.built = []
+    FakeOnnxEmbedder.fail = False
+    monkeypatch.setattr(embedding_gemma.embedding_onnx, "OnnxEmbedder", FakeOnnxEmbedder)
+    return FakeOnnxEmbedder
+
+
+def test_the_downloaded_model_is_used_with_the_card_prefixes(
+    fake_onnx: type[FakeOnnxEmbedder], tmp_path: Path
+) -> None:
+    provider = EmbeddingGemmaProvider(dimensions=256, mode="onnx", model_dir=tmp_path)
+    assert provider.uses_real_model is False and "loads the first time" in provider.label
+    doc = provider.embed_texts(["Deflated Sharpe ratio"], kind="document")[0]
+    query = provider.embed_text("avoid overfitting", kind="query")
+
+    assert (
+        len(fake_onnx.built) == 1 and fake_onnx.built[0].model_dir == tmp_path
+    )  # loaded once, from the app's folder
+    assert fake_onnx.built[0].calls == [
+        [DOCUMENT_PREFIX + "Deflated Sharpe ratio"],
+        [QUERY_PREFIX + "avoid overfitting"],
+    ]
+    assert len(doc) == len(query) == 256 and pytest.approx(norm(doc), rel=1e-3) == 1.0
+    assert provider.uses_real_model is True and provider.active_backend == "onnx"
+    assert provider.label == "EmbeddingGemma 2 (running on this computer)"
+    assert provider.served_model == "google/embeddinggemma-2 (8-bit)"
+    assert provider.get_stats().is_real_model is True
+
+
+def test_a_damaged_download_falls_back_and_says_so(
+    fake_onnx: type[FakeOnnxEmbedder], tmp_path: Path
+) -> None:
+    fake_onnx.fail = True
+    provider = EmbeddingGemmaProvider(dimensions=128, mode="onnx", model_dir=tmp_path)
+    vec = provider.embed_text("Shariah screening")
+    assert len(vec) == 128 and pytest.approx(norm(vec), rel=1e-3) == 1.0
+    assert provider.active_backend == "synthetic" and provider.uses_real_model is False
+    assert provider.generation == 1
+    assert "damaged" in (provider.get_stats().fallback_reason or "")
+    assert provider.label == "Built-in keyword matching (EmbeddingGemma 2 could not run here)"
+
+
+def test_auto_mode_prefers_the_downloaded_model_over_the_developer_route(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.delenv("QUANTOS_SYNTHETIC_MODE", raising=False)
+    monkeypatch.setattr(
+        embedding_gemma.embedding_onnx, "onnx_status", lambda model_dir=None: "READY"
+    )
+    monkeypatch.setattr(
+        embedding_gemma, "torch_route_status", lambda name=DEFAULT_MODEL_NAME: "READY"
+    )
+    assert EmbeddingGemmaProvider(mode="auto", model_dir=tmp_path).active_backend == "onnx"
+    monkeypatch.setattr(
+        embedding_gemma.embedding_onnx, "onnx_status", lambda model_dir=None: "NEEDS_DOWNLOAD"
+    )
+    assert EmbeddingGemmaProvider(mode="auto", model_dir=tmp_path).active_backend == "transformers"
+
+
+@pytest.mark.parametrize(
+    ("onnx", "torch", "expected"),
+    [
+        ("READY", "NOT_INSTALLED", "READY"),
+        ("NEEDS_DOWNLOAD", "READY", "READY"),
+        ("NEEDS_DOWNLOAD", "NOT_INSTALLED", "NEEDS_DOWNLOAD"),
+        ("NOT_INSTALLED", "NEEDS_DOWNLOAD", "NEEDS_DOWNLOAD"),
+        ("NOT_INSTALLED", "NOT_INSTALLED", "NOT_INSTALLED"),
+    ],
+)
+def test_the_overall_status_combines_both_routes(
+    monkeypatch: pytest.MonkeyPatch, onnx: str, torch: str, expected: str
+) -> None:
+    monkeypatch.setattr(embedding_gemma.embedding_onnx, "onnx_status", lambda model_dir=None: onnx)
+    monkeypatch.setattr(
+        embedding_gemma, "torch_route_status", lambda name=DEFAULT_MODEL_NAME: torch
+    )
+    assert embedding_gemma.real_model_status() == expected

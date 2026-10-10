@@ -8,6 +8,9 @@ re-normalisation.
 
 Backends, tried in this order when ``mode="auto"``:
 
+- ``onnx``: the real model as an 8-bit ONNX build (``embedding_onnx``): about 330 MB, downloaded once from inside the app, needs
+  only onnxruntime and tokenizers (both ship with the app). Same vectors as the torch route to cosine 0.9999, about 680 MB memory.
+  This is the route for people who are not developers.
 - ``transformers``: the real model, in this process. Needs sentence-transformers, torch, torchvision and pillow (the model's
   processor imports the image libraries even for text; none is bundled with the installed app) and a one-time download of about
   1.5 GB. ``auto`` only picks it when the weights are already on this computer, so nothing downloads by surprise. Measured on
@@ -31,6 +34,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from quant_system.research import embedding_onnx
 
 logger = logging.getLogger(__name__)
 
@@ -67,12 +72,8 @@ def _weights_cached(model_name: str = DEFAULT_MODEL_NAME) -> bool:
         return False
 
 
-def real_model_status(model_name: str = DEFAULT_MODEL_NAME) -> str:
-    """Whether the real model could run here, without loading anything.
-
-    ``READY`` (packages and weights present), ``NEEDS_DOWNLOAD`` (packages present, weights not yet on this computer) or
-    ``NOT_INSTALLED`` (the packages are missing).
-    """
+def torch_route_status(model_name: str = DEFAULT_MODEL_NAME) -> str:
+    """The developer route (torch and sentence-transformers): ``READY``, ``NEEDS_DOWNLOAD`` or ``NOT_INSTALLED``."""
     try:
         packages = all(importlib.util.find_spec(name) for name in REQUIRED_PACKAGES)
     except (ImportError, ValueError):
@@ -80,6 +81,21 @@ def real_model_status(model_name: str = DEFAULT_MODEL_NAME) -> str:
     if not packages:
         return "NOT_INSTALLED"
     return "READY" if _weights_cached(model_name) else "NEEDS_DOWNLOAD"
+
+
+def real_model_status(model_name: str = DEFAULT_MODEL_NAME, model_dir: Path | None = None) -> str:
+    """Whether the real model could run here, without loading anything.
+
+    ``READY`` (the downloaded 8-bit model, or the torch route, is here), ``NEEDS_DOWNLOAD`` (a runtime is here and the model can be
+    downloaded) or ``NOT_INSTALLED`` (no runtime at all).
+    """
+    onnx = embedding_onnx.onnx_status(model_dir)
+    if onnx == "READY":
+        return "READY"
+    torch = torch_route_status(model_name)
+    if torch == "READY":
+        return "READY"
+    return "NEEDS_DOWNLOAD" if "NEEDS_DOWNLOAD" in (onnx, torch) else "NOT_INSTALLED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,10 +119,11 @@ class EmbeddingGemmaProvider:
         self,
         model_name: str = DEFAULT_MODEL_NAME,
         dimensions: int = DEFAULT_DIMENSION,
-        mode: str = "auto",  # 'auto', 'ollama', 'transformers', 'synthetic'
+        mode: str = "auto",  # 'auto', 'onnx', 'transformers', 'ollama', 'synthetic'
         endpoint_url: str | None = None,
         cache_size: int = 4096,
         ollama_model: str | None = None,
+        model_dir: Path | None = None,
     ) -> None:
         if dimensions not in SUPPORTED_DIMENSIONS:
             valid_dims = ", ".join(str(d) for d in SUPPORTED_DIMENSIONS)
@@ -123,6 +140,8 @@ class EmbeddingGemmaProvider:
             ollama_model or os.getenv("QUANTOS_EMBEDDING_OLLAMA_MODEL") or DEFAULT_OLLAMA_MODEL
         )
         self.cache_size = max(64, cache_size)
+        self.model_dir: Path = Path(model_dir) if model_dir else embedding_onnx.default_model_dir()
+        self._onnx: embedding_onnx.OnnxEmbedder | None = None
 
         self._cache: dict[str, list[float]] = {}
         self._cache_hits = 0
@@ -136,7 +155,7 @@ class EmbeddingGemmaProvider:
 
     @property
     def active_backend(self) -> str:
-        """Returns the backend that produces vectors right now: transformers, ollama or synthetic."""
+        """Returns the backend that produces vectors right now: onnx, transformers, ollama or synthetic."""
         return self._active_backend
 
     @property
@@ -147,13 +166,15 @@ class EmbeddingGemmaProvider:
     @property
     def uses_real_model(self) -> bool:
         """True only once EmbeddingGemma 2 itself has produced vectors in this process."""
-        return self._active_backend == "transformers" and self._model_ready
+        return self._active_backend in ("onnx", "transformers") and self._model_ready
 
     @property
     def served_model(self) -> str:
         """The name of what actually produces the vectors."""
         if self._active_backend == "transformers":
             return self.model_name
+        if self._active_backend == "onnx":
+            return f"{self.model_name} (8-bit)"
         if self._active_backend == "ollama":
             return self.ollama_model
         return "built-in keyword matching"
@@ -161,7 +182,7 @@ class EmbeddingGemmaProvider:
     @property
     def label(self) -> str:
         """A plain sentence for a screen: what is producing the vectors."""
-        if self._active_backend == "transformers":
+        if self._active_backend in ("onnx", "transformers"):
             if self._model_ready:
                 return "EmbeddingGemma 2 (running on this computer)"
             return "EmbeddingGemma 2 (loads the first time it is used)"
@@ -178,7 +199,9 @@ class EmbeddingGemmaProvider:
             "NOT_INSTALLED": "is not installed on this computer",
             "NEEDS_DOWNLOAD": "has not been downloaded yet",
         }
-        return reasons.get(real_model_status(self.model_name), "is not in use")
+        return reasons.get(
+            real_model_status(self.model_name, model_dir=self.model_dir), "is not in use"
+        )
 
     def _determine_backend(self) -> str:
         """Determines the appropriate execution backend."""
@@ -194,12 +217,17 @@ class EmbeddingGemmaProvider:
         if self.mode == "ollama":
             return "ollama"
 
+        if self.mode == "onnx":
+            return "onnx"
+
         if self.mode == "transformers":
             return "transformers"
 
         # In 'auto' mode the real model comes first, but only when it is already on this computer.
-        if real_model_status(self.model_name) == "READY":
-            return "transformers"
+        if real_model_status(self.model_name, model_dir=self.model_dir) == "READY":
+            return (
+                "onnx" if embedding_onnx.onnx_status(self.model_dir) == "READY" else "transformers"
+            )
 
         # Then a local Ollama server, if one answers quickly.
         try:
@@ -277,6 +305,8 @@ class EmbeddingGemmaProvider:
         if backend == "synthetic":
             return self._embed_synthetic(texts)
         try:
+            if backend == "onnx":
+                return self._embed_via_onnx(texts, kind)
             if backend == "transformers":
                 return self._embed_via_model(texts, kind)
             return self._embed_via_ollama(texts)
@@ -291,6 +321,7 @@ class EmbeddingGemmaProvider:
         self._active_backend = "synthetic"
         self._model_ready = False
         self._model = None
+        self._onnx = None
         self._cache.clear()
         self._generation += 1
 
@@ -326,6 +357,16 @@ class EmbeddingGemmaProvider:
             model.max_seq_length = MAX_TOKENS
             self._model = model
         return self._model
+
+    def _embed_via_onnx(self, texts: Sequence[str], kind: str) -> list[list[float]]:
+        """Embeds with the downloaded 8-bit EmbeddingGemma 2, with the same task prefixes as the card."""
+        prefix = QUERY_PREFIX if kind == "query" else DOCUMENT_PREFIX
+        if self._onnx is None:
+            self._onnx = embedding_onnx.OnnxEmbedder(self.model_dir)
+        vectors = self._onnx.embed([prefix + text for text in texts])
+        self._check_width(vectors, "EmbeddingGemma 2")
+        self._model_ready = True
+        return vectors
 
     def _embed_via_model(self, texts: Sequence[str], kind: str) -> list[list[float]]:
         """Embeds with EmbeddingGemma 2 itself: its own pooling, projection and normalisation, plus the task prefix."""

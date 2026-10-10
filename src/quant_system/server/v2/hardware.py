@@ -307,7 +307,10 @@ def _embedding_model_card() -> LocalModelInfo:
         note = "It runs on this computer."
     elif found == "NEEDS_DOWNLOAD":
         status = "NOT DOWNLOADED"
-        note = "It is not downloaded yet, so search uses built-in keyword matching for now."
+        note = (
+            "It is not downloaded yet, so search uses built-in keyword matching for now. "
+            "Open Research and choose Turn on smarter search."
+        )
     else:
         status = "NOT INSTALLED"
         note = "It is not installed on this computer, so search uses built-in keyword matching."
@@ -315,7 +318,7 @@ def _embedding_model_card() -> LocalModelInfo:
         id="embeddinggemma-2",
         name="EmbeddingGemma 2 (text, about 270M)",
         category="Semantic Embeddings & Search",
-        size="~1.5 GB download",
+        size="~330 MB download",
         recommended_hardware="NPU / CPU",
         status=status,
         description=(

@@ -25,6 +25,8 @@ FILES = [
     ROOT / "server" / "v2" / "copilot_wiring.py",
     ROOT / "server" / "v2" / "live_routes.py",
     ROOT / "server" / "v2" / "broker_routes.py",
+    ROOT / "server" / "v2" / "research_routes.py",
+    ROOT / "research" / "research_service.py",
 ]
 # These two modules write the instructions the app sends to an AI model, and they tell it to answer in a JSON
 # object, naming the tools it may use. A model's reply goes through the guard before anyone reads it, so these words
