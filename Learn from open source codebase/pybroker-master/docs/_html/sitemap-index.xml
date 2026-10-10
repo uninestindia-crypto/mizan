@@ -231,11 +231,6 @@
   <priority>0.80</priority>
 </url>
 <url>
-  <loc>https://www.pybroker.com/en/latest/license.html</loc>
-  <lastmod>2026-08-09T00:00:00+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
   <loc>https://www.pybroker.com/en/latest/_modules/pybroker/cache.html</loc>
   <lastmod>2026-08-09T00:00:00+00:00</lastmod>
   <priority>0.64</priority>
@@ -552,11 +547,6 @@
 </url>
 <url>
   <loc>https://www.pybroker.com/zh_CN/latest/changelog.html</loc>
-  <lastmod>2026-08-09T00:00:00+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://www.pybroker.com/zh_CN/latest/license.html</loc>
   <lastmod>2026-08-09T00:00:00+00:00</lastmod>
   <priority>0.80</priority>
 </url>

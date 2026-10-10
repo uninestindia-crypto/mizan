@@ -1,10 +1,5 @@
 """Contains implementation of evaluation metrics."""
 
-"""Copyright (C) 2023 Edward West. All rights reserved.
-
-This code is licensed under Apache 2.0 with Commons Clause license
-(see LICENSE for details).
-"""
 
 import numpy as np
 import pandas as pd

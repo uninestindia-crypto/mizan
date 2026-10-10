@@ -1,11 +1,6 @@
 """Contains context related classes. A context provides data during the
 execution of a :class:`pybroker.strategy.Strategy`."""
 
-"""Copyright (C) 2023 Edward West. All rights reserved.
-
-This code is licensed under Apache 2.0 with Commons Clause license
-(see LICENSE for details).
-"""
 
 import warnings
 import numpy as np

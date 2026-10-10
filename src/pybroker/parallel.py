@@ -1,10 +1,5 @@
 """Contains parallel execution configuration."""
 
-"""Copyright (C) 2026 Edward West. All rights reserved.
-
-This code is licensed under Apache 2.0 with Commons Clause license
-(see LICENSE for details).
-"""
 
 import logging
 from contextlib import contextmanager

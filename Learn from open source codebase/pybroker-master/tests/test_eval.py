@@ -1,10 +1,5 @@
 """Unit tests for eval.py module."""
 
-"""Copyright (C) 2023 Edward West. All rights reserved.
-
-This code is licensed under Apache 2.0 with Commons Clause license
-(see LICENSE for details).
-"""
 
 import math
 import numpy as np

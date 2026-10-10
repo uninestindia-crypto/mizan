@@ -12,11 +12,6 @@ execution with ``ctx.hyperparam(name)``.
 
 from __future__ import annotations
 
-"""Copyright (C) 2023 Edward West. All rights reserved.
-
-This code is licensed under Apache 2.0 with Commons Clause license
-(see LICENSE for details).
-"""
 
 import copy
 import json

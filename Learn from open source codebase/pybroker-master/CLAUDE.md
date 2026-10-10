@@ -283,9 +283,7 @@ between runs on NumPy arrays and Numba kernels.
   (`ExecContext`, `Portfolio`, the `*Scope` classes).
 - Docstrings: Google style rendered by napoleon, with Sphinx roles
   (`` :class:`pybroker.scope.ColumnScope` ``); class-level `Attributes:`
-  sections on dataclasses/NamedTuples. Module header is two string
-  literals — the module docstring plus a *separate* copyright literal
-  (Apache 2.0 with Commons Clause) — keep both, in that order.
+  sections on dataclasses/NamedTuples. Module header is the module docstring.
 
 ## Testing Conventions
 

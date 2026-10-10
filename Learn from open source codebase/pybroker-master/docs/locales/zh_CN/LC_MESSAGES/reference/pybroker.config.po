@@ -1,6 +1,5 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) 2026, Edward West
-# This file is distributed under the same license as the PyBroker package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
 #
 #, fuzzy

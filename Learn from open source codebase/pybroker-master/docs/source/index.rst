@@ -33,10 +33,6 @@
          <img src="https://img.shields.io/badge/pypi-v2.0.1-brightgreen.svg"
             alt="PyPI">
       </a>
-      <a href="https://www.pybroker.com/en/latest/license.html">
-         <img src="https://img.shields.io/badge/license-Apache%202.0%20Clause-green"
-            alt="Apache 2.0 with Commons Clause">
-      </a>
       <a href="https://www.pybroker.com/en/latest/?badge=latest">
          <img src="https://readthedocs.org/projects/pybroker/badge/?version=latest"
             alt="Documentation Status">
@@ -228,7 +224,6 @@ on quantitative finance and algorithmic trading:
 
       Benchmarking <benchmarking>
       Changelog <changelog>
-      License <license>
 
 Contact
 =======

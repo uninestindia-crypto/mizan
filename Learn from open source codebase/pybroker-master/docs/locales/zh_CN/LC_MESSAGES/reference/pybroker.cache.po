@@ -1,6 +1,5 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) 2026, Edward West
-# This file is distributed under the same license as the PyBroker package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
 #
 #, fuzzy
@@ -26,18 +25,6 @@ msgstr "pybroker.cache 模块"
 #: 869803fc15c14d0bbdc004f4c25ce526 of pybroker.cache:1
 msgid "Contains caching utilities."
 msgstr "包含缓存相关的工具。"
-
-#: 899343ac7c31493fb48bc6e66acb7a7e of pybroker.cache:3
-msgid "Copyright (C) 2023 Edward West. All rights reserved."
-msgstr "Copyright (C) 2023 Edward West. All rights reserved."
-
-#: 7f860c0dae404b9f94d212450e8caf0c of pybroker.cache:5
-msgid ""
-"This code is licensed under Apache 2.0 with Commons Clause license (see "
-"LICENSE for details)."
-msgstr ""
-"This code is licensed under Apache 2.0 with Commons Clause license (see "
-"LICENSE for details)."
 
 #: 9b72e3a92c084f0bae803b9fda13ff35 of pybroker.cache.CacheDateFields:1
 msgid "Date fields for keying cache data."

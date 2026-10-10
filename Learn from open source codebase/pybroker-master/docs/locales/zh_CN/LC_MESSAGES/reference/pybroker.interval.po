@@ -1,6 +1,5 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) 2026, Edward West
-# This file is distributed under the same license as the PyBroker package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
 #
 #, fuzzy
@@ -27,18 +26,6 @@ msgstr "pybroker.interval 模块"
 #: a374497a7d7641ce923afc75a2f652d5 of pybroker.interval:1
 msgid "Multi-interval bar compression utilities."
 msgstr "多区间 K 线压缩工具。"
-
-#: 7dfbef209af24d9893262069cab82ddd of pybroker.interval:3
-msgid "Copyright (C) 2023 Edward West. All rights reserved."
-msgstr "Copyright (C) 2023 Edward West. All rights reserved."
-
-#: 9cb4210f9a784bf68aaf7f35017db374 of pybroker.interval:5
-msgid ""
-"This code is licensed under Apache 2.0 with Commons Clause license (see "
-"LICENSE for details)."
-msgstr ""
-"This code is licensed under Apache 2.0 with Commons Clause license (see "
-"LICENSE for details)."
 
 #: f56fabdb8e4a4c74af04db41e1587e86 of pybroker.interval.BASE_INTERVAL:1
 msgid ""

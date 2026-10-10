@@ -1,10 +1,5 @@
 """Unit tests for portfolio.py module."""
 
-"""Copyright (C) 2023 Edward West. All rights reserved.
-
-This code is licensed under Apache 2.0 with Commons Clause license
-(see LICENSE for details).
-"""
 
 import itertools
 import numpy as np

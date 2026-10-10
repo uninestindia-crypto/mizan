@@ -1,6 +1,5 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) 2023, Edward West
-# This file is distributed under the same license as the PyBroker package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
 #
 #, fuzzy
@@ -60,10 +59,6 @@ msgstr "基准测试"
 #: ../../source/index.rst:228
 msgid "Changelog"
 msgstr "变更日志"
-
-#: ../../source/index.rst:228
-msgid "License"
-msgstr "许可证"
 
 #: ../../source/index.rst:228
 msgid "Other Information"
